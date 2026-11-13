@@ -3,7 +3,7 @@
 #
 # Usage: scripts/agent.sh <role> [target]
 #   propose <Programme> | review-question <question file> | research <question file>
-#   formalise <Programme> | review-pr <pull request number> | garden
+#   formalise <Programme> | review-pr <pull request number> | garden | bibliographer
 #
 # Requires: claude and gh logged in, and a main checkout already built once with
 # `scripts/build.sh Incognita` (the worktrees share its .lake/packages).
@@ -15,7 +15,7 @@ root="$(git rev-parse --show-toplevel)"
 cd "$root"
 prompt_file="agents/roles/$role.md"
 [ -f "$prompt_file" ] || { echo "unknown role: $role" >&2; exit 2; }
-if [ "$role" != garden ] && [ -z "$target" ]; then
+if [ "$role" != garden ] && [ "$role" != bibliographer ] && [ -z "$target" ]; then
   echo "$role needs a target" >&2
   exit 2
 fi
@@ -38,6 +38,10 @@ prompt=$(sed "s|{TARGET}|$target|g" "$prompt_file")
 
 # Writing roles: files, builds and local git only (no push, no gh, no network).
 write_tools="Read,Edit,Write,Glob,Grep,Bash(lake build:*),Bash(lake exe audit:*),Bash(lake env lean:*),Bash(bash scripts/build.sh:*),Bash(bash scripts/check-build.sh:*),Bash(scripts/build.sh:*),Bash(scripts/check-build.sh:*),Bash(git add:*),Bash(git commit:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(grep:*)"
+# The bibliographer alone may read the web.
+if [ "$role" = bibliographer ]; then
+  write_tools="$write_tools,WebSearch,WebFetch"
+fi
 # Reviewers: read only.
 read_tools="Read,Glob,Grep,Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(grep:*)"
 
@@ -90,6 +94,7 @@ while IFS=$'\t' read -r st path; do
       |templates/*|agents/*|docs/*|scripts/*|.github/*|programmes/*/PROGRAMME.md)
       echo "human-owned path changed: $path" >&2; status=1 ;;
     programmes/*/questions/*) ;;
+    literature/*|catalogue/*) ;;
     programmes/*/*) echo "human-owned path changed: $path" >&2; status=1 ;;
     Statements.lean)
       case "$role" in review-question|formalise) ;; *) echo "Statements.lean changed by $role" >&2; status=1 ;; esac ;;
@@ -98,6 +103,12 @@ while IFS=$'\t' read -r st path; do
         echo "frozen statement changed ($st) by $role: $path" >&2; status=1
       fi ;;
   esac
+  if [ "$role" = bibliographer ]; then
+    case "$path" in
+      literature/*|catalogue/*|programmes/*/questions/*) ;;
+      *) echo "the bibliographer may not change $path" >&2; status=1 ;;
+    esac
+  fi
 done < <(git diff --name-status origin/main...HEAD)
 if [ "$status" != 0 ]; then
   echo "branch $branch kept locally for inspection; not pushed" >&2

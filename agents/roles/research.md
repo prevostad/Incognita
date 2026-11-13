@@ -8,8 +8,10 @@ Task: make progress on this question, in one coherent step.
 - If you find a complete proof, move it to the library as `Incognita.<Programme>.<name>` with exactly
   the type of the frozen statement, under the rules of the library (no sorry, standard axioms, no
   warnings): check with `scripts/check-build.sh Incognita --no-sorry` and `lake exe audit`. Then
-  write the human-readable proof (Markdown with mathematics, each statement mapped to its Lean name)
-  next to the question file, add the catalogue entry, and set the status to `proved`.
+  write the human-readable proof (Markdown with mathematics, each statement mapped to its Lean name,
+  and an "Attribution" section naming the presumed source of each technique, citing only entries of
+  `literature/` as AGENTS.md says) next to the question file, add the catalogue entry with
+  `novelty = "unchecked"`, and set the status to `proved`. Never call the result new yourself.
 - If the statement is false, prove its negation in the library: status `refuted`.
 - If only a variant is provable, follow rule 2 of AGENTS.md (a formal reason is required).
 - If you fail, add one line per failed approach to "Dead ends" (date, approach, why it fails), and

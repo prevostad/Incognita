@@ -13,10 +13,12 @@ are in [roles/](roles/); [AGENTS.md](../AGENTS.md) is the contract they all foll
 | formalise | `scripts/agent.sh formalise <Programme>` | a known result, with its frozen statement | author |
 | review-pr | `scripts/agent.sh review-pr <number>` | a review comment on the pull request | reviewer |
 | garden | `scripts/agent.sh garden` | consolidation, catalogue | author |
+| bibliographer | `scripts/agent.sh bibliographer` | `literature/`, novelty in the catalogue, Attribution sections | author; the only role with web access |
 
 `scripts/loop.sh [n]` runs `n` tasks (default 1), choosing each time the most useful one, in the order
-of AGENTS.md: review pull requests, review proposed questions, research open questions, formalise
-known results, propose questions; gardening every tenth task.
+of AGENTS.md: review pull requests, review proposed questions, audit the attribution of new results,
+research open questions, formalise known results, propose questions; a bibliographer task every fourth
+task, gardening every tenth.
 
 ## How a task runs
 

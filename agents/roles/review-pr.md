@@ -14,6 +14,9 @@ Check, and say which checks you ran:
    their checks, no evaluative definitions, no theorem lost, catalogue and question file updated,
    human-owned paths untouched.
 4. **Reuse and placement**: nothing restated that exists in the dependencies or the library.
+5. **Citations**: every `[KEY, ...]` points to an entry of `literature/bibliography.json`; a cited part
+   not marked as read in `literature/index.md` carries "(to be checked)"; the write-up has an
+   Attribution section; no result is called new before the bibliographer's audit.
 
 Output only the review, in Markdown: first line exactly `Verdict: approve`,
 `Verdict: request_changes` or `Verdict: block`; then the defects, most important first, each with

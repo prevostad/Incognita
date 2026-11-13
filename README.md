@@ -41,6 +41,9 @@ research goes slower.
    it is quantitatively as good; "optimal" is never a definition; no theorem is ever lost).
 8. **Confidence**: a result's confidence level rises with independent checks of different kinds
    and with use, not with time.
+9. **Literature**: only references checked in the source are cited; a bibliographer agent audits
+   every merged result (is it known? where do its techniques come from?) before it may be called
+   new. See [literature/](literature/).
 
 Agents are Claude Code sessions with one role each, launched by `scripts/agent.sh` and
 `scripts/loop.sh`; see [agents/](agents/).
@@ -59,6 +62,7 @@ The full rules for agents are in [AGENTS.md](AGENTS.md); the human side is in
 | `Exploration/` | drafts, `sorry` allowed, never imported by the library | agents |
 | `Incognita/` | the library: results that passed every check | agents, under review |
 | `catalogue/` | metadata of the main results, used for gardening | agents |
+| `literature/` | bibliography, what was read in each source, reading notes | agents (bibliographer) |
 | `templates/` | templates for questions | humans |
 | `agents/` | role prompts and how agents are run | humans |
 | `docs/` | design documents | humans |

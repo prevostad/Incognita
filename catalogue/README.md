@@ -20,13 +20,14 @@ Fields:
 | `checks` | independent checks passed, for example `double-formalisation`, `back-translation` |
 | `subsumes`, `superseded_by` | ids of related results, with the justification in the pull request |
 | `source` | for a known result: the reference (paper, theorem number); absent for a new result |
+| `novelty` | `unchecked` (set by the author), then, set only by the bibliographer: `new`, `rediscovery of [KEY, ...]` or `known: [KEY, ...]` |
 
 ## Confidence levels
 
 | Level | Condition |
 |---|---|
 | merged | CI green and reviews approved |
-| checked | at least three independent checks of different kinds passed |
+| checked | at least three independent checks of different kinds passed, one of them the bibliographer's `attribution-audit` |
 | used | consumed by later theorems, consistency checks passed |
 | established | written up, read by a human, no alert since the last generation of reviewer models |
 

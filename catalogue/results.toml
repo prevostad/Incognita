@@ -11,6 +11,7 @@
 # regime = "asymptotic"
 # constant = "x^2 (second-order terms astronomical)"
 # confidence = "merged"
+# novelty = "unchecked"
 # checks = []
 # subsumes = []
 # superseded_by = []

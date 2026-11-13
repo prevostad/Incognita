@@ -137,6 +137,8 @@ Agents chercheurs & explorent, prouvent, réfutent, proposent des variantes. \\
 Agents relecteurs & valident les questions, revoient les PR selon les grilles, font les vérifications
   indépendantes (section~\ref{sec:fiabilite}). \\
 Agents jardiniers & consolident la bibliothèque (section~\ref{sec:jardinage}). \\
+Agent bibliographe & seul à accéder au web : vérifie les références, lit les passages cités, audite
+  l'attribution de chaque résultat fusionné (section~\ref{sec:biblio}). \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -273,9 +275,18 @@ tentative ratée disparaît avec la PR fermée ; en recherche, savoir ce qui ne 
 presque un théorème.
 \end{regle}
 
-\begin{regle}{nouveauté}
-Recherche bibliographique obligatoire avant la fusion d'un résultat présenté comme nouveau ; une
-redécouverte est acceptée mais étiquetée comme telle, avec la référence.
+\begin{regle}{nouveauté et attribution}\label{sec:biblio}
+Un résultat n'est jamais déclaré nouveau par son auteur : il entre au catalogue avec la nouveauté
+<< non vérifiée >>, et seul l'audit d'un agent \textbf{bibliographe} (le seul rôle qui accède au web)
+peut la passer à << nouveau >>, << redécouverte de\dots{} >> ou << connu >>. L'audit crédite aussi les
+\textbf{techniques}, pas seulement les résultats : d'où vient chaque idée de la preuve. Un énoncé
+nouveau peut reposer sur une technique ancienne, comme la technique de changement de mesure par lots
+qui remonte à Lorden (1983).
+
+Les modèles inventent facilement des références plausibles, et Lean ne les voit pas. Une citation
+n'est donc permise que vers une entrée de la bibliographie commune (\texttt{literature/}) dont les
+métadonnées ont été vérifiées et dont le passage cité est marqué comme lu, avec qui l'a lu et quand.
+Chaque rédaction contient une rubrique << Attribution >>.
 \end{regle}
 
 \begin{regle}{le texte est un livrable}

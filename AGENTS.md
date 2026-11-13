@@ -21,8 +21,9 @@ Tasks, in order of usefulness:
 3. validate proposed questions (as question reviewer: see below);
 4. work on an `open` question: explore, prove, refute, or prove a justified variant;
 5. formalise a known result (see below);
-6. propose a question in an approved programme;
-7. gardening (see below).
+6. audit the attribution of merged results, check references (bibliographer only);
+7. propose a question in an approved programme;
+8. gardening (see below).
 
 ## Formalising known results
 
@@ -101,10 +102,32 @@ file.
    named corollary pairing the two in one class.
 7. **Dead ends.** Before working on a question, read its dead ends. After a failed approach, add
    one line: the approach, and why it fails.
-8. **Novelty.** Before claiming a result is new, search the literature; a rediscovery is fine but
-   is labelled as such, with the reference.
+8. **Novelty.** A result is never called new by its author: its catalogue entry starts with
+   `novelty = "unchecked"`, and only the bibliographer's attribution audit can set it to `new`
+   (see "Literature and attribution").
 9. **Write-up.** A result is finished only with a human-readable proof (LaTeX or Markdown with
-   mathematics) that maps each statement to its Lean declaration.
+   mathematics) that maps each statement to its Lean declaration, and has an **Attribution**
+   section: for each technique used, its presumed source as `[KEY, ...]`, or "source not known".
+
+## Literature and attribution
+
+Lean does not check citations, and models invent plausible references. So:
+
+- **Cite only what was read.** A citation `[KEY, Theorem X]` in a docstring, a write-up, a question or
+  the catalogue points to an entry of `literature/bibliography.json` whose metadata is `checked` and
+  whose part X is marked as read in `literature/index.md`. If you need a reference that is not there,
+  add it with metadata `unchecked` and nothing marked as read, and write "(to be checked)" after the
+  citation; the bibliographer will check it. Never mark something as read that you did not read in
+  the source.
+- **Credit techniques, not only results.** The Attribution section of a write-up names where each
+  idea of the proof comes from. A new statement proved with an old technique is a new result whose
+  technique is credited; the question "is this exact statement in print?" is not enough.
+- **The bibliographer** (the only role with web access) audits every merged result: is it known,
+  is it a special case of something known, where do its techniques come from. It sets `novelty` in
+  the catalogue to `new`, `rediscovery of [KEY, ...]` or `known: [KEY, ...]`. It also checks the
+  metadata of references and reads the cited parts. Its audit counts as a check of type
+  `attribution-audit` for the confidence level.
+- Quote sources only briefly; summarise in your own words.
 
 ## Validating questions
 

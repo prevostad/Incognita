@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run n agent tasks, one after the other, each time the most useful one in the order of AGENTS.md:
-# review pull requests, review proposed questions, research open questions or formalise known
-# results (alternately), propose questions; gardening every tenth task. See agents/README.md.
+# review pull requests, review proposed questions, audit the attribution of new results, research
+# open questions or formalise known results (alternately, with a bibliographer task every fourth
+# time), propose questions; gardening every tenth task. See agents/README.md.
 #
 # Usage: scripts/loop.sh [n]        (run it in the main checkout, on branch main, never edited by hand)
 set -euo pipefail
@@ -36,6 +37,10 @@ for i in $(seq 1 "$n"); do
         done | head -n 1)
     if [ -n "$q" ]; then
       role=review-question target=$q
+    elif grep -q '^novelty = "unchecked"' catalogue/results.toml 2>/dev/null; then
+      role=bibliographer
+    elif [ $((i % 4)) = 2 ] && [ -n "$(approved)" ]; then
+      role=bibliographer
     else
       open=$(for f in $(questions_in); do grep -q '^| Status | open' "$f" && echo "$f"; done | shuf -n 1 || true)
       prog=$(approved | shuf -n 1 || true)

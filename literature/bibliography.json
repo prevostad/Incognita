@@ -1,0 +1,704 @@
+{
+  "AG12": {
+    "uri": "",
+    "citation": {
+      "id": "AG12",
+      "type": "paper-conference",
+      "title": "Analysis of Thompson sampling for the multi-armed bandit problem",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shipra"
+        },
+        {
+          "family": "Goyal",
+          "given": "Navin"
+        }
+      ],
+      "container-title": "Proceedings of the 25th Conference on Learning Theory (COLT)",
+      "issued": {
+        "date-parts": [
+          [
+            2012
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "BK96": {
+    "uri": "",
+    "citation": {
+      "id": "BK96",
+      "type": "article-journal",
+      "title": "Optimal adaptive policies for sequential allocation problems",
+      "author": [
+        {
+          "family": "Burnetas",
+          "given": "Apostolos N."
+        },
+        {
+          "family": "Katehakis",
+          "given": "Michael N."
+        }
+      ],
+      "container-title": "Advances in Applied Mathematics",
+      "issued": {
+        "date-parts": [
+          [
+            1996
+          ]
+        ]
+      },
+      "volume": "17",
+      "issue": "2",
+      "page": "122-142"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "CGMMS13": {
+    "uri": "",
+    "citation": {
+      "id": "CGMMS13",
+      "type": "article-journal",
+      "title": "Kullback-Leibler upper confidence bounds for optimal sequential allocation",
+      "author": [
+        {
+          "family": "Cappé",
+          "given": "Olivier"
+        },
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        },
+        {
+          "family": "Maillard",
+          "given": "Odalric-Ambrym"
+        },
+        {
+          "family": "Munos",
+          "given": "Rémi"
+        },
+        {
+          "family": "Stoltz",
+          "given": "Gilles"
+        }
+      ],
+      "container-title": "The Annals of Statistics",
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      },
+      "volume": "41",
+      "issue": "3",
+      "page": "1516-1541"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "CMP17": {
+    "uri": "",
+    "citation": {
+      "id": "CMP17",
+      "type": "paper-conference",
+      "title": "Minimal exploration in structured stochastic bandits",
+      "author": [
+        {
+          "family": "Combes",
+          "given": "Richard"
+        },
+        {
+          "family": "Magureanu",
+          "given": "Stefan"
+        },
+        {
+          "family": "Proutière",
+          "given": "Alexandre"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      },
+      "volume": "30"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "CP14": {
+    "uri": "",
+    "citation": {
+      "id": "CP14",
+      "type": "paper-conference",
+      "title": "Unimodal bandits: regret lower bounds and optimal algorithms",
+      "author": [
+        {
+          "family": "Combes",
+          "given": "Richard"
+        },
+        {
+          "family": "Proutière",
+          "given": "Alexandre"
+        }
+      ],
+      "container-title": "Proceedings of the 31st International Conference on Machine Learning (ICML)",
+      "issued": {
+        "date-parts": [
+          [
+            2014
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "DSK20": {
+    "uri": "",
+    "citation": {
+      "id": "DSK20",
+      "type": "paper-conference",
+      "title": "Structure adaptive algorithms for stochastic bandits",
+      "author": [
+        {
+          "family": "Degenne",
+          "given": "Rémy"
+        },
+        {
+          "family": "Shao",
+          "given": "Han"
+        },
+        {
+          "family": "Koolen",
+          "given": "Wouter M."
+        }
+      ],
+      "container-title": "Proceedings of the 37th International Conference on Machine Learning (ICML)",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "GC11": {
+    "uri": "https://arxiv.org/abs/1102.2490",
+    "identifiers": {
+      "arxiv": "1102.2490"
+    },
+    "citation": {
+      "id": "GC11",
+      "type": "paper-conference",
+      "title": "The KL-UCB Algorithm for Bounded Stochastic Bandits and Beyond",
+      "author": [
+        {
+          "family": "Garivier",
+          "given": "A."
+        },
+        {
+          "family": "Cappé",
+          "given": "O."
+        }
+      ],
+      "container-title": "Proceedings of the Conference on Learning Theory (COLT)",
+      "issued": {
+        "date-parts": [
+          [
+            2011
+          ]
+        ]
+      }
+    }
+  },
+  "GHRZ19": {
+    "uri": "",
+    "citation": {
+      "id": "GHRZ19",
+      "type": "paper-conference",
+      "title": "Batched multi-armed bandits problem",
+      "author": [
+        {
+          "family": "Gao",
+          "given": "Zijun"
+        },
+        {
+          "family": "Han",
+          "given": "Yanjun"
+        },
+        {
+          "family": "Ren",
+          "given": "Zhimei"
+        },
+        {
+          "family": "Zhou",
+          "given": "Zhengqing"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems",
+      "issued": {
+        "date-parts": [
+          [
+            2019
+          ]
+        ]
+      },
+      "volume": "32"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "GL97": {
+    "uri": "",
+    "citation": {
+      "id": "GL97",
+      "type": "article-journal",
+      "title": "Asymptotically efficient adaptive choice of control laws in controlled Markov chains",
+      "author": [
+        {
+          "family": "Graves",
+          "given": "Todd L."
+        },
+        {
+          "family": "Lai",
+          "given": "Tze Leung"
+        }
+      ],
+      "container-title": "SIAM Journal on Control and Optimization",
+      "issued": {
+        "date-parts": [
+          [
+            1997
+          ]
+        ]
+      },
+      "volume": "35",
+      "issue": "3"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "GMS19": {
+    "uri": "https://doi.org/10.1287/moor.2017.0928",
+    "identifiers": {
+      "arxiv": "1602.07182"
+    },
+    "citation": {
+      "id": "GMS19",
+      "type": "article-journal",
+      "title": "Explore First, Exploit Next: The True Shape of Regret in Bandit Problems",
+      "author": [
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        },
+        {
+          "family": "Ménard",
+          "given": "Pierre"
+        },
+        {
+          "family": "Stoltz",
+          "given": "Gilles"
+        }
+      ],
+      "container-title": "Mathematics of Operations Research",
+      "volume": "44",
+      "DOI": "10.1287/moor.2017.0928",
+      "issued": {
+        "date-parts": [
+          [
+            2019
+          ]
+        ]
+      }
+    }
+  },
+  "HT10": {
+    "uri": "",
+    "citation": {
+      "id": "HT10",
+      "type": "paper-conference",
+      "title": "An asymptotically optimal bandit algorithm for bounded support models",
+      "author": [
+        {
+          "family": "Honda",
+          "given": "Junya"
+        },
+        {
+          "family": "Takemura",
+          "given": "Akimichi"
+        }
+      ],
+      "container-title": "Proceedings of the 23rd Conference on Learning Theory (COLT)",
+      "issued": {
+        "date-parts": [
+          [
+            2010
+          ]
+        ]
+      },
+      "page": "67-79"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "HT15": {
+    "uri": "",
+    "citation": {
+      "id": "HT15",
+      "type": "article-journal",
+      "title": "Non-asymptotic analysis of a new bandit algorithm for semi-bounded rewards",
+      "author": [
+        {
+          "family": "Honda",
+          "given": "Junya"
+        },
+        {
+          "family": "Takemura",
+          "given": "Akimichi"
+        }
+      ],
+      "container-title": "Journal of Machine Learning Research",
+      "issued": {
+        "date-parts": [
+          [
+            2015
+          ]
+        ]
+      },
+      "volume": "16",
+      "page": "3721-3756"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "KKM12": {
+    "uri": "",
+    "citation": {
+      "id": "KKM12",
+      "type": "paper-conference",
+      "title": "Thompson sampling: an asymptotically optimal finite-time analysis",
+      "author": [
+        {
+          "family": "Kaufmann",
+          "given": "Emilie"
+        },
+        {
+          "family": "Korda",
+          "given": "Nathaniel"
+        },
+        {
+          "family": "Munos",
+          "given": "Rémi"
+        }
+      ],
+      "container-title": "Proceedings of the 23rd International Conference on Algorithmic Learning Theory (ALT)",
+      "issued": {
+        "date-parts": [
+          [
+            2012
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "L83": {
+    "uri": "",
+    "citation": {
+      "id": "L83",
+      "type": "article-journal",
+      "title": "Asymptotic efficiency of three-stage hypothesis tests",
+      "author": [
+        {
+          "family": "Lorden",
+          "given": "Gary"
+        }
+      ],
+      "container-title": "The Annals of Statistics",
+      "issued": {
+        "date-parts": [
+          [
+            1983
+          ]
+        ]
+      },
+      "volume": "11",
+      "issue": "1",
+      "page": "129-140"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "LR85": {
+    "uri": "",
+    "citation": {
+      "id": "LR85",
+      "type": "article-journal",
+      "title": "Asymptotically efficient adaptive allocation rules",
+      "author": [
+        {
+          "family": "Lai",
+          "given": "Tze Leung"
+        },
+        {
+          "family": "Robbins",
+          "given": "Herbert"
+        }
+      ],
+      "container-title": "Advances in Applied Mathematics",
+      "issued": {
+        "date-parts": [
+          [
+            1985
+          ]
+        ]
+      },
+      "volume": "6",
+      "issue": "1",
+      "page": "4-22"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "LS": {
+    "uri": "https://doi.org/10.1017/9781108571401",
+    "citation": {
+      "id": "LS",
+      "type": "book",
+      "title": "Bandit Algorithms",
+      "author": [
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "publisher": "Cambridge University Press",
+      "DOI": "10.1017/9781108571401",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    }
+  },
+  "LS17": {
+    "uri": "",
+    "citation": {
+      "id": "LS17",
+      "type": "paper-conference",
+      "title": "The end of optimism? An asymptotic analysis of finite-armed linear bandits",
+      "author": [
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "container-title": "Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "MG17": {
+    "uri": "",
+    "citation": {
+      "id": "MG17",
+      "type": "paper-conference",
+      "title": "A minimax and asymptotically optimal algorithm for stochastic bandits",
+      "author": [
+        {
+          "family": "Ménard",
+          "given": "Pierre"
+        },
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        }
+      ],
+      "container-title": "Proceedings of the 28th International Conference on Algorithmic Learning Theory (ALT)",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "PMM25": {
+    "uri": "https://arxiv.org/abs/2509.19098",
+    "citation": {
+      "id": "PMM25",
+      "type": "paper-conference",
+      "title": "Asymptotically optimal problem-dependent bandit policies for transfer learning",
+      "author": [
+        {
+          "family": "Prevost",
+          "given": "Adrien"
+        },
+        {
+          "family": "Mathieu",
+          "given": "Timothée"
+        },
+        {
+          "family": "Maillard",
+          "given": "Odalric-Ambrym"
+        }
+      ],
+      "container-title": "Proceedings of the 17th Asian Conference on Machine Learning (ACML), PMLR 304",
+      "issued": {
+        "date-parts": [
+          [
+            2025
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2509.19098"
+    },
+    "version": ""
+  },
+  "PMRM26": {
+    "uri": "https://arxiv.org/abs/2610.21582",
+    "citation": {
+      "id": "PMRM26",
+      "type": "article",
+      "title": "Transfer learning in bandits from unknown adaptive policies: problem-dependent lower and upper bounds",
+      "author": [
+        {
+          "family": "Prevost",
+          "given": "Adrien"
+        },
+        {
+          "family": "Mathieu",
+          "given": "Timothée"
+        },
+        {
+          "family": "Radji",
+          "given": "Waris"
+        },
+        {
+          "family": "Maillard",
+          "given": "Odalric-Ambrym"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2610.21582"
+    },
+    "version": ""
+  },
+  "PRCS16": {
+    "uri": "",
+    "citation": {
+      "id": "PRCS16",
+      "type": "article-journal",
+      "title": "Batched bandit problems",
+      "author": [
+        {
+          "family": "Perchet",
+          "given": "Vianney"
+        },
+        {
+          "family": "Rigollet",
+          "given": "Philippe"
+        },
+        {
+          "family": "Chassang",
+          "given": "Sylvain"
+        },
+        {
+          "family": "Snowberg",
+          "given": "Erik"
+        }
+      ],
+      "container-title": "The Annals of Statistics",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      },
+      "volume": "44",
+      "issue": "2",
+      "page": "660-681"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "SAE13": {
+    "uri": "",
+    "citation": {
+      "id": "SAE13",
+      "type": "article-journal",
+      "title": "Lower bounds and selectivity of weak-consistent policies in stochastic multi-armed bandit problem",
+      "author": [
+        {
+          "family": "Salomon",
+          "given": "Antoine"
+        },
+        {
+          "family": "Audibert",
+          "given": "Jean-Yves"
+        },
+        {
+          "family": "El Alaoui",
+          "given": "Issam"
+        }
+      ],
+      "container-title": "Journal of Machine Learning Research",
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      },
+      "volume": "14"
+    },
+    "identifiers": {},
+    "version": ""
+  }
+}
