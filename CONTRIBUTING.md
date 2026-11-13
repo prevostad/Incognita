@@ -27,6 +27,11 @@ alone. The project gets there in phases:
 
 ## Merging a pull request
 
+Every open pull request carries one state label, kept up to date by a workflow
+(`scripts/pr_labels.py`): `awaiting-CI`, `ci-failed`, `awaiting-review`, `awaiting-author`,
+`merge-conflict`, or **`ready-to-merge`** (build green and last commit approved: these are the ones
+waiting for you). Agents' pull requests also carry `role:<role>`.
+
 1. Open the pull request on GitHub. Its description starts with the agent's summary: the results in
    mathematical form, with their Lean names.
 2. For a PDF of the same summary with the Lean statements of the pull request: tab **Checks** →
