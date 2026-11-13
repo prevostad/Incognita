@@ -27,7 +27,7 @@ Conventions are those of [PROGRAMME.md](../PROGRAMME.md), with no change.
   learner that is also optimal at batch ends.
 
 **Question.** Fix $K \ge 2$ and $x \in (1, \infty)$. Does there exist a learner $\pi$ of $M_1$ (it
-may depend on $K$ and $x$) such that, for every grid in $\mathcal G_x$ and every $\nu \in \mathcal V_K$:
+may depend on $K$ and $x$, see below) such that, for every grid in $\mathcal G_x$ and every $\nu \in \mathcal V_K$:
 
 1. $\pi$ is consistent at batch ends: $\mathbb E\, N_c(t_\ell) = o(t_\ell^\alpha)$ for every $\alpha > 0$ and every
    suboptimal $c$;
@@ -39,6 +39,21 @@ Under 2, $\liminf_t \ge x$ always holds: for $t_\ell < t \le t_{\ell+1}$,
 $\mathbb E\, N_a(t) \ge \mathbb E\, N_a(t_\ell)$ and $\log t \le L_{\ell+1} = (x + o(1)) L_\ell$. So item 4 asks
 whether the trivial bound is attained. "No" is a possible answer: it would mean that in $M_1$, too,
 optimality at batch ends forces a strictly positive gap above $x$ inside batches.
+
+**Why $\pi$ may depend on $x$.** Direction 6 does not say whether the learner knows $x$, and HY
+does not need to. Letting $\pi$ depend on $x$ is a deliberate choice, for two reasons.
+
+- **For "no".** The answer becomes the strongest lower bound: no learner of $M_1$ has 1–4, not
+  even one that is told $x$.
+- **For "yes".** It isolates the in-batch timing from the estimation of $x$. During batch $\ell+1$,
+  a learner of $M_1$ knows $L_{\ell+1}$. But the batch-end target
+  $N_a(t_{\ell+1}) \approx x^2 L_{\ell+1}/K_a$ anticipates $L_{\ell+3}$, which it does not know.
+  It must predict $x_{\ell+2} x_{\ell+3}$, either by $x^2$ if it knows $x$, or by an estimate such
+  as $x_{\ell+1}^2$, the way HY uses $y_\ell = x_\ell^2$. Since $x_\ell \to x$, the estimate is
+  expected to suffice at first order, but this is not checked.
+
+So a "yes" with an $x$-dependent learner is a priori weaker than the uniform statement, which is
+variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
 
 ## Relation to known results
 
@@ -137,6 +152,11 @@ If the answer is "no", or a full proof is out of reach, the fallbacks are, in or
    $\liminf_\ell \ge x^2$, and then items 2–4 hold with equality. Variant (b) is the main
    question with the lower-bound halves left to that result. Its use is that a Lean proof of it
    does not need the lower bound to be ported first (programme, known result 4, on hold).
+
+**Stronger variant (c): uniform learner.** One learner of $M_1$, depending on $K$ only, that
+satisfies 1–4 for every $x \in (1, \infty)$, every grid of $\mathcal G_x$ and every
+$\nu \in \mathcal V_K$. A "yes" to (c) implies a "yes" to the question, and a "no" to the
+question implies a "no" to (c).
 
 ## Dead ends
 
