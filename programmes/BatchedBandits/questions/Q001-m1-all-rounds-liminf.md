@@ -140,8 +140,10 @@ If the answer is "no", or a full proof is out of reach, the fallbacks are, in or
 
 1. **Approximate dip.** For every $\eta > 0$, a learner $\pi_\eta$ of $M_1$ satisfying 1–3 and
    $\liminf_t K_a \mathbb E N_a(t)/\log t \le x + \eta$. This is an "original still open" variant.
-2. **Matching lower bound for "no".** A constant $c(x) > 0$ with $\liminf_t \ge x + c(x)$ for every
-   learner of $M_1$ satisfying 1–2.
+2. **Matching lower bound for "no".** A constant $c(x) > 0$ with the following property. For every
+   learner of $M_1$ that satisfies 1–2 on every grid of $\mathcal G_x$ and every
+   $\nu \in \mathcal V_K$, there are a grid in $\mathcal G_x$, an instance $\nu \in \mathcal V_K$
+   and a suboptimal arm $a$ with $\liminf_t K_a \mathbb E N_a(t)/\log t \ge x + c(x)$.
 3. **Variant (a): $M_2$.** The same question in $M_2$.
 4. **Variant (b): upper halves only.** A learner of $M_1$ with item 1, $\limsup_\ell K_a \mathbb E
    N_a(t_\ell)/L_\ell \le x^2$, $\limsup_t K_a \mathbb E N_a(t)/\log t \le x^2$ and
