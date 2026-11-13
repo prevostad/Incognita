@@ -14,7 +14,8 @@
 
 ## Question
 
-Conventions are those of [PROGRAMME.md](../PROGRAMME.md), with no change.
+Conventions are those of [PROGRAMME.md](../PROGRAMME.md), except that the learner $\pi$ may
+depend on $K$ and $x$ (see "Why $\pi$ may depend on $x$" below).
 
 - **Instances.** $\mathcal V_K$: $K \ge 2$ arms, $\nu_a$ a probability measure on $[0,1]$, $m^\star < 1$.
   For a suboptimal arm $a$, $K_a := \mathcal K_{\inf}(\nu_a, m^\star) \in (0, \infty)$.
@@ -43,7 +44,9 @@ may depend on $K$ and $x$, see below) such that, for every grid in $\mathcal G_x
 
 Under 2, $\liminf_t \ge x$ always holds: for $t_\ell < t \le t_{\ell+1}$,
 $\mathbb E\, N_a(t) \ge \mathbb E\, N_a(t_\ell)$ and $\log t \le L_{\ell+1} = (x + o(1)) L_\ell$. So item 4 asks
-whether the trivial bound is attained. "No" is a possible answer: it would mean that in $M_1$, too,
+whether the trivial bound is attained. Likewise, the lower half of item 3,
+$\limsup_t \ge x^2$, already follows from item 2 by taking $t = t_\ell$; only its upper half is
+a new condition. "No" is a possible answer: it would mean that in $M_1$, too,
 optimality at batch ends forces a strictly positive gap above $x$ inside batches.
 
 **Why $\pi$ may depend on $x$.** Direction 6 does not say whether the learner knows $x$, and HY
