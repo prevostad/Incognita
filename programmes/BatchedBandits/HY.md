@@ -46,7 +46,7 @@ Batch 1 pulls the arms in turn. At each batch end $t_\ell$, with $N_c := N_c(t_\
   $\tilde m_c$.
 - **Leader and IMED divergences.** $\hat c_\ell \in \arg\max_c \tilde m_c$ (fixed tie rule),
   $\tilde K_\ell(c) := K_{\inf}(\tilde\nu_c, \tilde m_{\hat c_\ell})$.
-- **Test divergences.** Well-sampled arms $W_\ell := \{c : N_c \ge U_\ell/2\}$; reference
+- **Test divergences.** Well-sampled arms $W_\ell := \lbrace c : N_c \ge U_\ell/2\rbrace$; reference
   $r_\ell \in \arg\max_{c \in W_\ell} \tilde m_c$ ($\hat c_\ell$ if $W_\ell = \emptyset$); test level
   $\hat\mu_\ell := \tilde m_{r_\ell}$; $\hat K_\ell(c) := K_{\inf}(\tilde\nu_c, \hat\mu_\ell)$.
 
@@ -56,7 +56,7 @@ In batch $\ell+1$, at round $t$ (the learner knows $t$, not $t_{\ell+1}$):
   $N_c(t-1)\tilde K_\ell(c) + y_\ell \log N_c(t-1)$, the leader if it is one.
 - **Paced phase, $t > s_\ell$**, using only data up to $t_\ell$:
   - consistency threshold: $\hat\Lambda_1 := L_1$; for $\ell \ge 2$, with
-    $Q_\ell := \{c \notin W_\ell : c \ne \hat c_{\ell-1}\}$,
+    $Q_\ell := \lbrace c \notin W_\ell : c \ne \hat c_{\ell-1}\rbrace$,
     $\hat\Lambda_\ell := \min\big(L_\ell, \min_{c \in Q_\ell}[N_c \hat K_{\ell-1}(c)/y_{\ell-1} + \log N_c]\big)$,
     and $h_\ell := (1-\gamma_\ell)\, y_{\ell-1} \hat\Lambda_\ell$;
   - verdicts: $c \ne \hat c_\ell$ is *rejected* if $\hat K_\ell(c) > 0$ and $N_c \hat K_\ell(c) \ge h_\ell$,

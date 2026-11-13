@@ -24,9 +24,9 @@ LMLExplore's Bandits roadmap, which explicitly leaves out asymptotic lower bound
   Gaussian with known variance, then exponential families). The structure is the set $\Theta$, known to
   the learner. $\mu_a(\theta)$, $\mu^\star(\theta)$, $\Delta_a(\theta)$ as usual; a unique optimal arm
   $a^\star(\theta)$ unless a question says otherwise.
-- **Alternatives.** $\mathrm{Alt}(\theta) := \{\lambda \in \Theta : \nu_{a^\star(\theta)}(\lambda) = \nu_{a^\star(\theta)}(\theta),\ a^\star(\lambda) \ne a^\star(\theta)\}$.
+- **Alternatives.** $\mathrm{Alt}(\theta) := \lbrace \lambda \in \Theta : \nu_{a^\star(\theta)}(\lambda) = \nu_{a^\star(\theta)}(\theta),\ a^\star(\lambda) \ne a^\star(\theta)\rbrace$.
 - **Graves–Lai constant.**
-  $C(\theta) := \inf\big\{\sum_a w_a \Delta_a(\theta) : w \in [0,\infty]^{\mathcal A},\ \forall \lambda \in \mathrm{Alt}(\theta),\ \sum_a w_a\, \mathrm{KL}(\nu_a(\theta), \nu_a(\lambda)) \ge 1\big\}$.
+  $C(\theta) := \inf\big\lbrace \sum_a w_a \Delta_a(\theta) : w \in [0,\infty]^{\mathcal A},\ \forall \lambda \in \mathrm{Alt}(\theta),\ \sum_a w_a\, \mathrm{KL}(\nu_a(\theta), \nu_a(\lambda)) \ge 1\big\rbrace$.
 - **Consistency.** Regret $o(T^\alpha)$ for every $\alpha > 0$ and every $\theta \in \Theta$.
 - **Lean.** LMLExplore's Bandits roadmap conventions; a structure is a set `Θ` with a map to
   `α → Measure ℝ` (or a kernel), so that unstructured bandits are the special case of the product

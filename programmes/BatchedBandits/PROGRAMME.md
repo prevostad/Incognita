@@ -70,7 +70,7 @@ independent AI agents only, no Lean.
   information model, has $\limsup_\ell K_a\, \mathbb E\, N_a(t_\ell)/L_\ell \ge x^2$ ("explore two
   batches ahead"); a hybrid algorithm HY in $M_0$ attains $x^2$. HY's second-order terms are
   astronomical.
-- **[paper]** Non-convergent grids: on $\{\limsup_\ell x_\ell \le X\}$ the minimax constant is
+- **[paper]** Non-convergent grids: on $\lbrace \limsup_\ell x_\ell \le X\rbrace$ the minimax constant is
   $X^2$ in every information model, attained by an epoch-based learner in $M_0$ that knows only $X$;
   no learner in $M_{\le 2}$ adapts to $\limsup_\ell x_\ell$; with unbounded ratios there is no
   first-order constant.

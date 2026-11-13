@@ -21,7 +21,7 @@ of algorithms, and when the transition happens.
 
 - **Model.** $K \ge 2$ arms, each in a model $\mathcal D$ (Bernoulli, distributions on $[0,1]$, or a
   one-parameter exponential family; each question says which). $\mu^\star := \max_a \mu_a$,
-  $\Delta_a := \mu^\star - \mu_a$, $\mathcal K_{\inf}(\nu_a, \mu) := \inf\{\mathrm{KL}(\nu_a, \nu') : \nu' \in \mathcal D,\ \mathbb E \nu' > \mu\}$.
+  $\Delta_a := \mu^\star - \mu_a$, $\mathcal K_{\inf}(\nu_a, \mu) := \inf\lbrace \mathrm{KL}(\nu_a, \nu') : \nu' \in \mathcal D,\ \mathbb E \nu' > \mu\rbrace$.
 - **Classes of algorithms.** Consistency classes are those of Garivier–Ménard–Stoltz (2019):
   uniformly fast convergent, uniformly super-fast convergent (copy their definitions, with the
   constants they carry, into the first definition pull request). A question about another class
