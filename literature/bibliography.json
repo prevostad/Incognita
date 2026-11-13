@@ -1,10 +1,10 @@
 {
   "AG12": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v23/agrawal12.html",
     "citation": {
       "id": "AG12",
       "type": "paper-conference",
-      "title": "Analysis of Thompson sampling for the multi-armed bandit problem",
+      "title": "Analysis of Thompson Sampling for the Multi-armed Bandit Problem",
       "author": [
         {
           "family": "Agrawal",
@@ -15,11 +15,109 @@
           "given": "Navin"
         }
       ],
-      "container-title": "Proceedings of the 25th Conference on Learning Theory (COLT)",
+      "container-title": "Proceedings of the 25th Annual Conference on Learning Theory (COLT)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "23",
+      "page": "39.1-39.26",
+      "publisher": "PMLR",
+      "event-place": "Edinburgh, Scotland",
+      "editor": [
+        {
+          "family": "Mannor",
+          "given": "Shie"
+        },
+        {
+          "family": "Srebro",
+          "given": "Nathan"
+        },
+        {
+          "family": "Williamson",
+          "given": "Robert C."
+        }
+      ],
       "issued": {
         "date-parts": [
           [
             2012
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1111.1797"
+    },
+    "version": ""
+  },
+  "AG13": {
+    "uri": "https://proceedings.mlr.press/v31/agrawal13a.html",
+    "citation": {
+      "id": "AG13",
+      "type": "paper-conference",
+      "title": "Further Optimal Regret Bounds for Thompson Sampling",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shipra"
+        },
+        {
+          "family": "Goyal",
+          "given": "Navin"
+        }
+      ],
+      "container-title": "Proceedings of the Sixteenth International Conference on Artificial Intelligence and Statistics (AISTATS)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "31",
+      "page": "99-107",
+      "publisher": "PMLR",
+      "event-place": "Scottsdale, Arizona, USA",
+      "editor": [
+        {
+          "family": "Carvalho",
+          "given": "Carlos M."
+        },
+        {
+          "family": "Ravikumar",
+          "given": "Pradeep"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1209.3353"
+    },
+    "version": ""
+  },
+  "AG17": {
+    "uri": "https://doi.org/10.1145/3088510",
+    "citation": {
+      "id": "AG17",
+      "type": "article-journal",
+      "title": "Near-Optimal Regret Bounds for Thompson Sampling",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shipra"
+        },
+        {
+          "family": "Goyal",
+          "given": "Navin"
+        }
+      ],
+      "container-title": "Journal of the ACM",
+      "volume": "64",
+      "issue": "5",
+      "page": "1-24",
+      "DOI": "10.1145/3088510",
+      "issued": {
+        "date-parts": [
+          [
+            2017
           ]
         ]
       }
