@@ -226,6 +226,20 @@ satisfies 1–4 for every $x \in (1, \infty)$, every grid of $\mathcal G_x$ and 
 $\nu \in \mathcal V_K$. A "yes" to (c) implies a "yes" to the question, and a "no" to the
 question implies a "no" to (c).
 
+## Side note: direction 4 (outside this question, unverified)
+
+Seen while writing this question, and recorded here so that it is not lost. It is not part of
+Q001, and it could become a separate question. Consider forced exploration in $M_2$: by
+$t_{\ell+1}$, every arm has $g_\ell L_{\ell+2}$ pulls, where $g_\ell \to \infty$ slowly, and
+otherwise the learner follows the leader. This looks consistent at batch ends on every grid with
+$\log L_{\ell+1} = o(L_\ell)$. The one-batch lower bound ($N_a(t_\ell)$ pays for the horizon
+$t_{\ell+1}$, HY.md "Proof routes") makes that condition necessary for consistency. If this holds,
+the frontier for plain consistency at batch ends is $\log L_{\ell+1} = o(L_\ell)$, not the
+candidate $\log L_{\ell+2} = o(L_\ell)$ of direction 4. This is not a contradiction: direction 4
+asks for consistency *with logarithmic counts*, and forced exploration has
+$N_c(t_{\ell+1}) \ge g_\ell L_{\ell+2}$, which is not $O(L_{\ell+1})$ since $g_\ell \to \infty$. The note only suggests that the owner say which count condition
+direction 4 means. Not checked by anyone.
+
 ## Dead ends
 
 None yet.
