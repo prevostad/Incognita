@@ -19,7 +19,10 @@ See [README.md](README.md) for the meaning of the columns. One row per entry of
 | GMS19 | Garivier, Ménard, Stoltz, explore first exploit next, Math. Oper. Res. 2019 | checked (copied from LMLExplore) | abstract, introduction, inequalities (6) and (11) | agents for the owner, 2026-10-31 and 2026-11-13 | [notes/GMS19.md](notes/GMS19.md) |
 | HT10 | Honda, Takemura, bounded support models, COLT 2010 | unchecked | — | | |
 | HT15 | Honda, Takemura, IMED, JMLR 2015 | unchecked | — | | |
+| JTXHXG21 | Jin, Tang, Xu, Huang, Xiao, Gu, almost optimal anytime batched bandits, ICML 2021 | unchecked | — | | Fields from web-search results only (PMLR v139 page, as listed by the search), Claude Opus 5.5, 2026-11-13; named in BatchedBandits Q001; not read |
 | KKM12 | Kaufmann, Korda, Munos, Thompson sampling, ALT 2012 | unchecked | — | | |
+| KO21a | Kalkanlı, Özgür, batched Thompson sampling, NeurIPS 2021 | unchecked | — | | Fields from web-search results only (NeurIPS 2021 poster page, arXiv:2110.00202), Claude Opus 5.5, 2026-11-13; named in BatchedBandits Q001; not read |
+| KO21b | Kalkanlı, Özgür, asymptotic performance of Thompson sampling in batched bandits, arXiv 2021 | unchecked | — | | Fields from web-search results only (arXiv:2110.00158), Claude Opus 5.5, 2026-11-13; snippets say Thompson sampling keeps its asymptotic performance when batch sizes grow subexponentially, which may bear on imposed grids with $x_\ell \to 1$; not read |
 | L83 | Lorden, three-stage hypothesis tests, Ann. Statist. 1983 | unchecked | proof of Theorem 3 and inequality (23), pp. 134–137 | agent for the owner, 2026-11-11 | |
 | LR85 | Lai, Robbins, asymptotically efficient allocation rules, 1985 | unchecked | — | | |
 | LS | Lattimore, Szepesvári, Bandit Algorithms, 2020 | checked (copied from LMLExplore) | — | | |
