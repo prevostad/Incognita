@@ -29,3 +29,6 @@
 *.synctex.gz(busy)
 *.pdfsync
 
+
+## Agents
+/.agents/

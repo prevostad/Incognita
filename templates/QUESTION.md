@@ -6,7 +6,8 @@
 | Status | proposed |
 | Proposed by | <model or person>, <date> |
 | Reviewer verdict | <accept / reject, reviewer model, date, reasons> |
-| Owner decision | <accept / reject, date> (calibration phase only) |
+| Owner decision required | yes (calibration phase; the owner sets it to "no" when delegating) |
+| Owner decision | <accept / reject, date> |
 | Frozen statement | `Statements/<Name>/Q<nnn>.lean` (set at validation) |
 
 ## Question

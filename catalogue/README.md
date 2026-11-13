@@ -19,6 +19,7 @@ Fields:
 | `confidence` | `merged`, `checked`, `used`, `established` |
 | `checks` | independent checks passed, for example `double-formalisation`, `back-translation` |
 | `subsumes`, `superseded_by` | ids of related results, with the justification in the pull request |
+| `source` | for a known result: the reference (paper, theorem number); absent for a new result |
 
 ## Confidence levels
 

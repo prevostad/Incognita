@@ -18,16 +18,41 @@ Tasks, in order of usefulness:
 
 1. fix or finish your own open pull requests;
 2. review other pull requests (as an independent reviewer: see below);
-3. work on an `open` question: explore, prove, refute, or prove a justified variant;
-4. propose a question in an approved programme;
-5. gardening (see below).
+3. validate proposed questions (as question reviewer: see below);
+4. work on an `open` question: explore, prove, refute, or prove a justified variant;
+5. formalise a known result (see below);
+6. propose a question in an approved programme;
+7. gardening (see below).
+
+## Formalising known results
+
+New results need old ones. A known result (published, or an unpublished result listed in a
+programme with its status) is formalised when it is listed under "Known results to formalise" in an
+approved programme, or when an `open` question needs it.
+
+- Its frozen statement is written from the source, with the exact reference (paper, theorem or
+  equation number) in its docstring, and reviewed for **fidelity to the source**, not for novelty.
+  Differences of form (a `liminf` written with `∀ c < L, eventually`, existential constants...) are
+  listed in the docstring.
+- Before starting, check that it is not already in Mathlib, Tau Ceti, LML or LMLExplore at the pinned
+  versions, and whether an LMLRoadmaps roadmap plans it: then follow the names and statement shapes it
+  fixes, so that adopting the upstream version later is a deletion plus an import.
+- Formalising an unpublished result is a verification. If the proof fails because the statement is
+  false or the source's argument has a gap, report it in a question file (status `proposed`, with
+  the counterexample or the gap), and never resolve it by weakening the statement silently.
+- Its catalogue entry has `source = "<reference>"`.
 
 ## Spaces
 
 - `Exploration/`: drafts. `sorry` is allowed. Nothing outside `Exploration/` may import it. Record
   what you learn in the question's file, not only in code.
-- `Statements/`: one module per validated question, holding its frozen statement with `sorry`.
-  Created when a question is validated; **changed only by a pull request a human approves**.
+- `Statements/`: one module per validated question or known result, holding its frozen statement
+  with `sorry`, as `Incognita.Statements.<Programme>.<name>`. Created when a question is validated;
+  **changed only by a pull request a human approves**. A frozen statement uses only definitions of
+  the library and of the dependencies, never definitions made in `Statements/`.
+- The proof of `Incognita.Statements.<Programme>.<name>` is the theorem
+  `Incognita.<Programme>.<name>` of the library, with exactly the same type. `lake exe audit`
+  checks this, and that the library uses no axiom beyond the three standard ones.
 - `Incognita/`: the library. LMLExplore's standard applies in full: no `sorry`, no axioms beyond
   `propext`, `Classical.choice` and `Quot.sound` (so no `native_decide`), Mathlib's linters with
   warnings as errors, no `set_option`, the copyright header below, `module` files.
@@ -57,8 +82,8 @@ file.
 ## Rules for results
 
 1. **Frozen statement.** Prove exactly the statement in `Statements/`. The proof in `Incognita/`
-   restates it and a comparator check confirms the two are the same. Never weaken a statement to
-   make a proof go through.
+   restates it under the matching name, and `lake exe audit` checks that the two types are equal.
+   Never weaken a statement to make a proof go through.
 2. **Variants.** A variant (extra hypothesis, weaker constant, special case) is accepted only with
    a formal reason: a counterexample to the original, or a proof that the extra hypothesis is
    needed, or the explicit label "original still open". A silent weakening is blocked.
@@ -81,7 +106,18 @@ file.
 9. **Write-up.** A result is finished only with a human-readable proof (LaTeX or Markdown with
    mathematics) that maps each statement to its Lean declaration.
 
-## Reviewing
+## Validating questions
+
+As question reviewer, you read the question file, the programme and the catalogue, and nothing the
+proposer wrote elsewhere. Check the programme's validation criteria one by one; try a short proof
+of the question from the catalogue (if it succeeds, the question is a corollary: reject); search the
+literature for the answer. Record in the question file your verdict (`accept` or `reject`), the
+model you are, the date and your reasons, criterion by criterion. If you accept, write the frozen
+statement in `Statements/<Programme>/` and set the status to `open`, unless the question file says
+the owner's decision is still required (calibration phase), in which case leave the status
+`proposed`.
+
+## Reviewing pull requests
 
 Review as an independent reviewer: you see the mathematical statement and the Lean code, not the
 author's reasoning. Restate the statement in your own words from the Lean alone and compare it with
@@ -110,10 +146,11 @@ dependencies: their maintainers decide what to adopt. Say in the description whi
 pull request.
 
 Human-owned paths, which you never change: `README.md`, `AGENTS.md`, `CLAUDE.md`,
-`CONTRIBUTING.md`, `programmes/*/PROGRAMME.md`, existing files of `Statements/`, `templates/`,
-`docs/`, `scripts/`, `.github/`, `lakefile.toml`, `lean-toolchain`, `lake-manifest.json`.
+`CONTRIBUTING.md`, `programmes/*/PROGRAMME.md` and the other files next to it, existing files of
+`Statements/`, `templates/`, `agents/`, `docs/`, `scripts/`, `.github/`, `lakefile.toml`,
+`lean-toolchain`, `lake-manifest.json`. They are listed in `.github/CODEOWNERS`.
 
 ## Building
 
-`scripts/build.sh <Lib>`; `scripts/check-build.sh Incognita --no-sorry` is what CI runs on the
-library. Never require Mathlib, Tau Ceti or LML directly: they come from LMLExplore, at its pins.
+`scripts/build.sh <Lib>`; CI runs `scripts/check-build.sh Incognita --no-sorry`,
+`scripts/check-build.sh Statements`, `scripts/build.sh Exploration` and `lake exe audit`. Never require Mathlib, Tau Ceti or LML directly: they come from LMLExplore, at its pins.

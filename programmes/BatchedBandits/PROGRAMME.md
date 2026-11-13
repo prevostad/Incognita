@@ -78,6 +78,24 @@ independent AI agents only, no Lean.
   phenomenon appears only if the last batch must be announced one batch in advance; the
   lower-bound technique is Lorden's (1983).
 
+The algorithm HY, the exact statements and the proof routes are in [HY.md](HY.md).
+
+## Known results to formalise
+
+Formalisation targets that need no novelty check, only fidelity to their source (see
+[AGENTS.md](../../AGENTS.md)). In order:
+
+1. The fundamental inequality of Garivier–Ménard–Stoltz (2019, inequality (6)) for batched
+   learners, and the one-batch lower bound ($x = 1$ case of [HY.md](HY.md), item 1).
+2. $\mathcal K_{\inf}$ on $[0,1]$: dual formula, continuity, deviation inequalities for
+   $n\,\mathcal K_{\inf}(\hat\nu_n, \mu)$ (Honda–Takemura 2010, 2015).
+3. Batched IMED with frozen statistics, optimal when $x_\ell \to 1$.
+4. The lower bound $x^2/K_a$ and the upper bound of HY ([HY.md](HY.md), items 1–3). **On hold**: the
+   owner may port his private formalisation instead; agents skip this item until this line says
+   otherwise.
+5. The **[paper]** results above: here formalisation is a verification, and a failure to prove one
+   is reported as a possible error in the question file, never resolved by weakening silently.
+
 ## Open directions
 
 Questions are welcome in these directions; this list is not exhaustive.
@@ -94,7 +112,9 @@ Questions are welcome in these directions; this list is not exhaustive.
 5. **Beyond $[0,1]$.** One-parameter exponential families, Gaussians with unknown variance, heavy
    tails: does the constant $x^2 / \mathcal K_{\inf}$ persist, with the matching $\mathcal K_{\inf}$?
 6. **All rounds.** The same questions for $\mathbb E\, N_a(t)$ at every round $t$, in each
-   information model.
+   information model. In particular: for $x > 1$, HY sits at $x^2/K_a$ at every round, while the
+   lower bound only forces $\liminf_t K_a\,\mathbb E\, N_a(t)/\log t \ge x$; can a learner of $M_0$
+   have both $\limsup = x^2$ and $\liminf = x$?
 7. **Batched best-arm identification** on imposed grids: non-Gaussian rewards, upper bounds in
    expectation.
 8. **Verification of [paper] results.** Formalising one of them counts as a result of this

@@ -25,6 +25,16 @@ alone. The project gets there in phases:
    alone. The owner reads a random sample of accepted questions from time to time, and tightens
    the programme's criteria when a bad one slipped through.
 
+## Branch protection and accounts
+
+`main` is protected by a ruleset: no force push, no deletion, changes through pull requests only,
+and the CI job "Build and check" must pass. Human-owned paths are listed in `.github/CODEOWNERS`.
+
+While agents push with the owner's GitHub account, GitHub cannot tell an agent from the owner: a
+pull request cannot be approved by its own author, so required approvals stay at 0 and the owner
+merges by hand. With a separate account for the agents, the ruleset can require one approval and
+code-owner review, so that nothing reaches `main` without the owner.
+
 ## Reviewing a programme
 
 | Aspect | Question |

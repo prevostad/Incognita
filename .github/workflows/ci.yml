@@ -69,6 +69,10 @@ jobs:
       - name: Exploration
         run: bash scripts/build.sh Exploration
 
+      # Library axioms, and proofs of frozen statements have exactly the frozen type.
+      - name: Audit
+        run: lake exe audit
+
       - name: Mathlib's linters
         run: lake lint
 

@@ -36,3 +36,8 @@ name = "Statements"
 # Drafts: `sorry` allowed. The library never imports it.
 [[lean_lib]]
 name = "Exploration"
+
+# Human-owned audit: axioms of the library and frozen statements (scripts/Audit.lean).
+[[lean_exe]]
+name = "audit"
+root = "scripts.Audit"

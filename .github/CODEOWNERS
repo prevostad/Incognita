@@ -1,0 +1,17 @@
+# Human-owned paths (see AGENTS.md). Pull requests touching them need the owner's review once
+# branch protection requires code-owner reviews.
+/README.md                       @prevostad
+/AGENTS.md                       @prevostad
+/CLAUDE.md                       @prevostad
+/CONTRIBUTING.md                 @prevostad
+/programmes/*/PROGRAMME.md       @prevostad
+/programmes/*/*.md               @prevostad
+/Statements/                     @prevostad
+/templates/                      @prevostad
+/agents/                         @prevostad
+/docs/                           @prevostad
+/scripts/                        @prevostad
+/.github/                        @prevostad
+/lakefile.toml                   @prevostad
+/lean-toolchain                  @prevostad
+/lake-manifest.json              @prevostad
