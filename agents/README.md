@@ -49,6 +49,7 @@ after three fix rounds, is labelled `needs-human` and left alone.
 | `INCOGNITA_MODEL_AUTHOR` | `opus` | model of the writing roles |
 | `INCOGNITA_MODEL_REVIEWER` | `sonnet` | model of the reviewing roles: a different model keeps reviews less correlated with the authors |
 | `INCOGNITA_MAX_TURNS` | `200` | turn limit of one session |
+| `INCOGNITA_EFFORT` | `high` | effort level of every session (`low`, `medium`, `high`, `xhigh`, `max`), as in the Tau Ceti worker |
 | `INCOGNITA_PACE` | unset (the worker's default curve) | quota pacing curve, syntax of the Tau Ceti worker's `--pace`; `0:100` uses everything that remains, `off` disables pacing. Before each task, `scripts/loop.sh` reads the Claude usage with `tauceti status --json` and waits while a window is over pace |
 | `INCOGNITA_OPEN_TARGET` | `5` | open questions wanted per approved programme: below it (counting the proposed ones), a new question is proposed before research and formalisation |
 | `INCOGNITA_MAX_AWAITING` | `3` | at most this many questions waiting for a decision per programme (proposed, including proposals in open pull requests): it bounds the owner's work during calibration |

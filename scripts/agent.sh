@@ -25,6 +25,7 @@ fi
 author_model=${INCOGNITA_MODEL_AUTHOR:-opus}
 reviewer_model=${INCOGNITA_MODEL_REVIEWER:-sonnet}
 max_turns=${INCOGNITA_MAX_TURNS:-200}
+effort=${INCOGNITA_EFFORT:-high}   # low, medium, high, xhigh, max (Tau Ceti uses high)
 case "$role" in
   review-question|review-pr|check) model=$reviewer_model ;;
   *) model=$author_model ;;
@@ -79,7 +80,7 @@ if [ "$role" = review-pr ]; then
   mkdir -p "$wt/.agents"
   gh pr diff "$target" > "$wt/.agents/pr.diff"
   gh pr view "$target" --json title,body --jq '.title + "\n\n" + .body' > "$wt/.agents/pr.txt"
-  review=$(cd "$wt" && claude -p "$prompt" --model "$model" --max-turns "$max_turns" \
+  review=$(cd "$wt" && claude -p "$prompt" --model "$model" --effort "$effort" --max-turns "$max_turns" \
     --allowedTools "$read_tools")
   case "$review" in
     Verdict:*) ;;
@@ -150,7 +151,7 @@ if [ "$role" = fix-pr ]; then
   if [ "$(git -C "$wt" merge-base HEAD origin/main)" != "$(git rev-parse origin/main)" ]; then
     echo "The branch is behind origin/main: rebase it." > "$wt/.agents/rebase.txt"
   fi
-  (cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --max-turns "$max_turns" \
+  (cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --effort "$effort" --max-turns "$max_turns" \
     --permission-mode acceptEdits \
     --allowedTools "$write_tools,Bash(git rebase:*),Bash(git show:*),Bash(git merge-base:*)")
   cd "$wt"
@@ -175,7 +176,7 @@ fi
 git worktree add -q -b "$branch" "$wt" origin/main
 share_packages
 mkdir -p "$wt/.agents"
-(cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --max-turns "$max_turns" \
+(cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --effort "$effort" --max-turns "$max_turns" \
   --permission-mode acceptEdits --allowedTools "$write_tools")
 
 cd "$wt"
