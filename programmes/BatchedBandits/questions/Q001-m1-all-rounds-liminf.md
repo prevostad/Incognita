@@ -142,24 +142,35 @@ variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
 
 ## Natural fallback
 
-If the answer is "no", or a full proof is out of reach, the fallbacks are, in order:
+The fallbacks depend on which way the answer seems to go.
 
-1. **Approximate dip.** For every $\eta > 0$, a learner $\pi_\eta$ of $M_1$ satisfying 1–3 and
-   $\liminf_t K_a \mathbb E N_a(t)/\log t \le x + \eta$. This is an "original still open" variant.
-2. **Matching lower bound for "no".** A constant $c(x) > 0$ with the following property. For every
-   learner of $M_1$ that satisfies 1–2 on every grid of $\mathcal G_x$ and every
-   $\nu \in \mathcal V_K$, there are a grid in $\mathcal G_x$, an instance $\nu \in \mathcal V_K$
-   and a suboptimal arm $a$ with $\liminf_t K_a \mathbb E N_a(t)/\log t \ge x + c(x)$.
-3. **Variant (a): $M_2$.** The same question in $M_2$.
-4. **Variant (b): upper halves only.** A learner of $M_1$ with item 1, $\limsup_\ell K_a \mathbb E
-   N_a(t_\ell)/L_\ell \le x^2$, $\limsup_t K_a \mathbb E N_a(t)/\log t \le x^2$ and
-   $\liminf_t K_a \mathbb E N_a(t)/\log t \le x$. Here item 2 is only an upper bound, so the
-   argument "$\liminf_t \ge x$" above no longer applies, and item 4 must be read as "$\le x$". It
-   is not a weaker question in substance: the second condition gives $\mathbb E N_a(t_\ell) =
-   O(L_\ell)$, so the owner's **[Lean]** lower bound in its $\liminf$ form (HY.md item 1) gives
-   $\liminf_\ell \ge x^2$, and then items 2–4 hold with equality. Variant (b) is the main
-   question with the lower-bound halves left to that result. Its use is that a Lean proof of it
-   does not need the lower bound to be ported first (programme, known result 4, on hold).
+1. **If "yes" is out of reach: approximate dip.** For every $\eta > 0$, a learner $\pi_\eta$ of
+   $M_1$ satisfying 1–3 and $\liminf_t K_a \mathbb E N_a(t)/\log t \le x + \eta$, on every grid
+   of $\mathcal G_x$, every $\nu \in \mathcal V_K$ and every suboptimal $a$. This is an "original
+   still open" variant.
+2. **If the answer is "no": a quantitative gap.** A constant $c(x) > 0$ with the following
+   property. For every learner of $M_1$ that satisfies 1–2 on every grid of $\mathcal G_x$ and
+   every $\nu \in \mathcal V_K$, there are a grid in $\mathcal G_x$, an instance
+   $\nu \in \mathcal V_K$ and a suboptimal arm $a$ with
+   $\liminf_t K_a \mathbb E N_a(t)/\log t \ge x + c(x)$.
+3. **Either way: variant (a), $M_2$.** The same question in $M_2$.
+
+**How fallbacks 1 and 2 relate.** They cannot both hold. If fallback 2 holds with $c(x)$, take
+$\eta < c(x)$: the learner $\pi_\eta$ of fallback 1 satisfies 1–2, so on some grid, instance and
+arm its $\liminf_t$ is $\ge x + c(x) > x + \eta$, and fallback 1 fails. They are not exact
+negations of each other: fallback 2 ranges over the learners that satisfy 1–2, a larger class
+than the learners that satisfy 1–3. The negation of fallback 1 is fallback 2 restricted to the
+learners that satisfy 1–3.
+
+**Reformulation, not a fallback: variant (b), upper halves only.** A learner of $M_1$ with item 1,
+$\limsup_\ell K_a \mathbb E N_a(t_\ell)/L_\ell \le x^2$,
+$\limsup_t K_a \mathbb E N_a(t)/\log t \le x^2$ and
+$\liminf_t K_a \mathbb E N_a(t)/\log t \le x$. Given the owner's **[Lean]** lower bound, (b) is
+equivalent to the question, so it has the same answer and is no fallback if the answer is "no".
+Indeed the second condition gives $\mathbb E N_a(t_\ell) = O(L_\ell)$, so the lower bound in its
+$\liminf$ form (HY.md item 1) gives $\liminf_\ell \ge x^2$, and then items 2–4 hold with equality.
+Its use is as a proof strategy for "yes": a Lean proof of (b) does not need the lower bound to be
+ported first (programme, known result 4, on hold).
 
 **Stronger variant (c): uniform learner.** One learner of $M_1$, depending on $K$ only, that
 satisfies 1–4 for every $x \in (1, \infty)$, every grid of $\mathcal G_x$ and every
