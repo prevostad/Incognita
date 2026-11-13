@@ -75,7 +75,26 @@ variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
   *delays* the pulls of suboptimal arms to the end of each batch, and a proof that this delay costs
   nothing at batch ends and leaves no mass in expectation mid-batch. No stated result gives this.
   A negative answer needs a lower bound inside batches that the known change-of-measure arguments
-  do not give.
+  do not give, as the next point explains.
+- **Change of measure at a mid-batch horizon (attempt, unverified).** Apply the fundamental
+  inequality [GMS19, inequality (6)] at a round $t = t_{\ell+1} - c L_\ell$ of batch $\ell+1$, to
+  the learner's information at $t$. That information is the observations up to $t_\ell$, the
+  actions up to $t$, $t_{\ell+1}$ and $U$. In $M_1$, the actions of rounds $t_\ell+1, \dots, t$
+  are functions of the rest, and none of their rewards is observed before $t_{\ell+1}$. So the
+  divergence side is the same as at $t_\ell$: $\sum_c \mathbb E_\nu N_c(t_\ell)\,
+  \mathrm{KL}(\nu_c, \nu'_c)$ for the plain change of measure, and only the pulls of $a$ in batch
+  $\ell$ for the boundary tilt of HY.md. On the other side, take $Z = N_a(t)/t$. Under an
+  alternative $\nu'$ where $a$ is the only optimal arm, consistency at $t_{\ell+1}$ forces
+  $\mathbb E_{\nu'} Z \ge 1 - o(t_{\ell+1}^\alpha)/t$, while under $\nu$ consistency gives
+  $\mathbb E_\nu Z \to 0$. With [GMS19, inequality (11)] applied to $1 - Z$, this gives $K_a\, \mathbb E_\nu N_a(t_\ell) \gtrsim \log t$, a bound on the data at $t_\ell$, and
+  the boundary tilt gives at best the $x^2$ bound at $t_\ell$ again. Combined with
+  $N_a(t) \ge N_a(t_\ell)$, this returns $\liminf_t \ge x$ and nothing more. The reason is
+  structural. Two learners of $M_1$ that differ only by a reordering of the rounds inside each
+  batch, chosen from the data up to $t_\ell$ and from $t_{\ell+1}$, have the same law of
+  batch-end histories (in the reward-table model). So every bound that uses only those laws and
+  consistency at batch ends holds equally for both, while their in-batch profiles differ. A "no"
+  must use something else, for example the cost of rare events with polynomially many non-leader
+  pulls (see the route for "yes" below).
 - **Why $M_1$ and not $M_0$ (remark: proposer's sketch, unverified, not a result, not a claim
   about direction 6).** The proposer believes, but has not checked, that in $M_0$ items 2 and 4
   cannot hold together on every grid of $\mathcal G_x$. The idea is a short diagonal argument.
