@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Run n agent tasks, one after the other, each time the most useful one in the order of AGENTS.md:
 # fix the agents' own pull requests, review them, review proposed questions, audit the attribution
-# of new results, keep a stock of questions per programme (INCOGNITA_QUESTION_STOCK), then a rotation
-# of research, check, bibliographer and formalisation; gardening every tenth task. See agents/README.md.
+# of new results, propose while a programme is short of questions (INCOGNITA_OPEN_TARGET,
+# INCOGNITA_MAX_AWAITING), then a rotation of research (least worked question first), check,
+# bibliographer and formalisation; gardening every tenth task. See agents/README.md.
 #
 # Usage: scripts/loop.sh [n]        (run it in the main checkout, on branch main, never edited by hand)
 set -euo pipefail
@@ -117,26 +118,40 @@ pr_to_review() {  # an agent pull request whose last commit has no later verdict
       | select($r == null or $r < .commits[-1].committedDate) | .number' | head -n 1
 }
 
-# Question stock: an approved programme with fewer than INCOGNITA_QUESTION_STOCK (default 3) questions
-# waiting (proposed or open, plus proposals still in open pull requests) gets a new proposal before
-# anything else. The cap also bounds what waits for the owner during calibration.
-stock=${INCOGNITA_QUESTION_STOCK:-3}
-programme_short_of_questions() {  # the approved programme with the fewest waiting questions, if below the stock
-  local p c f pending best="" bestc=""
+# How many questions. Per approved programme: about INCOGNITA_OPEN_TARGET (5) open questions, so that
+# research has a choice, and at most INCOGNITA_MAX_AWAITING (3) waiting for a decision (proposed,
+# including proposals still in open pull requests), which bounds the owner's work during calibration.
+# Parked questions (too many rounds without progress) count for neither.
+open_target=${INCOGNITA_OPEN_TARGET:-5}
+max_awaiting=${INCOGNITA_MAX_AWAITING:-3}
+programme_short_of_questions() {  # the approved programme that most needs a proposal, if any
+  local p f n_open n_wait pending best="" bestc=""
   for p in $(approved); do
-    c=0
+    n_open=0 n_wait=0
     for f in programmes/"$p"/questions/Q*.md; do
       [ -f "$f" ] || continue
-      grep -q -E '^\| Status \| (proposed|open)' "$f" && c=$((c + 1))
+      grep -q '^| Status | open' "$f" && n_open=$((n_open + 1))
+      grep -q '^| Status | proposed' "$f" && n_wait=$((n_wait + 1))
     done
     # proposals of this programme still in open pull requests (agent.sh writes "Target: `<P>`")
     pending=$(gh pr list --state open --json title,body \
       --jq '[.[] | select(.title | startswith("Propose Q"))] | map(.body) | .[]' 2>/dev/null \
       | grep -c -F "Target: \`$p\`" || true)
-    c=$((c + ${pending:-0}))
-    if [ "$c" -lt "$stock" ] && { [ -z "$bestc" ] || [ "$c" -lt "$bestc" ]; }; then best=$p; bestc=$c; fi
+    n_wait=$((n_wait + ${pending:-0}))
+    if [ "$n_wait" -lt "$max_awaiting" ] && [ $((n_open + n_wait)) -lt "$open_target" ] \
+        && { [ -z "$bestc" ] || [ $((n_open + n_wait)) -lt "$bestc" ]; }; then
+      best=$p bestc=$((n_open + n_wait))
+    fi
   done
   echo "$best"
+}
+least_worked_open() {  # the open question with the fewest research rounds (ties: random)
+  local f r
+  for f in $(questions_in); do
+    grep -q '^| Status | open' "$f" || continue
+    r=$(sed -n 's/^| Research rounds | \([0-9]*\).*/\1/p' "$f" | head -n 1)
+    echo "${r:-0} $RANDOM $f"
+  done | sort -n -k1,1 -k2,2 | head -n 1 | cut -d' ' -f3-
 }
 
 for i in $(seq 1 "$n"); do
@@ -155,7 +170,7 @@ for i in $(seq 1 "$n"); do
     q=$(for f in $(questions_in); do
           grep -q '^| Status | proposed' "$f" && grep -q '^| Reviewer verdict | <' "$f" && echo "$f"
         done | head -n 1)
-    open=$(for f in $(questions_in); do grep -q '^| Status | open' "$f" && echo "$f"; done | shuf -n 1 || true)
+    open=$(least_worked_open)
     low=$(programme_short_of_questions)
     if [ -n "$q" ]; then
       role=review-question target=$q

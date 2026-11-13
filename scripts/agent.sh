@@ -35,7 +35,8 @@ branch="agent/$role-$stamp"
 wt="$root/.agents/$role-$stamp"
 mkdir -p "$root/.agents"
 git fetch -q origin
-prompt=$(sed "s|{TARGET}|$target|g" "$prompt_file")
+park_after=${INCOGNITA_PARK_AFTER:-5}
+prompt=$(sed -e "s|{TARGET}|$target|g" -e "s|{PARK_AFTER}|$park_after|g" "$prompt_file")
 
 # Every role may read the web (search and fetch pages). No shell network access, no push, no gh:
 # the script pushes and opens the pull request.

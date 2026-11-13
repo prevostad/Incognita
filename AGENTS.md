@@ -77,10 +77,22 @@ A question is a file `programmes/<Name>/questions/Q<nnn>-<slug>.md`, made from
 [templates/QUESTION.md](templates/QUESTION.md). Its status is one of:
 
 `proposed` → `open` (validated, statement frozen) → `proved` | `refuted` | `variant-proved` |
-`abandoned`.
+`parked` | `abandoned`.
 
 A refutation or a justified variant is a result, not a failure. `abandoned` needs a reason in the
 file.
+
+**Parking.** Each research task on a question adds one to "Research rounds" and, unless it made
+progress, to "Rounds without progress". Progress means: a proof, a refutation or a justified
+variant, or a new lemma moved to the library that the write-up names as a step towards the
+question. When "Rounds without progress" reaches the limit (5 by default), the researcher sets
+the status to `parked`: the question frees its place, keeps its dead ends, and a human (or a later
+programme) may reopen it by setting it back to `open` and resetting the counter.
+
+**How many questions.** Per approved programme, the loop keeps about 5 open questions
+(`INCOGNITA_OPEN_TARGET`) and at most 3 waiting for a decision (`INCOGNITA_MAX_AWAITING`:
+proposed questions, including proposals in open pull requests). Research goes first to the open
+question with the fewest research rounds.
 
 ## Rules for results
 
