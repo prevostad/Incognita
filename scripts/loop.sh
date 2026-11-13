@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Run n agent tasks, one after the other, each time the most useful one in the order of AGENTS.md:
-# review pull requests, review proposed questions, audit the attribution of new results, research
-# open questions or formalise known results (alternately, with a bibliographer task every fourth
-# time), propose questions; gardening every tenth task. See agents/README.md.
+# fix the agents' own pull requests, review them, review proposed questions, audit the attribution
+# of new results, propose while a programme is short of questions (INCOGNITA_OPEN_TARGET,
+# INCOGNITA_MAX_AWAITING), then a rotation of research (least worked question first), check,
+# bibliographer and formalisation; gardening every tenth task. See agents/README.md.
 #
 # Usage: scripts/loop.sh [n]        (run it in the main checkout, on branch main, never edited by hand)
 set -euo pipefail
@@ -83,18 +84,85 @@ merge_ready() {  # merge the open pull requests that are approved, green and aut
     fi
   done
 }
-pr_to_review() {  # an open pull request whose last commit has no later verdict
-  gh pr list --state open --json number,commits,comments --jq '
-    .[] | ([.comments[] | select(.body | startswith("Verdict:")) | .createdAt] | max) as $r
-        | select($r == null or $r < .commits[-1].committedDate) | .number' | head -n 1
+# Only the pull requests of agents (branch agent/*) are reviewed and fixed by agents; humans review
+# their own. A pull request labelled needs-human is left to a human.
+agent_prs='.[] | select(.headRefName | startswith("agent/"))
+               | select([.labels[].name] | index("needs-human") | not)'
+escalate() {  # label needs-human: a "block" verdict, or three fix rounds without success
+  gh label create needs-human --color B60205 \
+    --description "An agent cannot go further: a human must decide" >/dev/null 2>&1 || true
+  local pr
+  for pr in $(gh pr list --state open --json number,headRefName,labels,comments --jq "$agent_prs"'
+      | ([.comments[] | select(.body | startswith("Verdict:"))] | sort_by(.createdAt) | last) as $v
+      | ([.comments[] | select(.body | startswith("Fix round"))] | length) as $f
+      | select(($v != null and ($v.body | startswith("Verdict: block"))) or $f >= 3) | .number'); do
+    gh pr edit "$pr" --add-label needs-human >/dev/null && echo "== #$pr needs a human"
+  done
+}
+pr_to_fix() {  # changes requested on the last commit (and not answered yet), a failed build, or a conflict
+  gh pr list --state open --json number,headRefName,labels,commits,comments,mergeable,statusCheckRollup \
+    --jq "$agent_prs"'
+      | ([.comments[] | select(.body | startswith("Verdict:"))] | sort_by(.createdAt) | last) as $v
+      | ([.comments[] | select(.body | startswith("Fix round")) | .createdAt] | max) as $lf
+      | select(
+          ($v != null and $v.createdAt > .commits[-1].committedDate
+             and ($v.body | startswith("Verdict: request_changes"))
+             and ($lf == null or $lf < $v.createdAt))
+          or ([.statusCheckRollup[]? | select(.name == "Build and check") | .conclusion] | first) == "FAILURE"
+          or .mergeable == "CONFLICTING")
+      | .number' | head -n 1
+}
+pr_to_review() {  # an agent pull request whose last commit has no later verdict
+  gh pr list --state open --json number,headRefName,labels,commits,comments --jq "$agent_prs"'
+      | ([.comments[] | select(.body | startswith("Verdict:")) | .createdAt] | max) as $r
+      | select($r == null or $r < .commits[-1].committedDate) | .number' | head -n 1
+}
+
+# How many questions. Per approved programme: about INCOGNITA_OPEN_TARGET (5) open questions, so that
+# research has a choice, and at most INCOGNITA_MAX_AWAITING (3) waiting for a decision (proposed,
+# including proposals still in open pull requests), which bounds the owner's work during calibration.
+# Parked questions (too many rounds without progress) count for neither.
+open_target=${INCOGNITA_OPEN_TARGET:-5}
+max_awaiting=${INCOGNITA_MAX_AWAITING:-3}
+programme_short_of_questions() {  # the approved programme that most needs a proposal, if any
+  local p f n_open n_wait pending best="" bestc=""
+  for p in $(approved); do
+    n_open=0 n_wait=0
+    for f in programmes/"$p"/questions/Q*.md; do
+      [ -f "$f" ] || continue
+      grep -q '^| Status | open' "$f" && n_open=$((n_open + 1))
+      grep -q '^| Status | proposed' "$f" && n_wait=$((n_wait + 1))
+    done
+    # proposals of this programme still in open pull requests (agent.sh writes "Target: `<P>`")
+    pending=$(gh pr list --state open --json title,body \
+      --jq '[.[] | select(.title | startswith("Propose Q"))] | map(.body) | .[]' 2>/dev/null \
+      | grep -c -F "Target: \`$p\`" || true)
+    n_wait=$((n_wait + ${pending:-0}))
+    if [ "$n_wait" -lt "$max_awaiting" ] && [ $((n_open + n_wait)) -lt "$open_target" ] \
+        && { [ -z "$bestc" ] || [ $((n_open + n_wait)) -lt "$bestc" ]; }; then
+      best=$p bestc=$((n_open + n_wait))
+    fi
+  done
+  echo "$best"
+}
+least_worked_open() {  # the open question with the fewest research rounds (ties: random)
+  local f r
+  for f in $(questions_in); do
+    grep -q '^| Status | open' "$f" || continue
+    r=$(sed -n 's/^| Research rounds | \([0-9]*\).*/\1/p' "$f" | head -n 1)
+    echo "${r:-0} $RANDOM $f"
+  done | sort -n -k1,1 -k2,2 | head -n 1 | cut -d' ' -f3-
 }
 
 for i in $(seq 1 "$n"); do
   merge_ready
   wait_for_quota
   git pull -q --ff-only origin main
+  escalate
   role="" target=""
-  if pr=$(pr_to_review) && [ -n "$pr" ]; then
+  if pr=$(pr_to_fix) && [ -n "$pr" ]; then
+    role=fix-pr target=$pr
+  elif pr=$(pr_to_review) && [ -n "$pr" ]; then
     role=review-pr target=$pr
   elif [ $((i % 10)) = 0 ] && [ -n "$(approved)" ]; then
     role=garden
@@ -102,22 +170,26 @@ for i in $(seq 1 "$n"); do
     q=$(for f in $(questions_in); do
           grep -q '^| Status | proposed' "$f" && grep -q '^| Reviewer verdict | <' "$f" && echo "$f"
         done | head -n 1)
+    open=$(least_worked_open)
+    low=$(programme_short_of_questions)
     if [ -n "$q" ]; then
       role=review-question target=$q
     elif grep -q '^novelty = "unchecked"' catalogue/results.toml 2>/dev/null; then
       role=bibliographer
-    elif [ $((i % 4)) = 2 ] && [ -n "$(approved)" ]; then
-      role=bibliographer
+    elif [ -n "$low" ]; then
+      role=propose target=$low
     else
-      open=$(for f in $(questions_in); do grep -q '^| Status | open' "$f" && echo "$f"; done | shuf -n 1 || true)
+      # Rotation over six tasks: research three times (formalise if no question is open), check
+      # once (formalise if nothing is merged), bibliographer once, formalise once.
       prog=$(approved | shuf -n 1 || true)
-      if [ -n "$open" ] && [ $((i % 2)) = 1 ]; then
-        role=research target=$open
-      elif [ -n "$prog" ] && [ $((i % 3)) != 0 ]; then
-        role=formalise target=$prog
-      elif [ -n "$prog" ]; then
-        role=propose target=$prog
-      fi
+      case $((i % 6)) in
+        1|3|5) if [ -n "$open" ]; then role=research target=$open; else role=formalise target=$prog; fi ;;
+        0) if grep -q '^confidence = "merged"' catalogue/results.toml 2>/dev/null; then role=check
+           else role=formalise target=$prog; fi ;;
+        2) role=bibliographer ;;
+        4) role=formalise target=$prog ;;
+      esac
+      [ -z "$prog" ] && [ "$role" != bibliographer ] && [ "$role" != check ] && [ "$role" != research ] && role=""
     fi
   fi
   if [ -z "$role" ]; then

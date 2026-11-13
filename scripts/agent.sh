@@ -4,6 +4,7 @@
 # Usage: scripts/agent.sh <role> [target]
 #   propose <Programme> | review-question <question file> | research <question file>
 #   formalise <Programme> | review-pr <pull request number> | garden | bibliographer
+#   fix-pr <pull request number> | check
 #
 # Requires: claude and gh logged in, and a main checkout already built once with
 # `scripts/build.sh Incognita` (the worktrees share its .lake/packages).
@@ -15,7 +16,7 @@ root="$(git rev-parse --show-toplevel)"
 cd "$root"
 prompt_file="agents/roles/$role.md"
 [ -f "$prompt_file" ] || { echo "unknown role: $role" >&2; exit 2; }
-if [ "$role" != garden ] && [ "$role" != bibliographer ] && [ -z "$target" ]; then
+if [ "$role" != garden ] && [ "$role" != bibliographer ] && [ "$role" != check ] && [ -z "$target" ]; then
   echo "$role needs a target" >&2
   exit 2
 fi
@@ -25,7 +26,7 @@ author_model=${INCOGNITA_MODEL_AUTHOR:-opus}
 reviewer_model=${INCOGNITA_MODEL_REVIEWER:-sonnet}
 max_turns=${INCOGNITA_MAX_TURNS:-200}
 case "$role" in
-  review-question|review-pr) model=$reviewer_model ;;
+  review-question|review-pr|check) model=$reviewer_model ;;
   *) model=$author_model ;;
 esac
 
@@ -34,7 +35,8 @@ branch="agent/$role-$stamp"
 wt="$root/.agents/$role-$stamp"
 mkdir -p "$root/.agents"
 git fetch -q origin
-prompt=$(sed "s|{TARGET}|$target|g" "$prompt_file")
+park_after=${INCOGNITA_PARK_AFTER:-5}
+prompt=$(sed -e "s|{TARGET}|$target|g" -e "s|{PARK_AFTER}|$park_after|g" "$prompt_file")
 
 # Every role may read the web (search and fetch pages). No shell network access, no push, no gh:
 # the script pushes and opens the pull request.
@@ -56,7 +58,13 @@ statement (LaTeX between $...$ or $$...$$), followed by its Lean name; "None" if
 ## Not done — what remains, and any doubt about the statements.
 Keep it short: it is what a human reads before merging.'
 
-cleanup() { git -C "$root" worktree remove --force "$wt" 2>/dev/null || true; }
+# Remove the worktree first, then the local branches (a branch cannot be deleted while a worktree
+# uses it). A pushed branch lives on in origin; an unpushed one is kept by disabling this trap.
+cleanup() {
+  git -C "$root" worktree remove --force "$wt" 2>/dev/null || true
+  git -C "$root" branch -q -D "pr-$target-$stamp" 2>/dev/null || true
+  git -C "$root" branch -q -D "$branch" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 share_packages() {
@@ -80,7 +88,87 @@ if [ "$role" = review-pr ]; then
   printf '%s\n\n---\n:robot: Automated review by `%s` (role review-pr, scripts/agent.sh).\n' \
     "$review" "$model" > "$wt/.agents/review.md"
   gh pr comment "$target" --body-file "$wt/.agents/review.md"
-  git branch -q -D "pr-$target-$stamp" || true
+  exit 0
+fi
+
+# Human-owned paths may not change. New frozen statements (and their import in Statements.lean)
+# are allowed for the roles that create them, and for fix-pr on a pull request that adds them.
+check_paths() {
+  local status=0 st path
+  while IFS=$'\t' read -r st path; do
+    case "$path" in
+      README.md|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|lakefile.toml|lean-toolchain|lake-manifest.json \
+        |templates/*|agents/*|docs/*|scripts/*|.github/*|programmes/*/PROGRAMME.md)
+        echo "human-owned path changed: $path" >&2; status=1 ;;
+      programmes/*/questions/*) ;;
+      literature/*|catalogue/*) ;;
+      programmes/*/*) echo "human-owned path changed: $path" >&2; status=1 ;;
+      Statements.lean)
+        case "$role" in review-question|formalise|fix-pr) ;; *) echo "Statements.lean changed by $role" >&2; status=1 ;; esac ;;
+      Statements/*)
+        case "$st:$role" in
+          A:review-question|A:formalise|A:fix-pr) ;;
+          *) echo "frozen statement changed ($st) by $role: $path" >&2; status=1 ;;
+        esac ;;
+    esac
+    if [ "$role" = bibliographer ]; then
+      case "$path" in
+        literature/*|catalogue/*|programmes/*/questions/*) ;;
+        *) echo "the bibliographer may not change $path" >&2; status=1 ;;
+      esac
+    fi
+  done < <(git diff --name-status origin/main...HEAD)
+  return "$status"
+}
+
+summary_of() {
+  if [ -f "$wt/.agents/summary.md" ]; then cat "$wt/.agents/summary.md"; else echo "(the agent wrote no summary)"; fi
+}
+
+# fix-pr: work on the branch of an agent's pull request, push to it, comment.
+if [ "$role" = fix-pr ]; then
+  head=$(gh pr view "$target" --json headRefName --jq .headRefName)
+  case "$head" in
+    agent/*) ;;
+    *) echo "fix-pr only fixes pull requests of agents (branch agent/*), not $head" >&2; exit 2 ;;
+  esac
+  git fetch -q origin "$head"
+  remote_sha=$(git rev-parse "origin/$head")
+  branch="fix-pr-$target-$stamp"
+  git worktree add -q -b "$branch" "$wt" "origin/$head"
+  share_packages
+  mkdir -p "$wt/.agents"
+  gh pr view "$target" --json title,body --jq '.title + "\n\n" + .body' > "$wt/.agents/pr.txt"
+  gh pr view "$target" --json comments \
+    --jq '.comments[] | "### " + .createdAt + "\n\n" + .body + "\n"' > "$wt/.agents/reviews.md"
+  gh pr checks "$target" > "$wt/.agents/ci.txt" 2>&1 || true
+  run=$(gh run list --branch "$head" --workflow ci.yml --limit 1 --json databaseId,conclusion \
+    --jq '.[0] | select(.conclusion == "failure") | .databaseId' 2>/dev/null || true)
+  if [ -n "$run" ]; then
+    gh run view "$run" --log-failed 2>/dev/null | tail -n 200 > "$wt/.agents/ci-log.txt" || true
+  fi
+  if [ "$(git -C "$wt" merge-base HEAD origin/main)" != "$(git rev-parse origin/main)" ]; then
+    echo "The branch is behind origin/main: rebase it." > "$wt/.agents/rebase.txt"
+  fi
+  (cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --max-turns "$max_turns" \
+    --permission-mode acceptEdits \
+    --allowedTools "$write_tools,Bash(git rebase:*),Bash(git show:*),Bash(git merge-base:*)")
+  cd "$wt"
+  if [ "$(git rev-parse HEAD)" = "$remote_sha" ]; then
+    printf 'Fix round: no change.\n\n%s\n\n---\n:robot: `%s` (role fix-pr, scripts/agent.sh).\n' \
+      "$(summary_of)" "$model" > "$wt/.agents/fix.md"
+    gh pr comment "$target" --body-file "$wt/.agents/fix.md"
+    exit 0
+  fi
+  if ! check_paths; then
+    echo "branch $branch kept locally for inspection; not pushed" >&2
+    trap - EXIT
+    exit 1
+  fi
+  git push -q --force-with-lease="refs/heads/$head:$remote_sha" origin "HEAD:refs/heads/$head"
+  printf 'Fix round: pushed.\n\n%s\n\n---\n:robot: `%s` (role fix-pr, scripts/agent.sh).\n' \
+    "$(summary_of)" "$model" > "$wt/.agents/fix.md"
+  gh pr comment "$target" --body-file "$wt/.agents/fix.md"
   exit 0
 fi
 
@@ -93,43 +181,15 @@ mkdir -p "$wt/.agents"
 cd "$wt"
 if [ -z "$(git log --oneline origin/main..HEAD)" ]; then
   echo "no commit: nothing to push"
-  git -C "$root" branch -q -D "$branch" || true
   exit 0
 fi
-
-# Human-owned paths may not change. New frozen statements (and their import in Statements.lean)
-# are allowed for the roles that create them.
-status=0
-while IFS=$'\t' read -r st path; do
-  case "$path" in
-    README.md|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|lakefile.toml|lean-toolchain|lake-manifest.json \
-      |templates/*|agents/*|docs/*|scripts/*|.github/*|programmes/*/PROGRAMME.md)
-      echo "human-owned path changed: $path" >&2; status=1 ;;
-    programmes/*/questions/*) ;;
-    literature/*|catalogue/*) ;;
-    programmes/*/*) echo "human-owned path changed: $path" >&2; status=1 ;;
-    Statements.lean)
-      case "$role" in review-question|formalise) ;; *) echo "Statements.lean changed by $role" >&2; status=1 ;; esac ;;
-    Statements/*)
-      if [ "$st" != A ] || { [ "$role" != review-question ] && [ "$role" != formalise ]; }; then
-        echo "frozen statement changed ($st) by $role: $path" >&2; status=1
-      fi ;;
-  esac
-  if [ "$role" = bibliographer ]; then
-    case "$path" in
-      literature/*|catalogue/*|programmes/*/questions/*) ;;
-      *) echo "the bibliographer may not change $path" >&2; status=1 ;;
-    esac
-  fi
-done < <(git diff --name-status origin/main...HEAD)
-if [ "$status" != 0 ]; then
+if ! check_paths; then
   echo "branch $branch kept locally for inspection; not pushed" >&2
   trap - EXIT
   exit 1
 fi
 
-summary="(the agent wrote no summary)"
-[ -f "$wt/.agents/summary.md" ] && summary=$(cat "$wt/.agents/summary.md")
+summary=$(summary_of)
 git push -q -u origin "$branch"
 gh pr create --base main --head "$branch" --title "$(git log -1 --format=%s)" --body "$(cat <<EOF
 Role: \`$role\`. Target: \`${target:-none}\`. Model: \`$model\`.

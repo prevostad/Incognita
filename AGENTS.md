@@ -16,14 +16,16 @@ existing results in the dependencies, and explore in `Exploration/`. Never write
 
 Tasks, in order of usefulness:
 
-1. fix or finish your own open pull requests;
+1. fix the open pull requests of agents: rebase, repair the build, address the latest review
+   (role `fix-pr`; after three rounds, or a `block` verdict, the pull request waits for a human);
 2. review other pull requests (as an independent reviewer: see below);
 3. validate proposed questions (as question reviewer: see below);
 4. work on an `open` question: explore, prove, refute, or prove a justified variant;
 5. formalise a known result (see below);
 6. audit the attribution of merged results, check references (bibliographer only);
-7. propose a question in an approved programme;
-8. gardening (see below).
+7. check a merged result independently (role `check`, see below);
+8. propose a question in an approved programme;
+9. gardening (see below).
 
 ## Formalising known results
 
@@ -75,10 +77,22 @@ A question is a file `programmes/<Name>/questions/Q<nnn>-<slug>.md`, made from
 [templates/QUESTION.md](templates/QUESTION.md). Its status is one of:
 
 `proposed` → `open` (validated, statement frozen) → `proved` | `refuted` | `variant-proved` |
-`abandoned`.
+`parked` | `abandoned`.
 
 A refutation or a justified variant is a result, not a failure. `abandoned` needs a reason in the
 file.
+
+**Parking.** Each research task on a question adds one to "Research rounds" and, unless it made
+progress, to "Rounds without progress". Progress means: a proof, a refutation or a justified
+variant, or a new lemma moved to the library that the write-up names as a step towards the
+question. When "Rounds without progress" reaches the limit (5 by default), the researcher sets
+the status to `parked`: the question frees its place, keeps its dead ends, and a human (or a later
+programme) may reopen it by setting it back to `open` and resetting the counter.
+
+**How many questions.** Per approved programme, the loop keeps about 5 open questions
+(`INCOGNITA_OPEN_TARGET`) and at most 3 waiting for a decision (`INCOGNITA_MAX_AWAITING`:
+proposed questions, including proposals in open pull requests). Research goes first to the open
+question with the fewest research rounds.
 
 ## Rules for results
 
@@ -150,6 +164,15 @@ the text ("back-translation"); try to break every new definition and statement (
 quantifiers, content hidden in hypotheses, degenerate cases); check the rules above. Say which
 checks you ran. List defects, most important first, with what would fix them; skip praise.
 
+## Checking merged results
+
+A merged result gains confidence only through independent checks of different kinds (see
+`catalogue/README.md`). The checker (role `check`, reviewer model) runs one check at a time on the
+least checked result: back-translation (the statement written from the Lean alone, compared with the
+text), double formalisation (a second formalisation from the text alone, proved equivalent in Lean as
+`Incognita.<Programme>.Checks.<name>_equiv`), known cases, counterexample search on each hypothesis.
+A finding is reported as a question file; the checker never fixes the result itself.
+
 ## Gardening
 
 - Look for results that imply others: try the implication in Lean.
@@ -180,5 +203,6 @@ Human-owned paths, which you never change: `README.md`, `AGENTS.md`, `CLAUDE.md`
 
 ## Building
 
-`scripts/build.sh <Lib>`; CI runs `scripts/check-build.sh Incognita --no-sorry`,
+`scripts/build.sh <Lib>`. In a fresh worktree, build first (`scripts/check-build.sh Incognita`) before
+`lake exe audit`, which needs the library's build. CI runs `scripts/check-build.sh Incognita --no-sorry`,
 `scripts/check-build.sh Statements`, `scripts/build.sh Exploration` and `lake exe audit`. Never require Mathlib, Tau Ceti or LML directly: they come from LMLExplore, at its pins.

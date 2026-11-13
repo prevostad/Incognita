@@ -9,6 +9,8 @@
 | Owner decision required | yes (calibration phase; the owner sets it to "no" when delegating) |
 | Owner decision | <accept / reject, date> |
 | Frozen statement | `Statements/<Name>/Q<nnn>.lean` (set at validation) |
+| Research rounds | 0 |
+| Rounds without progress | 0 |
 
 ## Question
 
