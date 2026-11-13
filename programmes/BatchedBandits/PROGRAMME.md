@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | **draft**, awaiting approval by its owner |
+| Status | **approved** (2026-11-13) |
 | Owner | Adrien Prevost (GitHub: prevostad) |
 | Written | 2026-11-13, with AI assistance (Claude) |
 | arXiv class | `math.ST` (secondary `stat.ML`) |

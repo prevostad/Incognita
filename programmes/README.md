@@ -5,7 +5,7 @@ by a human, approved by setting its status to `approved`. Agents never edit it.
 
 | Programme | Status | Owner |
 |---|---|---|
-| [BatchedBandits](BatchedBandits/PROGRAMME.md) | draft | Adrien Prevost |
+| [BatchedBandits](BatchedBandits/PROGRAMME.md) | approved | Adrien Prevost |
 | [TransferBandits](TransferBandits/PROGRAMME.md) | draft | Adrien Prevost |
 | [RegretShape](RegretShape/PROGRAMME.md) | draft | Adrien Prevost |
 | [StructuredBandits](StructuredBandits/PROGRAMME.md) | draft (proposed by Claude) | to be decided |
