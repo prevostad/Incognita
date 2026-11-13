@@ -25,6 +25,12 @@ Conventions are those of [PROGRAMME.md](../PROGRAMME.md), with no change.
   randomisation (the learner knows the end of the current batch, not later ones).
 - **Criterion.** All rounds, $\liminf_{t \to \infty}$ (and $\limsup$) of $K_a\, \mathbb E\, N_a(t)/\log t$, for a
   learner that is also optimal at batch ends.
+- **Indexing.** Rounds and batches are numbered from 1, as in the programme. $N_a(t)$ counts the
+  pulls of $a$ in rounds $1, \dots, t$. In $\lim_t$, $\limsup_t$ and $\liminf_t$, $t$ ranges over
+  the integers $t \ge 2$, so that $\log t > 0$. This does not change the limits. When the
+  question is frozen, these indices are translated to the programme's 0-based Lean rounds, using
+  the translation that the first definition pull request fixes. The frozen statement must say
+  which round set the $\liminf_t$ ranges over.
 
 **Question.** Fix $K \ge 2$ and $x \in (1, \infty)$. Does there exist a learner $\pi$ of $M_1$ (it
 may depend on $K$ and $x$, see below) such that, for every grid in $\mathcal G_x$ and every $\nu \in \mathcal V_K$:
