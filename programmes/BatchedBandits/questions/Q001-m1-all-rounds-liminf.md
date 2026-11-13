@@ -55,25 +55,29 @@ optimality at batch ends forces a strictly positive gap above $x$ inside batches
   nothing at batch ends and leaves no mass in expectation mid-batch. No stated result gives this.
   A negative answer needs a lower bound inside batches that the known change-of-measure arguments
   do not give.
-- **Why $M_1$ and not $M_0$ (proposer's sketch, not verified, not a result).** For $M_0$ the
-  answer appears to be "no", by a short diagonal argument from the **[Lean]** lower bound (its
-  $\liminf$ form, which needs counts $O(L_\ell)$, given here by item 3). In $M_0$ the law of the
-  actions up to a round $t$ of batch $\ell+1$ does not depend on $t_{\ell+1}$, provided
-  $t \le t_{\ell+1}$. Fix $\nu$ and build a grid $G^\star$ batch by batch:
-  1. Start at level $k = 1$.
-  2. After $t_\ell$, if some round $t$ with $\log t / L_\ell \in [x - 1/k, x + 1/k]$ has
-     $K_a \mathbb E N_a(t)/\log t \le x + 1/k$, end the batch there ("trap") and move to level $k+1$.
-  3. Otherwise set $t_{\ell+1} = \lceil t_\ell^x \rceil$.
+- **Why $M_1$ and not $M_0$ (remark: proposer's sketch, unverified, not a result, not a claim
+  about direction 6).** The proposer believes, but has not checked, that in $M_0$ items 2 and 4
+  cannot hold together on every grid of $\mathcal G_x$. The idea is a short diagonal argument.
+  In $M_0$ the law of the actions up to a round $t$ of batch $\ell+1$ does not depend on
+  $t_{\ell+1}$, provided $t \le t_{\ell+1}$. Fix a learner, $\nu$ and a suboptimal $a$, and build
+  a grid $G^\star$ batch by batch:
+  1. Start at a level $k_0$ with $x - 1/k_0 > 1$, and set $k = k_0$.
+  2. After $t_\ell$, look for a round $t > t_\ell$ with $\log t / L_\ell \in [x - 1/k, x + 1/k]$
+     and $K_a \mathbb E N_a(t)/\log t \le x + 1/k$. If there is one, end the batch at the first
+     such round ("trap", $t_{\ell+1} := t$) and set $k := k + 1$.
+  3. Otherwise set $t_{\ell+1} := \lceil t_\ell^x \rceil$.
 
-  Then $G^\star \in \mathcal G_x$. If there are infinitely many traps, the batch-end
-  $\liminf$ is $\le x < x^2$, which contradicts the lower bound. If there are finitely many, the
-  in-batch ratio eventually stays $> x + 1/k_0$, because a round with $\log t \le (x - 1/k_0) L_\ell$
-  has ratio $\ge (x^2 - o(1))/(x - 1/k_0)$. So no learner of $M_0$ satisfies 1–4 on every grid of
-  $\mathcal G_x$. If this sketch is right, the programme's direction-6 question has the answer
-  "no" in $M_0$, and the information model $M_1$ is where the question is open. In $M_1$ the
-  trap fails: the learner knows $t_{\ell+1}$ and can keep $N_a$ at its batch-start level until the
-  last $O(L_\ell)$ rounds of the batch. The question reviewer should check this sketch
-  independently.
+  Then $G^\star \in \mathcal G_x$. If there are infinitely many traps, every trap end
+  $t_{\ell+1}$ has $K_a \mathbb E N_a(t_{\ell+1})/L_{\ell+1} \le x + 1/k$, which contradicts
+  item 2 directly, since $x < x^2$. If there are finitely many, let $k_1$ be the final level.
+  From some batch on, every round $t$ of batch $\ell+1$ either lies in the window (so its ratio is
+  $> x + 1/k_1$) or has $\log t < (x - 1/k_1) L_\ell$. In the second case, item 2 gives the ratio
+  $\ge (x^2 - o(1))/(x - 1/k_1)$, which is eventually $> x + 1/k_1$ because $x^2 > x^2 - 1/k_1^2$.
+  This contradicts item 4. In $M_1$ the trap fails: the learner knows $t_{\ell+1}$ and can keep
+  $N_a$ at its batch-start level until the last $O(L_\ell)$ rounds of the batch. This is why the
+  question is posed in $M_1$. The remark does not settle direction 6, which is the owner's. It
+  needs an independent check, and if it is worth pursuing it should be a separate $M_0$
+  question.
 - **Possible route for "yes" (proposer's guess).** In $M_1$, at $t_\ell$ the learner knows
   $t_{\ell+1}$. So it can compute the whole multiset of HY's batch-$(\ell+1)$ pulls, which is
   determined by the data up to $t_\ell$ and by $t_{\ell+1}$. It can then play the leader's pulls
