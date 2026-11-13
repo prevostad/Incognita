@@ -187,7 +187,16 @@ fi
 git worktree add -q -b "$branch" "$wt" origin/main
 share_packages
 mkdir -p "$wt/.agents"
-(cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --effort "$effort" --max-turns "$max_turns" \
+# Work in progress that is not on main yet: agents must not duplicate it.
+gh pr list --state open --json number,title,body \
+  --jq '.[] | "- #\(.number) \(.title)\n  \(.body | split("\n") | map(select(startswith("Role:"))) | first // "")"' \
+  > "$wt/.agents/open-prs.md" 2>/dev/null || true
+open_prs_instructions='
+
+Work in progress: `.agents/open-prs.md` lists the open pull requests, which are not on main yet.
+Do not redo what one of them already does (the same question, the same known result, the same
+reference); choose the next item instead, or change nothing.'
+(cd "$wt" && claude -p "$prompt$open_prs_instructions$summary_instructions" --model "$model" --effort "$effort" --max-turns "$max_turns" \
   --permission-mode acceptEdits --allowedTools "$write_tools")
 
 cd "$wt"
