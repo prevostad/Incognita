@@ -88,14 +88,20 @@ optimality at batch ends forces a strictly positive gap above $x$ inside batches
   new, simpler $M_1$ learner. HY's upper bound is "on hold" for porting (programme, known result
   4). A researcher may therefore prefer a direct $M_1$ learner that sets its targets at
   $\log t_{\ell+1}$ directly.
-- **Literature.** The published batched-bandit work the proposer knows lets the learner choose the
-  grid: Perchet–Rigollet–Chassang–Snowberg 2016 and Gao–Han–Ren–Zhou 2019 (programme, "What is
-  known"; not read for this proposal, so not cited by key). So
-  does the anytime work on asymptotic optimality with $O(\log\log T)$ batches (Jin, Xu, Xiao, Gu,
-  ICML 2021; Kalkanlı, Özgür, batched Thompson sampling, 2021; known only from search-result
-  snippets, not read, not in the bibliography). Two web searches (2026-11-13) found no work on
-  imposed grids with all-rounds asymptotic constants or with information models $M_k$. The answer
-  is not known to the proposer.
+- **Literature.** The published batched-bandit work named in the programme lets the learner
+  choose the grid: [PRCS16] (to be checked) and [GHRZ19] (to be checked). So does the anytime work
+  on asymptotic optimality with few batches: [JTXHXG21] (to be checked) and [KO21a] (to be
+  checked). [KO21b] (to be checked) seems to treat given batch sizes that grow subexponentially,
+  which is closer to the regime $x_\ell \to 1$ than to $x > 1$. These three are known only from
+  search-result snippets. They have not been read, and their metadata is unchecked. Web searches
+  on 2026-11-13 (Claude Opus 5.5) found no work on imposed grids with all-rounds asymptotic
+  constants, or with information models $M_k$. The queries were:
+  - "batched bandits fixed imposed grid asymptotic regret all rounds lower bound batch ends unknown
+    to learner";
+  - "bandit delayed feedback batches imposed by environment unknown batch sizes asymptotically
+    optimal Lai-Robbins constant".
+
+  A negative search is weak evidence. The answer is not known to the proposer.
 
 ## Joint satisfiability
 

@@ -482,6 +482,54 @@
     "identifiers": {},
     "version": ""
   },
+  "JTXHXG21": {
+    "uri": "https://proceedings.mlr.press/v139/jin21c.html",
+    "citation": {
+      "id": "JTXHXG21",
+      "type": "paper-conference",
+      "title": "Almost optimal anytime algorithm for batched multi-armed bandits",
+      "author": [
+        {
+          "family": "Jin",
+          "given": "Tianyuan"
+        },
+        {
+          "family": "Tang",
+          "given": "Jing"
+        },
+        {
+          "family": "Xu",
+          "given": "Pan"
+        },
+        {
+          "family": "Huang",
+          "given": "Keke"
+        },
+        {
+          "family": "Xiao",
+          "given": "Xiaokui"
+        },
+        {
+          "family": "Gu",
+          "given": "Quanquan"
+        }
+      ],
+      "container-title": "Proceedings of the 38th International Conference on Machine Learning (ICML)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "139",
+      "page": "5065-5073",
+      "publisher": "PMLR",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "KKM12": {
     "uri": "",
     "citation": {
@@ -512,6 +560,67 @@
       }
     },
     "identifiers": {},
+    "version": ""
+  },
+  "KO21a": {
+    "uri": "",
+    "citation": {
+      "id": "KO21a",
+      "type": "paper-conference",
+      "title": "Batched Thompson sampling",
+      "author": [
+        {
+          "family": "Kalkanlı",
+          "given": "Cem"
+        },
+        {
+          "family": "Özgür",
+          "given": "Ayfer"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      },
+      "volume": "34"
+    },
+    "identifiers": {
+      "arxiv": "2110.00202"
+    },
+    "version": ""
+  },
+  "KO21b": {
+    "uri": "",
+    "citation": {
+      "id": "KO21b",
+      "type": "article",
+      "title": "Asymptotic performance of Thompson sampling in the batched multi-armed bandits",
+      "author": [
+        {
+          "family": "Kalkanlı",
+          "given": "Cem"
+        },
+        {
+          "family": "Özgür",
+          "given": "Ayfer"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2110.00158"
+    },
     "version": ""
   },
   "L83": {
