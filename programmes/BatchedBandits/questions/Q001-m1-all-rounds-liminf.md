@@ -118,7 +118,15 @@ If the answer is "no", or a full proof is out of reach, the fallbacks are, in or
 2. **Matching lower bound for "no".** A constant $c(x) > 0$ with $\liminf_t \ge x + c(x)$ for every
    learner of $M_1$ satisfying 1–2.
 3. **Variant (a): $M_2$.** The same question in $M_2$.
-4. **Variant (b): weaker item 2.** Item 2 weakened to $\limsup_\ell \le x^2$.
+4. **Variant (b): upper halves only.** A learner of $M_1$ with item 1, $\limsup_\ell K_a \mathbb E
+   N_a(t_\ell)/L_\ell \le x^2$, $\limsup_t K_a \mathbb E N_a(t)/\log t \le x^2$ and
+   $\liminf_t K_a \mathbb E N_a(t)/\log t \le x$. Here item 2 is only an upper bound, so the
+   argument "$\liminf_t \ge x$" above no longer applies, and item 4 must be read as "$\le x$". It
+   is not a weaker question in substance: the second condition gives $\mathbb E N_a(t_\ell) =
+   O(L_\ell)$, so the owner's **[Lean]** lower bound in its $\liminf$ form (HY.md item 1) gives
+   $\liminf_\ell \ge x^2$, and then items 2–4 hold with equality. Variant (b) is the main
+   question with the lower-bound halves left to that result. Its use is that a Lean proof of it
+   does not need the lower bound to be ported first (programme, known result 4, on hold).
 
 ## Dead ends
 
