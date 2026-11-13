@@ -188,6 +188,28 @@ variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
   on this grid and instance (owner's **[Lean]** result, HY.md items 2–3).
 - **What the question asks.** Only whether item 4 can be added. The question is therefore not
   vacuous in the "yes" direction for 1–3, and a "no" answer is a real lower bound.
+- **The in-batch profile item 4 needs.** A learner with 1–4 must have, for each suboptimal $a$,
+  $\mathbb E N_a(t) \approx x^2 L_\ell/K_a$ for most of batch $\ell+1$, up to
+  $t_{\ell+1} - O(L_\ell)$, and then a rise to $\approx x^2 L_{\ell+1}/K_a \approx x^3 L_\ell/K_a$
+  at $t_{\ell+1}$. On the example, write $n_\ell := \lceil 4 L_\ell/K_2 \rceil$ and
+  $m_\ell := n_{\ell+1} - n_\ell$, which is $\approx 4 \cdot 2^\ell/K_2$. Define the target
+  $n(t) := n_\ell$ for $t_\ell < t \le t_{\ell+1} - m_\ell$, and $n(t) := n_\ell + (t - t_{\ell+1} +
+  m_\ell)$ on the last $m_\ell$ rounds. This fits in the batch, since
+  $B_{\ell+1} \ge e^{2^{\ell+1}} - e^{2^\ell} - 1 \gg m_\ell$. Since $\log(t_{\ell+1} - m_\ell) =
+  L_{\ell+1} - o(1)$ and $L_{\ell+1}/L_\ell \to 2$, the ratio $K_2\, n(t)/\log t$
+  - equals $4 + o(1)$ at batch ends (item 2);
+  - lies in $[2 - o(1), 4]$ on the flat part, and comes within $o(1)$ of $2$ just before the
+    rise (item 4);
+  - is $\le K_2\, n_{\ell+1}/(L_{\ell+1} - o(1)) = 4 + o(1)$ on the rise (item 3).
+
+  *Compatibility with the known lower bounds.* At batch ends the profile meets the
+  explore-two-ahead bound with equality: $K_2\, n_\ell \approx 4 \cdot 2^\ell \approx
+  L_{\ell+2}$. Inside batch $\ell+1$ the learner observes nothing new, so the only known
+  constraint is $\mathbb E N_a(t) \ge \mathbb E N_a(t_\ell)$ (see "Change of measure at a
+  mid-batch horizon"), which the flat part meets with equality. Placing the rise needs $t_{\ell+1}$,
+  which $M_1$ provides. This shows that items 2–4 are compatible as a sequence of expected counts
+  on this grid and instance. It is not a learner: a learner must reach this profile in
+  expectation, from data, on every instance at once, and that is the question.
 
 ## Natural fallback
 
