@@ -19,9 +19,10 @@ are in [roles/](roles/); [AGENTS.md](../AGENTS.md) is the contract they all foll
 
 `scripts/loop.sh [n]` runs `n` tasks (default 1), choosing each time the most useful one, in the order
 of AGENTS.md: fix the agents' pull requests (changes requested, failed build, conflict with main),
-review them, review proposed questions, audit the attribution of new results, check merged results
-(every third task), research open questions, formalise known results, propose questions; a
-bibliographer task every fourth task, gardening every tenth. A pull request with a `block` verdict, or
+review them, review proposed questions, audit the attribution of new results, propose a question if
+a programme has fewer than `INCOGNITA_QUESTION_STOCK` waiting; otherwise a rotation over six tasks
+(research three times, check once, bibliographer once, formalise once; formalise replaces research or
+check when there is nothing to research or check); gardening every tenth task. A pull request with a `block` verdict, or
 after three fix rounds, is labelled `needs-human` and left alone.
 
 ## How a task runs
@@ -47,6 +48,7 @@ after three fix rounds, is labelled `needs-human` and left alone.
 | `INCOGNITA_MODEL_REVIEWER` | `sonnet` | model of the reviewing roles: a different model keeps reviews less correlated with the authors |
 | `INCOGNITA_MAX_TURNS` | `200` | turn limit of one session |
 | `INCOGNITA_PACE` | unset (the worker's default curve) | quota pacing curve, syntax of the Tau Ceti worker's `--pace`; `0:100` uses everything that remains, `off` disables pacing. Before each task, `scripts/loop.sh` reads the Claude usage with `tauceti status --json` and waits while a window is over pace |
+| `INCOGNITA_QUESTION_STOCK` | `3` | an approved programme with fewer waiting questions (proposed or open, including proposals in open pull requests) gets a new proposal before research and formalisation |
 | `INCOGNITA_AUTOMERGE` | empty | categories merged automatically, comma-separated: `exploration`, `literature`, `questions`, `library`; empty: none |
 
 ## Before the first run

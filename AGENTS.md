@@ -191,5 +191,6 @@ Human-owned paths, which you never change: `README.md`, `AGENTS.md`, `CLAUDE.md`
 
 ## Building
 
-`scripts/build.sh <Lib>`; CI runs `scripts/check-build.sh Incognita --no-sorry`,
+`scripts/build.sh <Lib>`. In a fresh worktree, build first (`scripts/check-build.sh Incognita`) before
+`lake exe audit`, which needs the library's build. CI runs `scripts/check-build.sh Incognita --no-sorry`,
 `scripts/check-build.sh Statements`, `scripts/build.sh Exploration` and `lake exe audit`. Never require Mathlib, Tau Ceti or LML directly: they come from LMLExplore, at its pins.

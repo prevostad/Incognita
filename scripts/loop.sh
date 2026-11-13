@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Run n agent tasks, one after the other, each time the most useful one in the order of AGENTS.md:
 # fix the agents' own pull requests, review them, review proposed questions, audit the attribution
-# of new results, check merged results (every third task), research open questions or formalise
-# known results (alternately, with a bibliographer task every fourth time), propose questions;
-# gardening every tenth task. See agents/README.md.
+# of new results, keep a stock of questions per programme (INCOGNITA_QUESTION_STOCK), then a rotation
+# of research, check, bibliographer and formalisation; gardening every tenth task. See agents/README.md.
 #
 # Usage: scripts/loop.sh [n]        (run it in the main checkout, on branch main, never edited by hand)
 set -euo pipefail
@@ -118,6 +117,28 @@ pr_to_review() {  # an agent pull request whose last commit has no later verdict
       | select($r == null or $r < .commits[-1].committedDate) | .number' | head -n 1
 }
 
+# Question stock: an approved programme with fewer than INCOGNITA_QUESTION_STOCK (default 3) questions
+# waiting (proposed or open, plus proposals still in open pull requests) gets a new proposal before
+# anything else. The cap also bounds what waits for the owner during calibration.
+stock=${INCOGNITA_QUESTION_STOCK:-3}
+programme_short_of_questions() {  # the approved programme with the fewest waiting questions, if below the stock
+  local p c f pending best="" bestc=""
+  for p in $(approved); do
+    c=0
+    for f in programmes/"$p"/questions/Q*.md; do
+      [ -f "$f" ] || continue
+      grep -q -E '^\| Status \| (proposed|open)' "$f" && c=$((c + 1))
+    done
+    # proposals of this programme still in open pull requests (agent.sh writes "Target: `<P>`")
+    pending=$(gh pr list --state open --json title,body \
+      --jq '[.[] | select(.title | startswith("Propose Q"))] | map(.body) | .[]' 2>/dev/null \
+      | grep -c -F "Target: \`$p\`" || true)
+    c=$((c + ${pending:-0}))
+    if [ "$c" -lt "$stock" ] && { [ -z "$bestc" ] || [ "$c" -lt "$bestc" ]; }; then best=$p; bestc=$c; fi
+  done
+  echo "$best"
+}
+
 for i in $(seq 1 "$n"); do
   merge_ready
   wait_for_quota
@@ -134,24 +155,26 @@ for i in $(seq 1 "$n"); do
     q=$(for f in $(questions_in); do
           grep -q '^| Status | proposed' "$f" && grep -q '^| Reviewer verdict | <' "$f" && echo "$f"
         done | head -n 1)
+    open=$(for f in $(questions_in); do grep -q '^| Status | open' "$f" && echo "$f"; done | shuf -n 1 || true)
+    low=$(programme_short_of_questions)
     if [ -n "$q" ]; then
       role=review-question target=$q
     elif grep -q '^novelty = "unchecked"' catalogue/results.toml 2>/dev/null; then
       role=bibliographer
-    elif [ $((i % 3)) = 0 ] && grep -q '^confidence = "merged"' catalogue/results.toml 2>/dev/null; then
-      role=check
-    elif [ $((i % 4)) = 2 ] && [ -n "$(approved)" ]; then
-      role=bibliographer
+    elif [ -n "$low" ]; then
+      role=propose target=$low
     else
-      open=$(for f in $(questions_in); do grep -q '^| Status | open' "$f" && echo "$f"; done | shuf -n 1 || true)
+      # Rotation over six tasks: research three times (formalise if no question is open), check
+      # once (formalise if nothing is merged), bibliographer once, formalise once.
       prog=$(approved | shuf -n 1 || true)
-      if [ -n "$open" ] && [ $((i % 2)) = 1 ]; then
-        role=research target=$open
-      elif [ -n "$prog" ] && [ $((i % 3)) != 0 ]; then
-        role=formalise target=$prog
-      elif [ -n "$prog" ]; then
-        role=propose target=$prog
-      fi
+      case $((i % 6)) in
+        1|3|5) if [ -n "$open" ]; then role=research target=$open; else role=formalise target=$prog; fi ;;
+        0) if grep -q '^confidence = "merged"' catalogue/results.toml 2>/dev/null; then role=check
+           else role=formalise target=$prog; fi ;;
+        2) role=bibliographer ;;
+        4) role=formalise target=$prog ;;
+      esac
+      [ -z "$prog" ] && [ "$role" != bibliographer ] && [ "$role" != check ] && [ "$role" != research ] && role=""
     fi
   fi
   if [ -z "$role" ]; then
