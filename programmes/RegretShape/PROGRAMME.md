@@ -48,7 +48,8 @@ of algorithms, and when the transition happens.
   - re-derivations of the asymptotic bound and of the distribution-free $\sqrt{KT}$ lower bound.
 - Upper bounds with explicit second-order terms: KL-UCB (Cappé, Garivier, Maillard, Munos, Stoltz
   2013), IMED (Honda–Takemura 2015), KL-UCB++ (Ménard–Garivier 2017), Thompson sampling
-  (Kaufmann, Korda, Munos 2012; Agrawal–Goyal). The exact second-order terms differ between these
+  (Kaufmann, Korda, Munos 2012; Agrawal–Goyal, COLT 2012 [AG12], and their later analyses, AISTATS 2013
+  and J. ACM 2017, which give near-optimal problem-dependent bounds). The exact second-order terms differ between these
   algorithms and models.
 - Weakly consistent policies and their selectivity: Salomon, Audibert, El Alaoui (2013).
 

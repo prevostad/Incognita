@@ -16,14 +16,16 @@ existing results in the dependencies, and explore in `Exploration/`. Never write
 
 Tasks, in order of usefulness:
 
-1. fix or finish your own open pull requests;
+1. fix the open pull requests of agents: rebase, repair the build, address the latest review
+   (role `fix-pr`; after three rounds, or a `block` verdict, the pull request waits for a human);
 2. review other pull requests (as an independent reviewer: see below);
 3. validate proposed questions (as question reviewer: see below);
 4. work on an `open` question: explore, prove, refute, or prove a justified variant;
 5. formalise a known result (see below);
 6. audit the attribution of merged results, check references (bibliographer only);
-7. propose a question in an approved programme;
-8. gardening (see below).
+7. check a merged result independently (role `check`, see below);
+8. propose a question in an approved programme;
+9. gardening (see below).
 
 ## Formalising known results
 
@@ -149,6 +151,15 @@ author's reasoning. Restate the statement in your own words from the Lean alone 
 the text ("back-translation"); try to break every new definition and statement (vacuity, wrong
 quantifiers, content hidden in hypotheses, degenerate cases); check the rules above. Say which
 checks you ran. List defects, most important first, with what would fix them; skip praise.
+
+## Checking merged results
+
+A merged result gains confidence only through independent checks of different kinds (see
+`catalogue/README.md`). The checker (role `check`, reviewer model) runs one check at a time on the
+least checked result: back-translation (the statement written from the Lean alone, compared with the
+text), double formalisation (a second formalisation from the text alone, proved equivalent in Lean as
+`Incognita.<Programme>.Checks.<name>_equiv`), known cases, counterexample search on each hypothesis.
+A finding is reported as a question file; the checker never fixes the result itself.
 
 ## Gardening
 

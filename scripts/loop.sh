@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Run n agent tasks, one after the other, each time the most useful one in the order of AGENTS.md:
-# review pull requests, review proposed questions, audit the attribution of new results, research
-# open questions or formalise known results (alternately, with a bibliographer task every fourth
-# time), propose questions; gardening every tenth task. See agents/README.md.
+# fix the agents' own pull requests, review them, review proposed questions, audit the attribution
+# of new results, check merged results (every third task), research open questions or formalise
+# known results (alternately, with a bibliographer task every fourth time), propose questions;
+# gardening every tenth task. See agents/README.md.
 #
 # Usage: scripts/loop.sh [n]        (run it in the main checkout, on branch main, never edited by hand)
 set -euo pipefail
@@ -83,18 +84,49 @@ merge_ready() {  # merge the open pull requests that are approved, green and aut
     fi
   done
 }
-pr_to_review() {  # an open pull request whose last commit has no later verdict
-  gh pr list --state open --json number,commits,comments --jq '
-    .[] | ([.comments[] | select(.body | startswith("Verdict:")) | .createdAt] | max) as $r
-        | select($r == null or $r < .commits[-1].committedDate) | .number' | head -n 1
+# Only the pull requests of agents (branch agent/*) are reviewed and fixed by agents; humans review
+# their own. A pull request labelled needs-human is left to a human.
+agent_prs='.[] | select(.headRefName | startswith("agent/"))
+               | select([.labels[].name] | index("needs-human") | not)'
+escalate() {  # label needs-human: a "block" verdict, or three fix rounds without success
+  gh label create needs-human --color B60205 \
+    --description "An agent cannot go further: a human must decide" >/dev/null 2>&1 || true
+  local pr
+  for pr in $(gh pr list --state open --json number,headRefName,labels,comments --jq "$agent_prs"'
+      | ([.comments[] | select(.body | startswith("Verdict:"))] | sort_by(.createdAt) | last) as $v
+      | ([.comments[] | select(.body | startswith("Fix round"))] | length) as $f
+      | select(($v != null and ($v.body | startswith("Verdict: block"))) or $f >= 3) | .number'); do
+    gh pr edit "$pr" --add-label needs-human >/dev/null && echo "== #$pr needs a human"
+  done
+}
+pr_to_fix() {  # changes requested on the last commit (and not answered yet), a failed build, or a conflict
+  gh pr list --state open --json number,headRefName,labels,commits,comments,mergeable,statusCheckRollup \
+    --jq "$agent_prs"'
+      | ([.comments[] | select(.body | startswith("Verdict:"))] | sort_by(.createdAt) | last) as $v
+      | ([.comments[] | select(.body | startswith("Fix round")) | .createdAt] | max) as $lf
+      | select(
+          ($v != null and $v.createdAt > .commits[-1].committedDate
+             and ($v.body | startswith("Verdict: request_changes"))
+             and ($lf == null or $lf < $v.createdAt))
+          or ([.statusCheckRollup[]? | select(.name == "Build and check") | .conclusion] | first) == "FAILURE"
+          or .mergeable == "CONFLICTING")
+      | .number' | head -n 1
+}
+pr_to_review() {  # an agent pull request whose last commit has no later verdict
+  gh pr list --state open --json number,headRefName,labels,commits,comments --jq "$agent_prs"'
+      | ([.comments[] | select(.body | startswith("Verdict:")) | .createdAt] | max) as $r
+      | select($r == null or $r < .commits[-1].committedDate) | .number' | head -n 1
 }
 
 for i in $(seq 1 "$n"); do
   merge_ready
   wait_for_quota
   git pull -q --ff-only origin main
+  escalate
   role="" target=""
-  if pr=$(pr_to_review) && [ -n "$pr" ]; then
+  if pr=$(pr_to_fix) && [ -n "$pr" ]; then
+    role=fix-pr target=$pr
+  elif pr=$(pr_to_review) && [ -n "$pr" ]; then
     role=review-pr target=$pr
   elif [ $((i % 10)) = 0 ] && [ -n "$(approved)" ]; then
     role=garden
@@ -106,6 +138,8 @@ for i in $(seq 1 "$n"); do
       role=review-question target=$q
     elif grep -q '^novelty = "unchecked"' catalogue/results.toml 2>/dev/null; then
       role=bibliographer
+    elif [ $((i % 3)) = 0 ] && grep -q '^confidence = "merged"' catalogue/results.toml 2>/dev/null; then
+      role=check
     elif [ $((i % 4)) = 2 ] && [ -n "$(approved)" ]; then
       role=bibliographer
     else

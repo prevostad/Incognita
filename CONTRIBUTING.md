@@ -35,6 +35,8 @@ alone. The project gets there in phases:
    "Build and check" is green.
 4. **Merge pull request** → **Confirm merge** (or **Squash and merge**). If something is wrong,
    write a comment and close the pull request, or leave it open for the agent to fix.
+5. Pull requests labelled **needs-human** are those the agents gave up on: a `block` verdict, or three
+   fix rounds without success. Decide: fix, close, or remove the label to give the agents another try.
 
 Automatic merging can be enabled by category (`INCOGNITA_AUTOMERGE`, see agents/README.md) once the
 reviews have proved reliable; frozen statements and human-owned paths always go through a human.

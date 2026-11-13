@@ -14,11 +14,15 @@ are in [roles/](roles/); [AGENTS.md](../AGENTS.md) is the contract they all foll
 | review-pr | `scripts/agent.sh review-pr <number>` | a review comment on the pull request | reviewer |
 | garden | `scripts/agent.sh garden` | consolidation, catalogue | author |
 | bibliographer | `scripts/agent.sh bibliographer` | `literature/`, novelty in the catalogue, Attribution sections | author |
+| fix-pr | `scripts/agent.sh fix-pr <number>` | the branch of an agent's pull request (rebase, build, review findings), then a "Fix round" comment | author |
+| check | `scripts/agent.sh check` | one independent check of a merged result, catalogue, equivalence proofs | reviewer |
 
 `scripts/loop.sh [n]` runs `n` tasks (default 1), choosing each time the most useful one, in the order
-of AGENTS.md: review pull requests, review proposed questions, audit the attribution of new results,
-research open questions, formalise known results, propose questions; a bibliographer task every fourth
-task, gardening every tenth.
+of AGENTS.md: fix the agents' pull requests (changes requested, failed build, conflict with main),
+review them, review proposed questions, audit the attribution of new results, check merged results
+(every third task), research open questions, formalise known results, propose questions; a
+bibliographer task every fourth task, gardening every tenth. A pull request with a `block` verdict, or
+after three fix rounds, is labelled `needs-human` and left alone.
 
 ## How a task runs
 
