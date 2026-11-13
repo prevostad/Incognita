@@ -1,0 +1,57 @@
+name: PR summary
+
+# A PDF for the human who merges: the pull request's description (results in mathematical form)
+# and the Lean statements it adds or changes. Download it from the run's artifacts (pr-summary).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    name: Summary PDF
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Collect the summary
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/pr_summary.py > pr-summary.md
+          cat pr-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install pandoc and XeLaTeX
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends pandoc texlive-xetex \
+            texlive-latex-recommended texlive-fonts-recommended lmodern fonts-lmodern fonts-dejavu-core
+
+      - name: Build the PDF
+        run: |
+          pandoc pr-summary.md -o pr-summary.pdf --pdf-engine=xelatex \
+            -V geometry:margin=2.2cm -V mainfont="DejaVu Serif" -V monofont="DejaVu Sans Mono" \
+            -V fontsize=10pt
+
+      - name: Upload the PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-summary
+          path: |
+            pr-summary.pdf
+            pr-summary.md

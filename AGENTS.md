@@ -122,7 +122,9 @@ Lean does not check citations, and models invent plausible references. So:
 - **Credit techniques, not only results.** The Attribution section of a write-up names where each
   idea of the proof comes from. A new statement proved with an old technique is a new result whose
   technique is credited; the question "is this exact statement in print?" is not enough.
-- **The bibliographer** (the only role with web access) audits every merged result: is it known,
+- **Every role may read the web** (search and pages, no other network access). What you read and
+  use is recorded in `literature/` (entry, part read, by whom, when), in the same pull request.
+- **The bibliographer** audits independently every merged result: is it known,
   is it a special case of something known, where do its techniques come from. It sets `novelty` in
   the catalogue to `new`, `rediscovery of [KEY, ...]` or `known: [KEY, ...]`. It also checks the
   metadata of references and reads the cited parts. Its audit counts as a check of type
@@ -163,7 +165,10 @@ checks you ran. List defects, most important first, with what would fix them; sk
 
 ## Pull requests
 
-One topic per pull request; no stacked pull requests. Reuse what exists in Mathlib, Tau Ceti, LML,
+One topic per pull request; no stacked pull requests. A writing role ends by writing
+`.agents/summary.md` (results in mathematical form with their Lean names, frozen statements added,
+sources read, what is not done): it becomes the pull request's description and, through CI, a PDF
+for the human who merges. Reuse what exists in Mathlib, Tau Ceti, LML,
 LMLExplore and here, up to renaming and generalisation. Never open pull requests or issues in those
 dependencies: their maintainers decide what to adopt. Say in the description which model wrote the
 pull request.

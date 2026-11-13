@@ -7,9 +7,9 @@ Task: formalise the first item of "Known results to formalise" that is not done,
 versions; search them). If an item is too large for one pull request, formalise its first
 self-contained part (a definition with its basic API, or one lemma) and say what remains.
 
-- Formalise from the statement recorded in `literature/notes/<KEY>.md`, which the bibliographer read
-  in the source; you have no web access and must not formalise from memory. If the note does not
-  contain the statement, choose another item, or change nothing: the bibliographer will read it first.
+- Formalise from the source, never from memory. If `literature/notes/<KEY>.md` does not yet contain
+  the statement read in the source, read it yourself (web) and record it there, with the part read,
+  in `literature/index.md`, in the same pull request.
 - Write the frozen statement in `Statements/<Programme>/`, with the citation `[KEY, Theorem X]` in its
   docstring and the differences of form listed.
 - Prove it in the library as `Incognita.<Programme>.<name>` with exactly the same type; check with
