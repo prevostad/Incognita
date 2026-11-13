@@ -11,6 +11,36 @@ n=${1:-1}
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
+# Quota pacing, as in the Tau Ceti worker: before each task, read the Claude subscription usage with
+# the worker's own pacer (`tauceti status --json`) and wait while a window is not under pace.
+# INCOGNITA_PACE is the pacing curve, with the syntax of `tauceti --pace` (unset: the worker's
+# default curve; "0:100": everything that remains; "off": no pacing). The worker must be installed.
+tauceti_conf=${INCOGNITA_TAUCETI_CONF:-https://raw.githubusercontent.com/LeanMachineLearning/LMLExplore/main/tauceti.toml}
+wait_for_quota() {
+  [ "${INCOGNITA_PACE:-}" = off ] && return 0
+  local q ok next s
+  while true; do
+    if [ -n "${INCOGNITA_PACE:-}" ]; then
+      q=$(TAUCETI_PACE="$INCOGNITA_PACE" tauceti --conf "$tauceti_conf" status --json 2>/dev/null \
+        | jq -c '.quota.claude' 2>/dev/null) || q=""
+    else
+      q=$(tauceti --conf "$tauceti_conf" status --json 2>/dev/null | jq -c '.quota.claude' 2>/dev/null) || q=""
+    fi
+    ok=$(printf '%s' "${q:-null}" | jq -r '
+      if . == null or (.windows | length) == 0 then "unknown (\(.error // "no reading"))"
+      elif .rate_limited then "rate limited"
+      elif ([.windows[].status] | all(. == "under-pace" or . == "idle")) then "yes"
+      else "over pace" end' 2>/dev/null || echo "unknown")
+    [ "$ok" = yes ] && return 0
+    next=$(printf '%s' "${q:-null}" | jq -r '.next_eligible // empty' 2>/dev/null || true)
+    if [ -n "$next" ]; then s=$(( ${next%.*} - $(date +%s) + 60 )); else s=900; fi
+    [ "$s" -lt 300 ] && s=300
+    [ "$s" -gt 3600 ] && s=3600
+    echo "== quota: $ok $(printf '%s' "${q:-null}" | jq -c '[.windows[]? | {name, used, budget, status}]' 2>/dev/null); waiting ${s}s"
+    sleep "$s"
+  done
+}
+
 approved() {
   grep -l '^| Status | \*\*approved' programmes/*/PROGRAMME.md 2>/dev/null \
     | xargs -r -n1 dirname | xargs -r -n1 basename
@@ -61,6 +91,7 @@ pr_to_review() {  # an open pull request whose last commit has no later verdict
 
 for i in $(seq 1 "$n"); do
   merge_ready
+  wait_for_quota
   git pull -q --ff-only origin main
   role="" target=""
   if pr=$(pr_to_review) && [ -n "$pr" ]; then

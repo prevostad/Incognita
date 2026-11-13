@@ -42,6 +42,7 @@ task, gardening every tenth.
 | `INCOGNITA_MODEL_AUTHOR` | `opus` | model of the writing roles |
 | `INCOGNITA_MODEL_REVIEWER` | `sonnet` | model of the reviewing roles: a different model keeps reviews less correlated with the authors |
 | `INCOGNITA_MAX_TURNS` | `200` | turn limit of one session |
+| `INCOGNITA_PACE` | unset (the worker's default curve) | quota pacing curve, syntax of the Tau Ceti worker's `--pace`; `0:100` uses everything that remains, `off` disables pacing. Before each task, `scripts/loop.sh` reads the Claude usage with `tauceti status --json` and waits while a window is over pace |
 | `INCOGNITA_AUTOMERGE` | empty | categories merged automatically, comma-separated: `exploration`, `literature`, `questions`, `library`; empty: none |
 
 ## Before the first run
