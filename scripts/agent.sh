@@ -89,6 +89,17 @@ if [ "$role" = review-pr ]; then
   printf '%s\n\n---\n:robot: Automated review by `%s` (role review-pr, scripts/agent.sh).\n' \
     "$review" "$model" > "$wt/.agents/review.md"
   gh pr comment "$target" --body-file "$wt/.agents/review.md"
+  # The verdict also becomes the check "Incognita review" on the reviewed commit, which the ruleset
+  # of main requires: GitHub's merge button stays grey until the last commit is approved.
+  reviewed=$(git rev-parse "pr-$target-$stamp")
+  case "$review" in
+    "Verdict: approve"*) state=success desc="approved by $model" ;;
+    "Verdict: block"*) state=failure desc="blocked by $model: a human must decide" ;;
+    *) state=failure desc="changes requested by $model" ;;
+  esac
+  gh api -X POST "repos/{owner}/{repo}/statuses/$reviewed" -f state="$state" \
+    -f context="Incognita review" -f description="$desc" >/dev/null \
+    || echo "could not set the Incognita review check" >&2
   exit 0
 fi
 

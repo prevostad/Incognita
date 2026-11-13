@@ -31,8 +31,11 @@ alone. The project gets there in phases:
    mathematical form, with their Lean names.
 2. For a PDF of the same summary with the Lean statements of the pull request: tab **Checks** →
    run **PR summary** → **Summary** → artifact `pr-summary` (a zip with the PDF).
-3. Read the automated review (a comment starting with `Verdict:`) and check that the build
-   "Build and check" is green.
+3. Read the automated review (a comment starting with `Verdict:`). Its verdict is also the check
+   **Incognita review**, required by the ruleset of `main` together with "Build and check": GitHub's
+   merge button stays grey until the reviewer has approved the last commit. On your own pull
+   requests (branches not starting with `agent/`), a workflow marks this check green: you are the
+   reviewer.
 4. **Merge pull request** → **Confirm merge** (or **Squash and merge**). If something is wrong,
    write a comment and close the pull request, or leave it open for the agent to fix.
 5. Pull requests labelled **needs-human** are those the agents gave up on: a `block` verdict, or three

@@ -1,0 +1,29 @@
+name: Incognita review
+
+# The ruleset of main requires the check "Incognita review". On the pull requests of agents
+# (branches agent/*), the automated reviewer sets it (scripts/agent.sh, role review-pr): green for
+# "Verdict: approve", red otherwise, and missing (so merging is blocked) on a commit not reviewed
+# yet. Pull requests of humans are reviewed by the human who merges them: this workflow marks them
+# as such.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  statuses: write
+
+jobs:
+  human:
+    if: ${{ !startsWith(github.event.pull_request.head.ref, 'agent/') }}
+    runs-on: ubuntu-latest
+    name: Human pull request
+    steps:
+      - name: Mark as reviewed by its human author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api -X POST "repos/$REPO/statuses/$SHA" -f state=success \
+            -f context="Incognita review" -f description="human pull request: reviewed by the human who merges it"
