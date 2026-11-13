@@ -79,22 +79,42 @@ variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
 - **Why $M_1$ and not $M_0$ (remark: proposer's sketch, unverified, not a result, not a claim
   about direction 6).** The proposer believes, but has not checked, that in $M_0$ items 2 and 4
   cannot hold together on every grid of $\mathcal G_x$. The idea is a short diagonal argument.
-  In $M_0$ the law of the actions up to a round $t$ of batch $\ell+1$ does not depend on
-  $t_{\ell+1}$, provided $t \le t_{\ell+1}$. Fix a learner, $\nu$ and a suboptimal $a$, and build
-  a grid $G^\star$ batch by batch:
-  1. Start at a level $k_0$ with $x - 1/k_0 > 1$, and set $k = k_0$.
-  2. After $t_\ell$, look for a round $t > t_\ell$ with $\log t / L_\ell \in [x - 1/k, x + 1/k]$
-     and $K_a \mathbb E N_a(t)/\log t \le x + 1/k$. If there is one, end the batch at the first
-     such round ("trap", $t_{\ell+1} := t$) and set $k := k + 1$.
-  3. Otherwise set $t_{\ell+1} := \lceil t_\ell^x \rceil$.
 
-  Then $G^\star \in \mathcal G_x$. If there are infinitely many traps, every trap end
-  $t_{\ell+1}$ has $K_a \mathbb E N_a(t_{\ell+1})/L_{\ell+1} \le x + 1/k$, which contradicts
-  item 2 directly, since $x < x^2$. If there are finitely many, let $k_1$ be the final level.
-  From some batch on, every round $t$ of batch $\ell+1$ either lies in the window (so its ratio is
-  $> x + 1/k_1$) or has $\log t < (x - 1/k_1) L_\ell$. In the second case, item 2 gives the ratio
-  $\ge (x^2 - o(1))/(x - 1/k_1)$, which is eventually $> x + 1/k_1$ because $x^2 > x^2 - 1/k_1^2$.
-  This contradicts item 4. In $M_1$ the trap fails: the learner knows $t_{\ell+1}$ and can keep
+  *Why the construction is legitimate.* In $M_0$, the action at a round $t$ of batch $\ell+1$
+  is a measurable function of $t_1, \dots, t_\ell$, $t$, the observations up to $t_\ell$ and the
+  learner's internal randomisation $U$, which is independent of the rewards. By induction on
+  $\ell$, the joint law of $U$, the actions up to $t$ and the observations up to $t_\ell$, for
+  $t_\ell < t \le t_{\ell+1}$, is determined by the learner, $\nu$ and $t_1, \dots, t_\ell$.
+  It does not depend on $t_{\ell+1}$ or later batch ends. So, for such $t$, $\mathbb E N_a(t)$ is
+  a function $e_\ell(t)$ of $t_1, \dots, t_\ell$ and $t$, known before $t_{\ell+1}$ is chosen.
+
+  Fix a learner, $\nu$ and a suboptimal $a$, and build a grid $G^\star$ batch by batch:
+  1. Set $t_1 := \max(2, K)$, so $B_1 \ge \max(2, K)$ and $L_1 > 0$. Choose a level $k_0$ with
+     $x - 1/k_0 > 1$ and $x + 1/k_0 < x^2$, and set $k := k_0$.
+  2. Given $t_1, \dots, t_\ell$, the window is the finite set of integers $t$ with
+     $\log t / L_\ell \in [x - 1/k, x + 1/k]$. Each such $t$ is $> t_\ell$, since $x - 1/k > 1$.
+     If some $t$ in the window has $K_a\, e_\ell(t)/\log t \le x + 1/k$, end the batch at the
+     smallest one ("trap", $t_{\ell+1} := t$) and set $k := k + 1$.
+  3. Otherwise set $t_{\ell+1} := \lceil t_\ell^x \rceil$, which is $> t_\ell$ since $t_\ell \ge 2$.
+
+  *$G^\star \in \mathcal G_x$.* Every batch is nonempty, so $t_\ell \to \infty$ and
+  $L_\ell \to \infty$. A non-trap batch has
+  $x \le x_{\ell+1} \le x + \log(1 + t_\ell^{-x})/L_\ell$, which tends to $x$. A trap batch has
+  $|x_{\ell+1} - x| \le 1/k$, where $k$ is the level at that trap. The $n$-th trap is at level
+  $k_0 + n - 1$. So, for every $\varepsilon > 0$, only finitely many traps have $1/k > \varepsilon$.
+  Both kinds of batches therefore give $x_{\ell} \to x$, whether traps and non-traps interleave
+  or not.
+
+  *Contradiction.* If there are infinitely many traps, every trap end $t_{\ell+1}$ has
+  $K_a \mathbb E N_a(t_{\ell+1})/L_{\ell+1} \le x + 1/k_0 < x^2$. This contradicts item 2
+  directly. If there are finitely many, let $k_1$ be the final level, and take a non-trap batch
+  $\ell + 1$ far enough that $L_\ell > k_1 \log 2$. Every round $t$ of that batch has
+  $\log t \le x L_\ell + \log 2 < (x + 1/k_1) L_\ell$. So either it lies in the window (and its
+  ratio is $> x + 1/k_1$, since there was no trap), or $\log t < (x - 1/k_1) L_\ell$. In the
+  second case, $\mathbb E N_a(t) \ge \mathbb E N_a(t_\ell)$ and item 2 give a ratio
+  $\ge (x^2 - o(1))/(x - 1/k_1)$. This is eventually $> x + 1/k_1$, because
+  $(x + 1/k_1)(x - 1/k_1) = x^2 - 1/k_1^2 < x^2$. So $\liminf_t \ge x + 1/k_1 > x$, which
+  contradicts item 4. In $M_1$ the trap fails: the learner knows $t_{\ell+1}$ and can keep
   $N_a$ at its batch-start level until the last $O(L_\ell)$ rounds of the batch. This is why the
   question is posed in $M_1$.
 
