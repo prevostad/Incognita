@@ -25,6 +25,20 @@ alone. The project gets there in phases:
    alone. The owner reads a random sample of accepted questions from time to time, and tightens
    the programme's criteria when a bad one slipped through.
 
+## Merging a pull request
+
+1. Open the pull request on GitHub. Its description starts with the agent's summary: the results in
+   mathematical form, with their Lean names.
+2. For a PDF of the same summary with the Lean statements of the pull request: tab **Checks** →
+   run **PR summary** → **Summary** → artifact `pr-summary` (a zip with the PDF).
+3. Read the automated review (a comment starting with `Verdict:`) and check that the build
+   "Build and check" is green.
+4. **Merge pull request** → **Confirm merge** (or **Squash and merge**). If something is wrong,
+   write a comment and close the pull request, or leave it open for the agent to fix.
+
+Automatic merging can be enabled by category (`INCOGNITA_AUTOMERGE`, see agents/README.md) once the
+reviews have proved reliable; frozen statements and human-owned paths always go through a human.
+
 ## Branch protection and accounts
 
 `main` is protected by a ruleset: no force push, no deletion, changes through pull requests only,

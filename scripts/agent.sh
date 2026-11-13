@@ -36,14 +36,25 @@ mkdir -p "$root/.agents"
 git fetch -q origin
 prompt=$(sed "s|{TARGET}|$target|g" "$prompt_file")
 
-# Writing roles: files, builds and local git only (no push, no gh, no network).
-write_tools="Read,Edit,Write,Glob,Grep,Bash(lake build:*),Bash(lake exe audit:*),Bash(lake env lean:*),Bash(bash scripts/build.sh:*),Bash(bash scripts/check-build.sh:*),Bash(scripts/build.sh:*),Bash(scripts/check-build.sh:*),Bash(git add:*),Bash(git commit:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(grep:*)"
-# The bibliographer alone may read the web.
-if [ "$role" = bibliographer ]; then
-  write_tools="$write_tools,WebSearch,WebFetch"
-fi
+# Every role may read the web (search and fetch pages). No shell network access, no push, no gh:
+# the script pushes and opens the pull request.
+web_tools="WebSearch,WebFetch"
+# Writing roles: files, builds and local git.
+write_tools="Read,Edit,Write,Glob,Grep,$web_tools,Bash(lake build:*),Bash(lake exe audit:*),Bash(lake env lean:*),Bash(bash scripts/build.sh:*),Bash(bash scripts/check-build.sh:*),Bash(scripts/build.sh:*),Bash(scripts/check-build.sh:*),Bash(git add:*),Bash(git commit:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(grep:*)"
 # Reviewers: read only.
-read_tools="Read,Glob,Grep,Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(grep:*)"
+read_tools="Read,Glob,Grep,$web_tools,Bash(git diff:*),Bash(git log:*),Bash(ls:*),Bash(grep:*)"
+
+# Writing roles end by summarising their pull request for the human who merges it.
+summary_instructions='
+
+Finally, write the file `.agents/summary.md` (it is not committed; the script puts it in the pull
+request description, and CI turns it into a PDF). Sections, in this order:
+## Results — each result proved or refuted in this pull request, as a precise mathematical
+statement (LaTeX between $...$ or $$...$$), followed by its Lean name; "None" if there is none.
+## Frozen statements — frozen statements added (with their question), or "None".
+## Sources read — the references read for this work, as [KEY, part].
+## Not done — what remains, and any doubt about the statements.
+Keep it short: it is what a human reads before merging.'
 
 cleanup() { git -C "$root" worktree remove --force "$wt" 2>/dev/null || true; }
 trap cleanup EXIT
@@ -75,7 +86,8 @@ fi
 
 git worktree add -q -b "$branch" "$wt" origin/main
 share_packages
-(cd "$wt" && claude -p "$prompt" --model "$model" --max-turns "$max_turns" \
+mkdir -p "$wt/.agents"
+(cd "$wt" && claude -p "$prompt$summary_instructions" --model "$model" --max-turns "$max_turns" \
   --permission-mode acceptEdits --allowedTools "$write_tools")
 
 cd "$wt"
@@ -116,11 +128,16 @@ if [ "$status" != 0 ]; then
   exit 1
 fi
 
+summary="(the agent wrote no summary)"
+[ -f "$wt/.agents/summary.md" ] && summary=$(cat "$wt/.agents/summary.md")
 git push -q -u origin "$branch"
 gh pr create --base main --head "$branch" --title "$(git log -1 --format=%s)" --body "$(cat <<EOF
 Role: \`$role\`. Target: \`${target:-none}\`. Model: \`$model\`.
 
-Opened by \`scripts/agent.sh\` (see agents/README.md).
+$summary
+
+Opened by \`scripts/agent.sh\` (see agents/README.md). CI attaches a PDF of this summary, with the
+Lean statements of the pull request, to its run (artifact \`pr-summary\`).
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF

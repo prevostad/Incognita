@@ -13,7 +13,7 @@ are in [roles/](roles/); [AGENTS.md](../AGENTS.md) is the contract they all foll
 | formalise | `scripts/agent.sh formalise <Programme>` | a known result, with its frozen statement | author |
 | review-pr | `scripts/agent.sh review-pr <number>` | a review comment on the pull request | reviewer |
 | garden | `scripts/agent.sh garden` | consolidation, catalogue | author |
-| bibliographer | `scripts/agent.sh bibliographer` | `literature/`, novelty in the catalogue, Attribution sections | author; the only role with web access |
+| bibliographer | `scripts/agent.sh bibliographer` | `literature/`, novelty in the catalogue, Attribution sections | author |
 
 `scripts/loop.sh [n]` runs `n` tasks (default 1), choosing each time the most useful one, in the order
 of AGENTS.md: review pull requests, review proposed questions, audit the attribution of new results,
@@ -24,12 +24,16 @@ task, gardening every tenth.
 
 1. A fresh git worktree from `origin/main`, on a branch `agent/<role>-<timestamp>`, under
    `.agents/` (ignored by git).
-2. `claude -p` runs in it with the role prompt, a restricted tool list (no network commands, no
-   `git push`, no `gh` for writing roles), and the model of the role.
+2. `claude -p` runs in it with the role prompt, a restricted tool list (web search and page reading,
+   but no shell network commands, no `git push`, no `gh`), and the model of the role. Writing roles
+   end by writing `.agents/summary.md`: the results in mathematical form with their Lean names.
 3. The script, not the agent, pushes the branch and opens the pull request, with the role and the
    model in its description. For `review-pr`, the script posts the agent's review as a comment.
-4. A human merges, for now. Merging after approved reviews and green CI can be automated once the
-   reviews are calibrated.
+4. CI builds and audits the pull request, and builds a PDF of its summary with its Lean statements
+   (artifact `pr-summary` of the "PR summary" run). A human merges, unless automatic merging is
+   enabled for the pull request's category: then `scripts/loop.sh` merges it once the build is green
+   and the last review, on the last commit, is `Verdict: approve`. Frozen statements and human-owned
+   paths are always merged by a human.
 
 ## Configuration (environment variables)
 
@@ -38,6 +42,7 @@ task, gardening every tenth.
 | `INCOGNITA_MODEL_AUTHOR` | `opus` | model of the writing roles |
 | `INCOGNITA_MODEL_REVIEWER` | `sonnet` | model of the reviewing roles: a different model keeps reviews less correlated with the authors |
 | `INCOGNITA_MAX_TURNS` | `200` | turn limit of one session |
+| `INCOGNITA_AUTOMERGE` | empty | categories merged automatically, comma-separated: `exploration`, `literature`, `questions`, `library`; empty: none |
 
 ## Before the first run
 
