@@ -1,10 +1,10 @@
 {
   "AG12": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v23/agrawal12.html",
     "citation": {
       "id": "AG12",
       "type": "paper-conference",
-      "title": "Analysis of Thompson sampling for the multi-armed bandit problem",
+      "title": "Analysis of Thompson Sampling for the Multi-armed Bandit Problem",
       "author": [
         {
           "family": "Agrawal",
@@ -15,7 +15,26 @@
           "given": "Navin"
         }
       ],
-      "container-title": "Proceedings of the 25th Conference on Learning Theory (COLT)",
+      "container-title": "Proceedings of the 25th Annual Conference on Learning Theory",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "23",
+      "page": "39.1-39.26",
+      "publisher": "PMLR",
+      "event-place": "Edinburgh, Scotland",
+      "editor": [
+        {
+          "family": "Mannor",
+          "given": "Shie"
+        },
+        {
+          "family": "Srebro",
+          "given": "Nathan"
+        },
+        {
+          "family": "Williamson",
+          "given": "Robert C."
+        }
+      ],
       "issued": {
         "date-parts": [
           [
@@ -24,7 +43,9 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1111.1797"
+    },
     "version": ""
   },
   "BK96": {

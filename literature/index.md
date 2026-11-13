@@ -5,7 +5,7 @@ See [README.md](README.md) for the meaning of the columns. One row per entry of
 
 | Key | Work | Metadata | Read | By, date | Note |
 |---|---|---|---|---|---|
-| AG12 | Agrawal, Goyal, Thompson sampling, COLT 2012 | unchecked | — | | |
+| AG12 | Agrawal, Goyal, Thompson sampling, COLT 2012 | checked (PMLR v23 page and arXiv:1111.1797, Claude Opus 5.5, 2026-11-13) | — | | PMLR 23:39.1–39.26; arXiv v3 (9 Apr 2012) is the preprint |
 | BK96 | Burnetas, Katehakis, optimal adaptive policies, 1996 | unchecked | — | | |
 | CGMMS13 | Cappé, Garivier, Maillard, Munos, Stoltz, KL-UCB, Ann. Statist. 2013 | unchecked | — | | |
 | CMP17 | Combes, Magureanu, Proutière, OSSB, NeurIPS 2017 | unchecked | — | | |
