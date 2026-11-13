@@ -89,8 +89,9 @@ variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
   $\ell$ for the boundary tilt of HY.md. On the other side, take $Z = N_a(t)/t$. Under an
   alternative $\nu'$ where $a$ is the only optimal arm, consistency at $t_{\ell+1}$ forces
   $\mathbb E_{\nu'} Z \ge 1 - o(t_{\ell+1}^\alpha)/t$, while under $\nu$ consistency gives
-  $\mathbb E_\nu Z \to 0$. With [GMS19, inequality (11)] applied to $1 - Z$, this gives $K_a\, \mathbb E_\nu N_a(t_\ell) \gtrsim \log t$, a bound on the data at $t_\ell$, and
-  the boundary tilt gives at best the $x^2$ bound at $t_\ell$ again. Combined with
+  $\mathbb E_\nu Z \to 0$. With [GMS19, inequality (11)] applied to $1 - Z$, this gives
+  $K_a\, \mathbb E_\nu N_a(t_\ell) \gtrsim \log t$, a bound on the data at $t_\ell$, and the
+  boundary tilt gives at best the $x^2$ bound at $t_\ell$ again. Combined with
   $N_a(t) \ge N_a(t_\ell)$, this returns $\liminf_t \ge x$ and nothing more. The reason is
   structural. Two learners of $M_1$ that differ only by a reordering of the rounds inside each
   batch, chosen from the data up to $t_\ell$ and from $t_{\ell+1}$, have the same law of
