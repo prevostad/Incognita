@@ -1,0 +1,38 @@
+# Incognita: research on top of LMLExplore. LMLExplore brings Mathlib, Tau Ceti and LML at the
+# versions it pins: never require them here, or at other revisions (`scripts/check-pins.sh` checks).
+# Adapted from lml-paper-template (Apache 2.0).
+name = "Incognita"
+defaultTargets = ["Incognita"]
+lintDriver = "batteries/runLinter"
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+# LMLExplore's settings. The two long-file options must agree, or the linter asks for a
+# `set_option` in every short file.
+weak.linter.style.header = true
+weak.linter.style.longFile = 1500
+weak.linter.style.longFileDefValue = 1500
+
+[[require]]
+name = "LMLExplore"
+git = "https://github.com/LeanMachineLearning/LMLExplore"
+rev = "main"
+
+[[require]]
+name = "checkdecls"
+git = "https://github.com/PatrickMassot/checkdecls.git"
+
+# The library: no `sorry`, no warnings (enforced in CI).
+[[lean_lib]]
+name = "Incognita"
+
+# Frozen statements of validated questions, with `sorry` by design. Human-approved changes only.
+[[lean_lib]]
+name = "Statements"
+
+# Drafts: `sorry` allowed. The library never imports it.
+[[lean_lib]]
+name = "Exploration"

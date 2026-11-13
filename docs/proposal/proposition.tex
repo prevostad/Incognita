@@ -1,0 +1,473 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\setlist{itemsep=0.25em,topsep=0.3em}
+
+\newcommand{\proj}{\textsf{Incognita}}
+\newcommand{\lmlx}{\textsf{LMLExplore}}
+
+\newtcolorbox{regle}[1]{enhanced,breakable,colback=blue!4,colframe=blue!55!black,
+  fonttitle=\sffamily\bfseries\small,title={Règle -- #1}}
+\newtcolorbox{pourquoi}[1][Pourquoi]{enhanced,breakable,colback=green!4,colframe=green!45!black,
+  fonttitle=\sffamily\bfseries\small,title={#1}}
+\newtcolorbox{exemple}[1][Exemple : bandits par lots]{enhanced,breakable,colback=orange!5,colframe=orange!70!black,
+  fonttitle=\sffamily\bfseries\small,title={#1}}
+\newtcolorbox{ouvert}{enhanced,breakable,colback=red!3,colframe=red!55!black,
+  fonttitle=\sffamily\bfseries\small,title={Point ouvert}}
+
+\title{Une couche de recherche autonome au-dessus de \lmlx\\[0.3em]
+  \large Proposition de fonctionnement (document de travail)}
+\author{Adrien Prevost\\ \small rédigé avec l'aide de Claude (Anthropic)}
+\date{13 novembre 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\lmlx{} fait formaliser par des agents des résultats \emph{connus} de théorie de l'apprentissage, choisis
+par des humains dans des feuilles de route. Ce document propose une couche au-dessus
+(\proj{}), dans laquelle les agents produisent des résultats \emph{nouveaux},
+avec des exigences de qualité au moins égales à celles de \lmlx{}, quitte à ralentir.
+L'idée centrale : Lean règle la question de la vérité d'une preuve, mais pas celles du \emph{sens} des
+énoncés et de leur \emph{intérêt}, que \lmlx{} reçoit aujourd'hui de la littérature et des feuilles
+de route. Il faut donc reconstruire ces garanties : gel des énoncés, réfutations de premier rang,
+double formalisation, contrôles des définitions, consolidation périodique de la bibliothèque et
+niveaux de confiance qui montent avec des vérifications indépendantes et avec l'usage.
+\end{abstract}
+
+\tableofcontents
+
+%======================================================================
+\section{Point de départ : ce que fait \lmlx{} aujourd'hui}
+%======================================================================
+
+D'après les consignes publiques des dépôts (\texttt{AGENTS.md}, \texttt{CONTRIBUTING.md} de
+\lmlx{} et de LMLRoadmaps, grilles de revue de Tau Ceti), lues le 13/11/2026 :
+
+\begin{itemize}
+\item \textbf{Les humains écrivent les feuilles de route} (dépôt LMLRoadmaps). Une feuille de route est une
+  spécification précise : un \texttt{README.md} qui fait foi (conventions fixées, couches,
+  théorèmes cités par numéro, << chaque élément sans ambiguïté >>, << rien d'optionnel >>, << pas de trou >>)
+  et un \texttt{Suggested.lean} qui prototype définitions et énoncés avec \texttt{sorry}.
+  Leur revue juge d'abord : << \emph{Is this the mathematics we want, at the right generality?} >>
+\item \textbf{Les agents écrivent le code}, une PR par sujet, uniquement si elle fait avancer une cible
+  d'une feuille de route. Ils n'ont pas le droit d'ouvrir de PR ni d'issue dans LMLRoadmaps.
+\item \textbf{La CI} exige : pas de \texttt{sorry}, axiomes standard seulement, linters de Mathlib.
+\item \textbf{Des relecteurs IA} jugent chaque PR selon des grilles fixes (correctness, reuse, scope,
+  generality, naming, proof quality\dots). La grille << correctness >> est adversariale : chercher un
+  énoncé faux, vide, ou plus faible qu'il ne le prétend.
+\item \textbf{La fusion} est automatique quand toutes les grilles approuvent et que la CI est verte.
+\item \textbf{Consolidation existante} : améliorer, simplifier ou généraliser modestement un lemme est
+  toujours autorisé ; un script détecte les doublons avec les dépendances, qui sont ensuite supprimés.
+\end{itemize}
+
+\begin{pourquoi}[L'hypothèse implicite]
+Tout ce système suppose que \textbf{la vérité et l'intérêt sont acquis en amont} : l'énoncé vient d'un
+livre ou d'un papier, et un humain a jugé qu'il valait la peine. Les agents n'ont << plus qu'à >>
+traduire fidèlement et prouver, et la revue vérifie la fidélité et la propreté du code.
+
+Conséquence : rien n'est prévu si un énoncé de feuille de route est faux. La PR ne peut pas passer
+(pas de \texttt{sorry}) ; une variante avec hypothèse supplémentaire risque d'être bloquée comme
+<< plus faible qu'elle ne le prétend >> ; une réfutation n'avance aucune cible ; et l'information
+ne remonte pas vers la feuille de route, puisque les agents ne peuvent pas y écrire.
+\end{pourquoi}
+
+%======================================================================
+\section{Objectif et périmètre}
+%======================================================================
+
+\proj{} est une bibliothèque Lean qui \textbf{dépend} de \lmlx{} (donc de LML, Tau Ceti, Mathlib)
+sans les modifier, à l'image des projets de papier construits sur \texttt{lml-paper-template}.
+C'est un projet \textbf{indépendant} : il n'est ni affilié à \lmlx{}, LML ou Tau Ceti, ni approuvé
+par eux, et il ne fait que les utiliser comme dépendances Lean.
+
+\begin{center}
+\begin{tikzpicture}[
+  lay/.style={draw,rounded corners,minimum width=9.5cm,minimum height=0.85cm,align=center,font=\small},
+  arr/.style={-{Stealth[length=2.2mm]},thick}]
+  \node[lay,fill=orange!12] (r) {\textbf{\proj{}} : résultats nouveaux (preuves, réfutations)};
+  \node[lay,fill=blue!8,below=0.25cm of r] (x) {\textbf{\lmlx{}} : littérature formalisée par des agents};
+  \node[lay,fill=blue!5,below=0.25cm of x] (l) {\textbf{LML} : bibliothèque de théorie de l'apprentissage};
+  \node[lay,fill=gray!8,below=0.25cm of l] (t) {\textbf{Tau Ceti}};
+  \node[lay,fill=gray!4,below=0.25cm of t] (m) {\textbf{Mathlib}};
+  \draw[arr,dashed] (r.east) -- ++(0.8,0) |- node[pos=0.25,right,font=\footnotesize,align=left]{portage d'un\\résultat établi\\(décision humaine)} (x.east);
+\end{tikzpicture}
+\end{center}
+
+Trois choses que \lmlx{} reçoit gratuitement doivent être reconstruites :
+\begin{enumerate}
+\item \textbf{la vérité} de l'énoncé : on ne la connaît pas à l'avance (Lean la tranche, mais
+  l'énoncé peut s'avérer faux) ;
+\item \textbf{le sens} des définitions : pour un objet nouveau, il n'y a pas de livre auquel comparer ;
+\item \textbf{l'intérêt} du résultat : personne n'a encore jugé qu'il valait la peine.
+\end{enumerate}
+
+Principe directeur : \textbf{ralentir plutôt que dégrader}. Tout le standard de code de \lmlx{} est
+repris tel quel (section~\ref{sec:repris}) ; les règles nouvelles s'y ajoutent.
+
+%======================================================================
+\section{Rôles, espaces et cycle de vie}
+%======================================================================
+
+\subsection{Rôles}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Rôle & Fait \\
+\midrule
+Humains & approuvent les \emph{programmes} de recherche ; auditent par échantillon ; tranchent les
+  définitions reconnues fausses et les portages vers \lmlx{}. \\
+Agents proposeurs & formulent des questions dans un programme approuvé. \\
+Agents chercheurs & explorent, prouvent, réfutent, proposent des variantes. \\
+Agents relecteurs & valident les questions, revoient les PR selon les grilles, font les vérifications
+  indépendantes (section~\ref{sec:fiabilite}). \\
+Agents jardiniers & consolident la bibliothèque (section~\ref{sec:jardinage}). \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Deux espaces}
+
+\begin{itemize}
+\item \textbf{Exploration} : brouillons, \texttt{sorry} permis, jamais fusionnée dans la bibliothèque.
+  C'est là que vit la recherche au sens propre (essais, impasses, contre-exemples numériques).
+\item \textbf{Bibliothèque} : règles de \lmlx{} inchangées. Un résultat n'y entre qu'une fois nettoyé.
+\end{itemize}
+\lmlx{} n'a pas d'espace d'exploration ; un travail de recherche en a besoin, sinon il est poussé
+à n'essayer que ce qui passera la CI du premier coup.
+
+\subsection{Cycle de vie d'une question}
+
+\begin{center}
+\begin{tikzpicture}[
+  st/.style={draw,rounded corners,minimum height=0.8cm,align=center,font=\small,inner sep=4pt},
+  arr/.style={-{Stealth[length=2.2mm]},thick}]
+  \node[st,fill=gray!8] (p) {proposée};
+  \node[st,fill=blue!8,right=1.3cm of p] (o) {ouverte\\(énoncé gelé)};
+  \node[st,fill=green!10,right=1.2cm of o,yshift=1.1cm] (d) {démontrée};
+  \node[st,fill=red!8,right=1.2cm of o] (r) {réfutée};
+  \node[st,fill=orange!10,right=1.2cm of o,yshift=-1.1cm] (v) {variante démontrée\\(original ouvert ou réfuté)};
+  \node[st,fill=gray!5,below=1.3cm of o] (a) {abandonnée\\(raison au registre)};
+  \node[st,fill=green!18,right=0.9cm of r] (e) {rédigée\\et fusionnée};
+  \draw[arr] (p)--node[above,font=\footnotesize]{validée}(o);
+  \draw[arr] (o.east)--(d.west); \draw[arr] (o)--(r); \draw[arr] (o.east)--(v.west);
+  \draw[arr] (o)--(a);
+  \draw[arr] (d.east)--(e); \draw[arr] (r)--(e); \draw[arr] (v.east)--(e);
+\end{tikzpicture}
+\end{center}
+
+Une question réfutée ou résolue par une variante n'est \textbf{pas un échec} : c'est souvent le résultat
+le plus informatif.
+
+\begin{exemple}
+La question << B-IMED est-il optimal quand $x_\ell\to x>1$ ? >> a reçu la réponse << non : il n'est
+consistant avec aucun poids borné >>, et c'est un autre algorithme (PT, puis l'hybride HY) qui atteint
+la constante $x^2/K_{\inf}$. Un système rigide << énoncé $\to$ preuve >> aurait classé cela comme un
+échec, alors que la réfutation et la variante étaient les résultats.
+\end{exemple}
+
+%======================================================================
+\section{Validation des questions : humains et agents}
+%======================================================================
+
+Peut-on confier entièrement à des agents la validation des questions ? \textbf{En partie.}
+
+\textbf{Ce qui s'automatise bien} :
+\begin{itemize}
+\item la question est-elle bien posée (objets définis, quantificateurs clairs) ;
+\item est-elle déjà résolue dans la littérature (recherche bibliographique outillée) ;
+\item les hypothèses sont-elles satisfiables simultanément ;
+\item les définitions retombent-elles sur les cas connus ;
+\item est-elle triviale à partir de la bibliothèque (un agent tente une preuve rapide).
+\end{itemize}
+
+\textbf{Ce qui résiste : l'intérêt.} Le problème n'est pas qu'un agent juge mal un cas isolé, mais que
+ses erreurs sont \emph{corrélées} avec celles des agents chercheurs (mêmes modèles, mêmes biais).
+Une boucle entièrement automatique tend à dériver vers ce que les IA trouvent naturel et faisable,
+plutôt que vers ce qui compte pour le domaine, et peut produire une branche entière cohérente,
+vérifiée et sans intérêt sans qu'aucun mécanisme interne ne le détecte.
+
+\begin{regle}{les humains valident des programmes, les agents des questions}
+\begin{enumerate}
+\item Un humain approuve un \textbf{programme de recherche} (par exemple << bandits par lots : constante
+  optimale en fonction de la grille >>), avec un texte court : motivation, objets, ce qui serait
+  un résultat important. Coût : quelques minutes par mois.
+\item À l'intérieur d'un programme, un \textbf{agent relecteur valide les questions} selon les critères
+  automatisables ci-dessus.
+\item Un humain fait un \textbf{audit par échantillon} : il lit de temps en temps quelques questions
+  acceptées tirées au hasard. S'il en trouve de mauvaises, on resserre les critères.
+\end{enumerate}
+\end{regle}
+
+%======================================================================
+\section{Règles de production des résultats}
+%======================================================================
+
+\begin{regle}{gel de l'énoncé (anti-Goodhart)}
+Un agent qui n'arrive pas à prouver un énoncé a tout intérêt à l'affaiblir jusqu'à ce qu'il passe.
+Donc :
+\begin{itemize}
+\item l'énoncé cible est fixé dans un fichier séparé \textbf{avant} tout travail de preuve ;
+  \texttt{comparator} vérifie que la preuve porte exactement sur lui ;
+\item une \textbf{variante} n'est acceptée qu'avec une justification formalisée : contre-exemple à
+  l'original, ou preuve que l'hypothèse ajoutée est nécessaire, ou étiquette explicite
+  << original toujours ouvert >> ;
+\item un affaiblissement silencieux bloque la PR.
+\end{itemize}
+\end{regle}
+
+\begin{regle}{les réfutations sont des résultats}
+Un contre-exemple formalisé (preuve de la négation de l'énoncé gelé) est fusionné comme une preuve,
+avec la même exigence. Il ferme la question et alimente le registre.
+\end{regle}
+
+\begin{regle}{double formalisation des énoncés principaux}
+Pour un théorème principal ou une définition nouvelle importante, deux agents indépendants
+formalisent l'énoncé à partir du même texte mathématique, sans voir le travail l'un de l'autre.
+On prouve en Lean que les deux versions sont équivalentes. C'est la meilleure défense contre une
+formalisation fausse quand il n'existe pas de livre auquel comparer.
+\end{regle}
+
+\begin{regle}{contrôles de toute définition nouvelle}
+En plus du témoin non trivial déjà exigé par \lmlx{} :
+\begin{itemize}
+\item \textbf{retour aux cas connus} : sur un cas particulier, l'objet coïncide avec la notion classique
+  et le théorème redonne le résultat publié ;
+\item \textbf{non-vacuité conjointe} : une instance concrète satisfait \emph{toutes} les hypothèses du
+  théorème principal en même temps ;
+\item \textbf{finesse}, quand c'est possible : un exemple où retirer une hypothèse rend le résultat faux.
+\end{itemize}
+\end{regle}
+
+\begin{pourquoi}[Pourquoi insister sur les définitions]
+Un théorème faux est arrêté par le noyau. Une définition subtilement mal choisie passe partout et
+rend tout ce qui suit vrai mais hors sujet. C'est là que se cache le risque principal d'une
+bibliothèque de résultats nouveaux.
+\end{pourquoi}
+
+\begin{regle}{relecteurs indépendants}
+Les relecteurs tournent sur des modèles ou des consignes différents de ceux de l'auteur et ne voient
+pas son raisonnement : ils reçoivent l'énoncé mathématique et l'énoncé Lean, doivent les reformuler
+eux-mêmes et chercher un contre-exemple.
+\end{regle}
+
+\begin{regle}{registre des impasses}
+Chaque question a un fichier qui recense les approches essayées et la raison de leur échec
+(<< tentative X, échoue parce que Y >>), consultable par les agents suivants. Aujourd'hui une
+tentative ratée disparaît avec la PR fermée ; en recherche, savoir ce qui ne marche pas vaut
+presque un théorème.
+\end{regle}
+
+\begin{regle}{nouveauté}
+Recherche bibliographique obligatoire avant la fusion d'un résultat présenté comme nouveau ; une
+redécouverte est acceptée mais étiquetée comme telle, avec la référence.
+\end{regle}
+
+\begin{regle}{le texte est un livrable}
+Un résultat n'est terminé que lorsqu'il existe une preuve rédigée et lisible par un humain, avec la
+correspondance énoncé par énoncé vers le Lean. Sinon on obtient des théorèmes vrais que personne ne
+comprend, donc que personne ne réutilise.
+\end{regle}
+
+%======================================================================
+\section{Consolidation de la bibliothèque (jardinage)}\label{sec:jardinage}
+%======================================================================
+
+Avec des agents qui produisent vite, la bibliothèque devient une pile de résultats intermédiaires si
+personne ne la réorganise. C'est ce que font d'habitude les synthèses et les livres. Je propose d'en
+faire une tâche de premier rang, avec son type de PR et sa grille de revue.
+
+\subsection{Deux situations différentes}
+
+\textbf{Englobement.} Un théorème général $B$ implique un cas particulier $A$.
+\begin{exemple}
+Un algorithme pour $x=1$, un autre pour $x>1$, puis l'hybride HY pour tout $x\ge 1$. Mais HY a des
+constantes astronomiques, alors que B-IMED à $x=1$ a des constantes raisonnables : supprimer B-IMED
+comme << englobé >> ferait perdre le seul algorithme utilisable en pratique.
+\end{exemple}
+
+\begin{regle}{englobement quantitatif}
+$A$ n'est déclaré englobé par $B$ que si $B$ implique $A$ \textbf{avec un contenu quantitatif au moins aussi
+bon} (mêmes constantes, même ordre, mêmes hypothèses), vérifié en Lean. La preuve de $A$ devient alors
+<< corollaire de $B$ >>, mais l'énoncé $A$ reste. Sinon les deux restent, et la documentation dit ce que
+chacun apporte.
+\end{regle}
+
+\textbf{Changement de référence.} On a prouvé des algorithmes << optimaux >> au sens de Lai--Robbins,
+puis une borne inférieure plus fine apparaît. Les bornes supérieures prouvées restent vraies ; c'est le
+\emph{mot} << optimal >> qui devient trompeur.
+
+\begin{regle}{pas de mot évaluatif dans une définition}
+Pas de \texttt{def IsOptimal} défini comme << atteint Lai--Robbins >>. On énonce séparément la borne
+supérieure (constante explicite) et la borne inférieure (classe d'algorithmes explicite) ;
+<< optimal >> est un \textbf{corollaire nommé} qui associe les deux dans une classe donnée. Une borne plus
+fine ajoute une nouvelle association ; l'ancienne reste vraie et reçoit le statut << supplantée par\dots >>.
+\end{regle}
+
+\begin{pourquoi}[Un détecteur d'erreurs gratuit]
+Si une borne inférieure est strictement plus grande qu'une borne supérieure prouvée dans la même
+classe, Lean en déduit \texttt{False} : c'est le signe qu'une définition est fausse quelque part.
+Une tâche automatique qui tente de combiner bornes inférieures et supérieures de même classe
+détecte ainsi les erreurs de définition.
+\end{pourquoi}
+
+\subsection{Fonctionnement}
+
+\begin{enumerate}
+\item \textbf{Catalogue des résultats} : pour chaque théorème principal, des métadonnées (quantité bornée,
+  classe de problèmes et d'algorithmes, régime asymptotique ou non, constantes, statut). C'est ce qui
+  permet de repérer les candidats ; sans catalogue, un agent ne voit que des noms de théorèmes.
+\item \textbf{Tâche périodique de jardinage} : tenter les implications entre résultats en Lean (peu
+  coûteux), repérer les familles de cas particuliers qui appellent une unification, tenir à jour
+  l'\emph{état de l'art} de chaque question (meilleur résultat, historique).
+\item \textbf{Actions classées par risque} :
+\end{enumerate}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}XX@{}}
+\toprule
+Action & Qui décide \\
+\midrule
+Refaire la preuve de $A$ comme corollaire de $B$ & agents et relecteurs IA \\
+Changer un statut (<< supplanté >>, << englobé >>) & relecteurs IA, justification au catalogue \\
+Supprimer un énoncé & jamais automatiquement, sauf vrai doublon \\
+Proposer une unification (comme HY) & c'est une \emph{question de recherche} : validée comme les autres \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{regle}{aucun théorème perdu}
+Toute PR de consolidation qui retire ou modifie un théorème doit montrer, vérifié par \texttt{comparator},
+que l'ancien énoncé reste prouvable à partir de la bibliothèque. Seule exception : une définition
+reconnue fausse, et c'est un humain qui tranche. Le jardinage est l'endroit le plus risqué : un agent
+peut << simplifier >> en supprimant de la connaissance.
+\end{regle}
+
+%======================================================================
+\section{Fiabilité dans le temps}\label{sec:fiabilite}
+%======================================================================
+
+La confiance dans un résultat doit monter avec le temps : un résultat tout juste fusionné ne vaut pas un
+résultat utilisé depuis six mois. La question est \emph{ce qui} doit la faire monter.
+
+\subsection{Pourquoi pas des revues à intervalles croissants}
+
+Une idée naturelle est la répétition espacée : revoir un résultat à 1 jour, puis 3 jours, etc. Elle est
+moins efficace qu'il n'y paraît :
+\begin{itemize}
+\item \textbf{une preuve Lean ne s'oublie pas} : le noyau donne la même réponse le premier et le centième jour ;
+\item \textbf{revoir l'énoncé avec le même type de relecteur et les mêmes informations donne des
+  vérifications corrélées} : un relecteur qui a laissé passer une définition subtilement fausse la
+  laissera probablement passer à nouveau. Cinq revues identiques ne valent pas cinq vérifications
+  indépendantes, et donnent un faux sentiment de sécurité ;
+\item \textbf{ce qui change avec le temps, c'est le contexte} (résultats voisins, usages, définitions
+  nouvelles), et c'est lui qui fait apparaître les erreurs.
+\end{itemize}
+
+\subsection{Ce que je propose à la place}
+
+\begin{regle}{revues déclenchées par des événements}
+On relit un résultat quand un nouveau théorème l'utilise, quand un résultat voisin est fusionné, quand un
+corollaire paraît suspect, quand on en tire une contradiction, ou quand il est englobé lors du jardinage.
+\end{regle}
+
+\begin{regle}{diversité plutôt que répétition}
+Chaque revue supplémentaire est d'un \textbf{type différent} :
+recherche de contre-exemples ; retour aux cas connus ;
+\textbf{rétrotraduction} (un agent qui ne voit que le Lean réécrit l'énoncé en mathématiques, puis on
+compare au texte d'origine) ; double formalisation ; si possible, un autre modèle.
+\end{regle}
+
+\begin{regle}{niveaux de confiance affichés}
+\begin{center}
+\begin{tabularx}{0.95\linewidth}{@{}lX@{}}
+\toprule
+Niveau & Condition \\
+\midrule
+fusionné & CI verte et grilles approuvées (standard \lmlx{}) \\
+contrôlé & vérifications indépendantes de types différents réussies (au moins trois) \\
+utilisé & consommé par des théorèmes en aval, contrôles de cohérence passés \\
+établi & rédigé, relu par un humain, aucune alerte depuis une génération de relecteurs \\
+\bottomrule
+\end{tabularx}
+\end{center}
+Les seuils sont à calibrer ; l'essentiel est que le niveau monte avec \emph{l'information nouvelle}
+apportée, pas avec le temps écoulé.
+\end{regle}
+
+\begin{regle}{réaudit à chaque génération de relecteurs}
+La seule revue périodique conservée : quand un modèle relecteur nettement meilleur sort, toute la
+bibliothèque est revue. Là, la revue apporte une vraie information, parce que le nouveau relecteur est
+moins corrélé avec les anciens.
+\end{regle}
+
+%======================================================================
+\section{Ce qui est repris tel quel de \lmlx{}}\label{sec:repris}
+%======================================================================
+
+\begin{itemize}
+\item CI verte, pas de \texttt{sorry}, axiomes \texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}
+  seulement, linters de Mathlib, pas de \texttt{set\_option}.
+\item Un sujet par PR, pas de PR empilées, réutilisation obligatoire de l'existant (Mathlib, Tau Ceti,
+  LML, \lmlx{}), pas de copie de ce qui existe déjà.
+\item Grilles de revue de Tau Ceti (correctness, reuse, scope, generality, naming, proof quality\dots),
+  auxquelles s'ajoutent des grilles propres : gel de l'énoncé, nouveauté, contrôles des définitions,
+  consolidation.
+\item Fichiers d'infrastructure possédés par les humains.
+\item Jamais de contribution automatique vers les dépendances : le portage d'un résultat établi vers
+  \lmlx{} se fait sur décision humaine, comme pour les projets de papier.
+\end{itemize}
+
+%======================================================================
+\section{Questions ouvertes}
+%======================================================================
+
+\begin{ouvert}
+\begin{itemize}
+\item \textbf{Crédit et paternité} : qui est l'auteur d'un résultat trouvé par un worker ? Comment le
+  citer ? Quel rapport avec une publication en revue ?
+\item \textbf{Coût} : double formalisation, revues diverses et jardinage multiplient le calcul par
+  résultat. C'est voulu (ralentir plutôt que dégrader), mais à chiffrer.
+\item \textbf{Diversité des modèles} : l'indépendance des relecteurs suppose d'avoir accès à des modèles
+  réellement différents.
+\item \textbf{Outillage du catalogue} : métadonnées en Lean (attributs), en TOML à côté, ou extraites
+  automatiquement ?
+\item \textbf{Calibrage} : seuils des niveaux de confiance, fréquence des audits humains, critère
+  d'abandon d'une question.
+\item \textbf{Conditions d'utilisation} des fournisseurs de modèles pour un fonctionnement autonome
+  prolongé.
+\end{itemize}
+\end{ouvert}
+
+%======================================================================
+\section{Premiers pas possibles}
+%======================================================================
+
+\begin{enumerate}
+\item Un dépôt qui dépend de \lmlx{} à version épinglée, avec un espace d'exploration et un espace
+  bibliothèque : c'est \url{https://github.com/prevostad/Incognita} (règles des agents dans
+  \texttt{AGENTS.md}).
+\item Un seul programme pilote, sur un domaine où l'on dispose déjà de résultats vérifiés pour calibrer :
+  par exemple les bandits par lots (cas $x=1$, $x>1$, hybride HY).
+\item Les règles les moins coûteuses d'abord : gel de l'énoncé, réfutations acceptées, registre des
+  impasses, catalogue minimal.
+\item Ensuite la double formalisation et les niveaux de confiance, une fois mesuré ce qui attrape
+  réellement des erreurs.
+\end{enumerate}
+
+\end{document}
