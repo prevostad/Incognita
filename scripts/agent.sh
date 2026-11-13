@@ -56,7 +56,13 @@ statement (LaTeX between $...$ or $$...$$), followed by its Lean name; "None" if
 ## Not done — what remains, and any doubt about the statements.
 Keep it short: it is what a human reads before merging.'
 
-cleanup() { git -C "$root" worktree remove --force "$wt" 2>/dev/null || true; }
+# Remove the worktree first, then the local branches (a branch cannot be deleted while a worktree
+# uses it). A pushed branch lives on in origin; an unpushed one is kept by disabling this trap.
+cleanup() {
+  git -C "$root" worktree remove --force "$wt" 2>/dev/null || true
+  git -C "$root" branch -q -D "pr-$target-$stamp" 2>/dev/null || true
+  git -C "$root" branch -q -D "$branch" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 share_packages() {
@@ -80,7 +86,6 @@ if [ "$role" = review-pr ]; then
   printf '%s\n\n---\n:robot: Automated review by `%s` (role review-pr, scripts/agent.sh).\n' \
     "$review" "$model" > "$wt/.agents/review.md"
   gh pr comment "$target" --body-file "$wt/.agents/review.md"
-  git branch -q -D "pr-$target-$stamp" || true
   exit 0
 fi
 

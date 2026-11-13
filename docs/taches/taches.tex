@@ -1,0 +1,389 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlist{itemsep=0.2em,topsep=0.25em}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\newcommand{\cmd}[1]{\texttt{#1}}
+\newcommand{\proj}{\textsf{Incognita}}
+\newcommand{\lmlx}{\textsf{LMLExplore}}
+
+% Fiche d'une tâche
+\newtcolorbox{tache}[1]{enhanced,breakable,colback=blue!3,colframe=blue!55!black,
+  fonttitle=\sffamily\bfseries,title={#1}}
+\newtcolorbox{manque}{enhanced,breakable,colback=red!3,colframe=red!55!black,
+  fonttitle=\sffamily\bfseries\small,title={Ce qui manque}}
+\newtcolorbox{note}{enhanced,breakable,colback=green!4,colframe=green!45!black,
+  fonttitle=\sffamily\bfseries\small,title={À retenir}}
+
+% Rubriques d'une fiche
+\newcommand{\rub}[1]{\par\smallskip\textsf{\textbf{#1.}}~}
+
+\title{Les tâches d'\proj{}\\[0.3em]
+  \large Chaque tâche, ses critères, et la comparaison avec \lmlx{}}
+\author{Adrien Prevost\\ \small rédigé avec l'aide de Claude (Anthropic)}
+\date{13 novembre 2026 --- état du dépôt après les PR \#1 à \#4}
+
+\begin{document}
+\maketitle
+
+\begin{note}
+Ce document décrit ce que font les scripts et les consignes \emph{tels qu'ils sont écrits}
+(\cmd{AGENTS.md}, \cmd{agents/roles/*.md}, \cmd{scripts/agent.sh}, \cmd{scripts/loop.sh}, la CI).
+Les scripts d'agents ont tourné pour la première fois le 13/11 au soir (essai du bibliographe) ;
+le reste n'a pas encore été observé en conditions réelles.
+\end{note}
+
+\tableofcontents
+
+%======================================================================
+\section{Vue d'ensemble}
+%======================================================================
+
+Il y a trois sortes d'acteurs :
+\begin{itemize}
+\item \textbf{toi} (les humains) : écrire et approuver les programmes, décider pendant la calibration,
+  fusionner, auditer par échantillon ;
+\item \textbf{les agents}, une session Claude par tâche, lancée par \cmd{scripts/agent.sh} ;
+\item \textbf{les automates} : la boucle \cmd{scripts/loop.sh} (choix des tâches, quota, fusion
+  automatique), la CI de GitHub (compilation, audit, PDF).
+\end{itemize}
+
+\subsection*{Le cycle d'un résultat}
+
+\begin{center}
+\begin{tikzpicture}[
+  b/.style={draw,rounded corners,align=center,font=\small,minimum height=0.9cm,inner sep=4pt},
+  a/.style={-{Stealth[length=2.2mm]},thick}]
+  \node[b,fill=gray!10] (p) {Programme\\approuvé (toi)};
+  \node[b,fill=blue!8,right=0.5cm of p] (q) {Question\\proposée};
+  \node[b,fill=blue!8,right=0.5cm of q] (v) {Question validée\\énoncé gelé};
+  \node[b,fill=orange!10,right=0.5cm of v] (r) {Recherche\\preuve / réfutation};
+  \node[b,fill=blue!8,below=0.9cm of r] (pr) {PR relue\\CI verte};
+  \node[b,fill=green!12,left=0.5cm of pr] (f) {Fusion\\(toi ou auto)};
+  \node[b,fill=green!6,left=0.5cm of f] (bib) {Audit\\bibliographe};
+  \node[b,fill=green!6,left=0.5cm of bib] (j) {Jardinage\\confiance};
+  \draw[a] (p)--(q); \draw[a] (q)--(v); \draw[a] (v)--(r); \draw[a] (r)--(pr);
+  \draw[a] (pr)--(f); \draw[a] (f)--(bib); \draw[a] (bib)--(j);
+\end{tikzpicture}
+\end{center}
+
+Les résultats \emph{connus} dont un programme a besoin suivent un chemin plus court : formalisation
+directe (énoncé gelé tiré de la source), relue pour sa fidélité à la source, sans question.
+
+\subsection*{Ordre de priorité de la boucle}
+
+À chaque tour, \cmd{scripts/loop.sh} : (0) fusionne ce qui peut l'être automatiquement, (0') attend
+que le quota le permette, puis lance \emph{une} tâche, la première disponible dans cet ordre :
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}rlL@{}}
+\toprule
+& Tâche & Quand \\
+\midrule
+1 & relire une PR & une PR ouverte n'a pas d'avis \cmd{Verdict:} sur son dernier commit \\
+2 & jardiner & un tour sur dix \\
+3 & valider une question & une question \cmd{proposed} n'a pas encore d'avis du relecteur \\
+4 & bibliographe (audit) & un résultat du catalogue a \cmd{novelty = "unchecked"} \\
+5 & bibliographe (routine) & un tour sur quatre \\
+6 & recherche & une question \cmd{open} existe, un tour sur deux \\
+7 & formaliser un résultat connu & deux tours sur trois parmi les restants \\
+8 & proposer une question & sinon \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Les tâches 2 à 8 ne portent que sur les programmes \textbf{approuvés} (aujourd'hui : BatchedBandits).
+
+%======================================================================
+\section{Les tâches des agents}
+%======================================================================
+
+Chaque fiche donne : le \emph{rôle} (fichier de consignes), le \emph{déclencheur}, ce que l'agent
+\emph{lit}, ce qu'il \emph{écrit}, les \emph{critères} qu'il doit appliquer, et les \emph{contrôles}
+qui ne dépendent pas de lui (script, CI, relecteur). Tous les agents peuvent lire le web (recherche et
+pages), mais n'ont ni réseau en ligne de commande, ni \cmd{git push}, ni \cmd{gh} : c'est le script qui
+pousse la branche et ouvre la PR. Tous ceux qui écrivent terminent par un résumé
+(\cmd{.agents/summary.md}) qui devient la description de la PR et le PDF.
+
+%----------------------------------------------------------------------
+\begin{tache}{1. Proposer une question --- rôle \cmd{propose} (modèle auteur)}
+\rub{Déclencheur} rien de plus prioritaire ; programme approuvé tiré au hasard.
+\rub{Lit} le programme et ses fichiers compagnons, l'index et toutes les questions existantes, le
+catalogue.
+\rub{Écrit} un fichier \cmd{programmes/<P>/questions/Q<nnn>-<titre>.md} (gabarit
+\cmd{templates/QUESTION.md}), statut \cmd{proposed}, << décision du propriétaire requise : oui >>, et une
+ligne dans l'index. Éventuellement un brouillon dans \cmd{Exploration/}.
+\rub{Critères}
+\begin{itemize}
+\item entrer dans une direction ouverte du programme et satisfaire \emph{chacun} de ses critères de
+  validation (vérifiés par l'agent lui-même avant d'écrire) ;
+\item ne dupliquer aucune question existante, ne pas être un corollaire du catalogue (essayer d'abord
+  une preuve courte ; si elle marche, choisir autre chose) ;
+\item chercher la réponse dans la littérature ; si elle est connue, changer de question ou la
+  transformer en résultat connu à formaliser ;
+\item préférer ce qui compterait pour le programme à ce qui est seulement faisable ; une question
+  dont la réponse probable est << non >> est acceptable ;
+\item contenir un exemple qui satisfait toutes les hypothèses à la fois, et la variante de repli.
+\end{itemize}
+\rub{Contrôles} le script refuse tout fichier hors des questions et d'\cmd{Exploration/} ; la question
+passe ensuite par la tâche 2.
+\end{tache}
+
+%----------------------------------------------------------------------
+\begin{tache}{2. Valider une question --- rôle \cmd{review-question} (modèle relecteur)}
+\rub{Déclencheur} une question \cmd{proposed} sans avis du relecteur (priorité haute).
+\rub{Lit} uniquement la question, son programme et le catalogue ; pas l'historique git ni ce que le
+proposeur a écrit ailleurs (indépendance).
+\rub{Écrit} son verdict (\cmd{accept} ou \cmd{reject}, modèle, date) et un rapport critère par
+critère dans la question ; s'il accepte, l'\textbf{énoncé gelé} en Lean
+(\cmd{Statements/<P>/Q<nnn>.lean}, avec \cmd{sorry}), vérifié par la compilation.
+\rub{Critères}
+\begin{itemize}
+\item chaque critère de validation du programme : << rempli >> ou << non rempli >>, avec une phrase ;
+\item tentative de preuve courte à partir du catalogue et des dépendances : si elle réussit, rejet
+  (corollaire) ;
+\item recherche de la réponse dans la littérature : si elle est connue, rejet avec la référence ;
+\item intérêt pour le programme (section << ce qui serait un résultat important >>) ;
+\item l'énoncé gelé n'utilise que des définitions de la bibliothèque et des dépendances.
+\end{itemize}
+\rub{Contrôles} pendant la \textbf{calibration}, le statut reste \cmd{proposed} : c'est toi qui décides,
+et l'accord entre ton avis et celui du relecteur est compté. L'ajout d'un fichier dans
+\cmd{Statements/} n'est jamais fusionné automatiquement.
+\end{tache}
+
+%----------------------------------------------------------------------
+\begin{tache}{3. Recherche sur une question ouverte --- rôle \cmd{research} (modèle auteur)}
+\rub{Déclencheur} une question \cmd{open} existe (un tour sur deux).
+\rub{Lit} la question et ses impasses, le programme, l'énoncé gelé, le catalogue.
+\rub{Écrit} selon l'issue : brouillons dans \cmd{Exploration/} ; preuve dans la bibliothèque sous le nom
+\cmd{Incognita.<P>.<nom>} ; rédaction lisible avec rubrique << Attribution >> ; entrée du catalogue
+avec \cmd{novelty = "unchecked"} ; statut \cmd{proved}, \cmd{refuted} ou \cmd{variant-proved} ; sinon une
+ligne d'impasse par approche ratée.
+\rub{Critères}
+\begin{itemize}
+\item prouver \emph{exactement} l'énoncé gelé, jamais l'affaiblir ;
+\item une réfutation (preuve de la négation) est un résultat à part entière ;
+\item une variante exige une raison formelle : contre-exemple à l'original, ou preuve que l'hypothèse
+  ajoutée est nécessaire, ou étiquette << original toujours ouvert >> ;
+\item bibliothèque : aucun \cmd{sorry}, axiomes standard seulement, aucun avertissement ;
+\item toute nouvelle définition : témoin non trivial, retour aux cas connus, non-vacuité conjointe
+  des hypothèses, finesse quand c'est possible ;
+\item ne jamais déclarer le résultat nouveau soi-même ; citer seulement des références lues.
+\end{itemize}
+\rub{Contrôles} CI : compilation sans \cmd{sorry} ni avertissement, \cmd{lake exe audit} (axiomes, et
+preuve du même type que l'énoncé gelé, testé : il rejette les deux fautes) ; relecture (tâche 6) ;
+audit du bibliographe après fusion.
+\end{tache}
+
+%----------------------------------------------------------------------
+\begin{tache}{4. Formaliser un résultat connu --- rôle \cmd{formalise} (modèle auteur)}
+\rub{Déclencheur} un programme approuvé a une liste << Known results to formalise >> (deux tours sur
+trois parmi les restants).
+\rub{Lit} le programme, le catalogue, la fiche de lecture de la source.
+\rub{Écrit} l'énoncé gelé avec la citation exacte \cmd{[CLÉ, Théorème X]} et les différences de forme ;
+la preuve dans la bibliothèque ; l'entrée du catalogue (\cmd{source}, \cmd{novelty = "known: ..."}) ;
+au besoin la fiche de lecture.
+\rub{Critères}
+\begin{itemize}
+\item prendre le premier élément non fait, non marqué \emph{on hold}, absent des dépendances ;
+  s'il est trop gros, une partie autonome (une définition et son API, un lemme) ;
+\item formaliser à partir de la source, jamais de mémoire : l'énoncé lu doit être recopié dans
+  \cmd{literature/notes/} ;
+\item suivre les noms et formes d'énoncés prévus par les feuilles de route de \lmlx{}, pour qu'une
+  adoption ultérieure soit une suppression plus un import ;
+\item si la source n'est pas publiée et que la preuve échoue à cause de l'énoncé : le signaler dans une
+  question, ne jamais affaiblir en silence.
+\end{itemize}
+\rub{Contrôles} les mêmes que la tâche 3 ; la relecture vérifie la fidélité à la source plutôt que la
+nouveauté.
+\end{tache}
+
+%----------------------------------------------------------------------
+\begin{tache}{5. Bibliographe --- rôle \cmd{bibliographer} (modèle auteur)}
+\rub{Déclencheur} un résultat non audité (priorité haute), sinon un tour sur quatre.
+\rub{Fait} une seule de ces trois choses, dans cet ordre :
+\begin{enumerate}
+\item \textbf{audit d'attribution} d'un résultat fusionné : le résultat est-il connu, cas particulier
+  d'un résultat connu ? d'où vient chaque technique de la preuve (la plus ancienne source, en suivant les
+  références dans les deux sens) ? Il fixe \cmd{novelty} à \cmd{new}, \cmd{rediscovery of [...]} ou
+  \cmd{known: [...]}, complète la rubrique << Attribution >> et ajoute \cmd{attribution-audit} aux
+  vérifications ;
+\item \textbf{vérifier une référence} : titre, auteurs, revue, année, identifiant comparés à la page de
+  l'éditeur ou d'arXiv ; correction de \cmd{bibliography.json}, passage à \cmd{checked} ;
+\item \textbf{lire un passage cité} : recopier dans la fiche l'énoncé exact (hypothèses, conclusion,
+  constantes), marquer le passage comme lu.
+\end{enumerate}
+\rub{Critères} ne consigner que ce qui a été lu dans la source ; ne rien remplir de mémoire ; ne pas
+faire confiance aux rubriques << Attribution >> des autres, les vérifier ; citations courtes seulement.
+\rub{Contrôles} le script refuse toute écriture hors de \cmd{literature/}, \cmd{catalogue/} et des
+rédactions de questions.
+\end{tache}
+
+%----------------------------------------------------------------------
+\begin{tache}{6. Relire une PR --- rôle \cmd{review-pr} (modèle relecteur)}
+\rub{Déclencheur} une PR ouverte sans avis sur son dernier commit (priorité la plus haute).
+\rub{Lit} le diff et la description de la PR, le code de la PR ; pas le raisonnement de l'auteur.
+\rub{Écrit} rien dans le dépôt : un commentaire sur la PR, dont la première ligne est exactement
+\cmd{Verdict: approve}, \cmd{Verdict: request\_changes} ou \cmd{Verdict: block}, puis les défauts du plus
+grave au moins grave, avec ce qui les corrigerait.
+\rub{Critères}
+\begin{enumerate}
+\item \textbf{rétrotraduction} : réécrire en mathématiques chaque énoncé Lean à partir du Lean seul, et
+  comparer au texte (question, source, rédaction) ;
+\item \textbf{lecture adversariale} : énoncé vide, quantificateurs, contenu caché dans les hypothèses,
+  cas dégénérés (ensemble vide, zéro, division par zéro, soustraction dans $\mathbb N$, indices à partir
+  de 0) ;
+\item \textbf{règles d'\cmd{AGENTS.md}} : énoncés gelés intacts, variantes justifiées, définitions
+  contrôlées, pas de définition évaluative, aucun théorème perdu, catalogue et question à jour, chemins
+  humains intacts ;
+\item \textbf{réutilisation} : rien de redéfini qui existe déjà ;
+\item \textbf{citations} : chaque \cmd{[CLÉ, ...]} existe, passage lu ou marqué << to be checked >>,
+  rubrique Attribution présente, rien d'annoncé comme nouveau avant l'audit.
+\end{enumerate}
+\rub{Contrôles} le script n'accepte qu'un avis qui commence par \cmd{Verdict:} ; le relecteur tourne sur
+un autre modèle que l'auteur par défaut (Sonnet contre Opus).
+\end{tache}
+
+%----------------------------------------------------------------------
+\begin{tache}{7. Jardiner --- rôle \cmd{garden} (modèle auteur)}
+\rub{Déclencheur} un tour sur dix.
+\rub{Fait} une consolidation, la plus utile : une implication entre résultats du catalogue (cas
+particulier devenu corollaire, l'énoncé restant), une borne inférieure et une borne supérieure de même
+classe confrontées (si Lean prouve \cmd{False}, une définition est fausse : le signaler), un doublon avec
+les dépendances supprimé, le catalogue mis à jour.
+\rub{Critères} englobement seulement à contenu quantitatif au moins aussi bon ; \textbf{aucun théorème
+perdu} (l'ancien énoncé doit rester prouvable) ; ne rien changer si rien d'utile.
+\rub{Contrôles} CI et audit ; relecture ; seul un humain peut supprimer un énoncé.
+\end{tache}
+
+%======================================================================
+\section{Tes tâches et celles des automates}
+%======================================================================
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lL@{}}
+\toprule
+Qui & Quoi \\
+\midrule
+Toi & écrire, relire et approuver les programmes ; décider des questions pendant la calibration ;
+  fusionner les PR (avec le PDF résumé) ; auditer de temps en temps quelques questions acceptées et
+  quelques fiches de lecture ; décider des suppressions d'énoncés ; protéger \cmd{main}. \\
+\addlinespace
+Boucle & choisir la tâche (section 1) ; attendre le quota avec le calcul du worker Tau Ceti
+  (\cmd{INCOGNITA\_PACE}) ; fusionner automatiquement les catégories autorisées
+  (\cmd{INCOGNITA\_AUTOMERGE}, vide par défaut ; jamais \cmd{Statements/} ni les chemins humains). \\
+\addlinespace
+Script d'agent & copie de travail isolée ; outils restreints ; refus des chemins interdits ; push et
+  ouverture de la PR ; publication de l'avis du relecteur. \\
+\addlinespace
+CI & compilation de la bibliothèque sans \cmd{sorry} ni avertissement, des énoncés gelés et des
+  brouillons ; \cmd{lake exe audit} ; linters de Mathlib ; versions épinglées comme \lmlx{} ; racines
+  complètes ; interdiction d'importer \cmd{Exploration} ; PDF résumé de chaque PR. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+%======================================================================
+\section{Comparaison avec \lmlx{}}
+%======================================================================
+
+\subsection{Ce que fait le worker Tau Ceti}
+
+D'après les consignes de \lmlx{} et ton guide du worker, chaque ronde fait \emph{une} tâche, la plus
+utile disponible. Il y en a \textbf{trois}, pas deux :
+\begin{enumerate}
+\item \textbf{s'occuper de ses propres PR} : les rebaser, réparer la CI, répondre aux relecteurs (c'est
+  la priorité) ;
+\item \textbf{relire les PR des autres}, selon des grilles fixes : correctness, reuse, scope,
+  attribution, API design, generality, placement, naming, documentation, proof quality. Chaque grille
+  donne un verdict \cmd{approve}, \cmd{request\_changes} ou \cmd{block} ;
+\item \textbf{écrire une nouvelle PR} qui fait avancer une cible d'une feuille de route.
+\end{enumerate}
+Autour : les humains écrivent et relisent les feuilles de route ; une PR est fusionnée automatiquement
+quand toutes les grilles approuvent et que la CI est verte ; le worker d'un mainteneur peut finir une PR
+inactive depuis un jour ; un script signale les doublons avec les dépendances.
+
+\subsection{Tableau comparatif}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}lLL@{}}
+\toprule
+& \lmlx{} & \proj{} \\
+\midrule
+Origine des énoncés & feuilles de route humaines, résultats publiés & programmes humains, questions proposées par des agents \\
+Vérité de l'énoncé & supposée (vient de la littérature) & inconnue : preuve, réfutation ou variante justifiée \\
+Validation de ce qu'on fait & revue humaine des feuilles de route & programme approuvé par toi, question validée par un agent (toi pendant la calibration) \\
+Tâches des agents & 3 : corriger ses PR, relire, écrire une PR & 7 : proposer, valider une question, chercher, formaliser, bibliographe, relire, jardiner \\
+Relecture & 10 grilles, une par aspect & 1 relecteur qui couvre 5 aspects (dont citations) \\
+Indépendance & mêmes modèles pour écrire et relire & relecteur sur un autre modèle par défaut, ne voit pas le raisonnement \\
+Énoncé gelé & non (fidélité jugée par la grille correctness) & oui, vérifié par \cmd{lake exe audit} \\
+Résultats négatifs & pas de place prévue & réfutations et impasses consignées \\
+Bibliographie & citations dans les docstrings, liens vers la littérature & bibliographie vérifiée, passages lus, audit d'attribution \\
+Consolidation & doublons avec les dépendances & jardinage : englobement, aucun théorème perdu \\
+Confiance & fusionné ou non & niveaux : fusionné, contrôlé, utilisé, établi \\
+Fusion & automatique (toutes les grilles + CI) & par toi ; automatique par catégorie si tu l'actives \\
+Quota & \cmd{--pace} du worker & le même calcul, via \cmd{tauceti status} \\
+Résumé pour l'humain & description de la PR & description + PDF avec les énoncés Lean \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{manque}
+\begin{itemize}
+\item \textbf{<< Corriger ses propres PR >> n'existe pas encore comme tâche.} \cmd{AGENTS.md} la met en
+  première priorité, mais aucun rôle ni la boucle ne l'implémentent : une PR qui reçoit
+  \cmd{request\_changes} ou dont la CI échoue reste bloquée jusqu'à ce que toi ou moi intervenions. C'est
+  la première chose à ajouter (rôle \cmd{fix-pr} : rebaser, réparer la CI, traiter les défauts signalés,
+  puis nouvelle relecture).
+\item \textbf{Un seul relecteur} contre dix grilles chez \lmlx{} : moins coûteux, mais chaque aspect est
+  regardé moins attentivement. On pourra découper la relecture en grilles si la calibration montre des
+  oublis.
+\item \textbf{Double formalisation} des énoncés principaux et \textbf{niveaux de confiance} : écrits dans
+  les règles, mais aucune tâche ne les déclenche encore.
+\end{itemize}
+\end{manque}
+
+%======================================================================
+\section{Premier essai réel (13 novembre 2026)}
+%======================================================================
+
+Sur le serveur, une tâche de bibliographe puis une relecture, lancées à la main avec
+\cmd{scripts/agent.sh}.
+
+\begin{itemize}
+\item \textbf{Bibliographe} (Opus, quelques minutes). Il a constaté qu'aucun résultat n'était à
+  auditer, puis a vérifié la première référence non vérifiée citée par un programme, \cmd{AG12}
+  (Agrawal--Goyal, COLT 2012) : titre aligné sur l'éditeur, nom exact des actes, volume, pages,
+  éditeurs, identifiant arXiv. Il a ouvert la PR \#5 avec un résumé correct, et a signalé de lui-même
+  une ambiguïté : le programme RegretShape cite << Agrawal--Goyal >> sans année, alors que les mêmes
+  auteurs ont des articles de 2013 et 2017 plus proches du sujet (termes d'ordre 2).
+\item \textbf{Relecteur} (Sonnet, sans voir le raisonnement de l'auteur). Avis
+  \cmd{Verdict: request\_changes}, publié sur la PR, avec quatre défauts dont deux sérieux : le statut
+  \cmd{checked} ne s'appuie sur aucune trace de la comparaison avec la source, et l'identification de
+  la référence n'est qu'une inférence. Il a aussi dit honnêtement qu'il n'avait pas ouvert les pages
+  sources lui-même.
+\item \textbf{Ce qui a fonctionné} : copie de travail, outils restreints et accès web, commit avec
+  l'identité des agents, contrôle des chemins, push, PR, résumé, PDF en CI, avis du relecteur.
+\item \textbf{Bug trouvé} : le script tentait de supprimer la branche de relecture avant la copie de
+  travail qui l'utilisait (sans conséquence, mais une branche restait sur le serveur) ; corrigé.
+\item \textbf{Ce que l'essai montre} : la PR \#5 attend maintenant des corrections, et aucune tâche ne
+  les fera, puisque << corriger ses propres PR >> n'existe pas encore (section 4).
+\end{itemize}
+
+\end{document}
