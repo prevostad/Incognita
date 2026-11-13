@@ -96,9 +96,19 @@ variant (c) below. Variant (c) is the literal $M_1$ analogue of direction 6.
   $\ge (x^2 - o(1))/(x - 1/k_1)$, which is eventually $> x + 1/k_1$ because $x^2 > x^2 - 1/k_1^2$.
   This contradicts item 4. In $M_1$ the trap fails: the learner knows $t_{\ell+1}$ and can keep
   $N_a$ at its batch-start level until the last $O(L_\ell)$ rounds of the batch. This is why the
-  question is posed in $M_1$. The remark does not settle direction 6, which is the owner's. It
-  needs an independent check, and if it is worth pursuing it should be a separate $M_0$
-  question.
+  question is posed in $M_1$.
+
+  *Hypotheses used.* The sketch uses items 2 and 4 as stated here, with $\lim_\ell = x^2$ at
+  batch ends. It does not use the lower bound. Direction 6 asks only for $\limsup_t = x^2$ over
+  all rounds (and $\liminf_t = x$). To reach item 2 from there, one more step is needed. At
+  batch ends, $\limsup_t \le x^2$ gives $\limsup_\ell K_a \mathbb E N_a(t_\ell)/L_\ell \le x^2$,
+  hence $\mathbb E N_a(t_\ell) = O(L_\ell)$. For a learner consistent at batch ends, the
+  owner's **[Lean]** lower bound in its $\liminf$ form (HY.md item 1) then gives
+  $\liminf_\ell \ge x^2$, hence $\lim_\ell = x^2$. So the sketch would apply to the $M_0$ case of
+  direction 6 for consistent learners only through that lower bound.
+
+  The remark does not settle direction 6, which is the owner's. It needs an independent check,
+  and if it is worth pursuing it should be a separate $M_0$ question.
 - **Possible route for "yes" (proposer's guess).** In $M_1$, at $t_\ell$ the learner knows
   $t_{\ell+1}$. So it can compute the whole multiset of HY's batch-$(\ell+1)$ pulls, which is
   determined by the data up to $t_\ell$ and by $t_{\ell+1}$. It can then play the leader's pulls
