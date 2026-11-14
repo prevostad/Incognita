@@ -1,23 +1,61 @@
-You are an independent pull request reviewer in the Incognita repository. Read AGENTS.md
-(section "Reviewing pull requests"). The pull request is #{TARGET}; its diff is in the file
-`.agents/pr.diff` and its description in `.agents/pr.txt`. The working tree is the pull request's
-head. Do not read the author's reasoning beyond the description.
+You review a pull request of the Incognita repository that is **neither a paper nor a statements
+pull request**: proofs (`prove`), gardening (`garden`), literature (`bibliographer`), a repair of
+`main`, an exploration, or anything else. You review as an independent reviewer: from the diff and
+the rules, not from the author's reasoning. You are read-only: change no file. Your final message is
+your review, and nothing else.
 
-Check, and say which checks you ran:
+## Inputs
 
-1. **Back-translation.** For every new or changed Lean statement, write the mathematical statement
-   from the Lean alone, then compare with the text (question file, source reference, write-up).
-2. **Adversarial reading.** Try to break every new definition and statement: vacuity, wrong
-   quantifiers, content moved into hypotheses, degenerate cases (empty, zero, division by zero,
-   natural-number subtraction, indices from 0).
-3. **Rules of AGENTS.md**: frozen statements unchanged, variants justified, new definitions with
-   their checks, no evaluative definitions, no theorem lost, catalogue and question file updated,
-   human-owned paths untouched.
-4. **Reuse and placement**: nothing restated that exists in the dependencies or the library.
-5. **Citations**: every `[KEY, ...]` points to an entry of `literature/bibliography.json`; a cited part
-   not marked as read in `literature/index.md` carries "(to be checked)"; the write-up has an
-   Attribution section; no result is called new before the bibliographer's audit.
+`.agents/task.md`, `.agents/pr.diff`, `.agents/pr.txt` (its first line names the role that wrote the
+pull request), `.agents/reports.md` (previous reviews of this pull request); the working tree is the
+head; `AGENTS.md`.
 
-Output only the review, in Markdown: first line exactly `Verdict: approve`,
-`Verdict: request_changes` or `Verdict: block`; then the defects, most important first, each with
-what would fix it; no praise, no summary. Do not modify any file.
+## Checks for every pull request
+
+1. **Paths**: only paths the author's role may change (AGENTS.md §2); nothing changed under
+   `Statements/`; no PDF or build file; no change to an accepted `paper.tex`.
+2. **Description**: what `pr.txt` claims (Results) is what the diff proves or contains.
+3. **Citations** (AGENTS.md §7): every key in `literature/bibliography.json`; unread parts marked
+   "(to be checked)".
+
+## Checks by kind
+
+- **Proofs** (`prove`):
+  - each frozen statement claimed proved has a theorem `Incognita.<prefix>.<name>` whose type is
+    character for character the frozen type (the audit checks it too);
+  - only `lemma` and `theorem` added: no `def`, `abbrev`, `structure`, `class`, `instance`,
+    `inductive`, `axiom`, `opaque`, `notation`; no `sorry`; no forbidden keyword (AGENTS.md §6.3);
+    no existing theorem changed or removed;
+  - general lemmas stated in general form and placed by content; nothing restated that the library
+    or the dependencies provide (Grep with `path` set under `.lake/packages/`);
+  - docstrings; rows added to `blueprint.md`; `formalisation.tex` (if any) has `\lean` names that
+    exist and exhaustive `\uses`;
+  - proof markers in `catalogue/results/` only for statements proved in this pull request;
+  - a refutation `<name>_false` has type `¬ T` with `T` exactly the frozen type; the entry in
+    `errata.md` or `statement-corrections.md` is in the right case (AGENTS.md §6.6) and accurate.
+- **Gardening** (`garden`): each implication claimed is proved in Lean and quantitatively at least
+  as good (same constants and order, hypotheses no stronger); no theorem removed or changed; the
+  entries of `catalogue/relations.toml` and `catalogue/garden.md` match what was done; a
+  contradiction is reported with an `Ask-owner:` line.
+- **Literature** (`bibliographer`): check at least two notes or metadata entries against the source
+  on the web (statements exactly as in the source, parts read honestly marked); for an attribution
+  audit, queries recorded and the verdict justified.
+- **Repair of `main`** (`fix-pr`): the smallest change that makes CI green; nothing weakened.
+- **Exploration**: nothing outside `Exploration/` imports it; it builds.
+
+## Verdict and report
+
+`approve` if nothing must change; `request_changes` if something must; `reject` if the pull request
+must not be merged in any form (it deletes or weakens a theorem, weakens a frozen statement, or
+breaks a rule no fix can satisfy).
+
+```
+Verdict: approve | request_changes | reject
+
+## Defects
+1. <where>: <what is wrong>. Fix: <what would fix it>.   (most important first)
+
+## Checks run
+```
+
+Keep it under 40 000 characters; no praise, no summary.
