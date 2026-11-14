@@ -1,0 +1,116 @@
+name: Papers
+
+# Compiles every paper to PDF with latexmk (pdflatex, bibtex): papers/*/paper.tex, then the
+# blueprint extension papers/*/formalisation.tex when it exists, and the templates of
+# templates/paper/. Fails on a LaTeX error, an undefined reference or citation, or a duplicate
+# label; warns when a paper exceeds 12 pages or 25 nodes (AGENTS.md, section 5.2). The PDFs and logs
+# are uploaded as the artifact `papers-pdf`. templates/paper/blueprint-macros.sty, loaded by a
+# relative path, gives the leanblueprint macros (\lean, \leanok, \uses, \proves, \notready,
+# \mathlibok) a plain-LaTeX meaning; the leanblueprint web build (plasTeX) is not done here.
+# Notebooks (papers/*/notebook/) are never compiled.
+
+on:
+  pull_request:
+    paths:
+      - 'papers/**'
+      - 'templates/paper/**'
+      - '.github/workflows/papers.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'papers/**'
+      - 'templates/paper/**'
+      - '.github/workflows/papers.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  papers:
+    runs-on: ubuntu-latest
+    name: Compile papers
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends latexmk texlive-latex-base \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended lmodern
+
+      - name: Compile
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          status=0
+          {
+            echo "| File | Result | Pages | Nodes |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # compile <tex file> <output name>: prints the result, sets status=1 on failure.
+          compile() {
+            local tex=$1 name=$2 dir base log result=ok pages nodes
+            dir=$(dirname "$tex")
+            base=$(basename "$tex" .tex)
+            log="$dir/$base.log"
+            echo "::group::$name"
+            if latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error \
+                -cd "$tex" > "out/$name.latexmk.txt" 2>&1; then
+              if grep -nE 'Reference .* undefined|Citation .* undefined|There were undefined (references|citations)|multiply defined|multiply-defined' "$log"; then
+                echo "::error file=$tex::undefined reference or citation, or duplicate label (lines above)"
+                result="undefined or duplicate label"
+                status=1
+              fi
+              cp "$dir/$base.pdf" "out/$name.pdf"
+            else
+              echo "::error file=$tex::LaTeX failed"
+              grep -nE -A4 '^(\./)?[^ ]*:[0-9]+: |^! ' "$log" | head -n 60 \
+                || tail -n 60 "out/$name.latexmk.txt"
+              result="LaTeX error"
+              status=1
+            fi
+            pages=$(sed -n 's/^Output written on .* (\([0-9]*\) page.*/\1/p' "$log" 2>/dev/null | tail -n 1)
+            nodes=$(grep -cE '^[^%]*\\begin\{(definition|lemma|proposition|theorem|corollary)\}' "$tex" || true)
+            if [ "$base" = paper ]; then
+              if [ -n "$pages" ] && [ "$pages" -gt 12 ]; then
+                echo "::warning file=$tex::$name has $pages pages (limit 12: split the paper)"
+              fi
+              if [ "$nodes" -gt 25 ]; then
+                echo "::warning file=$tex::$name has $nodes nodes (limit 25: split the paper)"
+              fi
+            fi
+            echo "$name: $result, ${pages:-?} pages, $nodes nodes"
+            echo "| $name | $result | ${pages:-?} | $nodes |" >> "$GITHUB_STEP_SUMMARY"
+            cp "$log" "out/$name.log" 2>/dev/null || true
+            echo "::endgroup::"
+          }
+
+          for dir in templates/paper papers/*/; do
+            dir=${dir%/}
+            [ -f "$dir/paper.tex" ] || continue
+            case "$dir" in
+              templates/paper) name=template ;;
+              *) name=$(basename "$dir") ;;
+            esac
+            compile "$dir/paper.tex" "$name"
+            # The extension reads paper.aux: compile it after the paper.
+            if [ -f "$dir/formalisation.tex" ]; then
+              compile "$dir/formalisation.tex" "$name-formalisation"
+            fi
+          done
+          exit "$status"
+
+      - name: Upload the PDFs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: papers-pdf
+          path: out/
+          if-no-files-found: warn

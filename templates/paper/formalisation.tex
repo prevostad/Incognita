@@ -1,0 +1,54 @@
+% formalisation.tex: blueprint extension of an accepted paper (AGENTS.md, section 6.6, case c).
+% Copy to papers/<P>/formalisation.tex when the proof of a frozen statement needs another
+% decomposition or extra lemmas. Not refereed: Lean checks every node. paper.tex is never edited.
+% Nodes of paper.tex are referred to by their labels: xr-hyper reads paper.aux, so compile
+% paper.tex first (CI does). New labels start with f (flem:, fprop:, fdef:) and are never reused.
+% Every node has \lean{...} with its Lean name and an exhaustive \uses{...}; never write \leanok.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+\externaldocument{paper}
+\counterwithout{theorem}{section}
+\renewcommand{\thetheorem}{F\arabic{theorem}}
+
+% The paper's macros, copied from paper.tex.
+\newcommand{\E}{\mathbb{E}}
+
+\title{Formalisation notes for <P>}
+\author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
+  are this file's; other numbers refer to the paper.}}
+\date{<YYYY-MM-DD>}
+
+\begin{document}
+\maketitle
+
+\section{Extra lemmas}
+
+\begin{lemma}[<Short name>]\label{flem:example}
+\lean{Incognita.P000.example_lemma}
+\uses{def:example}
+<A lemma the Lean proof needs and the paper does not state.>
+\end{lemma}
+
+\begin{proof}
+\uses{def:example, cite:GMS19-6}
+<Its proof, in the blueprint's style: enough for a formaliser.>
+\end{proof}
+
+\section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Lemma~\ref{lem:example}]
+\proves{lem:example}
+\uses{flem:example}
+<How the paper's proof is decomposed in Lean, node by node.>
+\end{proof}
+
+\end{document}

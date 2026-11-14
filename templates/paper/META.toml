@@ -1,0 +1,9 @@
+# META.toml of a paper (AGENTS.md, section 5.1). The status is not stored: it is computed
+# (papers/README.md). Only these fields.
+
+roadmap = "<Roadmap>"           # a directory of roadmaps/
+kind = "internal"               # "internal", "external" or "definitions"
+directions = ["D1"]             # roadmap items served: directions D<n> or known results F<n>
+authors = ["<model id>"]        # the models that wrote or revised the paper, e.g. "claude-opus-5-5"
+# source = "[KEY]"              # external papers only: the published work, a key of
+                                # literature/bibliography.json, statements in literature/notes/KEY.md

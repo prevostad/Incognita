@@ -1,74 +1,108 @@
-# Contributing (humans)
+# Contributing (the owner and other humans)
 
-Humans do three things here: approve programmes, calibrate and audit the validation of questions,
-and approve changes to human-owned paths (see [AGENTS.md](AGENTS.md)). Everything else is done by
-agents.
+Agents do the daily work: they write papers, referee them, formalise and prove, check the
+literature and garden (see [AGENTS.md](AGENTS.md)). The owner is not a bottleneck for that work. He
+takes the rare, high-leverage decisions, and keeps a veto on everything after the fact. This file
+lists his duties, about ten minutes a day plus an occasional longer session.
 
-## Programmes
+## 1. Approve roadmaps
 
-A programme is a directory `programmes/<Name>/` with a `PROGRAMME.md` following
-[programmes/README.md](programmes/README.md). It is written by a human, possibly with AI help (say
-so), and becomes `approved` when its owner sets the status. Approving a programme is the main
-human decision: it fixes what agents may spend their time on.
+A roadmap ([roadmaps/README.md](roadmaps/README.md)) fixes what agents spend their time on: it is
+the owner's main decision. To approve one, the owner opens a pull request that sets its status to
+`approved` in `ROADMAP.md` (and, if needed, fixes its conventions, definitions, directions and
+acceptance criteria), and merges it himself. Agents never edit roadmaps; they ask (`Ask-owner:`)
+when a direction seems answered, ill-posed or worth reframing. To stop work in a roadmap, set it to
+`paused` or `closed`; to stop work on one item, mark it `on hold` or `closed`.
 
-## Validating questions
-
-Agents propose questions; the long-term goal is that a question reviewer agent validates them
-alone. The project gets there in phases:
-
-1. **Bootstrap** (now): the owner writes the first programme. Agents may survey the literature,
-   build the catalogue, explore and propose questions.
-2. **Calibration**: for each proposed question, the question reviewer agent records its verdict
-   and reasons in the question file *before* the owner decides; the owner then decides, and the
-   agreement is tracked in `programmes/<Name>/questions/README.md`. The owner's decision counts.
-3. **Delegation**: once the reviewer agrees with the owner on almost every question, it validates
-   alone. The owner reads a random sample of accepted questions from time to time, and tightens
-   the programme's criteria when a bad one slipped through.
-
-## Merging a pull request
-
-Every open pull request carries one state label, kept up to date by a workflow
-(`scripts/pr_labels.py`): `awaiting-CI`, `ci-failed`, `awaiting-review`, `awaiting-author`,
-`merge-conflict`, or **`ready-to-merge`** (build green and last commit approved: these are the ones
-waiting for you). Agents' pull requests also carry `role:<role>`.
-
-1. Open the pull request on GitHub. Its description starts with the agent's summary: the results in
-   mathematical form, with their Lean names.
-2. For a PDF of the same summary with the Lean statements of the pull request: tab **Checks** →
-   run **PR summary** → **Summary** → artifact `pr-summary` (a zip with the PDF).
-3. Read the automated review (a comment starting with `Verdict:`). Its verdict is also the check
-   **Incognita review**, required by the ruleset of `main` together with "Build and check": GitHub's
-   merge button stays grey until the reviewer has approved the last commit. On your own pull
-   requests (branches not starting with `agent/`), a workflow marks this check green: you are the
-   reviewer.
-4. **Merge pull request** → **Confirm merge** (or **Squash and merge**). If something is wrong,
-   write a comment and close the pull request, or leave it open for the agent to fix.
-5. Pull requests labelled **needs-human** are those the agents gave up on: a `block` verdict, or three
-   fix rounds without success. Decide: fix, close, or remove the label to give the agents another try.
-
-Automatic merging can be enabled by category (`INCOGNITA_AUTOMERGE`, see agents/README.md) once the
-reviews have proved reliable; frozen statements and human-owned paths always go through a human.
-
-## Branch protection and accounts
-
-`main` is protected by a ruleset: no force push, no deletion, changes through pull requests only,
-and the CI job "Build and check" must pass. Human-owned paths are listed in `.github/CODEOWNERS`.
-
-While agents push with the owner's GitHub account, GitHub cannot tell an agent from the owner: a
-pull request cannot be approved by its own author, so required approvals stay at 0 and the owner
-merges by hand. With a separate account for the agents, the ruleset can require one approval and
-code-owner review, so that nothing reaches `main` without the owner.
-
-## Reviewing a programme
+What to check before approving:
 
 | Aspect | Question |
 |---|---|
 | Interest | Is this research we want, at the right generality? |
-| Conventions | Are the setting and the conventions pinned well enough for questions to be unambiguous? |
+| Conventions and definitions | Are the setting, the conventions and the planned Lean objects pinned well enough for papers to be unambiguous? |
 | Known results | Is the state of the art correct, with the status of each result (published, Lean, paper)? |
-| Criteria | Would the validation criteria let a reviewer reject uninteresting or ill-posed questions? |
+| Criteria | Would the acceptance criteria let a referee reject uninteresting or ill-posed papers? |
+
+## 2. Review KNOWN.md once per roadmap
+
+`KNOWN.md` tells agents what the owner already knows: results (with algorithms given by their
+formula), negative results, the owner's dead ends, conjectures, uninteresting directions. **No paper
+is written in a roadmap until the first line of its KNOWN.md reads `Reviewed by owner: <date>`.**
+The owner fills it (for BatchedBandits, from the draft Claude wrote from his notes, kept outside the
+repository), flags as `private` what agents must neither re-derive nor work on, sets the first line,
+and merges the pull request himself. He reviews it again when `Ask-owner:` questions accumulate.
+
+The repository is public: an entry written in KNOWN.md is published, even when flagged `private`.
+An unpublished result the owner does not want to publish stays out of the repository; it can be
+given to agents in a private file outside the repository (listed in each task), once the loop
+supports it.
+
+## 3. Read the night report, veto, answer questions
+
+- **Night report** (pinned issue "Night reports", about ten minutes): (1) decisions waiting for the
+  owner (roadmap pull requests, `Ask-owner:` questions, `needs-human` pull requests); (2) papers
+  accepted (abstract, referees' one-line verdicts, PDF link); (3) statements frozen (Lean,
+  back-translation, modelling choices); (4) results verified; (5) papers rejected and why; (6)
+  machine statistics.
+- **Veto**, by a comment on the report: `veto P003: <reason>`. A veto of a paper becomes
+  `papers/<P>/withdrawn.md` (the owner's file); a veto of a merged pull request becomes its revert.
+  In this version, Claude applies vetoes and answers when the owner asks it to in a session.
+- **Questions**: `Ask-owner:` lines of agents are copied to the pinned issue "Questions for the
+  owner"; answer by a comment (`A2: <answer>`), then update the roadmap or KNOWN.md if needed.
+
+## 4. Merge what only the owner may merge
+
+The loop merges automatically, one pull request per pass, only these categories: papers accepted by
+both referees, proofs (lemmas and theorems only), literature, exploration. Everything else waits
+for the owner:
+
+- roadmaps (including setting `approved`) and KNOWN.md;
+- statements pull requests, during the first nights (a wrong frozen statement can only be fixed by a
+  non-additive change), then automatically once the owner enables it;
+- any non-additive change under `Statements/` (a removed or modified file or lock), and dependency
+  bumps (LMLExplore, Mathlib), which re-lock the statements and list the affected ones;
+- human-owned paths: `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `agents/`,
+  `templates/`, `docs/`, `scripts/`, `.github/`, `lakefile.toml`, `lean-toolchain`,
+  `lake-manifest.json`, `papers/*/withdrawn.md` (listed in `.github/CODEOWNERS`);
+- reopening a paper closed with the label `rejected`.
+
+**Reading a pull request.** Its description is the agent's summary (results in mathematics, with
+their Lean names or paper labels). Papers: the PDF is in the artifact `papers-pdf` of the "Papers"
+run (tab Checks), and the referee reports are comments starting with `Verdict:`. Statements: read
+the back-translations in `papers/<P>/blueprint.md` and the `review-statements` report.
+
+**Admin bypass.** CI fails, by design, on every non-additive change under `Statements/`. The
+ruleset of `main` lets the repository admin bypass its rules for pull requests ("pull requests
+only" bypass). For such a pull request, after reading the diff and the audit's report, the owner
+ticks "Merge without waiting for requirements to be met (bypass rules)" and merges. The loop never
+uses `--admin` or a bypass.
+
+## 5. Labels
+
+| Label | Meaning | Owner's action |
+|---|---|---|
+| `rejected` | a paper closed after a fatal defect or two revisions without acceptance | reopen it if the referees were wrong |
+| `incomplete` | a draft pull request of an agent that ran out of time; its work is kept | none: agents finish it |
+| `needs-human` | a non-paper pull request the agents gave up on | fix, close, or remove the label to retry |
+| `parked` | a target that failed too often | decide whether it is worth retrying |
+
+## 6. Branch protection and accounts
+
+`main` is protected by a ruleset: pull requests only, no force push, no deletion, required checks
+"Build and check" and "Incognita review", 0 approvals. While the loop uses the owner's GitHub
+account, GitHub cannot tell an agent from the owner; trust comes from the loop: it accepts only
+verdicts it posted itself (hidden markers), binds each verdict to the reviewed commit, and runs
+agents as a separate Unix user without GitHub credentials.
+
+## 7. Decisions pending (as of 2026-11-14)
+
+- Whether agent papers that extend the owner's unpublished results are public (priority,
+  double-blind review).
+- P000 of BatchedBandits: definitions written by agents, or a port of the owner's private Lean
+  definitions.
+- What of the KNOWN.md draft is published.
 
 ## Attribution
 
-Say which models helped write a programme or a review, and mark AI-assisted review comments with
+Say which models helped write a roadmap, a KNOWN.md or a review, and mark AI-assisted comments with
 :robot:. Do not post text you have not read carefully yourself.
