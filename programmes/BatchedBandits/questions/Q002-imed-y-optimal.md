@@ -77,10 +77,13 @@ either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t
     polylogarithmic nets, and its second-order terms are a natural target for direction 2;
   - "no" is the formal refutation of a natural conjecture that the programme cites as an example
     ("a simple algorithm is optimal").
-- **Why exponent $1$ is not a candidate (remark).** Suppose frozen IMED with $y_\ell \equiv 1$
-  were consistent on a grid with $x > 1$, with counts $\approx L_\ell/K_a$. Then the **[Lean]**
-  lower bound would be violated. So on such grids it is either inconsistent or not
-  $O(L_\ell)$-optimal. The exponent must therefore grow, and $x_\ell^2$ is the plug-in choice.
+- **Why exponent $1$ is not a candidate (remark).** By the **[Lean]** lower bound, a learner
+  consistent at batch ends on a grid with $x_\ell \to x > 1$ has
+  $\limsup_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell \ge x^2 > 1$. So frozen IMED with
+  $y_\ell \equiv 1$ cannot be consistent at batch ends with $\mathbb E N_a(t_\ell) \sim L_\ell/K_a$
+  on such a grid. This motivates a larger exponent but does not determine it. The choice
+  $y_\ell = x_\ell^2$ is a heuristic: it is the plug-in prediction of $L_{\ell+2}/L_\ell$, the
+  factor in the lower bound.
 - **Why it is not a corollary.** The catalogue (`catalogue/results.toml`) has no result yet. None
   of the programme's known results covers IMED-$y$:
   - the $x_\ell \to 1$ result is about exponent $1$;
