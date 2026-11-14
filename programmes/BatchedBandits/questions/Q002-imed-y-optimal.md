@@ -122,13 +122,22 @@ failure of 1 or of 2.
   $\Lambda^\star_a(m^\star) = \inf\{\mathrm{KL}(Q, \nu_a) : \text{mean } Q \ge m^\star\}$. This is
   the reverse divergence, not $K_a$. For $\nu_a = \mathrm{Ber}(1/2)$ and $m^\star = 0.99$, it gives
   $\Lambda^\star_a \approx 0.64$ against $K_a \approx 1.61$.
-  - A naive estimate holds $n = x^2 L_{\ell-1}/K_a$ fixed. It predicts a flip cost
-    $t_\ell^{\,1 - x\Lambda^\star_a/K_a}$, which is not $o(t_\ell^\alpha)$ when
+  - A naive estimate looks at a flip at $t_\ell$, which costs batch $\ell+1$. It holds the count
+    fixed at $n = N_a(t_\ell) \approx x^2 L_\ell/K_a$, so the flip has probability about
+    $e^{-n\Lambda^\star_a} = t_\ell^{-x^2\Lambda^\star_a/K_a}$. The batch costs
+    $t_{\ell+1} = t_\ell^{x+o(1)}$, so the expected cost is
+    $t_\ell^{\,x(1 - x\Lambda^\star_a/K_a)+o(1)}$, which grows polynomially when
     $x\Lambda^\star_a < K_a$.
-  - That estimate is wrong as stated. Under IMED pacing, an arm whose rewards look good gets
-    pulled *more*. So the event has to be computed as a large deviation of the whole trajectory of
-    the arm, across batches. The proposer has not done that computation, so it is not known
-    whether the true flip cost is above or below the naive estimate.
+  - **That estimate fails a sanity check, so it is not evidence for "no".** The same reasoning
+    at $x = 1$, for frozen IMED with $y_\ell \equiv 1$ (count $\approx L_\ell/K_a$, flip
+    probability $t_\ell^{-\Lambda^\star_a/K_a}$, cost $t_\ell^{1+o(1)}$), predicts inconsistency
+    whenever $\Lambda^\star_a < K_a$. That contradicts the owner's **[Lean]** result that frozen
+    IMED with $y_\ell \equiv 1$ is consistent and optimal when $x_\ell \to 1$. On the example
+    above, it would predict failure for every $x < K_a/\Lambda^\star_a \approx 2.5$, including
+    $x = 1$. The flaw: under IMED pacing, an arm whose rewards look good gets pulled *more*, so
+    its count is not fixed on the flip event. The event has to be computed as a large deviation
+    of the whole trajectory of the arm, across batches, and this pacing effect is essential. The
+    proposer has not done that computation.
   - Whether the trajectory rate always beats the cost of a batch, for every $x > 1$ and every
     instance, is exactly what decides the question. It is also what HY's caps and tests may have
     been designed to avoid. The owner may already know the answer. The proposer does not.
