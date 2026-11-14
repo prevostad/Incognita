@@ -113,7 +113,7 @@ failure of 1 or of 2.
   $\ell+1$, that is $\asymp t_{\ell+1}$ pulls. Under HY it can also be pulled at every round of
   the IMED phase. In the paced phase it is pulled only while its cumulative count is below
   $K-1+U_{\ell+1}$. So it receives at most $s_\ell - t_\ell + K - 1 + U_{\ell+1}$ pulls in batch
-  $\ell+1$, which is $t_{\ell+1}^{1/x + o(1)}$, polynomially fewer than $t_{\ell+1}$. Neither HY's
+  $\ell+1$, and that bound is at most $t_{\ell+1}^{1/x + o(1)}$, polynomially fewer than $t_{\ell+1}$. Neither HY's
   statement nor the lower bound says whether these events are rare enough for IMED-$y$.
 - **Where a "no" could come from (proposer's heuristics, unverified).** A suboptimal leader at
   $t_\ell$ costs the whole batch $\ell+1$, about $t_{\ell+1}$ pulls, and so does a near-tie under
