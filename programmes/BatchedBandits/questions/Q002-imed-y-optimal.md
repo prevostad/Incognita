@@ -165,7 +165,12 @@ $\liminf_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell \ge x^2$.
 - **Grid.** Take $x = 2$ and $t_\ell := 2^{2^\ell}$. Then $t_1 = 4 \ge \max(2, K)$ for $K = 2$,
   $B_\ell \ge 1$, $L_\ell = 2^\ell \log 2$, and $x_\ell = 2$ for every $\ell \ge 2$, so $x_\ell \to 2$.
 - **Instance.** Take $K = 2$, $\nu_1 = \mathrm{Ber}(3/4)$ and $\nu_2 = \mathrm{Ber}(1/2)$, so
-  $m^\star = 3/4 < 1$.
+  $m^\star = 3/4 < 1$. The optimal arm is unique (arm 1), so arm 2 is a suboptimal arm and
+  items 1–2 are not vacuous.
+- **The tie rules are exercised.** After batch 1 each arm has $2$ rewards. With positive
+  probability the two empirical means are equal. Then $\tilde m_1 = \tilde m_2$, the leader is
+  arm 1 by the order, $\tilde K_1(2) = 0$, and the two indices at $t = 5$ are equal
+  ($y_1 \log 2$), so the leader-first rule decides.
 - **$K_2$ is finite and positive.** $K_2 = \mathrm{kl}(1/2, 3/4) = \tfrac12\log(4/3) \approx 0.144$.
   - The infimum defining $\mathcal K_{\inf}(\mathrm{Ber}(1/2), 3/4)$ is approached by Bernoulli
     laws.
