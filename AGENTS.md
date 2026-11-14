@@ -348,9 +348,17 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
 - Two referees review the same head, in this order: `referee-scope` (novelty, bibliography,
   roadmap fit, interest, attribution, and a rating of each open question: interest, novelty, fit,
   candidate or not), then, only if scope accepts, `referee-proofs` (every proof, node by node, all
-  nodes). A referee stopped before its verdict gives none; the next referee starts again from the
-  head, and after three sessions without a verdict the pull request goes to the owner
-  (`needs-human`). Write the report as you go, so that a long paper still gets a verdict in time.
+  nodes).
+- **Every review can be resumed.** Every reviewer (referees, `review-pr`, `review-statements`,
+  `review-roadmap`) writes its report as it goes in `.agents/report.md` (not in the repository):
+  after each node, section or check, what was checked and what was found. A session stopped before
+  its verdict (deadline, weekly cap) gives no verdict: the script posts that file on the pull
+  request as a partial report (comment kind `<role>-partial`, no status), and the next session of
+  the same role on the same head starts from it (task.md says so): it does not check again what
+  the partial report covers, checks the rest, and gives the complete report with the verdict,
+  including the partial report's findings that still hold. After four stopped sessions on a pull
+  request, or three sessions that end without a verdict and without a partial report, it goes to
+  the owner (`needs-human`).
 - **Defect classes.** **F** fatal: the main statement is false, already known, a corollary of
   KNOWN.md or of the literature, out of the roadmap, or re-derives a private entry. **G** gap: an
   unjustified step in a labelled proof (or, for scope, a novelty claim left unjustified). **L**

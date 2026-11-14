@@ -39,6 +39,7 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_MAX_FAILS:=2}"               # failed attempts per (role, target) per night
 : "${INCOGNITA_FIX_LIMIT:=3}"               # fix rounds on a non-paper PR, then needs-human
 : "${INCOGNITA_REVIEW_FAIL_LIMIT:=3}"       # reviews without a verdict on a PR, then needs-human
+: "${INCOGNITA_REVIEW_PARTIAL_LIMIT:=4}"    # review sessions stopped with a partial report, then needs-human
 : "${INCOGNITA_REVISION_ROUNDS:=2}"         # revision rounds of a paper, then rejected
 : "${INCOGNITA_PARK_AFTER:=4}"              # failed attempts on a target (all nights), then parked
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task

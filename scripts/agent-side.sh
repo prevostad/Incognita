@@ -17,6 +17,10 @@
 #       <out-dir>/out.bundle (those commits, as refs/incognita/out), <out-dir>/untracked (at most
 #       50 untracked paths, for the log), and the first 200 000 bytes of .agents/summary.md and
 #       .agents/report.md, if they are regular files.
+#   agent-side.sh notes <out-dir>
+#       the first 200 000 bytes of .agents/report.md, if it is a regular file: the report so far of
+#       a reviewer stopped before its verdict, handed to the next reviewer (AGENTS.md 5.4). Git is
+#       not run.
 #
 # Git runs here on a repository the session controlled (collect) or on a new one (prepare): no
 # configuration but the one written below (no global or system file, no hooks, no attributes file,
@@ -178,8 +182,17 @@ collect() {
   echo "collected $head ($n new commits)"
 }
 
+notes() {
+  local out=$1
+  [ -d "$out" ] && [ ! -L "$out" ] || { echo "no output directory $out" >&2; exit 2; }
+  cd "$work" || exit 2
+  copy_capped .agents/report.md "$out/report.md"
+  echo "notes collected"
+}
+
 case "${1:-}" in
   prepare) shift; prepare "$@" ;;
   collect) shift; collect "$@" ;;
-  *) echo "usage: agent-side.sh prepare <task-dir> <base> <owner/repo> <main-ref> <head-ref> | collect <out> <main> <head|->" >&2; exit 2 ;;
+  notes) shift; notes "$@" ;;
+  *) echo "usage: agent-side.sh prepare <task-dir> <base> <owner/repo> <main-ref> <head-ref> | collect <out> <main> <head|-> | notes <out>" >&2; exit 2 ;;
 esac

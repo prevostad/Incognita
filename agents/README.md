@@ -152,7 +152,10 @@ reads the first line starting with `Verdict: `. A paper is rejected (PR closed w
 `revise` rounds answering a referee's `major` count; repairs of a paper PR are fix rounds, comment
 kind `revise-fix`), or after `INCOGNITA_FIX_LIMIT` (3) fix rounds; a non-paper PR gets `needs-human`
 on a `reject` or after `INCOGNITA_FIX_LIMIT` fix rounds, and any PR (papers included) after
-`INCOGNITA_REVIEW_FAIL_LIMIT` (3) reviews without a verdict. When the owner reopens a rejected PR
+`INCOGNITA_REVIEW_FAIL_LIMIT` (3) reviews without a verdict and without a partial report, or
+`INCOGNITA_REVIEW_PARTIAL_LIMIT` (4) review sessions stopped before their verdict (each posts its
+report so far, `.agents/report.md`, as a comment `<role>-partial`, and the next session of the role
+continues from it; a stopped session does not count among the night's failures). When the owner reopens a rejected PR
 (and removes the label), its rounds are counted again from the reopening, and a referee's `reject`
 on its head is answered by one more revision.
 

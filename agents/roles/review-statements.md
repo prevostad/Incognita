@@ -1,7 +1,7 @@
 You review a **statements pull request** of the Incognita repository (phase 1 of a paper's
 formalisation). Once merged, its statements are frozen forever. Your job: make sure each frozen
 statement says exactly what the paper says, no more and no less, and that every new definition is
-right. You are read-only: change no file. Your final message is your review, and nothing else.
+right. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is your review, and nothing else.
 
 ## Inputs
 

@@ -69,11 +69,13 @@ lean_tools="Bash(lake build:*),Bash(lake env lean:*),Bash(lake lint:*),Bash(lake
 exec_tools="Bash(latexmk:*),Bash(pdflatex:*),Bash(bibtex:*),Bash(python3:*)"
 write_tools="$read_tools,Edit,Write,$lean_tools,$exec_tools,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git mv:*),Bash(mkdir:*)"
 rebase_tools="Bash(git rebase origin/main),Bash(git rebase --continue),Bash(git rebase --abort),Bash(git merge-base:*)"
+# Reviewers may write files in their sandbox: only .agents/report.md is ever read back (their report
+# so far, when a session stops before its verdict); nothing of theirs is committed.
 case "$role" in
-  referee-scope) tools=$read_tools ;;
+  referee-scope) tools="$read_tools,Write" ;;
   # Numerical experiments in .agents/scratch/ (a reviewer's files are never collected).
   referee-proofs) tools="$read_tools,$exec_tools,Write,Bash(mkdir:*)" ;;
-  review-statements|review-pr) tools="$read_tools,$lean_tools" ;;
+  review-statements|review-pr) tools="$read_tools,$lean_tools,Write" ;;
   fix-pr|revise) tools="$write_tools,$rebase_tools" ;;
   *) tools=$write_tools ;;
 esac
@@ -436,6 +438,10 @@ if [ -n "$H" ] && ! is_review_role "$role" && ! repo_git merge-base --is-ancesto
   add_situation "The branch is behind \`origin/main\`. If it conflicts, or for a Lean change, rebase it: \`git rebase origin/main\`."
 fi
 case ",$pr_labels," in *,incomplete,*) add_situation "This pull request is a draft labelled \`incomplete\`: an earlier session stopped before the end. Continue its work." ;; esac
+if is_review_role "$role" && [ -n "$pr" ] && [ -n "${comments:-}" ] \
+    && [ "$(jq --arg k "$role-partial" --arg h "$H" '[.[] | select(.kind == $k and .sha == $h)] | length' <<<"$comments" 2>/dev/null || echo 0)" -gt 0 ]; then
+  add_situation "An earlier \`$role\` session on this head stopped before its verdict: its report so far is in \`.agents/reports.md\` (kind \`$role-partial\`; if there are several, the latest is the most complete). Continue from it: do not check again what it covers unless you find it wrong, check the rest, and give the complete report with the verdict, including its findings that still hold. Copy it into \`.agents/report.md\` first and extend it there."
+fi
 if [ "$role" = revise ] && [ -n "$pr" ]; then
   if [ "$referee_round" = 1 ]; then
     add_situation "Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: address the referees' latest reports (\`reports.md\`)."
@@ -490,6 +496,7 @@ if is_review_role "$role"; then
   contract="- You change no file of the repository and make no commit$scratch: your final answer is your report.
 - Its first line is exactly \`Verdict: <$vlist>\`; the script reads the first line that starts with \`Verdict: \`.$vrule
 - The script posts the report on pull request #$pr as a comment and sets the commit status of the head \`${H:0:12}\` from the verdict.
+- **Write your report as you go** in \`.agents/report.md\` (not in the repository): after each node, section or check, add what you checked and what you found. The session is stopped at its deadline; then the script posts that file as a partial report (no verdict) and the next \`$role\` session on this head continues from it. Your final answer is still the complete report.
 - A question only the owner can answer goes on its own line, starting with \`Ask-owner: \`; the script forwards it."
 else
   contract="- Commit your work on the current branch (\`incognita-task\`). You cannot push: the script pushes.
@@ -673,6 +680,26 @@ if is_review_role "$role"; then
     referee-*:minor) verdict=major ;;   # reject if any F, major if any G or L, accept if P only
     review-*:approve|review-*:request_changes|review-*:reject) ;;
     *)
+      # A review stopped before its verdict hands its report so far (.agents/report.md, read as the
+      # agent user) to the next session of the same role on this head (AGENTS.md 5.4).
+      partial=""
+      if sudo -n install -d -o "$INCOGNITA_AGENT_USER" -g "$(id -gn)" -m 750 "$out" \
+          && run_sandboxed "incognita-$task-notes" 120 no "$out" -- bash "$in/agent-side.sh" notes "$out" \
+               </dev/null >"$tmp/notes.log" 2>&1 \
+          && [ -z "$(out_irregular "$out")" ]; then
+        out_read "$out/report.md" 200000 | sanitize 60000 > "$tmp/partial.md"
+        grep -q '[^[:space:]]' "$tmp/partial.md" 2>/dev/null && partial=yes
+      fi
+      if [ -n "$partial" ]; then
+        n=$(counter_inc "review-partial $pr")
+        { printf 'Partial report: this `%s` session stopped before its verdict (%s). The next `%s` session on this head continues from it; this is not a verdict.\n\n' \
+            "$role" "$subtype" "$role"
+          cat "$tmp/partial.md"; footer "$H"; } > "$tmp/body.md"
+        post_comment "$pr" "$role-partial" "$H" "$tmp/body.md" >/dev/null || finish fail "comment-failed"
+        log "no verdict ($subtype); report so far posted ($n stopped sessions on #$pr)"
+        [ "$n" -ge "$INCOGNITA_REVIEW_PARTIAL_LIMIT" ] && escalate "$pr" "$n review sessions stopped before their verdict"
+        finish skip "partial ($subtype)"
+      fi
       n=$(counter_inc "review-fail $pr")
       log "no valid verdict (\"$verdict\"; $subtype); $n reviews of #$pr without a verdict"
       [ "$n" -ge "$INCOGNITA_REVIEW_FAIL_LIMIT" ] && escalate "$pr" "$n reviews without a verdict"
@@ -705,6 +732,7 @@ if is_review_role "$role"; then
       fi ;;
   esac
   counter_set "review-fail $pr" 0
+  counter_set "review-partial $pr" 0
   # Questions for the owner.
   forward_questions "$report" "#$pr" "$H"
   # Papers: a rejection, or a G after the last revision round, closes the PR (D2).
