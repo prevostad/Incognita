@@ -236,6 +236,38 @@
     },
     "version": ""
   },
+  "BK18": {
+    "uri": "https://arxiv.org/abs/1803.06971",
+    "citation": {
+      "id": "BK18",
+      "type": "article",
+      "title": "What Doubling Tricks Can and Can't Do for Multi-Armed Bandits",
+      "author": [
+        {
+          "family": "Besson",
+          "given": "Lilian"
+        },
+        {
+          "family": "Kaufmann",
+          "given": "Emilie"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "DOI": "10.48550/arXiv.1803.06971",
+      "issued": {
+        "date-parts": [
+          [
+            2018
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1803.06971",
+      "hal": "hal-01736357"
+    },
+    "version": "v1"
+  },
   "BK96": {
     "uri": "",
     "citation": {
@@ -448,6 +480,49 @@
     },
     "version": ""
   },
+  "EKMM21": {
+    "uri": "https://doi.org/10.1609/aaai.v35i8.16901",
+    "citation": {
+      "id": "EKMM21",
+      "type": "paper-conference",
+      "title": "Regret Bounds for Batched Bandits",
+      "author": [
+        {
+          "family": "Esfandiari",
+          "given": "Hossein"
+        },
+        {
+          "family": "Karbasi",
+          "given": "Amin"
+        },
+        {
+          "family": "Mehrabian",
+          "given": "Abbas"
+        },
+        {
+          "family": "Mirrokni",
+          "given": "Vahab"
+        }
+      ],
+      "container-title": "Proceedings of the AAAI Conference on Artificial Intelligence",
+      "volume": "35",
+      "issue": "8",
+      "page": "7340-7348",
+      "publisher": "Association for the Advancement of Artificial Intelligence",
+      "DOI": "10.1609/aaai.v35i8.16901",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1910.04959"
+    },
+    "version": ""
+  },
   "FG24": {
     "uri": "https://arxiv.org/abs/2109.13595",
     "citation": {
@@ -586,6 +661,40 @@
     "identifiers": {},
     "version": ""
   },
+  "GK16": {
+    "uri": "https://proceedings.mlr.press/v49/garivier16a.html",
+    "citation": {
+      "id": "GK16",
+      "type": "paper-conference",
+      "title": "Optimal Best Arm Identification with Fixed Confidence",
+      "author": [
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        },
+        {
+          "family": "Kaufmann",
+          "given": "Emilie"
+        }
+      ],
+      "container-title": "29th Annual Conference on Learning Theory (COLT)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "49",
+      "page": "998-1027",
+      "publisher": "PMLR",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1602.04589"
+    },
+    "version": ""
+  },
   "GKL16": {
     "uri": "https://arxiv.org/abs/1605.08988",
     "citation": {
@@ -685,6 +794,62 @@
       }
     }
   },
+  "H60": {
+    "uri": "https://doi.org/10.1214/aoms/1177705898",
+    "citation": {
+      "id": "H60",
+      "type": "article-journal",
+      "title": "Lower Bounds for the Expected Sample Size and the Average Risk of a Sequential Procedure",
+      "author": [
+        {
+          "family": "Hoeffding",
+          "given": "Wassily"
+        }
+      ],
+      "container-title": "The Annals of Mathematical Statistics",
+      "volume": "31",
+      "issue": "2",
+      "page": "352-368",
+      "DOI": "10.1214/aoms/1177705898",
+      "issued": {
+        "date-parts": [
+          [
+            1960
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "H63": {
+    "uri": "https://doi.org/10.1080/01621459.1963.10500830",
+    "citation": {
+      "id": "H63",
+      "type": "article-journal",
+      "title": "Probability Inequalities for Sums of Bounded Random Variables",
+      "author": [
+        {
+          "family": "Hoeffding",
+          "given": "Wassily"
+        }
+      ],
+      "container-title": "Journal of the American Statistical Association",
+      "volume": "58",
+      "issue": "301",
+      "page": "13-30",
+      "DOI": "10.1080/01621459.1963.10500830",
+      "issued": {
+        "date-parts": [
+          [
+            1963
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "HT10": {
     "uri": "",
     "citation": {
@@ -778,6 +943,55 @@
     "identifiers": {},
     "version": ""
   },
+  "JGS13": {
+    "uri": "https://proceedings.mlr.press/v28/joulani13.html",
+    "citation": {
+      "id": "JGS13",
+      "type": "paper-conference",
+      "title": "Online Learning under Delayed Feedback",
+      "author": [
+        {
+          "family": "Joulani",
+          "given": "Pooria"
+        },
+        {
+          "family": "György",
+          "given": "András"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "container-title": "Proceedings of the 30th International Conference on Machine Learning (ICML)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "28",
+      "issue": "3",
+      "page": "1453-1461",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Dasgupta",
+          "given": "Sanjoy"
+        },
+        {
+          "family": "McAllester",
+          "given": "David"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1306.0686"
+    },
+    "version": ""
+  },
   "JTXHXG21": {
     "uri": "https://proceedings.mlr.press/v139/jin21c.html",
     "citation": {
@@ -865,6 +1079,58 @@
     },
     "identifiers": {
       "arxiv": "2003.01803"
+    },
+    "version": ""
+  },
+  "JXXG21": {
+    "uri": "https://proceedings.mlr.press/v134/jin21a.html",
+    "citation": {
+      "id": "JXXG21",
+      "type": "paper-conference",
+      "title": "Double Explore-then-Commit: Asymptotic Optimality and Beyond",
+      "author": [
+        {
+          "family": "Jin",
+          "given": "Tianyuan"
+        },
+        {
+          "family": "Xu",
+          "given": "Pan"
+        },
+        {
+          "family": "Xiao",
+          "given": "Xiaokui"
+        },
+        {
+          "family": "Gu",
+          "given": "Quanquan"
+        }
+      ],
+      "container-title": "Proceedings of the 34th Conference on Learning Theory (COLT)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "134",
+      "page": "2584-2633",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Belkin",
+          "given": "Mikhail"
+        },
+        {
+          "family": "Kpotufe",
+          "given": "Samory"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2002.09174"
     },
     "version": ""
   },
@@ -1041,6 +1307,43 @@
     },
     "identifiers": {
       "arxiv": "2011.05944"
+    },
+    "version": ""
+  },
+  "KMS21": {
+    "uri": "https://proceedings.neurips.cc/paper_files/paper/2021/hash/56f0b515214a7ec9f08a4bbf9a56f7ba-Abstract.html",
+    "citation": {
+      "id": "KMS21",
+      "type": "paper-conference",
+      "title": "Parallelizing Thompson Sampling",
+      "author": [
+        {
+          "family": "Karbasi",
+          "given": "Amin"
+        },
+        {
+          "family": "Mirrokni",
+          "given": "Vahab"
+        },
+        {
+          "family": "Shadravan",
+          "given": "Mohammad"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems",
+      "volume": "34",
+      "page": "10535-10548",
+      "publisher": "Curran Associates, Inc.",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2106.01420"
     },
     "version": ""
   },
@@ -1301,6 +1604,30 @@
     "identifiers": {
       "arxiv": "1702.07211"
     },
+    "version": ""
+  },
+  "P26": {
+    "uri": "",
+    "citation": {
+      "id": "P26",
+      "type": "manuscript",
+      "title": "Batched bandits with imposed batch sizes: optimal constants from geometric to doubly exponential growth",
+      "author": [
+        {
+          "family": "Prevost",
+          "given": "Adrien"
+        }
+      ],
+      "genre": "Manuscript in preparation",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "PMM25": {

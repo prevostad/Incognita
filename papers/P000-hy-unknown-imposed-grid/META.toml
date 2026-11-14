@@ -1,0 +1,8 @@
+# META.toml of a paper (AGENTS.md, sections 5.1 and 5.6). A paper of the owner (CONTRIBUTING.md, section 8).
+roadmap = "BatchedBandits"
+kind = "internal"
+directions = ["F4", "F1"]
+authors = ["claude-opus-5-5"]
+version = 1
+depends_on = []
+human_authors = ["Adrien Prevost"]
