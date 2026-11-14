@@ -347,8 +347,9 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
 
 - Two referees review the same head, in this order: `referee-scope` (novelty, bibliography,
   roadmap fit, interest, attribution, and a rating of each open question: interest, novelty, fit,
-  candidate or not), then, only if scope accepts, `referee-proofs` (every proof, node by node, all
-  nodes).
+  candidate or not), then `referee-proofs` (every proof, node by node, all nodes) when scope
+  accepts or asks for changes (`major`): a revision then answers both reports at once. Only a scope
+  `reject` skips the proofs.
 - **Every review can be resumed.** Every reviewer (referees, `review-pr`, `review-statements`,
   `review-roadmap`) writes its report as it goes in `.agents/report.md` (not in the repository):
   after each node, section or check, what was checked and what was found. A session stopped before
@@ -378,7 +379,7 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
   referee's previous reports on this paper.
 - A paper is accepted when both referees accept the same head and its build is green (checks
   "Build and check" and "Compile papers"); the loop then merges it. On `major` the author revises
-  (`revise`), fixing every G and L defect, and the P defects in passing; after 2 revision rounds
+  (`revise`), fixing every G and L defect, and the P defects in passing; after 4 revision rounds
   without acceptance the pull request is closed with the label `rejected` (reports kept; only the
   owner reopens it). P defects alone never block acceptance.
 - On a revision, referees re-check only the nodes that changed and the nodes that `\uses` them

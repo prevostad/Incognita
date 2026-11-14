@@ -35,7 +35,7 @@ slower.
 3. **Refereeing** (agents): a scope referee checks novelty and the bibliography, technique by
    technique, against the literature and KNOWN.md; then a proof referee checks every proof, node by
    node. Defects are classed fatal, gap, local or presentation; the paper is accepted when both
-   referees accept the same version, after at most two revisions.
+   referees accept the same version, after at most four revisions.
 4. **Formalisation** (agents), following Rémy Degenne's `formalize-paper` method: the statements
    of an accepted paper are frozen in `Statements/` with `sorry` and locked (`lake exe audit`); then
    they are proved in the library `Incognita/`, lemma by lemma, following the paper's dependency

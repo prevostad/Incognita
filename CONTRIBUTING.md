@@ -130,7 +130,7 @@ uses `--admin` or a bypass.
 
 | Label | Meaning | Owner's action |
 |---|---|---|
-| `rejected` | a paper closed after a fatal defect or two revisions without acceptance | reopen it if the referees were wrong |
+| `rejected` | a paper closed after a fatal defect or four revisions without acceptance | reopen it if the referees were wrong |
 | `incomplete` | a draft pull request of an agent that ran out of time; its work is kept | none: agents finish it |
 | `needs-human` | a pull request the agents gave up on (also a paper after 3 reviews without a verdict) | fix, close, or remove the label to retry |
 | `veto` | set by the owner on a roadmap proposal: it is never approved | remove it to let the veto window run again |

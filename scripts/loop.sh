@@ -713,7 +713,11 @@ choose_task() {
           close_rejected "$n" "$H" "a referee rejected the paper"; continue
         fi
       fi
-      if [ "$sc" = major ] || [ "$sc" = minor ] || [ "$pv" = major ] || [ "$pv" = minor ]; then
+      # The proofs are refereed before a revision even when scope asked for changes, so that one
+      # revision round answers both reports (owner, 2026-11-14); only a scope `reject` skips them.
+      if { [ "$sc" = major ] || [ "$sc" = minor ]; } && [ "$pv" = none ]; then
+        :   # falls through to the reviews below: referee-proofs on this head
+      elif [ "$sc" = major ] || [ "$sc" = minor ] || [ "$pv" = major ] || [ "$pv" = minor ]; then
         rounds=$(revise_rounds "$n") || continue
         set -- $rounds
         # D2: at most INCOGNITA_REVISION_ROUNDS rounds; rounds that changed nothing count half.
@@ -744,7 +748,7 @@ choose_task() {
     case "$kind" in
       paper)
         if [ "$sc" = none ]; then reviews_list="$reviews_list referee-scope:$n:$H:-"
-        elif [ "$sc" = accept ] && [ "$pv" = none ]; then reviews_list="$reviews_list referee-proofs:$n:$H:-"; fi ;;
+        elif [ "$pv" = none ] && { [ "$sc" = accept ] || [ "$sc" = major ] || [ "$sc" = minor ]; }; then reviews_list="$reviews_list referee-proofs:$n:$H:-"; fi ;;
       statements) [ "$rv" = none ] && reviews_list="$reviews_list review-statements:$n:$H:-" ;;
       roadmap) [ "$rv" = none ] && reviews_list="$reviews_list review-roadmap:$n:$H:-" ;;
       *) [ "$rv" = none ] && reviews_list="$reviews_list review-pr:$n:$H:-" ;;
