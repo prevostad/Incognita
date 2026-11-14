@@ -16,9 +16,12 @@ by two agents, and the blueprint of its own formalisation. The rules are in
 | `notebook/` | working notes: `NOTEBOOK.md` (attempts, dead ends and why they fail, ideas, Lean drafts in `Exploration/<prefix>/`, answers to referees) and small `python3` experiments with their outputs. **Not refereed**, never part of the PDF | `write-paper`, `revise` | kept, marked "not refereed" |
 | `blueprint.md` | Lean name of each node, modelling decisions, back-translations | `formalize-statements`, `prove` | grows |
 | `formalisation.tex` | blueprint extension: lemmas the Lean proof needs that the paper does not state (labels `flem:…`, with `\lean` and `\uses`); not refereed, because Lean checks it | `prove` | grows |
-| `errata.md` | `E1`, `E2`, …: the paper is wrong (never renumbered) | `prove`, `formalize-statements` | grows |
-| `statement-corrections.md` | `SC1`, `SC2`, …: a frozen Lean statement mistranslates the paper (never renumbered) | `prove` | grows |
+| `errata.md` | `E1`, `E2`, …: the paper is wrong (never renumbered); `revise` adds `Revised in` lines, `formalize-statements` adds `Resolved by` lines | entries: `prove`, `formalize-statements` | grows |
+| `statement-corrections.md` | `SC1`, `SC2`, …: a frozen Lean statement mistranslates the paper (never renumbered); `formalize-statements` adds `Resolved by` lines | entries: `prove`, `formalize-statements` | grows |
 | `withdrawn.md` | the owner's veto, with the reason | the owner only | |
+
+Exactly what each role may change is in AGENTS.md §2 (the script enforces it). Nothing in a paper
+directory is ever deleted.
 
 ## Status: computed, never stored
 
@@ -28,12 +31,13 @@ by two agents, and the blueprint of its own formalisation. The rules are in
 | rejected | that pull request was closed with the label `rejected` (its reports stay on it; only the owner reopens it) |
 | accepted | the directory is on `main` |
 | formalising | lock files exist in `Statements/<prefix>/` |
-| verified | every frozen statement of the paper is proved, or superseded by a corrected statement (`SC<n>` resolved) that is proved |
-| disputed | `errata.md` has an entry without a `Resolved by` line, or a refutation `Incognita.<prefix>.<name>_false` is proved |
+| verified | every frozen statement of the paper is proved, except those superseded by a resolved entry (`SC<n>` or `E<k>` with a `Resolved by` line, naming the old statement in `- Frozen statement:`) |
+| disputed | `errata.md` has an entry without a `Resolved by` line (before its `Revised in` line, `revise` writes a new version; after it, `formalize-statements` freezes the corrected statements), or a refutation `Incognita.<prefix>.<name>_false` is proved |
 | withdrawn | `withdrawn.md` exists |
 
 The last condition that holds wins, in the order of the table (withdrawn over disputed over
-verified…). The audit and the night report compute it.
+verified…). The loop computes what it needs from `main` (`scripts/loop.sh`: `statements_state`,
+`disputed_entries`, `freeze_entries` in `scripts/lib.sh`) and the audit's `--status`.
 
 ## When formalisation shows that something must change
 
@@ -50,14 +54,18 @@ AGENTS.md §6.6 has the details. Three cases:
 - **(c) the statement is true but the proof needs another decomposition or extra lemmas**: they go
   in `formalisation.tex`; `paper.tex` is not edited.
 
-Entry formats:
+Entry formats. The loop reads the heading `## E<k>` or `## SC<n>`, the line `- Frozen statement:`
+and the lines that start with `Revised in` or `Resolved by` (possibly as list items); entries are
+never renumbered, edited or deleted, later roles only add their line under them.
 
 ```
 ## E1 (2026-11-20, prove, claude-opus-5-5)
 - Node: thm:main
+- Frozen statement: Incognita.Statements.P001.lower_bound
 - Problem: the statement is false when the grid has a single batch.
 - Evidence: Incognita.P001.lower_bound_false
-Resolved by the version of 2026-11-22: hypothesis "at least two batches" added to thm:main.
+Revised in the version of 2026-11-22: hypothesis "at least two batches" added to thm:main.
+Resolved by Incognita.Statements.P001.lower_bound_v2 (statements pull request #45).
 ```
 
 ```
@@ -66,8 +74,15 @@ Resolved by the version of 2026-11-22: hypothesis "at least two batches" added t
 - Problem: the liminf is taken in ℝ, where an unbounded sequence has a junk liminf.
 - Corrected statement: the same, with the liminf in EReal.
 - Relation: closeMatch
-Resolved by Incognita.Statements.P001.lower_bound_v2 (pull request #41).
+Resolved by Incognita.Statements.P001.lower_bound_v2 (statements pull request #41).
 ```
+
+| Entry | Lines under it | State | Next task (loop) |
+|---|---|---|---|
+| `E<k>` | none | the paper is disputed | `revise <P>`: a new version, `Revised in …` |
+| `E<k>` | `Revised in …` | corrected statements to freeze | `formalize-statements <P>`: `Resolved by …` |
+| `SC<n>` | none | corrected statement to freeze | `formalize-statements <P>`: `Resolved by …` |
+| either | `Resolved by …` | resolved; the `Frozen statement` is superseded | — |
 
 ## Compiling
 
@@ -80,6 +95,9 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisatio
 latexmk -C -cd papers/<P>/paper.tex                                                     # clean up
 ```
 
-The workflow "Papers" compiles every paper on each pull request and on `main`, fails on a LaTeX
-error, an undefined reference or citation or a duplicate label, and uploads the PDFs as the artifact
-`papers-pdf`. PDFs are never committed.
+The workflow "Papers" (job "Compile papers") compiles every paper on each pull request that
+touches `papers/` or the template, and on `main`; it fails on a LaTeX error, an undefined reference
+or citation or a duplicate label, and uploads the PDFs as the artifact `papers-pdf`. It is not a
+required check of `main` (it does not run on every pull request), but the loop merges a paper pull
+request only when both "Build and check" and "Compile papers" are green. PDFs are never committed
+(`.gitignore`).

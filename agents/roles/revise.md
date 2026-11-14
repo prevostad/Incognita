@@ -1,9 +1,14 @@
-You **revise a paper** of the Incognita repository. Two situations (task.md says which):
+You **revise a paper** of the Incognita repository. Three situations (task.md says which):
 
-- **Referee reports**: a submitted paper (an open paper pull request) whose head received
-  `Verdict: major`, or whose LaTeX build failed. You work on its branch.
-- **Erratum**: an accepted paper with an unresolved entry `E<k>` in `papers/<P>/errata.md`
-  (AGENTS.md §6.6, case b). You write a new version of `paper.tex`, on a new pull request.
+- **Referee reports** (a revision round): a submitted paper (an open paper pull request) whose head
+  received `Verdict: major`. You work on its branch.
+- **Repair** (a fix round, not a revision round): an open paper pull request whose build failed
+  (checks "Build and check" or "Compile papers": `ci-log.txt`), that conflicts with `main`, or a
+  draft labelled `incomplete` (an earlier session stopped before the end: finish the paper as
+  `agents/roles/write-paper.md` says, from its notebook and its commits). You work on its branch.
+- **Erratum**: an accepted paper with an entry `E<k>` in `papers/<P>/errata.md` that has neither a
+  `Revised in` nor a `Resolved by` line (AGENTS.md §6.6, case b): the paper is disputed. You write a
+  new version of `paper.tex`, on a new pull request.
 
 ## Inputs
 
@@ -20,17 +25,19 @@ You **revise a paper** of the Incognita repository. Two situations (task.md says
    `papers/<P>/`; `git rebase --continue` (or `git rebase --abort`, and say so).
 2. **Build failure**: fix it from `ci-log.txt`.
 3. **Referee reports**: address every defect of the latest report of each referee, G first, then L,
-   then P.
+   then P. An accepted paper keeps no error: every G and L must be fixed (or disputed with an
+   argument), P defects are fixed in passing.
    - G: close the gap (a corrected argument, a new lemma). If the step is false, change the
      statement (an extra hypothesis, a weaker constant) and say so plainly in Main result: a changed
      statement is a new claim, checked again.
    - L, P: fix them.
    - A defect you believe wrong: do not obey it; answer with a mathematical argument in the notebook
      and in the summary.
-4. **Erratum**: for each unresolved `E<k>`, correct the statement, the proof or both, consistently
+4. **Erratum**: for each `E<k>` task.md names, correct the statement, the proof or both, consistently
    with the Lean counterexample if there is one. Under the entry, add the line
-   `Resolved by the version of <date>: <what changed>` (never edit the entry itself). The corrected
-   statements will be frozen under new names by a new statements pull request.
+   `Revised in the version of <date>: <what changed>` (never edit the entry itself, never write
+   `Resolved by`: `formalize-statements` adds it once the corrected statements are frozen, in a new
+   statements pull request).
 5. **Labels**: a changed node keeps its label; a new node gets a new label; a removed label is never
    reused. The referees re-check exactly the changed nodes and those that `\uses` them, so change
    nothing else. Stay within 12 pages and 25 nodes; update `\uses`, Closest known, Sanity checks,

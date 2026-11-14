@@ -10,23 +10,26 @@ settings, the setup and the launch.
 
 | Role | Call (`scripts/agent.sh …`) | Writes | Model | Timeout |
 |---|---|---|---|---|
-| `write-paper` | `write-paper <Roadmap>` | a new `papers/P<nnn>-<slug>/`, `Exploration/`, `literature/` | author | 90 min |
+| `write-paper` | `write-paper <Roadmap>` | a new `papers/P<nnn>-<slug>/` (number given in task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `literature/` | author | 90 min |
 | `referee-scope` | `referee-scope <PR>` | report (comment) + status `Referee scope` | reviewer | 30 min |
 | `referee-proofs` | `referee-proofs <PR>` | report (comment) + status `Referee proofs` | reviewer | 30 min |
-| `revise` | `revise <PR>` or `revise <Paper>` (disputed) | its paper directory, `Exploration/`, `literature/` | author | 90 min |
-| `formalize-statements` | `formalize-statements <Paper>` | `Statements/` (additions), `Statements.lean` (imports), `Incognita/`, `catalogue/definitions/`, the paper's `blueprint.md`, `paper.tex`, `notebook/`, `formalisation.tex`, `errata.md`, `statement-corrections.md` | author | 90 min |
+| `revise` | `revise <PR>` (revision or repair of a paper PR) or `revise <Paper>` (disputed) | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md` (`Revised in` lines); `literature/` | author | 90 min |
+| `formalize-statements` | `formalize-statements <Paper>` | `Statements/P<nnn>/` (`.lean`, `.lock`; additions), `Statements.lean` (imports), `Incognita/`, `catalogue/definitions/`, the paper's `blueprint.md`, `errata.md`, `statement-corrections.md` | author | 90 min |
 | `review-statements` | `review-statements <PR>` | report + status `Incognita review` | reviewer | 30 min |
-| `prove` | `prove <Paper>` | `Incognita/`, `catalogue/results/` (additions), the paper's `notebook/`, `formalisation.tex`, `errata.md`, `statement-corrections.md` | author | 90 min |
+| `prove` | `prove <Paper>` | `Incognita/`, `catalogue/results/P<nnn>-<name>.toml` (additions), the paper's `blueprint.md`, `formalisation.tex`, `errata.md`, `statement-corrections.md` | author | 90 min |
 | `review-pr` | `review-pr <PR>` | report + status `Incognita review` | reviewer | 30 min |
-| `fix-pr` | `fix-pr <PR>` or `fix-pr main` | the PR's branch, within the paths of the role that opened it | author | 90 min |
-| `bibliographer` | `bibliographer` | `literature/`, `catalogue/`, papers' `refs.bib` | author | 90 min |
-| `garden` | `garden` | `Incognita/`, `catalogue/`, `literature/`, `Exploration/` | author | 90 min |
+| `fix-pr` | `fix-pr <PR>` or `fix-pr main` | the PR's branch, within the paths of the role that opened it; on main: `Incognita/`, `Incognita.lean`, `Statements.lean` (imports) | author | 90 min |
+| `bibliographer` | `bibliographer` | `literature/`, `catalogue/attribution/`, papers' `refs.bib` | author | 90 min |
+| `garden` | `garden` | `Incognita/` (theorems), `catalogue/relations.toml`, `catalogue/garden.md` | author | 90 min |
 
-Every writing role may also change `Exploration/` and `Exploration.lean`. Nobody may change: dot-files
-or directories, `CLAUDE.md`/`AGENTS.md` anywhere, `README.md`, `CONTRIBUTING.md`, `LICENSE`,
-`lakefile.*`, `lean-toolchain`, `lake-manifest.json`, `templates/`, `agents/`, `docs/`, `scripts/`,
-`roadmaps/`, symbolic links, submodules, files over 1 MB, or a frozen statement (anything but an
-addition under `Statements/`). The whitelist is `role_allows`/`check_paths` in `scripts/lib.sh`.
+This column is a summary of the table of [AGENTS.md](../AGENTS.md) §2, which `role_allows` in
+`scripts/lib.sh` follows line for line (`scripts/test-lib.sh` tests each line). Every writing role
+but the bibliographer may also change `Exploration/` and `Exploration.lean`; nothing under
+`papers/` is ever deleted. Nobody may change: dot-files or directories, `CLAUDE.md`, `AGENTS.md`,
+`README.md`, `CONTRIBUTING.md` anywhere, `LICENSE`, `lakefile.*`, `lean-toolchain`,
+`lake-manifest.json`, `templates/`, `agents/`, `docs/`, `scripts/`, `tests/`, `roadmaps/`,
+`literature/notes/TEMPLATE.md`, `papers/*/withdrawn.md`, symbolic links, submodules, files over
+1 MB, or a frozen statement (anything but an addition under `Statements/`).
 
 ## How a task runs (isolation, DECISIONS D11–D13)
 
@@ -60,29 +63,39 @@ and `scripts/agent.sh` refuses to start without it.
    ``Role: `<role>`. Target: `<target>`. Model: `<model>`.``, then the summary), or a push to the PR
    branch with `--force-with-lease` against `H` (`fix-pr`, `revise`) and a comment. A writing session
    that fails (timeout, `error_max_turns`…) with commits gives a **draft PR labelled `incomplete`**,
-   continued later by `fix-pr`. Reviewers: the report is posted as a comment whose first line is the
+   continued later by `revise` (a paper PR) or `fix-pr` (any other). Reviewers: the report is posted as a comment whose first line is the
    hidden marker `<!-- incognita:<role>:<H> -->`, then the commit statuses are set on `H` with the
    description `role=<r> verdict=<v> pr=<n>`: `Incognita review` (review-pr, review-statements), or
    `Referee scope`, `Referee proofs` and the aggregate `Incognita review` (success only when both
-   referees accept the same head). Lines `Ask-owner: …` of a report go to the pinned issue
-   "Questions for the owner".
+   referees accept the same head). Lines `Ask-owner: …` of a report or of a writer's summary (even
+   without a commit) go to the pinned issue "Questions for the owner".
 6. **Sanitising.** Every agent text posted to GitHub: control and bidi characters removed, anything
    like a Claude token (`sk-ant-…`) redacted, `<!--` escaped, `@` followed by a zero-width space,
    closing keywords (`fixes #3`) neutralised, truncated at 60 000 characters. A diff containing a
    token is refused.
 
-Context files in `.agents/` (listed in `task.md`): `task.md` (role, target, PR and head, paper,
-roadmap, deadline, situation, output rules), `open-prs.md` (one line per open PR with its Role/Target
-line: busy targets), and depending on the task `pr.diff` (`git diff $(merge-base main H) H`), `pr.txt`
-(title and body), `reports.md` (earlier trusted reports on the PR), `revision.diff` (for a referee:
-diff since its last report), `ci-log.txt` (end of the failed CI log), `papers.md` (write-paper: papers
-and directions of the roadmap on main, in open PRs, rejected). Writing roles write `.agents/summary.md`.
+Context files in `.agents/` (listed in `task.md`; AGENTS.md §1 describes them to the agents):
+`task.md` (role, target, PR and head, paper and its Lean prefix, or for `write-paper` the number of the
+new paper, roadmap and KNOWN.md paths, deadline, situation — e.g. the errata entries to resolve —,
+output rules), `open-prs.md` (one line per open PR with its Role/Target line: busy targets), and
+depending on the task `pr.diff` (`git diff $(merge-base main H) H`), `pr.txt` (title and body),
+`reports.md` (earlier trusted reports on the PR; for `write-paper` and `referee-scope`, also the
+referee reports of the roadmap's rejected papers), `revision.diff` (for a reviewer: diff since its
+last report), `ci-log.txt` (end of the failed logs of the workflows CI and Papers), `papers.md`
+(write-paper: papers and directions of the roadmap on main, in open PRs, rejected),
+`known-private.md` (the owner's private KNOWN entries of the roadmap, from
+`$INCOGNITA_PRIVATE_KNOWN/<Roadmap>.md`, only if that variable is set). The prompt is the role file
+verbatim (no substitution), followed by a pointer to `task.md`. Writing roles write
+`.agents/summary.md`.
 
-Paper verdicts: `Verdict: accept|major|reject` (`minor` is read as `major`); other reviews:
-`Verdict: approve|request_changes|reject`. The runner reads the first line starting with `Verdict: `.
-A paper is rejected (PR closed with the label `rejected`) on a `reject`, or on a `major` after
-`INCOGNITA_REVISION_ROUNDS` (2) revision rounds; a non-paper PR gets `needs-human` on a `reject`,
-after `INCOGNITA_FIX_LIMIT` (3) fix rounds, or after 3 reviews without a verdict.
+Paper verdicts: `Verdict: accept|major|reject`, computed by the referee from its defect table
+(`reject` if any F, `major` if any G or L, `accept` if only P: an accepted paper keeps no error;
+`minor` is read as `major`); other reviews: `Verdict: approve|request_changes|reject`. The runner
+reads the first line starting with `Verdict: `. A paper is rejected (PR closed with the label
+`rejected`) on a `reject`, or on a `major` after `INCOGNITA_REVISION_ROUNDS` (2) revision rounds (only
+`revise` rounds answering a referee's `major` count; repairs of a paper PR are fix rounds, comment
+kind `revise-fix`), or after `INCOGNITA_FIX_LIMIT` (3) fix rounds; a non-paper PR gets `needs-human`
+on a `reject`, after `INCOGNITA_FIX_LIMIT` fix rounds, or after 3 reviews without a verdict.
 
 ## The loop (`scripts/loop.sh`, SPEC §3, D5, D13–D15)
 
@@ -93,7 +106,9 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    gh api user`), with a Role line. Fork PRs are ignored everywhere.
 2. `main` is red only if the push CI of its head failed after one automatic rerun: then no reviews and
    no merges, except a `fix-pr main` task and its PR.
-3. **Merge** at most one PR per pass, via `PUT /pulls/N/merge` with `sha=H`: build green on `H`; trusted
+3. **Merge** at most one PR per pass, via `PUT /pulls/N/merge` with `sha=H`: build green on `H` (the
+   check "Build and check" of the workflow CI, and "Compile papers" of the workflow Papers for paper
+   PRs or when it ran; `CI_JQ` in `scripts/lib.sh`); trusted
    statuses on `H` (created by OWNER, not by a workflow) accepting it; every changed path in an enabled
    category of `INCOGNITA_AUTOMERGE` (`papers` — both referees; `literature`; `proofs` — lemmas and
    theorems only, no `def`/`structure`/`instance`/…; `exploration`; `statements` is off for the first
@@ -105,12 +120,16 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    same blob.
 5. **One agent task**, the first available after the filters (target not busy in an open PR, fewer
    than `INCOGNITA_MAX_FAILS` failures tonight for this role and target, not parked, enough time
-   before the deadline): `fix-pr main` if main is red; `fix-pr`/`revise` (changes requested, gaps,
-   failed build, failed rebase, incomplete draft); reviews (`referee-scope`, then `referee-proofs`;
-   `review-statements`; `review-pr`); every `INCOGNITA_ROTATION_EVERY` tasks a `garden` or
-   `bibliographer` task; `prove` (frozen, unproved statements, oldest paper first); `formalize-statements`
-   (accepted papers without locks); `revise` of disputed papers; `bibliographer` when source notes or
-   novelty checks are missing; `write-paper` in approved roadmaps whose `KNOWN.md` starts with
+   before the deadline), in the order of AGENTS.md §3: `fix-pr main` if main is red; repairs and
+   revisions — `revise` for paper PRs (referees' `major`, failed build, failed rebase, incomplete
+   draft), `fix-pr` for the others (changes requested, failed build, failed rebase, incomplete draft);
+   reviews (`referee-scope`, then `referee-proofs`; `review-statements`; `review-pr`); every
+   `INCOGNITA_ROTATION_EVERY` tasks a `garden` or `bibliographer` task; `prove` (frozen statements
+   still open and not superseded, oldest paper first); `formalize-statements` (accepted papers without
+   locks, or with errata entries revised but not resolved, or unresolved statement corrections);
+   `revise` of disputed papers (errata entries neither revised nor resolved); `bibliographer` when an
+   external paper lacks its source note or a verified internal paper has no
+   `catalogue/attribution/<P>.md`; `write-paper` in approved roadmaps whose `KNOWN.md` starts with
    `Reviewed by owner: <date>`, with fewer than `INCOGNITA_PAPERS_IN_REVIEW` papers in review and fewer
    than `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` accepted papers not verified; fallback: `write-paper` up to
    `INCOGNITA_PAPERS_MAX`, `garden`, `bibliographer`; else sleep `INCOGNITA_IDLE_SLEEP` and look again.
@@ -122,8 +141,11 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
 --check` exits 0/1 (CI), and `lake exe audit --status` prints one line per frozen statement,
 `<P> <name> open|proved|refuted`, where `<P>` starts with the paper's `P<nnn>`. The loop runs it only in
 its own clone of `main` (trusted after merge), cached per commit, never on agents' content. A paper is
-"verified" when it has lock files and every statement of its number is `proved`; "disputed" when
-`papers/<P>/errata.md` has a line `Status: open`.
+"verified" when it has lock files and every statement of its number is `proved`, except statements
+superseded by a resolved entry; "disputed" when `papers/<P>/errata.md` has an entry `## E<k>` with
+neither a `Revised in` nor a `Resolved by` line (formats: papers/README.md; parser: `entry_flags` in
+`scripts/lib.sh`). Locks: `--new-locks` writes missing locks only; `--refresh-new-locks` (writing roles,
+in their PR) rewrites only the locks absent from `origin/main`.
 
 `scripts/night.sh` supervises one night: a lock (`flock`), startup checks (clone on main and clean,
 disk, `gh`, sudo, agent user and token, a one-line Claude session in the sandbox, the pacer, the Tau
@@ -156,6 +178,7 @@ target, `events.tsv` for the report), `state/lifetime/` (fix rounds per PR, fail
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |
 | `INCOGNITA_DRY_RUN` | `0` | `1`: one pass, prints the task, changes nothing |
+| `INCOGNITA_PRIVATE_KNOWN` | unset | a directory outside the repository with `<Roadmap>.md` files of private KNOWN entries, given to the sessions of that roadmap as `.agents/known-private.md` |
 | `INCOGNITA_CHECK_LOGIN` | `1` | night.sh tries one tiny session at startup |
 | `INCOGNITA_AGENT_MEMORY` | `6G` | `MemoryMax` of a session |
 | `INCOGNITA_REPO`, `INCOGNITA_HOME`, `INCOGNITA_AGENT_USER`, `INCOGNITA_EXCHANGE`, `INCOGNITA_AGENT_ENV` | `~/Incognita`, `~/.incognita`, `incognita-agent`, `/srv/incognita`, `/etc/incognita/agent.env` | paths |

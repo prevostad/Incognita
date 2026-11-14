@@ -14,16 +14,19 @@ stored here: the audit (`lake exe audit`) computes it.
 
 ## Proof markers: `results/<prefix>-<name>.toml`
 
+Named by the frozen statement `Incognita.Statements.<prefix>.<name>` (also for a refutation).
 Written once, when `Incognita.<prefix>.<name>` (or the refutation `<name>_false`) is proved; never
 modified or deleted (CI checks that `results/` only receives additions, and the audit fails if a
-marked statement is no longer proved: "no theorem lost").
+marked statement is no longer proved, or no longer refuted: "no theorem lost"). The audit reads
+only the file name and the `status` line; the other fields are for people and agents
+([results/README.md](results/README.md)).
 
 ```toml
 paper = "P001-one-batch-lower-bound"
 label = "thm:main"
 statement = "Incognita.Statements.P001.lower_bound"   # the frozen statement
 proof = "Incognita.P001.lower_bound"                  # or Incognita.P001.lower_bound_false
-refutation = false                                    # true for a proof of ¬ T
+status = "proved"                                     # or "refuted" (a proof of ¬ T)
 roadmap = "BatchedBandits"
 kind = "lower-bound"        # upper-bound, lower-bound, optimality, refutation, identity, other
 quantity = "K_a E N_a(t_l) / L_l at batch ends"

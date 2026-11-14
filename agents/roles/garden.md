@@ -34,6 +34,8 @@ passes), `catalogue/results/`, `catalogue/relations.toml`, `catalogue/definition
 5. **Checks**, once, at the end, if you changed Lean files: `scripts/check-build.sh Incognita
    --no-sorry`, `lake exe audit --check`, `lake lint`, `lake exe mk_all --check --lib Incognita`.
 
+You may change only `Incognita/` (lemmas and theorems, no deletion), `Incognita.lean`,
+`catalogue/relations.toml`, `catalogue/garden.md`, and drafts in `Exploration/` (AGENTS.md §2).
 Formats of `relations.toml` and `garden.md`: `catalogue/README.md`. Commit with a message
 `Garden: <what was examined>`. Summary (AGENTS.md §1): Results (each relation proved, in mathematics,
 with its Lean name), Frozen statements (None), Sources read, Not done (`Ask-owner:` lines).

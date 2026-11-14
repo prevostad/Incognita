@@ -5,9 +5,8 @@ final message is your report, and nothing else.
 
 ## Inputs
 
-- `.agents/task.md`: pull request number, head SHA, paper id, deadline; if the paper is shared
-  between two proof referees, the nodes or sections that are yours (check only those, but read the
-  whole paper).
+- `.agents/task.md`: pull request number, head SHA, paper id, deadline. You check every node of
+  the paper (at most 25).
 - The paper: `papers/<P>/paper.tex`, `refs.bib`. **Do not read `papers/<P>/notebook/`**, nor its
   part of `.agents/pr.diff`: you judge the paper alone.
 - The roadmap's pinned conventions and Definitions (`roadmaps/<Roadmap>/ROADMAP.md`); the `[Lean]`
@@ -18,7 +17,7 @@ final message is your report, and nothing else.
 ## Method
 
 1. Read Main result, Setting, then **Weak points**: start with the three steps the author doubts.
-2. Every node of your share, in dependency order:
+2. Every node, in dependency order:
    - **definition**: well posed (the objects exist, indices and degenerate values make sense,
      measurability), consistent with the roadmap's conventions;
    - **cited node**: its statement equals the note verbatim; at each use, every hypothesis holds;
@@ -45,14 +44,16 @@ final message is your report, and nothing else.
    (an inequality, a limit, a small instance), write `python3` scripts in `.agents/scratch/`, run
    them, and report what they show. Numbers support a finding; they never prove a step correct.
 5. **Revisions.** If `reports.md` holds your previous report, this is round 1 + (number of your
-   previous reports): find the changed nodes with `git diff <head named in that report> HEAD --
-   papers/<P>/paper.tex`, re-check only them and the nodes that `\uses` them (transitively), and rule
-   on each previous G.
+   previous reports): find the changed nodes in `.agents/revision.diff` (the diff from the head of
+   your last report to this head; if task.md does not list it, `git diff <head named in that
+   report> HEAD -- papers/<P>/paper.tex`), re-check only them and the nodes that `\uses` them
+   (transitively), and rule on each previous G and L.
 
 ## Verdict and report
 
-Verdict, computed: `reject` if any F; `major` if any G; otherwise `accept`. Your report, in this
-order (IDs `PF<round>.<n>`, L and P defects included):
+Verdict, computed: `reject` if any F; `major` if any G or L; otherwise `accept` (P defects only:
+an accepted paper keeps no error). Your report, in this order (IDs `PF<round>.<n>`, L and P defects
+included):
 
 ```
 Verdict: accept | major | reject
@@ -60,11 +61,11 @@ Verdict: accept | major | reject
 | ID | Class | Node | Step | Defect | Fix |
 |---|---|---|---|---|---|
 
-Paper: <P>. Head: <SHA from task.md>. Round: <n>. Share: <all, or the nodes checked>.
+Paper: <P>. Head: <SHA from task.md>. Round: <n>.
 
 ## Nodes
 | Node | Status (✓, G, L, F) | Step | Reason |
-(one row per node of your share)
+(one row per node)
 
 ## Checks
 - Quantifiers and constants: …
@@ -76,7 +77,7 @@ Paper: <P>. Head: <SHA from task.md>. Round: <n>. Share: <all, or the nodes chec
 
 ## Numerical experiments (if any)
 
-## Previous gaps (revisions only)
+## Previous defects G and L (revisions only)
 | ID | Resolved | Why |
 
 Ask-owner: <question>   (optional, one line each)

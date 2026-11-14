@@ -40,14 +40,22 @@ them.
    `Incognita.<prefix>.<name>_satisfiable`: an explicit instance satisfying all its hypotheses at
    once, proved without `sorry`.
 5. **Roots**: `lake exe mk_all --lib Statements` and `lake exe mk_all --lib Incognita`.
-6. **Locks**: once everything builds, `lake exe audit --new-locks` (it writes
-   `Statements/<prefix>/<name>.lock`). Never write or edit a lock by hand.
+6. **Locks**: once everything builds, `lake exe audit --new-locks` (it writes the missing
+   `Statements/<prefix>/<name>.lock`). If you change a statement after locking it (it is not on
+   `main` yet), `lake exe audit --refresh-new-locks` rewrites the locks this pull request added and
+   deletes those that no longer match a statement (`git add -A Statements/` afterwards); it never
+   touches a lock of `main`. Never write, edit or delete a lock by hand.
 7. **blueprint.md**: complete the table and write a back-translation of each frozen statement: its
    meaning read from the Lean alone, then the differences with the paper's node.
-8. **Corrections** (task.md names `SC<n>`, case a, or a new version after `E<k>`, case b): freeze
-   the corrected statement under a new name (`<name>_v2`, …), never touching the old file or lock,
-   and add under the entry the line `Resolved by Incognita.Statements.<prefix>.<name>_v2 (this pull
-   request)`.
+8. **Corrections** (task.md names the entries: `SC<n>` of `statement-corrections.md`, case a, or
+   `E<k>` of `errata.md` revised in a new version of the paper, case b): freeze the corrected
+   statement under a new name (`<name>_v2`, …), never touching the old file or lock, and add under
+   the entry the line `Resolved by Incognita.Statements.<prefix>.<name>_v2 (statements pull
+   request)`; if the entry has no line `- Frozen statement: <old Lean name>` yet and replaces a
+   frozen statement, add that line too (the old statement is then superseded). If the new version
+   changes no frozen statement, add `Resolved by the version of <date>: no frozen statement
+   changes`. Every entry task.md names gets its `Resolved by` line in this pull request, or a reason
+   under Not done.
 9. **Checks**, once, at the end: `scripts/check-build.sh Incognita --no-sorry`,
    `scripts/check-build.sh Statements`, `lake exe audit --check`, `lake lint`,
    `lake exe mk_all --check --lib Incognita`, `lake exe mk_all --check --lib Statements`.

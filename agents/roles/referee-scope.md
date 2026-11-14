@@ -20,10 +20,11 @@ is known. You are read-only: change no file. Your final message is your report, 
 ## Revisions
 
 If `reports.md` holds a previous scope report on this paper, this is round 1 + (number of your
-previous reports). Find what changed with `git diff <head named in that report> HEAD --
+previous reports). `.agents/revision.diff` (listed in task.md) is the diff from the head of your
+last report to this head; otherwise use `git diff <head named in that report> HEAD --
 papers/<P>/paper.tex` (if that commit is missing, compare with the nodes named in the report).
 Re-check only the changed nodes, the nodes that `\uses` them, and the sources of new techniques;
-rule on each previous G (resolved or not, and why).
+rule on each previous G and L (resolved or not, and why).
 
 ## 1. Bibliography (at least half of your effort)
 
@@ -71,8 +72,8 @@ rule on each previous G (resolved or not, and why).
 
 ## Verdict and report
 
-Verdict, computed: `reject` if any F; `major` if any G; otherwise `accept`. Your report, in this
-order (IDs `SC<round>.<n>`):
+Verdict, computed: `reject` if any F; `major` if any G or L; otherwise `accept` (P defects only:
+an accepted paper keeps no error). Your report, in this order (IDs `SC<round>.<n>`):
 
 ```
 Verdict: accept | major | reject
@@ -98,7 +99,7 @@ Paper: <P>. Head: <SHA from task.md>. Round: <n>.
 
 ## Interest
 
-## Previous gaps (revisions only)
+## Previous defects G and L (revisions only)
 | ID | Resolved | Why |
 
 Ask-owner: <question>   (optional, one line each)

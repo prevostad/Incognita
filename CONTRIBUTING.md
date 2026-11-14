@@ -34,8 +34,11 @@ and merges the pull request himself. He reviews it again when `Ask-owner:` quest
 
 The repository is public: an entry written in KNOWN.md is published, even when flagged `private`.
 An unpublished result the owner does not want to publish stays out of the repository; it can be
-given to agents in a private file outside the repository (listed in each task), once the loop
-supports it.
+given to agents in a private file outside the repository: put the entries in
+`<dir>/<Roadmap>.md` on the server and launch the night with `INCOGNITA_PRIVATE_KNOWN=<dir>`; each
+session of that roadmap then gets them as `.agents/known-private.md` (listed in its task). Agents
+never quote private entries, but anything a session reads may leak into a public pull request:
+give them only what you accept to see paraphrased.
 
 ## 3. Read the night report, veto, answer questions
 
@@ -60,7 +63,14 @@ for the owner:
 - statements pull requests, during the first nights (a wrong frozen statement can only be fixed by a
   non-additive change), then automatically once the owner enables it;
 - any non-additive change under `Statements/` (a removed or modified file or lock), and dependency
-  bumps (LMLExplore, Mathlib), which re-lock the statements and list the affected ones;
+  bumps (LMLExplore, Mathlib), which re-lock the statements and list the affected ones. The
+  placeholder `Statements/Basic.lean` (from version 1) is exempted by the audit
+  (`legacyExempt` in `scripts/Audit.lean`); the owner deletes it, with that exemption and its import
+  in `Statements.lean`, in one admin-bypass pull request, for example with the first frozen
+  statements;
+- proof pull requests that add an erratum or a statement correction (`papers/<P>/errata.md`,
+  `statement-corrections.md`: the paper becomes disputed or gets corrected statements), or that add
+  a definition;
 - human-owned paths: `README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `agents/`,
   `templates/`, `docs/`, `scripts/`, `.github/`, `lakefile.toml`, `lean-toolchain`,
   `lake-manifest.json`, `papers/*/withdrawn.md` (listed in `.github/CODEOWNERS`);
@@ -68,7 +78,8 @@ for the owner:
 
 **Reading a pull request.** Its description is the agent's summary (results in mathematics, with
 their Lean names or paper labels). Papers: the PDF is in the artifact `papers-pdf` of the "Papers"
-run (tab Checks), and the referee reports are comments starting with `Verdict:`. Statements: read
+run (tab Checks; its check "Compile papers" must be green, as "Build and check", before the loop
+merges a paper), and the referee reports are comments starting with `Verdict:`. Statements: read
 the back-translations in `papers/<P>/blueprint.md` and the `review-statements` report.
 
 **Admin bypass.** CI fails, by design, on every non-additive change under `Statements/`. The
@@ -84,7 +95,15 @@ uses `--admin` or a bypass.
 | `rejected` | a paper closed after a fatal defect or two revisions without acceptance | reopen it if the referees were wrong |
 | `incomplete` | a draft pull request of an agent that ran out of time; its work is kept | none: agents finish it |
 | `needs-human` | a non-paper pull request the agents gave up on | fix, close, or remove the label to retry |
-| `parked` | a target that failed too often | decide whether it is worth retrying |
+
+Labels for humans only (`scripts/pr_labels.py`, recomputed by the workflow "PR labels"): one state
+label per open pull request (`awaiting-CI`, `ci-failed`, `awaiting-review`, `awaiting-author`,
+`merge-conflict`, `ready-to-merge`; none with `needs-human`), `role:<role>` for agents' pull requests,
+`fork` for pull requests from forks.
+
+**Parked targets** are not labels: a role and target that failed `INCOGNITA_PARK_AFTER` (4) times in
+all nights are skipped; the night report lists them, and deleting the file
+`~/.incognita/state/parked/<role>_<target>` on the server makes the loop retry.
 
 ## 6. Branch protection and accounts
 

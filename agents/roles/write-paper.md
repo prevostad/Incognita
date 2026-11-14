@@ -4,15 +4,17 @@ paper serving one open item of an approved roadmap. It will be refereed by two a
 
 ## Read first
 
-1. `.agents/task.md`: the roadmap, the paper id `P<nnn>-…` (or its number: then choose the slug),
-   possibly the item to serve, the deadline, the context files.
+1. `.agents/task.md`: the roadmap, the number `P<nnn>` of the new paper (your directory is
+   `papers/P<nnn>-<slug>/`: choose the slug; the script refuses another number), possibly the item
+   to serve, the deadline, the context files.
 2. `AGENTS.md`, all of it. Sections 4, 5 and 7 are your rules.
 3. `roadmaps/<Roadmap>/ROADMAP.md`, and its KNOWN.md (path in task.md, plus any private file listed
    there). **If the roadmap's status is not `approved`, or KNOWN.md does not start with
    `Reviewed by owner: <date>`, stop at once**: write `.agents/summary.md` saying so, commit nothing.
-4. `papers/README.md`; the `META.toml` and the Main result of every paper of the roadmap under
-   `papers/`; `.agents/open-prs.md`; `.agents/reports.md` (reports of the roadmap's rejected
-   papers).
+4. `papers/README.md`; `.agents/papers.md` (the papers of the roadmap and the items they serve, on
+   `main`, in open pull requests, rejected); the `META.toml` and the Main result of every paper of
+   the roadmap under `papers/`; `.agents/open-prs.md`; `.agents/reports.md` (the referee reports of
+   the roadmap's rejected papers, if any).
 5. `literature/index.md` and the notes in `literature/notes/` that concern the roadmap.
 
 ## Choose the item
@@ -20,7 +22,7 @@ paper serving one open item of an approved roadmap. It will be refereed by two a
 If task.md names an item, take it. Otherwise take the first open item not covered, in this order:
 the known results to formalise F0, F1, …, then the directions D1, D2, … An item is not open if it
 is marked `pending owner decision`, `on hold` or `closed`. It is covered if a paper on `main`, an
-open pull request (`open-prs.md`) or a rejected paper (`reports.md`) serves it. A direction can take
+open pull request or a rejected paper serves it (`papers.md`). A direction can take
 several papers only for parts that no paper covers: then say which part. If nothing is open, stop
 and say so in the summary.
 
@@ -30,8 +32,9 @@ and say so in the summary.
   re-derive them), the roadmap's "What is known", `literature/notes/`, and the web (at least five
   queries phrased by the objects and the conclusion, not by your own words; follow references in
   both directions; read the relevant parts, not only abstracts). If the result is known, or follows
-  from KNOWN entries in about a page, do not write the paper: add what you read to `literature/`,
-  commit it, and write in the summary `Ask-owner: item <D/F> seems answered by …`.
+  from KNOWN entries in about a page, do not write the paper and commit nothing (a write-paper pull
+  request must add a paper): write in the summary the sources and parts you read, and a line
+  `Ask-owner: item <D/F> seems answered by …`; the script forwards it to the owner.
 - Then work out the result. Keep `papers/<P>/notebook/NOTEBOOK.md` as you go (AGENTS.md §5.3):
   attempts, dead ends with the reason they fail, ideas, every web query. Numerical experiments:
   `python3` scripts in `papers/<P>/notebook/` with their small outputs. Lean drafts:

@@ -67,7 +67,7 @@ for version 1).
 | `templates/` | the paper template and its LaTeX macros | the owner |
 | `agents/` | role prompts | the owner |
 | `docs/` | design documents | the owner |
-| `scripts/`, `.github/`, `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | build, audit, CI, the agent loop | the owner |
+| `scripts/`, `tests/`, `.github/`, `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | build, audit, CI and its canaries, the agent loop | the owner |
 
 ## Building
 
@@ -80,8 +80,9 @@ The first command fetches Mathlib's and Tau Ceti's prebuilt files, then runs `la
 LMLExplore publishes no cache, so the LMLExplore modules that are imported are compiled. CI checks
 that the library has no `sorry`, no warning and only the three standard axioms, that frozen
 statements only receive additions and match their locks, that each proof has exactly its frozen
-type (`lake exe audit`), that the dependencies are pinned at LMLExplore's revisions, and compiles
-every paper to PDF (workflow "Papers", artifact `papers-pdf`).
+type (`lake exe audit`), that the dependencies are pinned at LMLExplore's revisions (workflow
+"CI", check "Build and check", required on `main`); the workflow "Papers" (check "Compile papers")
+compiles every paper to PDF (artifact `papers-pdf`) when a pull request touches `papers/`.
 
 ## License
 

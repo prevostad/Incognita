@@ -26,9 +26,11 @@ work independently: do not trust their citations, check them in the source.
    `bibliography.json` and the metadata fields of every `refs.bib` using the key (never the key);
    set the metadata to `checked` in `index.md` (by whom, when, which page). A work that cannot be
    found: say so in `index.md` and under Not done.
-3. **Attribution audit of a verified result**: a paper whose frozen statements all have a proof
-   marker in `catalogue/results/`, and with no `catalogue/attribution/<prefix>.md` yet. This is a
-   second, independent pass after the scope referee's: do your own search first.
+3. **Attribution audit of a verified result**: an internal paper (`kind = "internal"`) whose frozen
+   statements are all proved (each has a proof marker in `catalogue/results/`, statements superseded
+   by a resolved correction aside), with no `catalogue/attribution/<prefix>.md` yet. Novelty is
+   recorded only there, never in a proof marker (markers are additions only). This is a second,
+   independent pass after the scope referee's: do your own search first.
    1. List the techniques of the proofs (`paper.tex` and `formalisation.tex`), with their nodes.
    2. For each, search the earliest source: at least two web queries per technique, phrased by the
       idea; read the relevant part; follow references backwards and forwards.
