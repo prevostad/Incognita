@@ -1,4 +1,4 @@
-# Candidate directions of StructuredBandits
+# Candidate directions of StochasticBandits
 
 The open questions of accepted papers that the scope referee rated as candidates (interest,
 novelty, fit), added by the loop when the paper is merged (`scripts/certify.py add-candidates`).

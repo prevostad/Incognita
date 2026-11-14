@@ -9,8 +9,12 @@ owner's main decision: it fixes what agents spend their time on.
 |---|---|---|---|
 | [BatchedBandits](BatchedBandits/ROADMAP.md) | approved | Adrien Prevost | see its first line |
 | [TransferBandits](TransferBandits/ROADMAP.md) | draft | Adrien Prevost | see its first line |
-| [RegretShape](RegretShape/ROADMAP.md) | draft | Adrien Prevost | see its first line |
-| [StructuredBandits](StructuredBandits/ROADMAP.md) | draft (proposed by Claude) | to be decided | see its first line |
+| [StochasticBandits](StochasticBandits/ROADMAP.md) | draft (written by Claude at the owner's request) | Adrien Prevost | see its first line |
+
+StochasticBandits (problem-dependent optimality for stochastic bandits with finitely many arms)
+absorbed the drafts RegretShape and StructuredBandits of 2026-11-13, removed on 2026-11-14: their
+items are mapped in its Appendix A. Its `SOURCES.md` records which parts of each source the draft's
+author read.
 
 Papers are written in a roadmap only when its status is `approved` **and** its `KNOWN.md` starts
 with `Reviewed by owner: <date>`.

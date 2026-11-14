@@ -125,6 +125,117 @@
     "identifiers": {},
     "version": ""
   },
+  "AJK21": {
+    "uri": "https://proceedings.mlr.press/v134/agrawal21a.html",
+    "citation": {
+      "id": "AJK21",
+      "type": "paper-conference",
+      "title": "Regret Minimization in Heavy-Tailed Bandits",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shubhada"
+        },
+        {
+          "family": "Juneja",
+          "given": "Sandeep"
+        },
+        {
+          "family": "Koolen",
+          "given": "Wouter M."
+        }
+      ],
+      "container-title": "Proceedings of the 34th Conference on Learning Theory (COLT)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "134",
+      "page": "26-62",
+      "publisher": "PMLR",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2102.03734"
+    },
+    "version": ""
+  },
+  "AMS09": {
+    "uri": "https://doi.org/10.1016/j.tcs.2009.01.016",
+    "citation": {
+      "id": "AMS09",
+      "type": "article-journal",
+      "title": "Exploration–exploitation tradeoff using variance estimates in multi-armed bandits",
+      "author": [
+        {
+          "family": "Audibert",
+          "given": "Jean-Yves"
+        },
+        {
+          "family": "Munos",
+          "given": "Rémi"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "container-title": "Theoretical Computer Science",
+      "volume": "410",
+      "issue": "19",
+      "page": "1876-1902",
+      "DOI": "10.1016/j.tcs.2009.01.016",
+      "issued": {
+        "date-parts": [
+          [
+            2009
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "BCL13": {
+    "uri": "https://arxiv.org/abs/1209.1727",
+    "citation": {
+      "id": "BCL13",
+      "type": "article-journal",
+      "title": "Bandits With Heavy Tail",
+      "author": [
+        {
+          "family": "Bubeck",
+          "given": "Sébastien"
+        },
+        {
+          "family": "Cesa-Bianchi",
+          "given": "Nicolò"
+        },
+        {
+          "family": "Lugosi",
+          "given": "Gábor"
+        }
+      ],
+      "container-title": "IEEE Transactions on Information Theory",
+      "volume": "59",
+      "issue": "11",
+      "page": "7711-7717",
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1209.1727"
+    },
+    "version": ""
+  },
   "BK96": {
     "uri": "",
     "citation": {
@@ -196,7 +307,46 @@
       "issue": "3",
       "page": "1516-1541"
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1210.1136"
+    },
+    "version": ""
+  },
+  "CHK18": {
+    "uri": "https://jmlr.org/papers/v18/15-154.html",
+    "citation": {
+      "id": "CHK18",
+      "type": "article-journal",
+      "title": "Normal Bandits of Unknown Means and Variances",
+      "author": [
+        {
+          "family": "Cowan",
+          "given": "Wesley"
+        },
+        {
+          "family": "Honda",
+          "given": "Junya"
+        },
+        {
+          "family": "Katehakis",
+          "given": "Michael N."
+        }
+      ],
+      "container-title": "Journal of Machine Learning Research",
+      "volume": "18",
+      "issue": "154",
+      "page": "1-28",
+      "issued": {
+        "date-parts": [
+          [
+            2018
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1504.05823"
+    },
     "version": ""
   },
   "CMP17": {
@@ -229,7 +379,9 @@
       },
       "volume": "30"
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1711.00400"
+    },
     "version": ""
   },
   "CP14": {
@@ -257,7 +409,9 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1405.5096"
+    },
     "version": ""
   },
   "DSK20": {
@@ -289,7 +443,40 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "2007.00969"
+    },
+    "version": ""
+  },
+  "FG24": {
+    "uri": "https://arxiv.org/abs/2109.13595",
+    "citation": {
+      "id": "FG24",
+      "type": "article-journal",
+      "title": "The Fragility of Optimized Bandit Algorithms",
+      "author": [
+        {
+          "family": "Fan",
+          "given": "Lin"
+        },
+        {
+          "family": "Glynn",
+          "given": "Peter W."
+        }
+      ],
+      "container-title": "Operations Research",
+      "DOI": "10.1287/opre.2023.0283",
+      "issued": {
+        "date-parts": [
+          [
+            2024
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2109.13595"
+    },
     "version": ""
   },
   "GC11": {
@@ -320,6 +507,47 @@
         ]
       }
     }
+  },
+  "GHMS22": {
+    "uri": "https://jmlr.org/papers/v23/20-717.html",
+    "citation": {
+      "id": "GHMS22",
+      "type": "article-journal",
+      "title": "KL-UCB-Switch: Optimal Regret Bounds for Stochastic Bandits from Both a Distribution-Dependent and a Distribution-Free Viewpoints",
+      "author": [
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        },
+        {
+          "family": "Hadiji",
+          "given": "Hédi"
+        },
+        {
+          "family": "Ménard",
+          "given": "Pierre"
+        },
+        {
+          "family": "Stoltz",
+          "given": "Gilles"
+        }
+      ],
+      "container-title": "Journal of Machine Learning Research",
+      "volume": "23",
+      "issue": "179",
+      "page": "1-66",
+      "issued": {
+        "date-parts": [
+          [
+            2022
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1805.05071"
+    },
+    "version": ""
   },
   "GHRZ19": {
     "uri": "",
@@ -356,6 +584,40 @@
       "volume": "32"
     },
     "identifiers": {},
+    "version": ""
+  },
+  "GKL16": {
+    "uri": "https://arxiv.org/abs/1605.08988",
+    "citation": {
+      "id": "GKL16",
+      "type": "paper-conference",
+      "title": "On Explore-Then-Commit Strategies",
+      "author": [
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        },
+        {
+          "family": "Kaufmann",
+          "given": "Emilie"
+        },
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems 29 (NIPS 2016)",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1605.08988"
+    },
     "version": ""
   },
   "GL97": {
@@ -452,6 +714,40 @@
     "identifiers": {},
     "version": ""
   },
+  "HT14": {
+    "uri": "https://proceedings.mlr.press/v33/honda14.html",
+    "citation": {
+      "id": "HT14",
+      "type": "paper-conference",
+      "title": "Optimality of Thompson Sampling for Gaussian Bandits Depends on Priors",
+      "author": [
+        {
+          "family": "Honda",
+          "given": "Junya"
+        },
+        {
+          "family": "Takemura",
+          "given": "Akimichi"
+        }
+      ],
+      "container-title": "Proceedings of the Seventeenth International Conference on Artificial Intelligence and Statistics (AISTATS)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "33",
+      "page": "375-383",
+      "publisher": "PMLR",
+      "issued": {
+        "date-parts": [
+          [
+            2014
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1311.1894"
+    },
+    "version": ""
+  },
   "HT15": {
     "uri": "",
     "citation": {
@@ -530,6 +826,114 @@
     "identifiers": {},
     "version": ""
   },
+  "JXSXG21": {
+    "uri": "https://arxiv.org/abs/2003.01803",
+    "citation": {
+      "id": "JXSXG21",
+      "type": "article",
+      "title": "MOTS: Minimax Optimal Thompson Sampling",
+      "author": [
+        {
+          "family": "Jin",
+          "given": "Tianyuan"
+        },
+        {
+          "family": "Xu",
+          "given": "Pan"
+        },
+        {
+          "family": "Shi",
+          "given": "Jieming"
+        },
+        {
+          "family": "Xiao",
+          "given": "Xiaokui"
+        },
+        {
+          "family": "Gu",
+          "given": "Quanquan"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2003.01803"
+    },
+    "version": ""
+  },
+  "JZ20": {
+    "uri": "https://arxiv.org/abs/2006.08754",
+    "citation": {
+      "id": "JZ20",
+      "type": "paper-conference",
+      "title": "Crush Optimism with Pessimism: Structured Bandits Beyond Asymptotic Optimality",
+      "author": [
+        {
+          "family": "Jun",
+          "given": "Kwang-Sung"
+        },
+        {
+          "family": "Zhang",
+          "given": "Chicheng"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems 33 (NeurIPS 2020)",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2006.08754"
+    },
+    "version": ""
+  },
+  "KCG16": {
+    "uri": "https://jmlr.org/papers/v17/kaufman16a.html",
+    "citation": {
+      "id": "KCG16",
+      "type": "article-journal",
+      "title": "On the Complexity of Best-Arm Identification in Multi-Armed Bandit Models",
+      "author": [
+        {
+          "family": "Kaufmann",
+          "given": "Emilie"
+        },
+        {
+          "family": "Cappé",
+          "given": "Olivier"
+        },
+        {
+          "family": "Garivier",
+          "given": "Aurélien"
+        }
+      ],
+      "container-title": "Journal of Machine Learning Research",
+      "volume": "17",
+      "page": "1-42",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1407.4443"
+    },
+    "version": ""
+  },
   "KKM12": {
     "uri": "",
     "citation": {
@@ -559,7 +963,85 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1205.4217"
+    },
+    "version": ""
+  },
+  "KKM13": {
+    "uri": "https://arxiv.org/abs/1307.3400",
+    "citation": {
+      "id": "KKM13",
+      "type": "paper-conference",
+      "title": "Thompson Sampling for 1-Dimensional Exponential Family Bandits",
+      "author": [
+        {
+          "family": "Korda",
+          "given": "N."
+        },
+        {
+          "family": "Kaufmann",
+          "given": "E."
+        },
+        {
+          "family": "Munos",
+          "given": "R."
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems 26 (NIPS 2013)",
+      "page": "1448-1456",
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1307.3400"
+    },
+    "version": ""
+  },
+  "KLVS21": {
+    "uri": "https://arxiv.org/abs/2011.05944",
+    "citation": {
+      "id": "KLVS21",
+      "type": "paper-conference",
+      "title": "Asymptotically Optimal Information-Directed Sampling",
+      "author": [
+        {
+          "family": "Kirschner",
+          "given": "Johannes"
+        },
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        },
+        {
+          "family": "Vernade",
+          "given": "Claire"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "container-title": "Proceedings of the 34th Conference on Learning Theory (COLT)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "134",
+      "publisher": "PMLR",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2011.05944"
+    },
     "version": ""
   },
   "KO21a": {
@@ -621,6 +1103,59 @@
     "identifiers": {
       "arxiv": "2110.00158"
     },
+    "version": ""
+  },
+  "L17": {
+    "uri": "https://arxiv.org/abs/1703.08937",
+    "citation": {
+      "id": "L17",
+      "type": "paper-conference",
+      "title": "A Scale Free Algorithm for Stochastic Bandits with Bounded Kurtosis",
+      "author": [
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems 30 (NIPS 2017)",
+      "page": "1584-1593",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1703.08937"
+    },
+    "version": ""
+  },
+  "L18": {
+    "uri": "https://jmlr.org/papers/v19/17-513.html",
+    "citation": {
+      "id": "L18",
+      "type": "article-journal",
+      "title": "Refining the Confidence Level for Optimistic Bandit Strategies",
+      "author": [
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        }
+      ],
+      "container-title": "Journal of Machine Learning Research",
+      "volume": "19",
+      "page": "1-32",
+      "issued": {
+        "date-parts": [
+          [
+            2018
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "L83": {
@@ -733,7 +1268,9 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1610.04491"
+    },
     "version": ""
   },
   "MG17": {
@@ -761,7 +1298,9 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1702.07211"
+    },
     "version": ""
   },
   "PMM25": {
@@ -873,6 +1412,82 @@
       "page": "660-681"
     },
     "identifiers": {},
+    "version": ""
+  },
+  "RH20": {
+    "uri": "https://proceedings.mlr.press/v117/riou20a.html",
+    "citation": {
+      "id": "RH20",
+      "type": "paper-conference",
+      "title": "Bandit Algorithms Based on Thompson Sampling for Bounded Reward Distributions",
+      "author": [
+        {
+          "family": "Riou",
+          "given": "Charles"
+        },
+        {
+          "family": "Honda",
+          "given": "Junya"
+        }
+      ],
+      "container-title": "Proceedings of the 31st International Conference on Algorithmic Learning Theory (ALT)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "117",
+      "page": "1-50",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Kontorovich",
+          "given": "Aryeh"
+        },
+        {
+          "family": "Neu",
+          "given": "Gergely"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "SA11": {
+    "uri": "https://doi.org/10.1007/978-3-642-24412-4_15",
+    "citation": {
+      "id": "SA11",
+      "type": "paper-conference",
+      "title": "Deviations of Stochastic Bandit Regret",
+      "author": [
+        {
+          "family": "Salomon",
+          "given": "Antoine"
+        },
+        {
+          "family": "Audibert",
+          "given": "Jean-Yves"
+        }
+      ],
+      "container-title": "Algorithmic Learning Theory (ALT 2011)",
+      "collection-title": "Lecture Notes in Computer Science",
+      "volume": "6925",
+      "page": "159-173",
+      "DOI": "10.1007/978-3-642-24412-4_15",
+      "issued": {
+        "date-parts": [
+          [
+            2011
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1107.4506"
+    },
     "version": ""
   },
   "SAE13": {

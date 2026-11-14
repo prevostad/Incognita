@@ -27,4 +27,5 @@ $\sqrt{KT}$ lower bound and the Lai–Robbins bound as corollaries.
 
 ## Where Incognita uses it
 
-Programmes RegretShape (known results 1–3) and BatchedBandits (known result 1).
+Roadmaps StochasticBandits (F1–F3; KNOWN K2, K4, K5; directions D1, D3; it absorbed the draft
+RegretShape) and BatchedBandits (known result 1).
