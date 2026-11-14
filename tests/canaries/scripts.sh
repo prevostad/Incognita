@@ -128,17 +128,20 @@ case_ "marker removed" fail "rm catalogue/results/P001-a.toml"
 # --- certify.py check (library metadata) ------------------------------------------------------
 
 lib="$work/library"
-mkdir -p "$lib/papers/P001-one" "$lib/roadmaps/R" && cd "$lib" || exit 2
+mkdir -p "$lib/papers/P001-one" "$lib/roadmaps/RB" && cd "$lib" || exit 2
 git init -q -b main
-printf 'roadmap = "R"\nkind = "internal"\ndirections = ["D1"]\nauthors = ["m"]\nversion = 1\ndepends_on = []\n' > papers/P001-one/META.toml
+printf 'roadmap = "RB"\nkind = "internal"\ndirections = ["D1"]\nauthors = ["m"]\nversion = 1\ndepends_on = []\n' > papers/P001-one/META.toml
 cat > papers/P001-one/paper.tex <<'EOF'
 \title{One}
 \begin{theorem}\label{thm:main} T. \end{theorem}
 \section{Open questions}
 \begin{openquestion}\label{oq:a} Q? \end{openquestion}
 EOF
-printf '# Candidate directions of R\n\n## C1 (d, from P001v1 oq:a)\n- Title: -\n- Statement: Q?\n- Source: s\n- Rating: r\n' > roadmaps/R/directions.md
-python3 "$root/scripts/certify.py" bib > /dev/null
+printf '# Candidate directions of R\n\n## C1 (d, from P001v1 oq:a)\n- Title: -\n- Statement: Q?\n- Source: s\n- Rating: r\n' > roadmaps/RB/directions.md
+printf '# R\n\n| | |\n|---|---|\n| Status | **approved** (d) |\n' > roadmaps/RB/ROADMAP.md
+mkdir -p catalogue
+printf '| Date | Model | Item | Check | Outcome | Main |\n|---|---|---|---|---|---|\n| d | m | P001 | known-cases | confirmed: ok | x |\n' > catalogue/garden.md
+printf '# Errata of P001\n\n## E1 (d, prove, m)\n- Node: thm:main\n- Problem: p.\n' > papers/P001-one/errata.md
 g add -A && g commit -qm base
 lbase=$(git rev-parse HEAD)
 # lcase <name> <expected: pass|fail> <commands...>: run the commands on a branch from lbase.
@@ -152,13 +155,19 @@ lcase() {
   else fail "certify check: $name (expected $want, got $got)"; cat "$work/lib.out"; fi
 }
 lcase "a consistent library" pass "true"
-lcase "library.bib out of date" fail "echo '% x' >> papers/library.bib"
+lcase "a roadmap that does not exist" fail "sed -i 's/^roadmap = .*/roadmap = \"Nope\"/' papers/P001-one/META.toml"
+lcase "a roadmap name that is a path" fail "sed -i 's#^roadmap = .*#roadmap = \"../RB\"#' papers/P001-one/META.toml"
+lcase "a row of garden.md appended" pass "echo '| d | m2 | P001 | known-cases | confirmed: again | y |' >> catalogue/garden.md"
+lcase "a row of garden.md changed" fail "sed -i 's/confirmed: ok/failed: no/' catalogue/garden.md"
+lcase "an erratum revised" pass "echo 'Revised in the version of d: fixed.' >> papers/P001-one/errata.md"
+lcase "an erratum edited" fail "sed -i 's/Problem: p./Problem: q./' papers/P001-one/errata.md"
+lcase "an erratum deleted" fail "echo '# Errata of P001' > papers/P001-one/errata.md"
 lcase "\\leanok written in a paper" fail "printf '%s\n' '\\leanok' >> papers/P001-one/paper.tex"
 lcase "a new paper.tex without a new version" fail "echo x >> papers/P001-one/paper.tex"
 lcase "a new paper.tex with a new version" pass "echo x >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; python3 '$root/scripts/certify.py' bib >/dev/null"
 lcase "a citation of a library paper not in depends_on" fail "printf '%s\n' 'See \\cite{INC-P001}.' >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; python3 '$root/scripts/certify.py' bib >/dev/null"
-lcase "a candidate direction edited" fail "sed -i 's/Statement: Q?/Statement: R?/' roadmaps/R/directions.md"
-lcase "a candidate direction dropped" pass "echo 'Dropped (d, garden, m): known.' >> roadmaps/R/directions.md"
+lcase "a candidate direction edited" fail "sed -i 's/Statement: Q?/Statement: R?/' roadmaps/RB/directions.md"
+lcase "a candidate direction dropped" pass "echo 'Dropped (d, garden, m): known.' >> roadmaps/RB/directions.md"
 cd "$root" || exit 2
 
 if [ "$failures" = 0 ]; then

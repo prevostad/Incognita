@@ -39,7 +39,7 @@ GH
 chmod +x "$FAKE/bin/gh"
 export PATH=$FAKE/bin:$PATH
 
-# world <known-first-line> [paper-on-main]: a fresh origin with an approved roadmap.
+# world <known-first-line> [paper-on-main [kind]]: a fresh origin with an approved roadmap.
 world() {
   rm -rf "${t:?}/origin.git" "${t:?}/repo" "${t:?}/w" "${t:?}/home"; rm -f "${FAKE:?}"/*.json
   git init -q --bare -b main "$t/origin.git"
@@ -50,7 +50,7 @@ world() {
   printf '%s\n' "$1" > roadmaps/BB/KNOWN.md
   mkdir -p catalogue/results; echo '# Proof markers' > catalogue/results/README.md   # not material to garden
   if [ -n "${2:-}" ]; then
-    mkdir -p "papers/$2"; printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D1"]\n' > "papers/$2/META.toml"
+    mkdir -p "papers/$2"; printf 'roadmap = "BB"\nkind = "%s"\ndirections = ["D1"]\n' "${3:-internal}" > "papers/$2/META.toml"
     echo x > "papers/$2/paper.tex"
   fi
   git add -A; git commit -qm main; git push -q "$t/origin.git" main
@@ -137,8 +137,29 @@ pass "task.md gives the number of the new paper" 'a new directory `papers/P000-<
 pass "task.md gives the roadmap and its KNOWN.md" 'KNOWN.md: `roadmaps/BB/KNOWN.md`'
 world "Reviewed by owner: no (draft)"
 pass "KNOWN not reviewed: no paper, fallback bibliographer" "== task: bibliographer -"
-world "Reviewed by owner: 2026-11-14" P001-old
+world "Reviewed by owner: 2026-11-14" P001-old definitions
 pass "formalisation before writing" "== task: formalize-statements P001-old"
+# L6: the definitions paper and the dependencies are frozen first; one statements PR per roadmap.
+world "Reviewed by owner: 2026-11-14" P000-setting definitions
+on_main papers/P001-x/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D1"]\n')"
+pass "the definitions paper (P000) is frozen first" "== task: formalize-statements P000-setting"
+on_main Statements/P000/defs.lock x
+pass "then the papers of its roadmap" "== task: formalize-statements P001-x"
+on_main papers/P002-y/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D1"]\n')"
+h=$(prx 41 formalize-statements P001-x 'mkdir -p Statements/P001; echo s > Statements/P001/a.lean')
+check 41 "Build and check" IN_PROGRESS
+nopass "one statements pull request per roadmap" "== task: formalize-statements P002-y"
+world "Reviewed by owner: 2026-11-14" P000-setting definitions
+on_main Statements/P000/defs.lock x
+on_main papers/P001-x/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D1"]\ndepends_on = ["P002v1:thm:main"]\n')"
+on_main papers/P002-y/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D1"]\n')"
+pass "a paper waits for the frozen statements of its dependencies" "== task: formalize-statements P002-y"
+world "Reviewed by owner: 2026-11-14"
+on_main papers/P001-old/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D9"]\n')"
+pass "no definitions paper on main: no statements yet, a paper instead" "== task: write-paper BB"
+h=$(pr 42 write-paper BB)
+check 42 "Build and check" IN_PROGRESS
+nopass "no definitions paper on main: one paper in review at a time" "== task: write-paper BB"
 world "Reviewed by owner: 2026-11-14"
 h=$(pr 5 write-paper BB)
 pass "a new paper PR goes to referee-scope" "== task: referee-scope 5"
@@ -195,16 +216,16 @@ world "Reviewed by owner: 2026-11-14" P001-old
 on_main papers/P001-old/errata.md "$(printf '## E1 (d)\n- Node: thm:main')"
 pass "a disputed paper is revised" "== task: revise P001-old"
 pass "task.md names the errata entries" "for the errata entries E1"
-world "Reviewed by owner: 2026-11-14" P001-old
+world "Reviewed by owner: 2026-11-14" P001-old definitions
 on_main Statements/P001/main_thm.lock "x"
 on_main papers/P001-old/errata.md "$(printf '## E1 (d)\n- Node: thm:main\nRevised in the version of d: x')"
 pass "an erratum revised in a new version: corrected statements to freeze" "== task: formalize-statements P001-old"
-world "Reviewed by owner: 2026-11-14" P001-old
+world "Reviewed by owner: 2026-11-14" P001-old definitions
 on_main Statements/P001/main_thm.lock "x"
 on_main papers/P001-old/statement-corrections.md "$(printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.main_thm')"
 pass "a statement correction: corrected statement to freeze" "== task: formalize-statements P001-old"
 pass "task.md names the entries to resolve" "Entries to resolve: SC1"
-world "Reviewed by owner: 2026-11-14" P001-old
+world "Reviewed by owner: 2026-11-14" P001-old definitions
 on_main Statements/P001/main_thm.lock "x"
 on_main papers/P001-old/statement-corrections.md "$(printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.main_thm\nResolved by Incognita.Statements.P001.main_thm_v2')"
 nopass "a resolved correction needs nothing" "== task: formalize-statements P001-old"
@@ -245,31 +266,71 @@ h=$(prx 24 propose-roadmap BB "$PROPOSAL"'; git add -A; git commit -qm proposal;
 status "$h" "Incognita review" review-roadmap approve success
 status "$h" "Incognita loop" loop approved success
 pass "a scripted approval is merged" "would merge #24 (roadmap"
+comment 24 owner "veto: too early" "" "2026-01-05T08:00:00Z"
+nopass "a veto written after the scripted approval stops the merge (S5)" "would merge #24"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 27 propose-roadmap BB "$PROPOSAL")
+status "$h" "Incognita review" review-roadmap approve success
+comment 27 owner "approve" "" "2026-01-01T08:00:00Z"
+comment 27 owner "<!-- incognita:review-roadmap:$h -->" "Verdict: approve" "2026-01-01T09:00:00Z"
+nopass "an approval written before the review-roadmap report does not count (S5)" "would push a scripted commit"
+comment 27 owner "approve" "" "2026-01-01T10:00:00Z"
+pass "an approval written after it counts" "would push a scripted commit (approved) to #27"
 h=$(prx 25 propose-roadmap BB "$PROPOSAL"'; git add -A; git commit -qm proposal; sed -i "s/proposed/approved/" roadmaps/NewArea/ROADMAP.md; echo "- **D2. B.** y" >> roadmaps/NewArea/ROADMAP.md')
 jq 'map(select(.number == 25))' "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
 status "$h" "Incognita review" review-roadmap approve success
 status "$h" "Incognita loop" loop approved success
 nopass "a forged approval commit is never merged" "would merge #25"
 
-# Accepted papers: open questions rated by the scope referee become candidate directions.
+# Accepted papers: merged as reviewed; then the open questions rated by the scope referee become
+# candidate directions, by a pull request of the loop itself (L1).
 PAPER='mkdir -p papers/P130-new; printf "roadmap = \"BB\"\nkind = \"internal\"\ndirections = [\"D1\"]\nauthors = [\"m\"]\nversion = 1\ndepends_on = []\n" > papers/P130-new/META.toml; printf "%s\n" "\\title{New}" "\\section{Open questions}" "\\begin{openquestion}[Q]\\label{oq:q}" "Is it true for every grid?" "\\end{openquestion}" > papers/P130-new/paper.tex'
 SCOPE=$(printf 'Verdict: accept\n\n## Open questions\n| Question | Interest | Novelty | Fit | Candidate | Reason |\n|---|---|---|---|---|---|\n| oq:q | high | open | D1 | yes | |')
 world "Reviewed by owner: 2026-11-14"
 h=$(prx 31 write-paper BB "$PAPER")
 for c in "Referee scope:referee-scope" "Referee proofs:referee-proofs" "Incognita review:referees"; do status "$h" "${c%%:*}" "${c#*:}" accept success; done
 comment 31 owner "<!-- incognita:referee-scope:$h -->" "$SCOPE" "2026-11-14T10:00:00Z"
-pass "an accepted paper first gets its candidate directions" "would push a scripted commit (directions) to #31"
-nopass "and is not merged before" "would merge #31"
+pass "an accepted paper is merged as reviewed" "would merge #31 (paper"
+nopass "no scripted commit in a paper's pull request" "would push a scripted commit"
 world "Reviewed by owner: 2026-11-14"
+cd "$t/w" && eval "$PAPER" && git add -A && git commit -qm "P130 (#31)" && git push -q "$t/origin.git" main
+h0=$(git -C "$t/w" rev-parse HEAD)
+mkdir -p "$t/home/state/candidates"; echo "31 $h0 P130-new" > "$t/home/state/candidates/P130-new"
+comment 31 owner "<!-- incognita:referee-scope:$h0 -->" "$(printf 'Verdict: accept\n\n## Open questions\n| Question | Interest | Novelty | Fit | Candidate | Reason |\n|---|---|---|---|---|---|\n| oq:q | high | open | D1 | no | |')" "2026-11-14T09:00:00Z"
+comment 31 owner "<!-- incognita:referee-scope:$h0 -->" "$SCOPE" "2026-11-14T10:00:00Z"
+pass "after the merge: a pull request of candidate directions (latest rating wins, L8)" "would open a pull request of candidate directions from P130-new (#31)"
 printf '%s\n' "$SCOPE" > "$t/scope.md"
-h=$(prx 32 write-paper BB "$PAPER"'; git add -A; git commit -qm paper; C add-candidates --paper P130-new --report "$t/scope.md" --pr 32 --head 0123456789abcdef')
-for c in "Referee scope:referee-scope" "Referee proofs:referee-proofs" "Incognita review:referees"; do status "$h" "${c%%:*}" "${c#*:}" accept success; done
+h=$(prx 35 loop P130-new 'C add-candidates --paper P130-new --report "$t/scope.md" --pr 31 --head 0123456789abcdef')
 status "$h" "Incognita loop" loop directions success
-pass "then it is merged" "would merge #32 (paper"
+pass "the loop's pull request of candidate directions is merged" "would merge #35 (scripted, categories: directions)"
+nopass "it gets no reviewer and no second pull request" "== task: review-pr 35"
+jq 'map(if .number == 35 then .mergeable = "CONFLICTING" else . end)' "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
+pass "a conflicting one is closed (and made again on the new main)" "would close the conflicting pull request #35"
+world "Reviewed by owner: 2026-11-14"
+cd "$t/w" && eval "$PAPER" && git add -A && git commit -qm "P130 (#31)" && git push -q "$t/origin.git" main
+printf '%s\n' "$SCOPE" > "$t/scope.md"
+h=$(prx 36 loop P130-new 'C add-candidates --paper P130-new --report "$t/scope.md" --pr 31 --head 0123456789abcdef; mkdir -p literature; echo x > literature/smuggled.md')
+status "$h" "Incognita loop" loop directions success
+nopass "a scripted pull request that does more is never merged" "would merge #36"
 world "Reviewed by owner: 2026-11-14"
 h=$(prx 33 write-paper BB "$PAPER")
 for c in "Referee scope:referee-scope" "Referee proofs:referee-proofs" "Incognita review:referees"; do status "$h" "${c%%:*}" "${c#*:}" accept success; done
 pass "an accepted paper without candidates is merged at once" "would merge #33 (paper"
+
+# A paper rejected by a referee is closed; reopened by the owner, it is revised (L10).
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 51 write-paper BB)
+status "$h" "Referee scope" referee-scope reject failure
+pass "a referee's reject closes the paper" "would close #51 as rejected"
+comment 51 owner "<!-- incognita:rejected:$h -->" "Closed by the script: referee-scope: reject." "2026-11-14T09:00:00Z"
+pass "reopened by the owner: a revision round instead" "== task: revise 51"
+pass "and its round count starts again" "Revision round 1 of 2"
+
+# The bibliographer works on the paper that waits for it (L9).
+world "Reviewed by owner: 2026-11-14"
+on_main papers/P001-ext/META.toml "$(printf 'roadmap = "BB"\nkind = "external"\ndirections = ["D1"]\nsource = "[GMS19]"\n')"
+pass "an external paper without its source note: the bibliographer on it" "== task: bibliographer P001-ext"
+pass "task.md names the paper" 'The paper `P001-ext` waits for you'
 
 # Roadmaps without free items get proposals; the periodic proposal.
 world "Reviewed by owner: 2026-11-14"
@@ -278,7 +339,10 @@ pass "an exhausted roadmap gets a proposal" "== task: propose-roadmap BB"
 pass "the proposer gets the roadmaps and the items" '`items.md` `roadmaps.md`'
 world "Reviewed by owner: no"
 mkdir -p "$t/home/state"; echo 2026-01-01 > "$t/home/state/first-night"
-pass "a periodic proposal every INCOGNITA_PROPOSE_EVERY nights" "== task: propose-roadmap -"
+nopass "no periodic proposal by default (L11)" "== task: propose-roadmap -"
+export INCOGNITA_PROPOSE_EVERY=7
+pass "a periodic proposal every INCOGNITA_PROPOSE_EVERY nights, when the owner sets it" "== task: propose-roadmap -"
+unset INCOGNITA_PROPOSE_EVERY
 
 # Dependencies: a revised library paper sends its dependants to a dependency check; the papers
 # used by others are proved first.

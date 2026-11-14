@@ -74,7 +74,7 @@ no_worker() { ! pgrep -u "$(id -u)" -f 'tauceti .*work' >/dev/null; }
 pacer_ok() { case "${INCOGNITA_PACE:-}" in 0:100|off) return 0 ;; *) command -v tauceti ;; esac; }
 agent_ok() {
   id -u "$INCOGNITA_AGENT_USER" && sudo -n test -d "$INCOGNITA_AGENT_HOME/work/.git" \
-    && sudo -n test -x "$INCOGNITA_AGENT_HOME/.local/bin/claude" \
+    && [ -x "$AGENT_CLAUDE" ] && [ "$(stat -c %U "$AGENT_CLAUDE")" = root ] \
     && sudo -n test -x "$INCOGNITA_AGENT_HOME/.elan/bin/lake" \
     && [ -d "$INCOGNITA_EXCHANGE/in" ] && [ -d "$INCOGNITA_EXCHANGE/out" ] && [ -d "$INCOGNITA_EXCHANGE/template" ]
 }
@@ -82,7 +82,7 @@ token_set() { sudo -n grep -qE '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-' "$INCOGNITA_AG
 claude_login() {  # one tiny session in the sandbox, as a task would run
   local out
   out=$(printf 'Reply with the single word OK.\n' | run_sandboxed "incognita-login-$(date +%s)" 300 yes - -- \
-    "$INCOGNITA_AGENT_HOME/.local/bin/claude" -p --output-format json --model "$INCOGNITA_MODEL_REVIEWER" \
+    "$AGENT_CLAUDE" -p --output-format json --model "$INCOGNITA_MODEL_REVIEWER" \
     --max-turns 1 2>/dev/null | head -c 100000)
   is_dry && return 0
   [ "$(printf '%s' "$out" | jq -r '.is_error' 2>/dev/null)" = false ]
@@ -159,6 +159,9 @@ write_report() {
     ev ask-owner | awk -F'\t' '{ print "- question (from " ($4 ~ /^[0-9]+$/ ? "#" : "") $4 ", " $3 "): " $5 }'
     proposals_md
     certify_py disputed-deps 2>/dev/null | awk '{ print "- " $1 " depends on " $2 ", which is " $3 ": its certification is capped (dependency check once " $2 " has a new version)" }'
+    parked_list | while read -r k; do
+      echo "- parked after $INCOGNITA_PARK_AFTER failures: \`$k\` (role_target; delete \`$INCOGNITA_STATE/parked/$k\` to retry)"
+    done
     } | or_none
     echo
 

@@ -20,16 +20,19 @@
 #      token stays on the server or in its snapshots; agents/README.md, "The token"):
 #        claude setup-token                      (as the owner, anywhere; prints sk-ant-oat01-...)
 #        sudo nano /etc/incognita/agent.env      (replace REPLACE_ME; never commit or print it)
-#   5. for the agent: elan and the Lean toolchain, Claude Code (native installer, same version as
-#      the loop user's, autoupdater off), an anonymous clone of the public repository in ~/work, a
-#      full copy of the loop clone's .lake (rsync --chown), and a template of ~/.claude in
-#      /srv/incognita/template (copied over ~/.claude before every task);
-#   6. a test of the sandbox (systemd-run as the agent: id, claude --version, no access to the loop
-#      user's home, read-only system).
+#   5. for the agent: elan and the Lean toolchain (~/.elan, read-only in the sessions), Claude Code
+#      in /opt/incognita/bin (root-owned, outside the agent's home, so that no session can replace
+#      it for the next one: the binary of the loop user's native install, same version, or a native
+#      install made for the purpose; autoupdater off), an anonymous clone of the public repository
+#      in ~/work, a full copy of the loop clone's .lake (rsync --chown), and a template of ~/.claude
+#      in /srv/incognita/template (copied over ~/.claude before every task);
+#   6. a test of the sandbox (systemd-run as the agent: id, claude --version, lake with ~/.elan
+#      read-only, no access to the loop user's home, read-only system).
 set -euo pipefail
 
 AGENT=${INCOGNITA_AGENT_USER:-incognita-agent}
 AGENT_HOME=/home/$AGENT
+AGENT_BIN=${INCOGNITA_AGENT_BIN:-/opt/incognita/bin}
 LOOP_USER=${SUDO_USER:-lean}
 LOOP_HOME=$(getent passwd "$LOOP_USER" | cut -d: -f6)
 LOOP_REPO=${INCOGNITA_REPO:-$LOOP_HOME/Incognita}
@@ -52,17 +55,19 @@ as_agent() { sudo -u "$AGENT" -H env -i HOME="$AGENT_HOME" USER="$AGENT" LANG=C.
   PATH="$AGENT_HOME/.local/bin:$AGENT_HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin" "$@"; }
 
 sandbox_test() {
-  say "sandbox test (systemd-run as $AGENT)"
+  say "sandbox test (systemd-run as $AGENT, as scripts/lib.sh run_sandboxed)"
   systemd-run --quiet --wait --pipe --collect --unit="incognita-setup-test-$$" \
     --uid="$AGENT" --gid="$AGENT" -p WorkingDirectory="$AGENT_HOME/work" \
-    -E HOME="$AGENT_HOME" -E PATH="$AGENT_HOME/.local/bin:$AGENT_HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin" \
-    -E DISABLE_AUTOUPDATER=1 -p RuntimeMaxSec=120 -p MemoryMax=6G -p NoNewPrivileges=yes \
+    -E HOME="$AGENT_HOME" -E PATH="$AGENT_BIN:$AGENT_HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin" \
+    -E DISABLE_AUTOUPDATER=1 -E PYTHONNOUSERSITE=1 -p RuntimeMaxSec=120 -p MemoryMax=6G -p NoNewPrivileges=yes \
     -p PrivateTmp=yes -p ProtectSystem=strict -p ReadWritePaths="$AGENT_HOME" \
-    -p InaccessiblePaths="$LOOP_HOME" \
+    -p ReadOnlyPaths="$AGENT_HOME/.elan" -p InaccessiblePaths="$LOOP_HOME" \
     bash -c '
       echo "id: $(id)"
-      echo "claude: $(claude --version 2>&1 | head -n 1)"
+      echo "claude: $(command -v claude) $(claude --version 2>&1 | head -n 1)"
       echo "lake: $(lake --version 2>&1 | head -n 1)"
+      if touch "$HOME/.elan/incognita-test" 2>/dev/null; then rm -f "$HOME/.elan/incognita-test"; echo "FAIL: ~/.elan is writable"; else echo "ok: ~/.elan read-only"; fi
+      if touch "$(command -v claude)" 2>/dev/null; then echo "FAIL: claude is writable"; else echo "ok: claude read-only"; fi
       echo "latexmk: $(latexmk -v 2>&1 | grep -m1 Version)"; echo "pdflatex: $(pdflatex --version 2>&1 | head -n 1)"
       echo "python3: $(python3 -c "import numpy, scipy, matplotlib; print(\"numpy\", numpy.__version__)" 2>&1)"
       if ls "$0" >/dev/null 2>&1; then echo "FAIL: the loop user home is readable"; else echo "ok: no access to $0"; fi
@@ -141,13 +146,27 @@ if [ ! -x "$AGENT_HOME/.elan/bin/elan" ]; then
   say "installing elan for $AGENT"
   as_agent bash -c 'curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none --no-modify-path'
 fi
+# Claude Code for the sessions: a root-owned copy in $AGENT_BIN (never in the agent's home, where a
+# session could replace it). The binary of the loop user's native install when it is the version
+# wanted; otherwise a native install made in a temporary home, then copied.
 want=${CLAUDE_VERSION:-$(basename "$(readlink -f "$LOOP_HOME/.local/bin/claude" 2>/dev/null)" 2>/dev/null || true)}
 [[ "$want" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || want=stable
-have=$(as_agent "$AGENT_HOME/.local/bin/claude" --version 2>/dev/null | awk '{print $1}' || true)
+have=$(as_agent "$AGENT_BIN/claude" --version 2>/dev/null | awk '{print $1}' || true)
 if [ "$have" != "$want" ]; then
-  say "installing Claude Code $want for $AGENT (native installer)"
-  as_agent bash -c "curl -fsSL https://claude.ai/install.sh | bash -s $want"
+  src=$(readlink -f "$LOOP_HOME/.local/bin/claude" 2>/dev/null || true)
+  if [ -z "$src" ] || [ ! -f "$src" ] || [ "$(basename "$src")" != "$want" ]; then
+    say "installing Claude Code $want (native installer, in a temporary home)"
+    th=$(mktemp -d)
+    HOME=$th bash -c "curl -fsSL https://claude.ai/install.sh | bash -s $want" >/dev/null
+    src=$(readlink -f "$th/.local/bin/claude")
+  fi
+  say "copying Claude Code $want to $AGENT_BIN/claude (root-owned)"
+  install -d -o root -g root -m 755 "$(dirname "$AGENT_BIN")" "$AGENT_BIN"
+  install -o root -g root -m 755 "$src" "$AGENT_BIN/claude"
+  [ -n "${th:-}" ] && rm -rf "$th"
 fi
+# The old install in the agent's home is not used any more (not on the sessions' PATH).
+rm -rf "$AGENT_HOME/.local/bin/claude" "$AGENT_HOME/.local/share/claude"
 if [ ! -d "$AGENT_HOME/work/.git" ]; then
   say "cloning $REPO_URL (anonymous) into $AGENT_HOME/work"
   as_agent git clone -q "$REPO_URL" "$AGENT_HOME/work"

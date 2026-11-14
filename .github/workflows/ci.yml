@@ -55,9 +55,10 @@ jobs:
       - name: Canaries of the CI scripts
         run: bash tests/canaries/scripts.sh
 
-      # META.toml (version, depends_on), citations of library papers (INC-P<nnn>), the generated
-      # papers/library.bib, open questions, candidate directions; on pull requests, the version and
-      # append-only rules against the base (scripts/certify.py, AGENTS.md sections 5 and 9).
+      # META.toml (roadmap, version, depends_on), citations of library papers (INC-P<nnn>), open
+      # questions, candidate directions; on pull requests, the version and append-only rules against
+      # the base: directions.md, catalogue/garden.md, errata and statement corrections
+      # (scripts/certify.py, AGENTS.md sections 2, 5 and 9). papers/library.bib is never committed.
       - name: Library metadata
         env:
           BASE_REF: ${{ github.base_ref }}

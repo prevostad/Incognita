@@ -51,6 +51,10 @@ jobs:
       - name: Certification of the PDFs
         run: python3 scripts/certify.py leanok
 
+      # The library's bibliography (keys INC-P<nnn>), generated, never committed (AGENTS.md 5.6).
+      - name: Library bibliography
+        run: python3 scripts/certify.py bib
+
       - name: Install LaTeX
         run: |
           sudo apt-get update -q

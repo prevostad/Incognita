@@ -20,8 +20,12 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_MODEL_REVIEWER:=sonnet}"
 : "${INCOGNITA_EFFORT:=high}"
 : "${INCOGNITA_MAX_TURNS:=200}"
-: "${INCOGNITA_TIMEOUT_REVIEW:=1800}"       # seconds; reviews and referees
+: "${INCOGNITA_TIMEOUT_REVIEW:=1800}"       # seconds; reviews
 : "${INCOGNITA_TIMEOUT_WRITE:=5400}"        # seconds; writing roles
+: "${INCOGNITA_TIMEOUT_REFEREE_SCOPE:=3600}"   # the referees read a whole paper and its sources
+: "${INCOGNITA_TIMEOUT_REFEREE_PROOFS:=3600}"
+: "${INCOGNITA_AGENT_BIN:=/opt/incognita/bin}"   # Claude Code for the sessions: root-owned, outside the agent's home
+: "${INCOGNITA_BUNDLE_MAX:=50000000}"       # bytes: the largest output bundle of a session
 : "${INCOGNITA_MIN_REVIEW:=900}"            # a task is started only with at least this much time...
 : "${INCOGNITA_MIN_WRITE:=2400}"            # ...left before the deadline (seconds)
 : "${INCOGNITA_AUTOMERGE=papers,literature,proofs,exploration,directions}"   # D15; add `statements` later
@@ -36,7 +40,7 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task
 : "${INCOGNITA_IDLE_SLEEP:=1200}"
 : "${INCOGNITA_VETO_NIGHTS:=2}"             # nights of veto before a roadmap proposal is approved
-: "${INCOGNITA_PROPOSE_EVERY:=7}"           # nights between two periodic roadmap proposals (0: never)
+: "${INCOGNITA_PROPOSE_EVERY:=0}"           # nights between two periodic roadmap proposals (0: never, the default)
 : "${INCOGNITA_ROADMAPS_WAITING_MAX:=2}"    # approved roadmaps whose KNOWN.md waits for the owner
 : "${INCOGNITA_DRY_RUN:=0}"
 : "${INCOGNITA_BOT_NAME:=Incognita agents}"
@@ -125,7 +129,11 @@ mark_set() { : > "$INCOGNITA_STATE/marks/$(key_of "$1")"; }
 mark_has() { [ -e "$INCOGNITA_STATE/marks/$(key_of "$1")" ]; }
 is_parked() { [ -e "$INCOGNITA_STATE/parked/$(key_of "$1 $2")" ]; }
 
-# record_attempt <role> <target> <ok|fail|skip> <outcome...>
+# record_attempt <role> <target> <ok|fail|skip> <outcome...>. A failure counts towards parking
+# (INCOGNITA_PARK_AFTER failures in all nights), but only for a paper or a pull request target: a
+# roadmap (write-paper, propose-roadmap) or `-` (garden, bibliographer) is never parked. A session
+# that ended normally without a commit is a `skip no-commit`: it counts for tonight's limit
+# (night_fails), never for parking.
 record_attempt() {
   local role=$1 target=$2 kind=$3; shift 3
   is_dry && return 0   # a dry run leaves the state alone
@@ -133,7 +141,7 @@ record_attempt() {
   if [ "$kind" = fail ]; then
     local n
     n=$(counter_inc "fail $role $target")
-    if [ "$n" -ge "$INCOGNITA_PARK_AFTER" ] && ! [[ "$target" =~ ^[0-9]+$ ]]; then
+    if [ "$n" -ge "$INCOGNITA_PARK_AFTER" ] && parkable "$target"; then
       : > "$INCOGNITA_STATE/parked/$(key_of "$role $target")"
       log "parked: $role $target ($n failed attempts in all; remove $INCOGNITA_STATE/parked/$(key_of "$role $target") to retry)"
       record_event parked "$role" "$target" "$n failures"
@@ -142,12 +150,16 @@ record_attempt() {
     counter_set "fail $role $target" 0
   fi
 }
+parkable() { [[ "$1" =~ ^P[0-9]{3}-[A-Za-z0-9-]+$ ]] || [[ "$1" =~ ^[0-9]+$ ]]; }
+# night_fails <role> <target>: failed attempts tonight, and sessions that ended without a commit.
 night_fails() {
   local f
   f=$NIGHT_DIR/attempts/$(key_of "$1 $2")
   [ -f "$f" ] || { echo 0; return; }
-  awk '$2 == "fail"' "$f" | wc -l | tr -d ' '
+  awk '$2 == "fail" || ($2 == "skip" && $3 == "no-commit")' "$f" | wc -l | tr -d ' '
 }
+# parked_list: "role target" of the parked targets (all nights), for the night report.
+parked_list() { ls "$INCOGNITA_STATE/parked" 2>/dev/null; }
 # record_event <kind> <role> <target> <detail...>   (TSV, for the night report)
 record_event() {
   is_dry && return 0
@@ -205,8 +217,28 @@ owner_words() {
     | map(select(.w != null)) | sort_by(.created_at) | last | if . == null then empty else "\(.w) \(.created_at)" end'
 }
 
-# Agent text posted to GitHub: control and bidi characters removed, tokens redacted, `<!--`
-# escaped, `@` followed by a zero-width space, closing keywords neutralised, truncated.
+# What looks like a secret (grep -E): a Claude token, a GitHub token (classic or fine-grained), a
+# private key. A diff that contains one is refused (check_paths); sanitize redacts them.
+SECRET_RE='sk-ant-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+
+# owner_answers_md <raw comments of the issue "Questions for the owner">: the context file
+# .agents/owner-answers.md. The owner's answers are his comments there without the loop's marker
+# (trusted: author OWNER); each comes after the questions the loop posted since the previous answer
+# (first 1 500 characters each). Empty when the owner has answered nothing.
+owner_answers_md() {
+  printf '%s' "$1" | jq -rs --arg o "$OWNER" '
+    add // [] | map(select(.user.login == $o)) | sort_by(.created_at)
+    | map(. + {answer: ((.body // "") | startswith("<!-- incognita:") | not)})
+    | if any(.[]; .answer) then
+        "# Answers of the owner to the questions of the agents\n\nFrom the pinned issue \"Questions for the owner\", oldest first: the questions forwarded by the loop, then the owner'"'"'s answer. Do not ask again what is answered here.\n",
+        (.[] | if .answer then "### Answer of the owner (\(.created_at))\n\n\(.body)\n"
+               else "#### Question (\(.created_at))\n\n\((.body | split("\n")[1:] | join("\n"))[0:1500])\n" end)
+      else empty end'
+}
+
+# Agent text posted to GitHub: control and bidi characters removed, secrets redacted (Claude and
+# GitHub tokens, private keys), `<!--` escaped, `@` followed by a zero-width space, closing
+# keywords neutralised, truncated.
 # sanitize [max-chars] < in > out
 sanitize() {
   python3 -I -c '
@@ -215,7 +247,10 @@ limit = int(sys.argv[1])
 t = sys.stdin.buffer.read().decode("utf-8", "replace")
 t = "".join(c for c in t if c in "\n\t" or (ord(c) >= 32 and ord(c) != 127
             and not (0x202A <= ord(c) <= 0x202E) and not (0x2066 <= ord(c) <= 0x2069)))
+t = re.sub(r"-----BEGIN [A-Z ]*PRIVATE KEY-----(?:.*?-----END [A-Z ]*PRIVATE KEY-----|.*)", "[redacted]", t, flags=re.S)
 t = re.sub(r"sk-ant-[A-Za-z0-9_\-]{8,}", "[redacted]", t)
+t = re.sub(r"gh[pousr]_[A-Za-z0-9]{20,}", "[redacted]", t)
+t = re.sub(r"github_pat_[A-Za-z0-9_]{20,}", "[redacted]", t)
 t = t.replace("<!--", "&lt;!--")
 t = t.replace("@", "@​")
 t = re.sub(r"(?i)\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)(\s*:?\s+)(?=(?:[\w.-]+/[\w.-]+)?#\d|https?://)",
@@ -229,13 +264,26 @@ one_line() { sanitize "${1:-200}" | tr '\n\r\t' '   ' | sed -e 's/  */ /g' -e 's
 
 # post_comment <issue-or-pr> <kind> <sha> <body-file>: a trusted comment, marker on the first line.
 # The body must already be sanitised where it comes from an agent.
+# A POST that failed may still have created the comment (a timeout): before trying again, the
+# comments of the issue are read, and an identical comment (same marker, same body) counts as posted.
 post_comment() {
-  local n=$1 kind=$2 sha=$3 body=$4 f
+  local n=$1 kind=$2 sha=$3 body=$4 f i url rc=1
   f=$(mktemp) || return 1
   { printf '<!-- incognita:%s:%s -->\n' "$kind" "$sha"; cat "$body"; } > "$f"
   if is_dry; then log "dry run: would comment on #$n ($kind)"; rm -f "$f"; return 0; fi
-  ghr api -X POST "repos/$GH_REPO/issues/$n/comments" -F "body=@$f" --jq .html_url
-  local rc=$?
+  for i in 1 2 3; do
+    if url=$(gh api -X POST "repos/$GH_REPO/issues/$n/comments" -F "body=@$f" --jq .html_url); then
+      printf '%s\n' "$url"; rc=0; break
+    fi
+    sleep $(( i * 5 ))
+    if url=$(gh api --paginate "repos/$GH_REPO/issues/$n/comments?per_page=100" 2>/dev/null \
+        | jq -rs --arg o "${OWNER:-}" --rawfile b "$f" \
+            'add // [] | map(select(.user.login == $o and (.body | rtrimstr("\n")) == ($b | rtrimstr("\n")))) | last | .html_url // empty') \
+        && [ -n "$url" ]; then
+      printf '%s\n' "$url"; rc=0; break
+    fi
+  done
+  [ "$rc" = 0 ] || log "could not comment on #$n ($kind)"
   rm -f "$f"
   return $rc
 }
@@ -250,6 +298,10 @@ TRUSTED_JQ='
       | {kind: $m.kind, sha: $m.sha, created_at, url: .html_url, body: ($l[1:] | join("\n"))})
     | sort_by(.created_at)'
 trusted_of() { printf '%s' "$1" | jq -s --arg o "$OWNER" "$TRUSTED_JQ"; }
+# SINCE_REJECTED_JQ: jq definition; since_rejected keeps the trusted comments after the last
+# `rejected` one (a pull request the owner reopened starts its rounds again).
+SINCE_REJECTED_JQ='def since_rejected: ([.[] | select(.kind == "rejected") | .created_at] | max) as $r
+  | if $r == null then . else [.[] | select(.created_at > $r)] end;'
 trusted_comments() {
   local raw
   raw=$(ghr api --paginate "repos/$GH_REPO/issues/$1/comments?per_page=100") || return 1
@@ -311,6 +363,9 @@ close_rejected() {
   rm -f "$f"
   gh pr edit "$n" --add-label rejected >/dev/null 2>&1
   gh pr close "$n" >/dev/null 2>&1 || return 1
+  # If the owner reopens it, its rounds start again (revision rounds are counted after the last
+  # `rejected` comment: rounds_since_rejected).
+  counter_set "fix-rounds $n" 0; counter_set "review-fail $n" 0
   record_event rejected - "$n" "$title — $why"
   log "closed #$n as rejected: $why"
 }
@@ -479,11 +534,21 @@ roadmaps_writable() {
     echo "$r"
   done
 }
+# valid_roadmap <name>: a roadmap directory of main, with a safe name (it goes into paths).
+valid_roadmap() { [[ "$1" =~ ^[A-Z][A-Za-z0-9]+$ ]] && [ -n "$(ls_main "roadmaps/$1")" ]; }
 papers_on_main() { ls_main papers | grep -E '^P[0-9]+-' | sort -V; }
 meta_get() {  # paper key: a simple TOML string value of papers/<paper>/META.toml on main
   show_main "papers/$1/META.toml" | sed -n -E "s/^$2[[:space:]]*=[[:space:]]*\"([^\"]*)\".*/\1/p" | head -n 1
 }
-paper_num() { printf '%s' "$1" | sed -n -E 's/^P0*([0-9]+).*/\1/p'; }
+# paper_num <P<nnn>…>: the number, as a decimal integer (P000 → 0, P010 → 10); empty if none.
+paper_num() {
+  local d
+  d=$(printf '%s' "$1" | sed -n -E 's/^P([0-9]+).*/\1/p')
+  [ -n "$d" ] && echo $(( 10#$d ))
+  return 0
+}
+# AWK_NUM: an awk function num(s): the number of "P<nnn>…" as an integer, -1 if none (P000 is 0).
+AWK_NUM='function num(s) { if (s !~ /^P[0-9]+/) return -1; sub(/^P/, "", s); sub(/[^0-9].*$/, "", s); return s + 0 }'
 paper_of_num() {  # number → the paper directory on main with this number
   local p
   for p in $(papers_on_main); do [ "$(paper_num "$p")" = "$1" ] && { echo "$p"; return 0; }; done
@@ -542,6 +607,8 @@ audit_status() {
     else
       [ "$(repo_git rev-parse HEAD)" = "$m" ] || { log "audit: the clone is not at origin/main"; return 1; }
       is_dry && { log "dry run: no audit build"; return 1; }
+      # The build may take up to an hour: not when less than that is left before the deadline.
+      [ "$(remaining)" -gt 3600 ] || { log "audit: less than 1 h before the deadline: no audit build"; return 1; }
       set_activity "audit build of main ${m:0:12}"
       tmp=$(mktemp)
       log "audit: building main ${m:0:12} in the loop's clone"
@@ -584,10 +651,10 @@ role_allows() {
   case "$role" in
     write-paper)
       paper_file "$path" "" 'paper\.tex|refs\.bib|META\.toml|notebook/.+' && return 0
-      case "$path" in literature/*|papers/library.bib) [ "$st" != D ] && return 0 ;; esac ;;
+      case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
     revise)
       [ -n "$paper" ] && paper_file "$path" "$paper" 'paper\.tex|refs\.bib|META\.toml|notebook/.+|errata\.md|dependency-checks\.md' && return 0
-      case "$path" in literature/*|papers/library.bib) [ "$st" != D ] && return 0 ;; esac ;;
+      case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
     propose-roadmap)
       # One new roadmap (ROADMAP.md and KNOWN.md of a new directory) or one new extension of an
       # approved roadmap; check_paths checks the whole proposal (scripts/certify.py proposal).
@@ -627,7 +694,7 @@ role_allows() {
     fix-main)
       case "$path" in
         Incognita.lean|Statements.lean) return 0 ;;
-        Incognita/*|papers/library.bib) [ "$st" != D ] && return 0 ;;
+        Incognita/*) [ "$st" != D ] && return 0 ;;
       esac ;;
   esac
   return 1
@@ -658,7 +725,7 @@ check_paths() {
       LICENSE|lakefile.toml|lean-toolchain|lake-manifest.json|templates/*|agents/*|docs/*|scripts/*|tests/*|programmes/*|literature/notes/TEMPLATE.md|papers/*/withdrawn.md|papers/*/human-audits.md)
         log "refused: human-owned path $path"; bad=1; continue ;;
       # Generated, never committed (scripts/certify.py).
-      catalogue/certification.md|papers/*/certification.tex)
+      catalogue/certification.md|papers/*/certification.tex|papers/library.bib)
         log "refused: $path is generated, never committed"; bad=1; continue ;;
       # roadmaps/ is the owner's, except a proposal (propose-roadmap) and dropped candidate
       # directions (garden): role_allows decides.
@@ -676,9 +743,14 @@ check_paths() {
     if [ $# -ne 1 ]; then log "refused: write-paper must add exactly one paper directory (got:${papers_touched:- none})"; bad=1
     elif ! [[ "$1" =~ ^P[0-9]{3}-[A-Za-z0-9-]+$ ]]; then log "refused: bad paper id $1"; bad=1
     elif repo_git cat-file -e "$base:papers/$1" 2>/dev/null; then log "refused: papers/$1 already exists on main"; bad=1
-    elif [ -n "$(papers_on_main | awk -v n="$(paper_num "$1")" '{ sub(/^P0*/, ""); sub(/-.*/, ""); if ($0 == n) print }')" ]; then
+    elif [ -n "$(papers_on_main | awk -v n="$(paper_num "$1")" "$AWK_NUM"' num($0) == n + 0')" ]; then
       log "refused: the number of $1 is taken on main"; bad=1
     fi
+  fi
+  # garden: under candidate directions, only `Dropped (` lines, never a new entry (S6).
+  if [ "$role" = garden ] && [ "$bad" = 0 ] \
+      && [ -n "$(repo_git diff --name-only --no-renames "$base" "$new" -- 'roadmaps/*/directions.md')" ]; then
+    certify_py dropped-only --base "$base" --head "$new" >&2 || { log "refused: garden may only add Dropped lines to directions.md"; bad=1; }
   fi
   # propose-roadmap: one complete proposal, with the status `proposed` (scripts/certify.py).
   if [ "$role" = propose-roadmap ] && [ "$bad" = 0 ]; then
@@ -696,11 +768,37 @@ check_paths() {
       log "refused: Statements.lean lost an import"; bad=1
     fi
   done
-  # Never a secret in the diff.
-  if repo_git diff "$base" "$new" | grep -qE 'sk-ant-[A-Za-z0-9_-]{20,}'; then
-    log "refused: the diff contains what looks like a Claude token"; bad=1
+  # Never a secret in the diff (only the cumulative diff is pushed: scripts/agent.sh squashes it).
+  if repo_git diff "$base" "$new" | grep -qE "$SECRET_RE"; then
+    log "refused: the diff contains what looks like a secret (a Claude or GitHub token, a private key)"; bad=1
   fi
   return "$bad"
+}
+
+# squash_onto <parent> <new> <message-file>: one commit with the tree of <new> on top of <parent>,
+# with the author (and committer) of <new>'s last commit; prints its sha. Only this commit is
+# pushed: what an intermediate commit added and a later one removed never reaches GitHub (S3).
+squash_onto() {
+  local parent=$1 new=$2 msg=$3 an ae ad
+  an=$(repo_git log -1 --format=%an "$new") && ae=$(repo_git log -1 --format=%ae "$new") \
+    && ad=$(repo_git log -1 --format=%aI "$new") || return 1
+  GIT_AUTHOR_NAME=$an GIT_AUTHOR_EMAIL=$ae GIT_AUTHOR_DATE=$ad \
+  GIT_COMMITTER_NAME=$an GIT_COMMITTER_EMAIL=$ae GIT_COMMITTER_DATE=$ad \
+    repo_git commit-tree "$new^{tree}" -p "$parent" -F "$msg"
+}
+# squash_parent <main> <new> [<pr-head>]: the parent of the squashed commit. A new pull request:
+# the merge base of main and <new>. A round on a pull request whose head H is an ancestor of <new>,
+# on the same base: H (one commit per round). Otherwise (the round rebased the branch): the merge
+# base of main and <new>, so that the whole pull request becomes one commit on top of its base.
+squash_parent() {
+  local m=$1 new=$2 h=${3:-} mb
+  mb=$(repo_git merge-base "$m" "$new") || return 1
+  if [ -n "$h" ] && repo_git merge-base --is-ancestor "$h" "$new" \
+      && [ "$(repo_git merge-base "$m" "$h")" = "$mb" ]; then
+    echo "$h"
+  else
+    echo "$mb"
+  fi
 }
 
 # Mechanical rebase helpers (D13). resolve_imports <worktree> <file>: during a conflicted rebase, the
@@ -713,9 +811,31 @@ resolve_imports() {
     { printf '%s\n' "$ours"; printf '%s\n' "$theirs"; } | grep -E '^(public )?import ' | LC_ALL=C sort -u
   } > "$wt/$f"
 }
-diff_signature() {  # base head: "mode blob status path" of every changed path, sorted
+# diff_signature <base> <head>: what a pull request changes, for comparing it before and after a
+# mechanical rebase (statuses follow only if it is the same): "mode blob status path" of every
+# changed path, sorted; for the root import files and literature/ (files that every pull request
+# appends to, so their blobs change with main), the sorted lines the pull request adds and removes
+# instead of the blob.
+diff_signature() {
+  local f
   repo_git diff --raw --no-renames --no-abbrev "$1" "$2" \
-    | awk -F'\t' '{ split($1, m, " "); print m[2], m[4], m[5], $2 }' | LC_ALL=C sort
+    | awk -F'\t' '{ split($1, m, " "); print m[2], m[4], m[5], $2 }' \
+    | while read -r mode blob st path; do
+        case " $ROOT_FILES " in
+          *" $path "*) printf '%s %s lines %s\n' "$mode" "$st" "$path" ;;
+          *) case "$path" in
+               literature/*) printf '%s %s lines %s\n' "$mode" "$st" "$path" ;;
+               *) printf '%s %s %s %s\n' "$mode" "$blob" "$st" "$path" ;;
+             esac ;;
+        esac
+      done | LC_ALL=C sort
+  # Root files: the import lines added and removed, as sets (their order is the mechanical rebase's).
+  for f in $ROOT_FILES; do
+    LC_ALL=C comm -3 <(repo_git show "$1:$f" 2>/dev/null | grep -E '^(public )?import ' | LC_ALL=C sort -u) \
+      <(repo_git show "$2:$f" 2>/dev/null | grep -E '^(public )?import ' | LC_ALL=C sort -u) | sed "s#^#$f: #"
+  done
+  repo_git diff --no-renames -U0 "$1" "$2" -- literature | grep -E '^([+-]|diff )' | grep -vE '^(\+\+\+|---) ' \
+    | awk '/^diff / { f = $NF; next } { print f ": " $0 }' | LC_ALL=C sort
 }
 
 # Merge categories (D15) of a path: papers literature proofs exploration statements directions
@@ -728,7 +848,6 @@ path_category() {  # kind path status
     literature/*) echo literature ;;
     roadmaps/*/directions.md) echo directions ;;
     roadmaps/*) echo roadmap ;;
-    papers/library.bib) if [ "$kind" = paper ]; then echo papers; else echo literature; fi ;;
     catalogue/definitions/*|Statements/*|Statements.lean) echo statements ;;
     catalogue/results/*) if [ "$st" = A ]; then echo proofs; else echo literature; fi ;;
     catalogue/*) echo literature ;;
@@ -749,12 +868,15 @@ path_category() {  # kind path status
     *) echo other ;;
   esac
 }
-# pr_kind <role>: paper | statements | roadmap | generic
+# pr_kind <role>: paper | statements | roadmap | scripted | generic. `scripted`: a pull request of
+# the loop itself (role `loop`: the candidate directions of a merged paper), never reviewed nor
+# repaired by an agent; checked by scripts/certify.py verify-scripted, recreated when it conflicts.
 pr_kind() {
   case "$1" in
     write-paper|revise) echo paper ;;
     formalize-statements) echo statements ;;
     propose-roadmap) echo roadmap ;;
+    loop) echo scripted ;;
     *) echo generic ;;
   esac
 }
@@ -768,8 +890,12 @@ adds_only_theorems() {  # base new
 }
 
 # ---------------------------------------------------------------- the agent sandbox (D11)
-AGENT_PATH="$INCOGNITA_AGENT_HOME/.local/bin:$INCOGNITA_AGENT_HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin"
+# The sessions' PATH: Claude Code from a root-owned directory (never the agent's home, where a session
+# could replace it for the next one), elan's proxies (lake, lean; ~/.elan is read-only in a session).
+AGENT_PATH="$INCOGNITA_AGENT_BIN:$INCOGNITA_AGENT_HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin"
+AGENT_CLAUDE=$INCOGNITA_AGENT_BIN/claude
 SANDBOX_UNIT=""
+SANDBOX_ELAN_RW=0   # 1 only to install a toolchain (sync_agent_lake)
 # run_sandboxed <unit> <max-seconds> <with-token: yes|no> <extra-rw-path|-> -- command...
 # stdin/stdout/stderr are the caller's (systemd-run --pipe).
 run_sandboxed() {
@@ -779,10 +905,12 @@ run_sandboxed() {
     "--uid=$INCOGNITA_AGENT_USER" "--gid=$INCOGNITA_AGENT_USER"
     -p "WorkingDirectory=$INCOGNITA_AGENT_HOME/work"
     -E "HOME=$INCOGNITA_AGENT_HOME" -E "USER=$INCOGNITA_AGENT_USER" -E "LOGNAME=$INCOGNITA_AGENT_USER"
-    -E "PATH=$AGENT_PATH" -E DISABLE_AUTOUPDATER=1 -E LANG=C.UTF-8
+    -E "PATH=$AGENT_PATH" -E DISABLE_AUTOUPDATER=1 -E LANG=C.UTF-8 -E PYTHONNOUSERSITE=1
     -p "RuntimeMaxSec=$secs" -p "MemoryMax=$INCOGNITA_AGENT_MEMORY"
     -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict
     -p "ReadWritePaths=$INCOGNITA_AGENT_HOME" -p "InaccessiblePaths=$HOME")
+  # The toolchain cannot be changed by a session (a later one would run it).
+  [ "$SANDBOX_ELAN_RW" = 1 ] || args+=(-p "ReadOnlyPaths=-$INCOGNITA_AGENT_HOME/.elan")
   [ "$token" = yes ] && args+=(-p "EnvironmentFile=$INCOGNITA_AGENT_ENV")
   [ "$rw" != - ] && args+=(-p "ReadWritePaths=$rw")
   if is_dry; then
@@ -800,6 +928,45 @@ stop_sandbox() {  # stop the running unit, if any (trap)
   return 0
 }
 
+# The outputs of a session (/srv/incognita/out/<task>/) are written by the agent user: the loop
+# never opens them as itself (a symbolic link there could point into the loop's home, a FIFO could
+# block). out_read <file> <max-bytes> prints the first bytes of a regular file (not a link, not a
+# FIFO), read AS the agent user; non-zero if it is not one. AGENT_READ is the command prefix
+# (tests run it as themselves).
+AGENT_READ=(sudo -n -u "$INCOGNITA_AGENT_USER")
+out_read() {
+  local f=$1 n=$2
+  "${AGENT_READ[@]}" test -f "$f" || return 1
+  ! "${AGENT_READ[@]}" test -L "$f" || { log "refused: $f is a symbolic link"; return 1; }
+  "${AGENT_READ[@]}" timeout 20 head -c "$n" -- "$f"
+}
+# out_irregular <dir>: the entries of an output directory that are not regular files (links,
+# FIFOs, directories...), listed as the agent user; empty when all is well.
+out_irregular() {
+  "${AGENT_READ[@]}" find "$1" -mindepth 1 ! -type f -printf '%y %P\n' 2>/dev/null | head -n 10
+}
+# out_copy <file> <max-bytes> <dest>: a copy of an output file, refused if larger than max-bytes.
+out_copy() {
+  local f=$1 n=$2 d=$3 s
+  out_read "$f" $(( n + 1 )) > "$d" || return 1
+  s=$(wc -c < "$d")
+  [ "$s" -le "$n" ] || { log "refused: $f is larger than $n bytes"; : > "$d"; return 1; }
+}
+
+# restore_agent_lake: the agent's ~/work/.lake becomes the loop's .lake again (rsync --delete; only
+# what differs is copied, a few seconds), before every task: nothing a session changed or planted
+# there survives (sources, git configurations and builds of the dependencies, CLAUDE.md files).
+restore_agent_lake() {
+  is_dry && return 0
+  [ -d "$INCOGNITA_REPO/.lake/packages" ] || { log "the loop's clone has no .lake (bash scripts/build.sh Incognita)"; return 1; }
+  # rsync runs as root into the agent's home: refuse if the agent replaced a directory by a link.
+  # No agent process runs between tasks (each session is a systemd unit, killed when it ends).
+  if sudo -n test -L "$INCOGNITA_AGENT_HOME/work" || sudo -n test -L "$INCOGNITA_AGENT_HOME/work/.lake"; then
+    log "refused: the agent's work or work/.lake is a symbolic link"; return 1
+  fi
+  sudo -n rsync -a --delete --chown="$INCOGNITA_AGENT_USER:$INCOGNITA_AGENT_USER" \
+    "$INCOGNITA_REPO/.lake/" "$INCOGNITA_AGENT_HOME/work/.lake/"
+}
 # Re-sync the agent's .lake from the loop's clone when the toolchain or manifest changed (D11).
 lake_stamp() { repo_git show origin/main:lean-toolchain origin/main:lake-manifest.json 2>/dev/null | sha256sum | cut -c1-16; }
 sync_agent_lake() {
@@ -812,16 +979,11 @@ sync_agent_lake() {
   set_activity "re-sync of the agent's .lake"
   (cd "$INCOGNITA_REPO" && timeout -k 60 3600 bash scripts/build.sh Incognita >/dev/null 2>&1) \
     || { log "build of main failed: .lake not re-synced"; return 1; }
-  # rsync runs as root into the agent's home: refuse if the agent replaced a directory by a link.
-  # No agent process runs between tasks (each session is a systemd unit, killed when it ends).
-  if sudo -n test -L "$INCOGNITA_AGENT_HOME/work" || sudo -n test -L "$INCOGNITA_AGENT_HOME/work/.lake"; then
-    log "refused: the agent's work or work/.lake is a symbolic link"; return 1
-  fi
-  sudo -n rsync -a --delete --chown="$INCOGNITA_AGENT_USER:$INCOGNITA_AGENT_USER" \
-    "$INCOGNITA_REPO/.lake/" "$INCOGNITA_AGENT_HOME/work/.lake/" || return 1
-  # The toolchain is installed by the agent's own elan, inside the sandbox (no token).
-  run_sandboxed "incognita-elan-$(date +%s)" 1800 no - -- \
+  restore_agent_lake || return 1
+  # The toolchain is installed by the agent's own elan, inside the sandbox (no token), the only
+  # sandbox where ~/.elan is writable.
+  SANDBOX_ELAN_RW=1 run_sandboxed "incognita-elan-$(date +%s)" 1800 no - -- \
     "$INCOGNITA_AGENT_HOME/.elan/bin/elan" toolchain install "$(show_main lean-toolchain)" </dev/null >/dev/null 2>&1 \
-    || log "elan toolchain install failed (lake will retry inside the session)"
+    || log "elan toolchain install failed (sessions cannot install it: ~/.elan is read-only there)"
   printf '%s\n' "$want" | sudo -n tee "$INCOGNITA_EXCHANGE/lake.stamp" >/dev/null
 }

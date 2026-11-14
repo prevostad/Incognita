@@ -6,22 +6,25 @@
 #   write-paper <Roadmap>          formalize-statements <Paper>     prove <Paper>
 #   referee-scope <PR>             referee-proofs <PR>              review-statements <PR>
 #   review-pr <PR>                 revise <PR> | revise <Paper>     fix-pr <PR> | fix-pr main
-#   bibliographer                  garden                           propose-roadmap <Roadmap> | -
+#   bibliographer [<Paper>|-]      garden                           propose-roadmap <Roadmap> | -
 #   review-roadmap <PR>
 #
 # Run by the user `lean` in its clone of main (never edited by hand), normally from scripts/loop.sh.
-# The loop never runs git or lake inside the agent's clone: inputs go in as a git bundle, outputs
-# come back as a git bundle written by the agent user, then are checked here (path whitelist) and
-# pushed with the loop's own GitHub token.
+# The loop never runs git or lake inside the agent's clone, and never opens a file the agent wrote
+# as itself: inputs go in as a git bundle, outputs come back as files of the agent user, read
+# through `sudo -u incognita-agent` (out_read), then are checked here (path whitelist), squashed
+# into one commit and pushed with the loop's own GitHub token.
 #
 # Environment from the loop: INCOGNITA_HEAD (the PR head the task was chosen for), INCOGNITA_TASK_TIMEOUT
 # (seconds), INCOGNITA_NOTE (extra situation line for task.md), and the variables of scripts/lib.sh.
 # Exit: 0 task done (whatever the outcome; recorded in the state), 1 error, 2 usage,
-# 3 Claude is logged out (stop the night), 4 rate limited (reset time in state/rate-limit-until).
+# 3 Claude is logged out (stop the night), 4 rate limited (reset time in state/rate-limit-until),
+# 5 the infrastructure failed before the session (not counted against the target).
 set -u -o pipefail
 umask 022
 # shellcheck source=scripts/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+die() { log "fatal: $*"; exit 5; }   # before the session: an infrastructure failure
 
 role=${1:-}
 target=${2:--}
@@ -39,6 +42,8 @@ if ! is_dry; then
   sudo -n true 2>/dev/null || die "the loop's user needs sudo without password (systemd-run, rsync)"
   [ -d "$INCOGNITA_EXCHANGE/in" ] && [ -d "$INCOGNITA_EXCHANGE/out" ] \
     || die "$INCOGNITA_EXCHANGE/{in,out} missing: run scripts/server/setup-agent-user.sh"
+  [ -x "$AGENT_CLAUDE" ] && [ "$(stat -c %U "$AGENT_CLAUDE" 2>/dev/null)" = root ] \
+    || die "no root-owned $AGENT_CLAUDE: run scripts/server/setup-agent-user.sh"
 fi
 
 # ---------------------------------------------------------------- parameters of the role
@@ -141,6 +146,7 @@ case "$role:$target" in
     pr_target=$(printf '%s' "$line" | sed -n -E 's/^Role: `([a-z-]+)`\. Target: `([^`]*)`\..*/\2/p')
     [ -n "$pr_role" ] || finish skip "no-role-line"
     kind=$(pr_kind "$pr_role")
+    [ "$kind" = scripted ] && finish skip "a-scripted-pull-request-of-the-loop"
     case "$role" in
       referee-scope|referee-proofs|revise) [ "$kind" = paper ] || finish skip "not-a-paper-pr" ;;
       review-statements) [ "$kind" = statements ] || finish skip "not-a-statements-pr" ;;
@@ -151,6 +157,7 @@ case "$role:$target" in
     case "$pr_role" in
       prove|formalize-statements) paper=$(paper_of_num "$(paper_num "$pr_target")") || paper=$pr_target ;;
       revise) [[ "$pr_target" =~ ^P[0-9]+- ]] && paper=$pr_target ;;
+      bibliographer) [[ "$pr_target" =~ ^P[0-9]{3}- ]] && paper=$pr_target ;;
     esac
     base=$H
     if [ "$role" = fix-pr ]; then
@@ -175,11 +182,31 @@ case "$role:$target" in
   formalize-statements:*|prove:*)
     [[ "$target" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "$role needs a paper" >&2; exit 2; }
     paper=$(paper_of_num "$(paper_num "$target")") || paper=$target ;;
+  bibliographer:*)
+    # A paper that waits for the bibliographer (its source notes, or its attribution audit).
+    if [ "$target" != - ]; then
+      [[ "$target" =~ ^P[0-9]{3}-[A-Za-z0-9-]+$ ]] && [ -n "$(ls_main "papers/$target")" ] \
+        || { echo "bibliographer needs a paper on main or -" >&2; exit 2; }
+      paper=$target
+    fi ;;
 esac
 [ -z "$roadmap" ] && [ -n "$paper" ] && roadmap=$(meta_get "$paper" roadmap)
 if [ -z "$roadmap" ] && [ -n "$paper" ] && [ -n "$H" ]; then
   roadmap=$(repo_git show "$H:papers/$paper/META.toml" 2>/dev/null \
     | sed -n -E 's/^roadmap[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/p' | head -n 1)
+fi
+# A roadmap name goes into paths: only a roadmap directory of main (S4).
+if [ -n "$roadmap" ] && ! valid_roadmap "$roadmap"; then
+  log "the roadmap \"$(printf '%s' "$roadmap" | one_line 80)\" is not a roadmap of main: ignored"
+  case "$role" in write-paper|propose-roadmap) finish skip "not-a-roadmap" ;; esac
+  roadmap=""
+fi
+
+# The agent's .lake follows main's toolchain and manifest (it may rebuild main: before the context
+# files, so that the deadline written in task.md holds).
+if ! is_dry; then
+  set_activity "prepare $role $target"
+  sync_agent_lake || log "warning: the agent's .lake could not be re-synced; the session may rebuild"
 fi
 
 # ---------------------------------------------------------------- context files (.agents/)
@@ -191,15 +218,17 @@ mkdir -p "$ctx"
 open_prs_md "$prs_json" > "$ctx/open-prs.md"
 files="task.md open-prs.md"
 
-meta_lines_at() {  # ref roadmap: "paper<TAB>directions" of the papers of a roadmap at ref
+meta_lines_at() {  # ref roadmap: "paper<TAB>directions<TAB>kind" of the papers of a roadmap at ref
   local ref=$1 r=$2 p m
   for p in $(repo_git ls-tree --name-only "$ref:papers" 2>/dev/null | grep -E '^P[0-9]+-'); do
     m=$(repo_git show "$ref:papers/$p/META.toml" 2>/dev/null) || continue
     printf '%s\n' "$m" | grep -Eq "^roadmap[[:space:]]*=[[:space:]]*\"$r\"" || continue
-    printf '%s\t%s\n' "$p" "$(printf '%s\n' "$m" | sed -n -E 's/^directions[[:space:]]*=[[:space:]]*(.*)/\1/p' | head -n 1)"
+    printf '%s\t%s\t%s\n' "$p" "$(printf '%s\n' "$m" | sed -n -E 's/^directions[[:space:]]*=[[:space:]]*(.*)/\1/p' | head -n 1)" \
+      "$(printf '%s\n' "$m" | sed -n -E 's/^kind[[:space:]]*=[[:space:]]*"([a-z]+)".*/\1/p' | head -n 1)"
   done
 }
 
+rounds=0 fixes=0
 if [ -n "$pr" ]; then
   mb=$(repo_git merge-base "$M" "$H")
   repo_git diff --no-renames "$mb" "$H" | head -c 3000000 > "$ctx/pr.diff"
@@ -213,28 +242,35 @@ if [ -n "$pr" ]; then
       } | head -c 400000 > "$ctx/reports.md"
       files="$files reports.md"
     fi
-    # A referee re-checks what changed since its last report (D2).
+    # A referee re-checks what changed since its last report (D2): for a paper, its directory only
+    # (a rebase on main changes much more).
     if is_review_role "$role"; then
       prev=$(jq -r --arg k "$role" --arg h "$H" '[.[] | select(.kind == $k and .sha != $h)] | last | .sha // empty' <<<"$comments")
       if [ -n "$prev" ] && { repo_git cat-file -e "$prev^{commit}" 2>/dev/null || repo_git fetch -q origin "$prev" 2>/dev/null; }; then
-        repo_git diff --no-renames "$prev" "$H" | head -c 2000000 > "$ctx/revision.diff"
+        if [ "$kind" = paper ] && [ -n "$paper" ]; then
+          repo_git diff --no-renames "$prev" "$H" -- "papers/$paper/" | head -c 2000000 > "$ctx/revision.diff"
+        else
+          repo_git diff --no-renames "$prev" "$H" | head -c 2000000 > "$ctx/revision.diff"
+        fi
         files="$files revision.diff"
       fi
     fi
   else
     die "cannot read the comments of #$pr"
   fi
-  rounds=$(jq '[.[] | select(.kind == "revise")] | length' <<<"$comments")
-  fixes=$(jq '[.[] | select(.kind == "fix-pr" or .kind == "fix-pr-nochange" or .kind == "revise-fix" or .kind == "revise-fix-nochange")] | length' <<<"$comments")
+  # Rounds since the owner last reopened the pull request (after its last `rejected` comment).
+  rounds=$(jq "$SINCE_REJECTED_JQ"' since_rejected | [.[] | select(.kind == "revise")] | length' <<<"$comments")
+  fixes=$(jq "$SINCE_REJECTED_JQ"' since_rejected | [.[] | select(.kind == "fix-pr" or .kind == "fix-pr-nochange" or .kind == "revise-fix" or .kind == "revise-fix-nochange")] | length' <<<"$comments")
 fi
 # revise on a paper PR: a revision round answers a referee's `major` on the head (it counts towards
 # INCOGNITA_REVISION_ROUNDS, comment kind `revise`); otherwise it is a repair (failed build,
-# conflict, incomplete draft: kind `revise-fix`, counted as a fix round).
+# conflict, incomplete draft: kind `revise-fix`, counted as a fix round). A `reject` on the head
+# of a pull request the owner reopened is answered like a `major`.
 referee_round=0
 if [ "$role" = revise ] && [ -n "$pr" ]; then
   sts=$(statuses_of "$H") || sts=""
   case "$(verdict_in "$sts" "Referee scope" referee-scope) $(verdict_in "$sts" "Referee proofs" referee-proofs)" in
-    *major*|*minor*) referee_round=1 ;;
+    *major*|*minor*|*reject*) referee_round=1 ;;
   esac
 fi
 ci_state=""
@@ -261,7 +297,7 @@ rejected_prs() {
   cat "$tmp/rejected.txt"
 }
 # rejected_reports <roadmap>: the trusted reports on the rejected papers of the roadmap (D2: their
-# directions count as covered; writers and scope referees read why they failed).
+# D and C items count as covered; writers and scope referees read why they failed).
 rejected_reports() {
   local n h c
   rejected_prs | while read -r n h; do
@@ -278,25 +314,30 @@ if [ "$role" = write-paper ]; then
   { echo "# Papers of the roadmap $roadmap and the directions they serve"
     echo
     echo "## On main"
-    meta_lines_at origin/main "$roadmap" | awk -F'\t' '{print "- " $1 ": " $2}'
+    meta_lines_at origin/main "$roadmap" | awk -F'\t' '{print "- " $1 " (" $3 "): " $2}'
     echo
     echo "## In open pull requests"
     jq -r '.[] | select(.isCrossRepository == false) | "\(.number) \(.headRefOid)"' "$prs_json" \
       | while read -r n h; do
           fetch_pr_head "$n" "$h" 2>/dev/null || continue
           repo_git ls-tree --name-only "refs/incognita/pr/$n:papers" 2>/dev/null | grep -E '^P[0-9]+-' >> "$tmp/taken"
-          meta_lines_at "refs/incognita/pr/$n" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 ": " $2}'
+          meta_lines_at "refs/incognita/pr/$n" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 " (" $3 "): " $2}'
         done
     echo
-    echo "## Rejected (closed with the label rejected): these directions count as covered"
+    echo "## Rejected (closed with the label rejected)"
+    echo
+    echo "Their D and C items count as covered (no new paper on them unless the owner reopens one)."
+    echo "Their F items (known results to formalise), and the items of a rejected \`definitions\` paper,"
+    echo "stay open: a new paper on one of them answers the reports of the rejected paper (\`reports.md\`)."
+    echo
     rejected_prs | while read -r n h; do
         repo_git ls-tree --name-only "$h:papers" 2>/dev/null | grep -E '^P[0-9]+-' >> "$tmp/taken"
-        meta_lines_at "$h" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 ": " $2}'
+        meta_lines_at "$h" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 " (" $3 "): " $2}'
       done
   } > "$ctx/papers.md" 2>/dev/null
   files="$files papers.md"
   # The number of the new paper: one more than every number on main, in open PRs and rejected.
-  last=$(sed -n -E 's/^P0*([0-9]+)-.*/\1/p' "$tmp/taken" | sort -n | tail -n 1)
+  last=$(awk "$AWK_NUM"' num($0) >= 0 { print num($0) }' "$tmp/taken" | sort -n | tail -n 1)
   paper_number=$(printf 'P%03d' $(( ${last:--1} + 1 )))
 fi
 # The items of the roadmap on main (directions, known results, candidate directions; computed by
@@ -319,6 +360,7 @@ if [ "$role" = propose-roadmap ]; then
     echo "| Roadmap | Status | Domain | KNOWN.md | Extensions | Free items |"
     echo "|---|---|---|---|---|---|"
     for r in $(ls_main roadmaps); do
+      valid_roadmap "$r" || continue
       rm_text=$(show_main "roadmaps/$r/ROADMAP.md") || continue
       st=$(printf '%s\n' "$rm_text" | sed -n -E 's/^\| Status \| \*\*([a-z]+)\*\*.*/\1/p' | head -n 1)
       dom=$(printf '%s\n' "$rm_text" | sed -n -E 's/^\| Domain \| `?([a-z0-9-]+)`?.*/\1/p' | head -n 1)
@@ -350,10 +392,31 @@ if [ "$role" = write-paper ] || [ "$role" = referee-scope ]; then
     fi
   fi
 fi
+# The bibliographer's paper: the scope referees' reports on the pull request that added it (its
+# merge commit on main ends with "(#<n>)").
+if [ "$role" = bibliographer ] && [ -n "$paper" ]; then
+  merged_pr=$(repo_git log --diff-filter=A --format=%s origin/main -- "papers/$paper/META.toml" | tail -n 1 \
+    | sed -n -E 's/.*\(#([0-9]+)\)$/\1/p')
+  if [ -n "$merged_pr" ] && c=$(trusted_comments "$merged_pr"); then
+    { echo "# Reports of referee-scope on pull request #$merged_pr, which added \`$paper\` (oldest first)"
+      echo
+      jq -r '.[] | select(.kind == "referee-scope") | "## referee-scope on `\(.sha[0:12])`, \(.created_at)\n\n\(.body)\n"' <<<"$c"
+    } | head -c 400000 > "$ctx/reports.md"
+    files="$files reports.md"
+  fi
+fi
 # Entries of KNOWN.md kept outside the repository (CONTRIBUTING.md §2): the owner's private file
 # $INCOGNITA_PRIVATE_KNOWN/<Roadmap>.md, if any, given to the sessions of that roadmap.
 if [ -n "$roadmap" ] && [ -n "${INCOGNITA_PRIVATE_KNOWN:-}" ] && [ -f "$INCOGNITA_PRIVATE_KNOWN/$roadmap.md" ]; then
   head -c 400000 "$INCOGNITA_PRIVATE_KNOWN/$roadmap.md" > "$ctx/known-private.md" && files="$files known-private.md"
+fi
+# The owner's answers on the issue "Questions for the owner" (L13): the same questions are not
+# asked again.
+qn=$(ghr issue list --state open --limit 200 --author "$OWNER" --json number,title \
+  --jq 'map(select(.title == "Questions for the owner")) | first | .number // empty' 2>/dev/null) || qn=""
+if [ -n "$qn" ] && raw=$(ghr api --paginate "repos/$GH_REPO/issues/$qn/comments?per_page=100" 2>/dev/null); then
+  owner_answers_md "$raw" | tail -c 200000 > "$ctx/owner-answers.md"
+  if [ -s "$ctx/owner-answers.md" ]; then files="$files owner-answers.md"; else rm -f "$ctx/owner-answers.md"; fi
 fi
 
 situation=""
@@ -377,12 +440,18 @@ fi
 if [ "$role" = revise ] && [ -z "$pr" ]; then
   cur_version=$(show_main "papers/$paper/META.toml" | sed -n -E 's/^version[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -n 1)
   de=$(disputed_entries "$paper" | tr '\n' ' ')
-  [ -n "$de" ] && add_situation "The paper \`$paper\` is disputed: write its next version for the errata entries $de(\`papers/$paper/errata.md\`), on a new pull request: \`version = $(( ${cur_version:-1} + 1 ))\` in META.toml, and \`python3 scripts/certify.py bib\`."
+  [ -n "$de" ] && add_situation "The paper \`$paper\` is disputed: write its next version for the errata entries $de(\`papers/$paper/errata.md\`), on a new pull request: \`version = $(( ${cur_version:-1} + 1 ))\` in META.toml."
   dc=$(certify_py depchecks 2>/dev/null | awk -v p="$paper" '$1 == p { printf "%s ", $2 }')
   [ -n "$dc" ] && add_situation "Dependency check (AGENTS.md section 5.6): library papers this paper depends on have a new version since it cited them: $dc. For each, compare the nodes this paper uses (\`depends_on\` in META.toml) with the new version. Not affected: add a line to \`papers/$paper/dependency-checks.md\` and update \`depends_on\` to the new version (paper.tex unchanged, same version). Affected: add an entry \`E<k>\` to \`papers/$paper/errata.md\` and write the next version (\`version = $(( ${cur_version:-1} + 1 ))\`), with the line \`Revised in …\` under it."
 fi
+if [ "$role" = write-paper ] || [ "$role" = revise ]; then
+  add_situation "Before compiling, \`python3 scripts/certify.py bib\` writes \`papers/library.bib\` (generated, never committed: the keys \`INC-P<nnn>\` of the library); before the last commit, \`python3 scripts/certify.py check\`$( [ "$role" = revise ] && echo " --base origin/main")."
+fi
 if [ "$role" = write-paper ]; then
-  add_situation "A new paper has \`version = 1\` and lists in \`depends_on\` the results of library papers it uses (each cited as \`\\cite[...]{INC-P<nnn>}\`); run \`python3 scripts/certify.py bib\` and \`python3 scripts/certify.py check\` before the last commit."
+  add_situation "A new paper has \`version = 1\` and lists in \`depends_on\` the results of library papers it uses (each cited as \`\\cite[...]{INC-P<nnn>}\`)."
+fi
+if [ "$role" = bibliographer ] && [ -n "$paper" ]; then
+  add_situation "The paper \`$paper\` waits for you: its source notes (an external paper), or its attribution audit (a verified internal paper)$( in_list reports.md "$files" && echo "; the scope referees' reports on it are in \`reports.md\` (read them only at step 3.4)")."
 fi
 if [ "$role" = formalize-statements ] && [ -n "$paper" ]; then
   fe=$(freeze_entries "$paper" | tr '\n' ' ')
@@ -393,10 +462,11 @@ if [ "$role" = formalize-statements ] && [ -n "$paper" ]; then
   fi
 fi
 if [ "$role" = prove ] || [ "$role" = formalize-statements ]; then
-  st=$(audit_status 2>/dev/null | awk -v n="$(paper_num "$paper")" '{ k = $1; sub(/^P0*/, "", k); sub(/[^0-9].*/, "", k); if (k == n) print }')
+  st=$(audit_status 2>/dev/null | awk -v n="$(paper_num "$paper")" "$AWK_NUM"' num($1) == n + 0')
   [ -n "$st" ] && add_situation "Frozen statements of this paper (\`lake exe audit --status\` on main):
 $(printf '%s\n' "$st" | sed 's/^/  - /')"
 fi
+in_list owner-answers.md "$files" && add_situation "The owner's answers to earlier questions are in \`owner-answers.md\`: never ask again what is answered there."
 [ -n "$situation" ] || situation="- Nothing special.
 "
 if is_review_role "$role"; then
@@ -415,12 +485,17 @@ if is_review_role "$role"; then
 - A question only the owner can answer goes on its own line, starting with \`Ask-owner: \`; the script forwards it."
 else
   contract="- Commit your work on the current branch (\`incognita-task\`). You cannot push: the script pushes.
+- The script pushes your commits as ONE commit (their sum): what a commit adds and a later one removes is never published.
 - Then write \`.agents/summary.md\` (not committed): it becomes $( [ -n "$pr" ] && echo "the comment of this round on the pull request" || echo "the description of the new pull request" ).
 - The script refuses the whole result if a commit changes a path your role may not change (see AGENTS.md;
   human-owned paths, dot-files, \`CLAUDE.md\`/\`AGENTS.md\`, symbolic links, files over 1 MB, a frozen
-  statement that is not an addition), and keeps nothing that is not committed."
+  statement that is not an addition, generated files such as \`papers/library.bib\`), and keeps nothing that is not committed."
 fi
-end_local=$(date -d "@$(( $(now) + timeout_s ))" '+%H:%M' 2>/dev/null || echo "?")
+# The session ends at task_end: the role's timeout from now, and never later than 2 minutes before
+# the deadline; the preparation below eats into it, so that task.md stays true.
+task_end=$(( $(now) + timeout_s ))
+[ "$DEADLINE" != 0 ] && [ "$task_end" -gt $(( DEADLINE - 120 )) ] && task_end=$(( DEADLINE - 120 ))
+end_local=$(date -d "@$task_end" '+%H:%M' 2>/dev/null || echo "?")
 {
   echo "# Task (written by scripts/agent.sh)"
   echo
@@ -431,7 +506,7 @@ end_local=$(date -d "@$(( $(now) + timeout_s ))" '+%H:%M' 2>/dev/null || echo "?
   [ -n "${paper_number:-}" ] && echo "- Paper: \`$paper_number\`, a new directory \`papers/$paper_number-<slug>/\` (choose the slug; Lean prefix \`$paper_number\`)"
   [ -n "$roadmap" ] && echo "- Roadmap: \`$roadmap\` (\`roadmaps/$roadmap/ROADMAP.md\`; KNOWN.md: \`roadmaps/$roadmap/KNOWN.md\`$( [ -f "$ctx/known-private.md" ] && echo ", and the private entries in \`.agents/known-private.md\`"))"
   echo "- Base of your branch: \`$base\`; \`origin/main\` is \`$M\`"
-  echo "- Deadline for this task: $end_local (server time), $(( timeout_s / 60 )) minutes from the start; the session is stopped then."
+  echo "- Deadline for this task: $end_local (server time), about $(( (task_end - $(now)) / 60 )) minutes from the start; the session is stopped then."
   echo "- Model: \`$model\`, effort \`$effort\`, at most $turns turns"
   echo "- Context files in \`.agents/\`: $(for f in $files; do printf '`%s` ' "$f"; done)"
   echo
@@ -453,14 +528,14 @@ fi
   printf '\n\n---\nThe script wrote `.agents/task.md` for this task: read it first. It overrides nothing above;\nit gives the target, the deadline, the context files, and what the script does with your output.\n'
 } > "$prompt"
 
+claude_args=(-p --output-format json --model "$model" --effort "$effort" --max-turns "$turns"
+  --permission-mode acceptEdits --allowedTools "$tools")
 if is_dry; then
   log "dry run: $role $target (model $model, effort $effort, $timeout_s s, base ${base:0:12})"
   log "dry run: tools: $tools"
   echo "----- .agents/task.md"; cat "$ctx/task.md"
   echo "----- context files:"; ls -la "$ctx"
-  run_sandboxed "incognita-$task" "$timeout_s" yes - -- \
-    "$INCOGNITA_AGENT_HOME/.local/bin/claude" -p --output-format json --model "$model" --effort "$effort" \
-    --max-turns "$turns" --permission-mode acceptEdits --allowedTools "$tools"
+  run_sandboxed "incognita-$task" "$timeout_s" yes - -- "$AGENT_CLAUDE" "${claude_args[@]}"
   exit 0
 fi
 
@@ -471,14 +546,19 @@ repo_git update-ref "$ref_head" "${H:-$M}" || die "update-ref failed"
 repo_git bundle create -q "$in/in.bundle" "$ref_main" "$ref_head" || die "git bundle create failed"
 cp "$INCOGNITA_SCRIPTS/agent-side.sh" "$in/agent-side.sh" || die "cannot copy agent-side.sh"
 chmod -R a+rX,go-w "$in"
+# The agent's .lake from the loop's (trusted) one: nothing of an earlier session survives there.
+restore_agent_lake || die "cannot restore the agent's .lake from the loop's clone"
 
-sync_agent_lake || log "warning: the agent's .lake could not be re-synced; the session may rebuild"
-
-set_activity "prepare $role $target"
 if ! run_sandboxed "incognita-$task-prep" 900 no - -- bash "$in/agent-side.sh" prepare "$in" "$base" "$GH_REPO" \
     "$ref_main" "$ref_head" </dev/null >"$tmp/prep.log" 2>&1; then
   log "the preparation failed:"; tail -n 20 "$tmp/prep.log" >&2
-  finish fail "prepare-failed"
+  die "prepare-failed"
+fi
+# What is left of the announced time (task.md), after the preparation.
+timeout_s=$(( task_end - $(now) ))
+if [ "$timeout_s" -lt 300 ]; then
+  log "less than 5 minutes left after the preparation: no session"
+  exit 5
 fi
 
 # ---------------------------------------------------------------- the session
@@ -486,16 +566,16 @@ set_activity "$role $target (claude, until $end_local)"
 log "== session: $role $target, model $model, ${timeout_s}s${pr:+, PR #$pr head ${H:0:12}}"
 t0=$(now)
 # In the background, then `wait`: a TERM (night.sh stopping) runs our trap at once, which stops the
-# unit (stop_sandbox), instead of waiting for the end of the session.
+# unit (stop_sandbox), instead of waiting for the end of the session. Both outputs are capped (and
+# drained beyond the cap, so that the session never gets a broken pipe).
 SANDBOX_UNIT="incognita-$task"
-{ run_sandboxed "incognita-$task" "$timeout_s" yes - -- \
-    "$INCOGNITA_AGENT_HOME/.local/bin/claude" -p --output-format json --model "$model" --effort "$effort" \
-    --max-turns "$turns" --permission-mode acceptEdits --allowedTools "$tools" \
-    < "$prompt" 2> "$tmp/session.err"
+{ run_sandboxed "incognita-$task" "$timeout_s" yes - -- "$AGENT_CLAUDE" "${claude_args[@]}" \
+    < "$prompt" 2> >(head -c 2000000 > "$tmp/session.err"; cat > /dev/null; : > "$tmp/err.done")
   echo $? > "$tmp/rc"
-} | head -c 8000000 > "$tmp/result.json" &
+} | { head -c 8000000 > "$tmp/result.json"; cat > /dev/null; } &
 wait $!
 SANDBOX_UNIT=""
+for _ in $(seq 1 20); do [ -e "$tmp/err.done" ] && break; sleep 0.5; done
 rc=$(cat "$tmp/rc" 2>/dev/null || echo 1)
 elapsed=$(( $(now) - t0 ))
 counter_inc tasks-total >/dev/null
@@ -565,9 +645,7 @@ if is_review_role "$role"; then
     *)
       n=$(counter_inc "review-fail $pr")
       log "no valid verdict (\"$verdict\"; $subtype); $n reviews of #$pr without a verdict"
-      if [ "$n" -ge "$INCOGNITA_REVIEW_FAIL_LIMIT" ] && [ "$kind" != paper ]; then
-        escalate "$pr" "$n reviews without a verdict"
-      fi
+      [ "$n" -ge "$INCOGNITA_REVIEW_FAIL_LIMIT" ] && escalate "$pr" "$n reviews without a verdict"
       finish fail "no-verdict ($subtype)" ;;
   esac
   sanitize 60000 < "$report" > "$tmp/body.md"
@@ -620,12 +698,21 @@ if ! run_sandboxed "incognita-$task-collect" 900 no "$out" -- bash "$in/agent-si
   log "the collection failed:"; tail -n 20 "$tmp/collect.log" >&2
   finish fail "collect-failed ($subtype)"
 fi
-count=$(head -c 20 "$out/count" 2>/dev/null | tr -dc 0-9)
-newhead=$(head -c 41 "$out/head" 2>/dev/null | tr -dc 0-9a-f)
-[ -s "$out/uncommitted" ] && log "uncommitted changes left by the session (dropped): $(head -c 300 "$out/uncommitted" | tr '\n' ' ')"
+# Every output is read as the agent user, regular files only (out_read): never opened by the loop.
+# The collection writes regular files only: anything else there is an attack, and nothing is kept.
+odd=$(out_irregular "$out")
+if [ -n "$odd" ]; then
+  log "refused: entries that are not regular files in $out: $(printf '%s' "$odd" | tr '\n' ' ')"
+  record_event refused "$role" "$target" "non-regular entries in the output directory"
+  finish fail "non-regular-output"
+fi
+count=$(out_read "$out/count" 20 | tr -dc 0-9)
+newhead=$(out_read "$out/head" 41 | tr -dc 0-9a-f)
+untracked=$(out_read "$out/untracked" 4000 | head -n 20 | tr '\n' ' ')
+[ -n "$untracked" ] && log "untracked files left by the session (dropped): $(printf '%s' "$untracked" | one_line 300)"
 summary=$tmp/summary.md
-if [ -s "$out/summary.md" ]; then sanitize 60000 < "$out/summary.md" > "$summary"
-else echo "(The agent wrote no summary.)" > "$summary"; fi
+out_read "$out/summary.md" 200000 | sanitize 60000 > "$summary"
+[ -s "$summary" ] || echo "(The agent wrote no summary.)" > "$summary"
 # Questions of a writing session, whatever its outcome (a writer may stop without a commit to ask).
 forward_questions "$summary" "$( [ -n "$pr" ] && echo "#$pr" || echo "the task $task ($role $target)" )" "${H:-$M}"
 
@@ -651,10 +738,13 @@ if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
     post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
     is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
   fi
-  finish fail "no-commit ($subtype)"
+  # A session that ended normally without a commit is not a failure of its target (never parked).
+  [ "$failed_session" = true ] && finish fail "no-commit ($subtype)"
+  finish skip no-commit "($subtype)"
 fi
 
-repo_git -c transfer.fsckObjects=true -c fetch.fsckObjects=true fetch -q --no-tags "$out/out.bundle" \
+out_copy "$out/out.bundle" "$INCOGNITA_BUNDLE_MAX" "$tmp/out.bundle" || finish fail "bundle-unreadable-or-too-large"
+repo_git -c transfer.fsckObjects=true -c fetch.fsckObjects=true fetch -q --no-tags "$tmp/out.bundle" \
   "+refs/incognita/out:refs/incognita/tasks/$task" || finish fail "bundle-fetch-failed"
 new=$(repo_git rev-parse "refs/incognita/tasks/$task") || finish fail "bundle-without-ref"
 [ "$new" = "$newhead" ] || finish fail "bundle-head-mismatch"
@@ -674,7 +764,7 @@ paths_ok() {
 if ! paths_ok 2> "$tmp/paths.log"; then
   cat "$tmp/paths.log" >&2
   record_event refused "$role" "$target" "$(one_line 400 < "$tmp/paths.log")"
-  repo_git update-ref "refs/incognita/refused/$task" "$new"   # kept for inspection
+  repo_git update-ref "refs/incognita/refused/$task" "$new"   # kept for inspection (never pushed)
   if [ -n "$pr" ]; then
     { echo "The script refused this session's commits (not pushed):"; echo; sed 's/^/    /' "$tmp/paths.log" | sanitize 10000; footer "$H"; } > "$tmp/body.md"
     post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
@@ -683,20 +773,31 @@ if ! paths_ok 2> "$tmp/paths.log"; then
   finish fail "refused-paths (kept as refs/incognita/refused/$task)"
 fi
 
+# One commit per round (S3): the checked sum of the session's commits, on top of the PR head (or,
+# when the round rebased the branch, of its base), so that no intermediate commit is published.
+sq_parent=$(squash_parent "$M" "$new" "$H") || finish fail "no-squash-parent"
+{ repo_git log -1 --format=%s "$new"
+  echo
+  echo "One commit for the session's commits (scripts/agent.sh):"
+  repo_git log --reverse --format='- %s' "$sq_parent..$new" | head -n 100
+} | sanitize 20000 > "$tmp/squash-msg"
+sq=$(squash_onto "$sq_parent" "$new" "$tmp/squash-msg") || finish fail "squash-failed"
+[ "$(repo_git rev-parse "$sq^{tree}")" = "$(repo_git rev-parse "$new^{tree}")" ] || finish fail "squash-tree-mismatch"
+
 if [ -n "$pr" ]; then
   # fix-pr / revise: push to the PR branch, only if it is still at H.
-  if ! repo_git push -q --force-with-lease="refs/heads/$branch:$H" origin "$new:refs/heads/$branch"; then
+  if ! repo_git push -q --force-with-lease="refs/heads/$branch:$H" origin "$sq:refs/heads/$branch"; then
     finish fail "push-rejected (the branch moved)"
   fi
   if [ "$ckind" = revise ]; then
-    title="Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: pushed \`${new:0:12}\`."
+    title="Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: pushed \`${sq:0:12}\`."
   else
-    title="Fix round: pushed \`${new:0:12}\`."
+    title="Fix round: pushed \`${sq:0:12}\`."
     counter_inc "fix-rounds $pr" >/dev/null
   fi
   [ "$failed_session" = true ] && title="$title The session stopped before the end ($subtype): the pull request is marked \`incomplete\`."
-  { printf '%s\n\n' "$title"; cat "$summary"; footer "$new"; } > "$tmp/body.md"
-  post_comment "$pr" "$ckind" "$new" "$tmp/body.md" >/dev/null
+  { printf '%s\n\n' "$title"; cat "$summary"; footer "$sq"; } > "$tmp/body.md"
+  post_comment "$pr" "$ckind" "$sq" "$tmp/body.md" >/dev/null
   if [ "$failed_session" = true ]; then
     ensure_labels
     gh pr edit "$pr" --add-label incomplete >/dev/null 2>&1
@@ -706,12 +807,12 @@ if [ -n "$pr" ]; then
   case ",$pr_labels," in
     *,incomplete,*) gh pr edit "$pr" --remove-label incomplete >/dev/null 2>&1; gh pr ready "$pr" >/dev/null 2>&1 ;;
   esac
-  finish ok "pushed #$pr ${new:0:12}"
+  finish ok "pushed #$pr ${sq:0:12}"
 fi
 
 # A new pull request.
 if [ "$eff_role" = fix-main ]; then bname="agent/fix-main-$stamp"; else bname="agent/$role-$stamp"; fi
-repo_git push -q origin "$new:refs/heads/$bname" || finish fail "push-failed"
+repo_git push -q origin "$sq:refs/heads/$bname" || finish fail "push-failed"
 title=$(repo_git log -1 --format=%s "$new" | one_line 120)
 [ -n "$title" ] || title="$role $target"
 { printf 'Role: `%s`. Target: `%s`. Model: `%s`.\n\n' "$role" "$target" "$model"
@@ -723,8 +824,19 @@ title=$(repo_git log -1 --format=%s "$new" | one_line 120)
 } > "$tmp/prbody.md"
 draft=()
 [ "$failed_session" = true ] && { ensure_labels; draft=(--draft --label incomplete); }
-url=$(ghr pr create --base main --head "$bname" --title "$title" --body-file "$tmp/prbody.md" "${draft[@]}") \
-  || finish fail "pr-create-failed (branch $bname pushed)"
+# Not retried blindly: a creation that timed out may have worked (then the PR of the branch is used).
+create_pr() {
+  local i url
+  for i in 1 2 3; do
+    url=$(gh pr create --base main --head "$bname" --title "$title" --body-file "$tmp/prbody.md" "${draft[@]}") \
+      && { printf '%s\n' "$url"; return 0; }
+    sleep $(( i * 5 ))
+    url=$(gh pr list --state open --head "$bname" --json url --jq '.[0].url // empty' 2>/dev/null) \
+      && [ -n "$url" ] && { printf '%s\n' "$url"; return 0; }
+  done
+  return 1
+}
+url=$(create_pr) || finish fail "pr-create-failed (branch $bname pushed)"
 n=${url##*/}
 if [ "$failed_session" = true ]; then finish ok "draft #$n ($subtype)"; fi
 finish ok "pr #$n"

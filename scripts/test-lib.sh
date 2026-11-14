@@ -24,6 +24,9 @@ ok "sanitize breaks @mentions" '[[ "$s" == *$'"'"'@​bob'"'"'* ]]'
 ok "sanitize neutralises closing keywords" '[[ "$s" != *"fixes #3"* ]]'
 ok "sanitize redacts tokens" '[[ "$s" != *"sk-ant-oat01-ABC"* && "$s" == *"[redacted]"* ]]'
 ok "sanitize drops bidi overrides" '[[ "$s" != *$'"'"'‮'"'"'* ]]'
+s=$(printf 'gh: oauth_token: gho_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123 and ghp_abcdefghijklmnopqrstuvwxyz012345 and github_pat_11ABCDEFG0123456789_abcdefghijklmnop\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----\nafter\n-----BEGIN RSA PRIVATE KEY-----\nMIIE truncated\n' | sanitize 1000)
+ok "sanitize redacts GitHub tokens" '[[ "$s" != *gho_ABC* && "$s" != *ghp_abc* && "$s" != *github_pat_11* ]]'
+ok "sanitize redacts private keys (with or without their end)" '[[ "$s" != *b3BlbnNz* && "$s" != *MIIE* && "$s" == *after* ]]'
 long=$(python3 -c 'print("x" * 70000)' | sanitize 60000)
 ok "sanitize truncates" '[ ${#long} -lt 60200 ] && [[ "$long" == *"truncated by the script"* ]]'
 ok "one_line" '[ "$(printf "a\nb  c\n" | one_line 10)" = "a b c" ]'
@@ -128,6 +131,8 @@ try "dot paths refused" write-paper "" 1 'mkdir -p papers/P001-t/.hidden; echo a
 try "AGENTS.md anywhere refused" write-paper "" 1 'mkdir -p papers/P001-t; echo a > papers/P001-t/AGENTS.md'
 try "files over 1 MB refused" write-paper "" 1 'mkdir -p papers/P001-t; head -c 1100000 /dev/zero | tr "\0" a > papers/P001-t/big.txt'
 try "tokens refused" write-paper "" 1 'mkdir -p papers/P001-t; echo "sk-ant-oat01-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" > papers/P001-t/x'
+try "GitHub tokens refused" write-paper "" 1 'mkdir -p papers/P001-t; echo "token: gho_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" > papers/P001-t/paper.tex'
+try "private keys refused" write-paper "" 1 'mkdir -p papers/P001-t; printf -- "-----BEGIN OPENSSH PRIVATE KEY-----\nx\n" > papers/P001-t/paper.tex'
 try "revise changes its paper" revise P001-test 0 'mkdir -p papers/P001-test; echo v2 > papers/P001-test/paper.tex'
 try "revise may not change another paper" revise P001-test 1 'mkdir -p papers/P002-other; echo a > papers/P002-other/x'
 try "formalize-statements adds statements and imports" formalize-statements P001-test 0 \
@@ -190,13 +195,26 @@ try "garden may not write attribution audits" garden "" 1 'mkdir -p catalogue/at
 try "fix-main: Statements.lean imports" fix-main "" 0 'echo "public import Statements.P001.x" >> Statements.lean'
 try "fix-main may not touch papers/" fix-main "" 1 'mkdir -p papers/P001-test; echo p > papers/P001-test/blueprint.md'
 try "fix-main may not touch Statements/" fix-main "" 1 'mkdir -p Statements/P001; echo t > Statements/P001/x.lean'
-# library.bib, dependency checks (AGENTS.md 5.6)
-try "write-paper may regenerate papers/library.bib" write-paper "" 0 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/library.bib'
-try "revise: dependency-checks.md, library.bib" revise P001-test 0 'mkdir -p papers/P001-test; echo d > papers/P001-test/dependency-checks.md; echo b > papers/library.bib'
-try "prove may not write library.bib" prove P001-test 1 'mkdir -p papers; echo b > papers/library.bib'
-try "fix-main may regenerate library.bib" fix-main "" 0 'mkdir -p papers; echo b > papers/library.bib'
+# library.bib is generated, never committed; dependency checks (AGENTS.md 5.6)
+try "write-paper may not commit papers/library.bib" write-paper "" 1 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/library.bib'
+try "revise: dependency-checks.md" revise P001-test 0 'mkdir -p papers/P001-test; echo d > papers/P001-test/dependency-checks.md'
+try "revise may not commit library.bib" revise P001-test 1 'mkdir -p papers/P001-test; echo b > papers/library.bib'
+try "fix-main may not commit library.bib" fix-main "" 1 'mkdir -p papers; echo b > papers/library.bib'
+# P000 is a number like the others (L4)
+git checkout -q -f "$base"; mkdir -p papers/P000-setting; echo s > papers/P000-setting/paper.tex
+git add -A; git commit -qm P000; git update-ref refs/remotes/origin/main HEAD; base0=$(git rev-parse HEAD)
+mkdir -p papers/P000-again; echo a > papers/P000-again/paper.tex; git add -A; git commit -qm again
+ok "whitelist: the number of P000 is taken" '! check_paths write-paper "" "$base0" HEAD 2>/dev/null'
+ok "paper_num: P000 is 0, P010 is 10" '[ "$(paper_num P000-setting)" = 0 ] && [ "$(paper_num P010-x)" = 10 ] && [ -z "$(paper_num README.md)" ]'
+ok "AWK_NUM: P000 is 0" '[ "$(printf "P000 a open\nP001 b open\n" | awk "$AWK_NUM"'"'"' num($1) == 0 { print $2 }'"'"')" = a ]'
+git update-ref refs/remotes/origin/main "$base"
 # candidate directions (roadmaps/<R>/directions.md): entries by the loop, Dropped lines by garden
+git checkout -q -f "$base"; printf '\n## C1 (d, from P001v1 oq:a)\n- Title: -\n- Statement: Q?\n- Source: s\n- Rating: r\n' >> roadmaps/BB/directions.md
+git add -A; git commit -qm C1; git update-ref refs/remotes/origin/main HEAD; base_c=$base; base=$(git rev-parse HEAD)
 try "garden may add a Dropped line to directions.md" garden "" 0 'echo "Dropped (d, garden, m): known." >> roadmaps/BB/directions.md'
+try "garden may not add a candidate direction (S6)" garden "" 1 'printf "\n## C2 (d, from P001v1 oq:b)\n- Title: -\n- Statement: R?\n- Source: s\n- Rating: r\n" >> roadmaps/BB/directions.md'
+try "garden may not edit a candidate direction" garden "" 1 'sed -i "s/Statement: Q?/Statement: Z?/" roadmaps/BB/directions.md'
+base=$base_c; git update-ref refs/remotes/origin/main "$base"
 try "garden may not create directions.md" garden "" 1 'mkdir -p roadmaps/XX; echo x > roadmaps/XX/directions.md'
 try "garden may not touch ROADMAP.md" garden "" 1 'echo x >> roadmaps/BB/ROADMAP.md'
 try "garden: an erratum after a failed re-check" garden "" 0 'mkdir -p papers/P001-test; echo e > papers/P001-test/errata.md'
@@ -234,8 +252,8 @@ ok "refs.bib fixed by the bibliographer: literature" '[ "$(path_category generic
 ok "category statements" '[ "$(path_category generic Statements/P/x.lean A)" = statements ]'
 ok "results markers: additions are proofs" '[ "$(path_category generic catalogue/results/x.toml A)" = proofs ] && [ "$(path_category generic catalogue/results/x.toml M)" = literature ]'
 ok "categories directions and roadmap" '[ "$(path_category generic roadmaps/BB/directions.md M)" = directions ] && [ "$(path_category roadmap roadmaps/X/ROADMAP.md A)" = roadmap ]'
-ok "library.bib: papers in a paper PR, literature otherwise" '[ "$(path_category paper papers/library.bib M)" = papers ] && [ "$(path_category generic papers/library.bib M)" = literature ]'
 ok "pr_kind of a proposal" '[ "$(pr_kind propose-roadmap)" = roadmap ]'
+ok "pr_kind of the loop's own pull requests" '[ "$(pr_kind loop)" = scripted ]'
 ok "roadmap is never an automerge category by default" '! automerge_enabled roadmap && automerge_enabled directions'
 git checkout -q -f "$base"; mkdir -p Incognita/P; printf 'theorem a : True := trivial\n' > Incognita/P/A.lean; git add -A; git commit -qm thm
 ok "a theorem is a proof" 'adds_only_theorems "$base" HEAD'
@@ -287,6 +305,7 @@ git update-ref refs/remotes/origin/main "$base"
 
 # ---- library metadata (scripts/certify.py): versions, dependencies, library.bib, certification,
 #      roadmap items, candidate directions, roadmap proposals
+wbase=$base   # the base of the whitelist repository (base is reused below)
 L=$t/lib; mkdir -p "$L"; cd "$L" || exit 1
 git init -q -b main . && git config user.name t && git config user.email t@t
 C() { python3 "$here/certify.py" --repo "$L" "$@"; }
@@ -327,8 +346,12 @@ git checkout -q -- .
 sed -i 's/thm:main/thm:nope/' papers/P002-second/META.toml
 ok "certify: a dependency on a missing label fails" '! C check >/dev/null'
 git checkout -q -- .
-echo '% stale' >> papers/library.bib
-ok "certify: a stale library.bib fails" '! C check >/dev/null'
+sed -i 's/^roadmap = "BB"/roadmap = "..\/..\/x"/' papers/P002-second/META.toml
+ok "certify: a roadmap that is not a name fails (S4)" '[[ "$(C check 2>&1)" == *"roadmap must be the name of a roadmap"* ]]'
+git checkout -q -- .
+sed -i 's/^roadmap = "BB"/roadmap = "Nope"/' papers/P002-second/META.toml
+ok "certify: a roadmap that does not exist fails" '[[ "$(C check 2>&1)" == *"there is no roadmap roadmaps/Nope/"* ]]'
+ok "certify: add-candidates refuses a bad paper directory" '! C add-candidates --paper ../x --report /dev/null --pr 1 --head 0 >/dev/null 2>&1'
 git checkout -q -- .
 echo 'More.' >> papers/P001-first/paper.tex
 ok "certify: a new paper.tex needs a new version" '! C check --base "$base" >/dev/null'
@@ -349,9 +372,9 @@ ok "certify: level 1 without frozen statements (accepted by both referees)" '[ "
 : > Statements/P002/main.lock
 printf 'paper = "P002-second"\nlabel = "thm:main"\nstatus = "proved"\n' > catalogue/results/P002-main.toml
 m1=$(git rev-parse HEAD)
-printf '| Date | Model | Item | Check | Outcome | Main |\n|---|---|---|---|---|---|\n| 2026-11-21 | m1 | P001 | back-translation | confirmed | %s |\n| 2026-11-22 | m1 | P001 thm:main | back-translation | confirmed | %s |\n' "$m1" "$m1" > catalogue/garden.md
-ok "certify: level 3 after a re-check; a repeated pass brings nothing new" '[[ "$(lv P001)" == "3 re-verified" ]] && C report | grep -q "| 1 (back-translation by m1) |"'
-printf '| 2026-11-23 | m2 | P001 | back-translation | confirmed | %s |\n' "$m1" >> catalogue/garden.md
+printf '| Date | Model | Item | Check | Outcome | Main |\n|---|---|---|---|---|---|\n| 2026-11-21 | m1 | P001 | back-translation | confirmed: the Lean says the statement | %s |\n| 2026-11-22 | m1 | P001 thm:main | back-translation | confirmed | %s |\n' "$m1" "$m1" > catalogue/garden.md
+ok "certify: level 3 after a re-check (documented format \"confirmed: ...\"); a repeated pass brings nothing new" '[[ "$(lv P001)" == "3 re-verified" ]] && C report | grep -q "| 1 (back-translation by m1) |"'
+printf '| 2026-11-23 | m2 | P001 | back-translation | Confirmed: again | %s |\n' "$m1" >> catalogue/garden.md
 ok "certify: another model counts" 'C report | grep -q "| 2 (back-translation by m1, back-translation by m2) |"'
 ok "certify: used by a verified paper" 'C report | grep -F "[P001]" | grep -q "used by 1 (P002)"'
 printf -- '- A. Owner, 2026-11-25, v1: read thm:main.\n' > papers/P001-first/human-audits.md
@@ -361,7 +384,7 @@ ok "certify: the PDF gets the verified node" 'grep -qF "\\incognitaverified{thm:
 mkpaper P003-third 1 '["P002v1:thm:main"]' 'From \cite{INC-P002}.'
 mkdir -p Statements/P003; : > Statements/P003/main.lock
 printf 'paper = "P003-third"\nlabel = "thm:main"\nstatus = "proved"\n' > catalogue/results/P003-main.toml
-printf '| 2026-11-24 | m1 | P002 | known-cases | failed | %s |\n' "$m1" >> catalogue/garden.md
+printf '| 2026-11-24 | m1 | P002 | known-cases | failed: the instance is false | %s |\n' "$m1" >> catalogue/garden.md
 ok "certify: a failed re-check disputes the paper" '[[ "$(lv P002)" == "0 disputed"* ]]'
 ok "certify: and caps its dependants" '[ "$(lv P003)" = "0 capped (own level 2 Lean-verified)" ] && C report | grep -F "[P003]" | grep -q "conditional on P002v1:thm:main"'
 ok "certify: papers depending on a disputed paper" '[ "$(C disputed-deps)" = "P003-third P002 disputed" ]'
@@ -387,6 +410,26 @@ ok "certify: a Dropped line may be added" 'C check --base "$base" >/dev/null && 
 sed -i 's/^- Title: Rate/- Title: Speed/' roadmaps/BB/directions.md
 ok "certify: an entry is never edited" '! C check --base "$base" >/dev/null'
 git checkout -q -- .
+# Append-only files (S6): the gardening log, errata and statement corrections.
+printf '| Date | Model | Item | Check | Outcome | Main |\n|---|---|---|---|---|---|\n| 2026-11-21 | m1 | P001 | back-translation | confirmed | x |\n' > catalogue/garden.md
+printf '# Errata of P001\n\n## E1 (2026-11-20, prove, m)\n- Node: thm:main\n- Problem: false.\n' > papers/P001-first/errata.md
+git add -A; git commit -qm "log and errata"; base=$(git rev-parse HEAD)
+printf '| 2026-11-22 | m2 | P001 | known-cases | confirmed | y |\n' >> catalogue/garden.md
+printf 'Revised in the version of 2026-11-22: fixed.\n\n## E2 (2026-11-23, garden, m)\n- Node: lem:a\n' >> papers/P001-first/errata.md
+ok "certify: rows appended to garden.md, a line under an erratum, a new erratum" 'C check --base "$base" >/dev/null'
+git checkout -q -- .
+sed -i 's/| confirmed | x |/| failed | x |/' catalogue/garden.md
+ok "certify: a row of garden.md is never changed" '[[ "$(C check --base "$base" 2>&1)" == *"catalogue/garden.md: existing lines"* ]]'
+git checkout -q -- .
+sed -i 's/- Problem: false./- Problem: true after all./' papers/P001-first/errata.md
+ok "certify: an erratum is never edited" '[[ "$(C check --base "$base" 2>&1)" == *"E1 was edited"* ]]'
+git checkout -q -- .
+printf -- '- Note: something else.\n' >> papers/P001-first/errata.md
+ok "certify: under an erratum, only Revised in / Resolved by lines" '[[ "$(C check --base "$base" 2>&1)" == *"only a line \"Revised in"* ]]'
+git checkout -q -- .
+printf '# Errata of P001\n' > papers/P001-first/errata.md
+ok "certify: an erratum is never deleted" '[[ "$(C check --base "$base" 2>&1)" == *"entries were removed"* ]]'
+git checkout -q -- .
 # Roadmap proposals: validity, scripted approval, verification of scripted commits.
 git checkout -q -b proposal
 mkdir -p roadmaps/NewArea
@@ -404,12 +447,72 @@ ok "certify: anything else in a scripted commit is refused" '! C verify-scripted
 git checkout -q main
 cd "$INCOGNITA_REPO" || exit 1
 
+# ---- outputs of a session are never opened by the loop as itself (S1): out_read, out_copy
+AGENT_READ=()   # as ourselves here; the loop runs them through sudo -u incognita-agent
+o=$t/out; mkdir -p "$o"; printf 'secret-of-the-loop\n' > "$t/loop-secret"
+printf '## Results\nfine\n' > "$o/summary.md"
+ln -s "$t/loop-secret" "$o/link.md"
+mkfifo "$o/fifo.md" 2>/dev/null || true
+head -c 5000 /dev/zero > "$o/big"
+ok "out_read: a regular file" '[ "$(out_read "$o/summary.md" 1000)" = "$(printf "## Results\nfine")" ]'
+ok "out_read: a symbolic link is refused (never followed)" '! out_read "$o/link.md" 1000 >/dev/null 2>&1 && [ -z "$(out_read "$o/link.md" 1000 2>/dev/null)" ]'
+ok "out_read: a FIFO is refused (never opened)" '( timeout 5 bash -c ". \"$here/lib.sh\"; AGENT_READ=(); out_read \"$o/fifo.md\" 100" >/dev/null 2>&1; [ $? = 1 ] )'
+ok "out_read: capped" '[ "$(out_read "$o/big" 100 | wc -c)" = 100 ]'
+ok "out_irregular: the links and FIFOs of an output directory" '[[ "$(out_irregular "$o")" == *"l link.md"* && "$(out_irregular "$o")" != *summary.md* ]]'
+ok "out_copy: refused above the cap" '! out_copy "$o/big" 1000 "$t/copy" 2>/dev/null && out_copy "$o/big" 5000 "$t/copy" && [ "$(wc -c < "$t/copy")" = 5000 ]'
+AGENT_READ=(sudo -n -u "$INCOGNITA_AGENT_USER")
+
+# ---- one commit per round (S3): squash_parent, squash_onto
+git checkout -q -f "$wbase"; git update-ref refs/remotes/origin/main "$wbase"
+mkdir -p papers/P001-sq; echo "sk-ant-oat01-SECRETSECRETSECRETSECRET" > papers/P001-sq/paper.tex
+git add -A; git commit -qm "add (with a secret)"; echo clean > papers/P001-sq/paper.tex; git commit -qam "remove the secret"
+new=$(git rev-parse HEAD)
+printf 'P001: a paper\n\nbody\n' > "$t/msg"
+sp=$(squash_parent "$wbase" "$new"); sq=$(squash_onto "$sp" "$new" "$t/msg")
+ok "squash: a new pull request is one commit on the merge base" '[ "$sp" = "$wbase" ] && [ "$(git rev-parse "$sq^")" = "$wbase" ] && [ "$(git rev-list --count "$wbase..$sq")" = 1 ]'
+ok "squash: same tree, author kept, the secret only in the dropped commits" '[ "$(git rev-parse "$sq^{tree}")" = "$(git rev-parse "$new^{tree}")" ] && [ "$(git log -1 --format=%an "$sq")" = t ] && ! git log -p "$wbase..$sq" | grep -q SECRET'
+h=$new; echo more >> papers/P001-sq/paper.tex; git commit -qam r1; echo again >> papers/P001-sq/paper.tex; git commit -qam r2; new=$(git rev-parse HEAD)
+ok "squash: a round on a pull request is one commit on its head" '[ "$(squash_parent "$wbase" "$new" "$h")" = "$h" ]'
+git checkout -q -f -B rebased "$wbase"; echo m > main-moved.txt; git add -A; git commit -qm "main moves"; m2=$(git rev-parse HEAD)
+git cherry-pick "$wbase..$new" >/dev/null 2>&1 || git cherry-pick --abort; new=$(git rev-parse HEAD)
+ok "squash: a rebased round is one commit on the new base" '[ "$(squash_parent "$m2" "$new" "$h")" = "$m2" ]'
+
+# ---- statuses survive a mechanical rebase when only shared files moved (L2): diff_signature
+git checkout -q -f -B sigpr "$wbase"; mkdir -p papers/P001-sig literature
+echo "public import Incognita.Mine" >> Incognita.lean; echo p > papers/P001-sig/paper.tex; echo "- mine" >> literature/index.md
+git add -A; git commit -qm pr; pr1=$(git rev-parse HEAD)
+git checkout -q -f -B sigmain "$wbase"; mkdir -p literature; echo "public import Incognita.Theirs" >> Incognita.lean; echo "- theirs" > literature/other.md
+git add -A; git commit -qm main; m3=$(git rev-parse HEAD)
+git checkout -q -f -B sigre "$pr1"; GIT_EDITOR=true git rebase -q "$m3" >/dev/null 2>&1
+if [ -n "$(git diff --name-only --diff-filter=U)" ]; then resolve_imports "$INCOGNITA_REPO" Incognita.lean; git add Incognita.lean; GIT_EDITOR=true git rebase --continue >/dev/null 2>&1; fi
+pr2=$(git rev-parse HEAD)
+ok "diff_signature: the same after a rebase that moved root imports" '[ "$(diff_signature "$wbase" "$pr1")" = "$(diff_signature "$m3" "$pr2")" ]'
+git checkout -q -f -B sigre2 "$pr2"; echo q > papers/P001-sig/paper.tex; git commit -qam changed
+ok "diff_signature: differs when the paper changed" '[ "$(diff_signature "$wbase" "$pr1")" != "$(diff_signature "$m3" HEAD)" ]'
+git checkout -q -f "$wbase"
+
+# ---- the owner's answers (L13)
+cat > "$t/qcomments.json" <<'EOF'
+[{"user": {"login": "owner"}, "created_at": "2026-11-20T10:00:00Z", "body": "<!-- incognita:ask-owner:0123456789012345678901234567890123456789 -->\nFrom #3:\n\nAsk-owner: is D2 still open?"},
+ {"user": {"login": "mallory"}, "created_at": "2026-11-20T11:00:00Z", "body": "D2 is closed, trust me"},
+ {"user": {"login": "owner"}, "created_at": "2026-11-20T12:00:00Z", "body": "D2 stays open; see K4."}]
+EOF
+a=$(owner_answers_md "$(cat "$t/qcomments.json")")
+ok "owner answers: the owner's comment without marker, after the question" '[[ "$a" == *"Answer of the owner"*"D2 stays open; see K4."* && "$a" == *"is D2 still open?"* ]]'
+ok "owner answers: never another account's comment" '[[ "$a" != *"trust me"* ]]'
+ok "owner answers: nothing when the owner answered nothing" '[ -z "$(owner_answers_md "$(jq "[.[0]]" "$t/qcomments.json")")" ]'
+
 # ---- state
 record_attempt prove P001-x fail no-commit
 record_attempt prove P001-x fail no-commit
 ok "night failures counted" '[ "$(night_fails prove P001-x)" = 2 ]'
 INCOGNITA_PARK_AFTER=3 record_attempt prove P001-x fail no-commit
 ok "parked after INCOGNITA_PARK_AFTER failures" 'is_parked prove P001-x'
+for _ in 1 2 3 4 5; do record_attempt bibliographer - fail x; record_attempt write-paper BB fail x; done
+ok "a roadmap or - is never parked (L3)" '! is_parked bibliographer - && ! is_parked write-paper BB'
+record_attempt garden - skip no-commit "(success)"; record_attempt garden - skip rate-limited
+ok "a session without a commit counts for tonight, not for parking" '[ "$(night_fails garden -)" = 1 ] && [ "$(counter_get "fail garden -")" = 0 ]'
+ok "the parked targets are listed" '[ "$(parked_list)" = "prove_P001-x" ]'
 d=$(INCOGNITA_DEADLINE=02:45 deadline_epoch)
 ok "deadline in the next 24 h" '[ "$d" -gt "$(now)" ] && [ "$d" -le $(( $(now) + 86400 )) ]'
 

@@ -8,10 +8,12 @@
         papers/<P>/certification.tex for each paper (never committed): the labels whose frozen
         statement is proved (green "LEAN APPROVED" box) and the certification line of the PDF.
     certify.py [--repo DIR] bib [--check]
-        papers/library.bib (keys INC-P<nnn>, with the version); --check: fail if out of date.
+        papers/library.bib (keys INC-P<nnn>, with the version): generated, never committed
+        (.gitignore); written before compiling a paper. --check: fail if out of date.
     certify.py [--repo DIR] check [--base REF]
-        META.toml fields, depends_on, citations of library papers, library.bib, open questions,
-        directions.md; with --base, the version rules and the append-only rules against REF.
+        META.toml fields (roadmap: an existing roadmap), depends_on, citations of library papers,
+        open questions, directions.md; with --base, the version rules and the append-only rules
+        against REF (directions.md, catalogue/garden.md, errata and statement corrections).
     certify.py [--repo DIR] items ROADMAP [--free]
         Items of a roadmap (D, F, C): "<id> open|closed|covered|dropped <detail>".
     certify.py [--repo DIR] items-hash ROADMAP
@@ -31,6 +33,9 @@
         Set the status of the proposal files changed since REF from proposed to approved.
     certify.py [--repo DIR] verify-scripted --kind approved|directions --parent REF --head REF
         Check that a scripted commit of the loop does only what its kind allows.
+    certify.py [--repo DIR] dropped-only --base REF --head REF
+        Check that the directions.md files changed since REF only gain `Dropped (` lines under
+        existing entries (what garden may do), never a new entry.
 
 Rules: AGENTS.md (sections 4, 5, 9), papers/README.md, roadmaps/README.md, catalogue/README.md.
 Reads only text files and git objects; never runs anything from the repository. Python 3.11+.
@@ -53,6 +58,7 @@ ITEM_RE = re.compile(r"^\s*- \*\*([DF]\d+)\.")
 CLOSED_RE = re.compile(r"(?i)\b(pending owner decision|on hold)\b|(?<![\w-])closed(?![\w-])")
 ENTRY_RE = re.compile(r"^## (E|SC|C)(\d+)\b")
 STATUS_LINE = re.compile(r"^\| Status \| \*\*([a-z]+)\*\*")
+ROADMAP_NAME = re.compile(r"^[A-Z][A-Za-z0-9]+$")
 INC_CITE = re.compile(r"\\cite[pt]?\*?(?:\[[^\]]*\])*\{([^}]*)\}")
 
 
@@ -302,7 +308,9 @@ def garden_rows(tree):
         m = re.match(r"^(P\d{3})", c[2])
         if not m:
             continue
-        outcome = c[4].split()[0].lower() if c[4] else ""
+        # The documented format: "confirmed: <details>" or "failed: <details>" (catalogue/README.md).
+        o = re.match(r"(confirmed|failed)\b", c[4].strip().lower())
+        outcome = o.group(1) if o else ""
         rows.append((c[0], c[1], m.group(1), c[3], outcome, c[5]))
     return rows
 
@@ -582,6 +590,10 @@ def check_tree(tree, base=None):
             errors.append("%s: version must be an integer >= 1" % w)
         if p.kind not in ("internal", "external", "definitions"):
             errors.append("%s: kind must be internal, external or definitions" % w)
+        if not isinstance(p.roadmap, str) or not ROADMAP_NAME.match(p.roadmap):
+            errors.append("%s: roadmap must be the name of a roadmap (letters and digits, starting with a capital)" % w)
+        elif tree.read("roadmaps/%s/ROADMAP.md" % p.roadmap) is None:
+            errors.append("%s: there is no roadmap roadmaps/%s/" % (w, p.roadmap))
         if not isinstance(p.directions, list) or not all(isinstance(x, str) and re.match(r"^[DFC]\d+$", x) for x in p.directions):
             errors.append("%s: directions is a list of items D<n>, F<n> or C<n>" % w)
         if not isinstance(p.depends_on, list):
@@ -645,9 +657,7 @@ def check_tree(tree, base=None):
     for v in graph:
         if not state.get(v):
             visit(v, [])
-    want = bib_text(tree)
-    if tree.read("papers/library.bib") != want:
-        errors.append("papers/library.bib is out of date: run `python3 scripts/certify.py bib` and commit it")
+    # papers/library.bib is generated and never committed (.gitignore): nothing to check here.
     for r in tree.ls("roadmaps"):
         text = tree.read("roadmaps/%s/directions.md" % r)
         if text is not None:
@@ -675,7 +685,75 @@ def check_tree(tree, base=None):
             new = tree.read("roadmaps/%s/directions.md" % r)
             if old is not None:
                 errors += directions_append_only(old, new, "roadmaps/%s/directions.md" % r)
+        # The gardening log: rows are only appended.
+        old = bt.read("catalogue/garden.md")
+        if old is not None:
+            errors += lines_append_only(old, tree.read("catalogue/garden.md"), "catalogue/garden.md")
+        # Errata and statement corrections: entries never edited, renumbered or deleted; under an
+        # entry, only the lines of later roles (`Revised in …`, `Resolved by …`).
+        for d in bt.ls("papers"):
+            for f in ("errata.md", "statement-corrections.md"):
+                old = bt.read("papers/%s/%s" % (d, f))
+                if old is not None:
+                    errors += entries_append_only(old, tree.read("papers/%s/%s" % (d, f)), "papers/%s/%s" % (d, f))
     return errors
+
+
+def trim(lines):
+    while lines and not lines[-1].strip():
+        lines = lines[:-1]
+    return lines
+
+
+def lines_append_only(old, new, where):
+    """Every line of old stays, in order, at the start of new (lines are only appended)."""
+    if new is None:
+        return ["%s: deleted (it is append-only)" % where]
+    o, n = trim(old.splitlines()), new.splitlines()
+    if n[:len(o)] != o:
+        return ["%s: existing lines were changed or removed (it is append-only)" % where]
+    return []
+
+
+def entries_append_only(old, new, where):
+    """Errata (E<k>) and statement corrections (SC<n>): the text before the first entry and every
+    entry stay; new entries come after the old ones; under an old entry, only lines starting with
+    `Revised in` or `Resolved by` (possibly as list items) may be added."""
+    if new is None:
+        return ["%s: deleted (entries are never deleted)" % where]
+
+    def split(text):
+        head, ents, cur = [], [], None
+        for line in text.splitlines():
+            m = ENTRY_RE.match(line)
+            if m and m.group(1) in ("E", "SC"):
+                cur = [m.group(1) + m.group(2), [line]]
+                ents.append(cur)
+            elif cur is None:
+                head.append(line)
+            else:
+                cur[1].append(line)
+        return head, ents
+
+    errs = []
+    oh, oe = split(old)
+    nh, ne = split(new)
+    if trim(oh) != trim(nh)[:len(trim(oh))] or (oe and trim(nh) != trim(oh)):
+        errs.append("%s: the text before the entries was changed" % where)
+    if [e[0] for e in ne[:len(oe)]] != [e[0] for e in oe]:
+        errs.append("%s: entries were removed, renumbered or reordered" % where)
+        return errs
+    for (eid, ol), (_, nl) in zip(oe, ne):
+        ol = trim(ol)
+        if nl[:len(ol)] != ol:
+            errs.append("%s: %s was edited (only lines may be added under an entry)" % (where, eid))
+            continue
+        for line in nl[len(ol):]:
+            s = re.sub(r"^- ", "", line.strip())
+            if line.strip() and not (s.startswith("Revised in ") or s.startswith("Resolved by ")):
+                errs.append("%s: under %s, only a line \"Revised in …\" or \"Resolved by …\" may be added" % (where, eid))
+                break
+    return errs
 
 
 def direction_entries(text):
@@ -780,6 +858,8 @@ def extensions(tree, r):
 
 def items(tree, r):
     """[(id, state, detail)]: state open, closed, covered (detail: the papers), dropped."""
+    if not ROADMAP_NAME.match(r or ""):
+        raise Fail("bad roadmap name %r" % r)
     text = tree.read("roadmaps/%s/ROADMAP.md" % r)
     if text is None:
         raise Fail("no roadmap %s" % r)
@@ -874,8 +954,11 @@ def scope_ratings(report):
 
 
 def cmd_add_candidates(args, tree):
+    if not PAPER_DIR.match(args.paper or ""):
+        raise Fail("bad paper directory %r" % args.paper)
     p = Paper(tree, args.paper)
-    if not p.roadmap or tree.read("roadmaps/%s/ROADMAP.md" % p.roadmap) is None:
+    if not isinstance(p.roadmap, str) or not ROADMAP_NAME.match(p.roadmap) \
+            or tree.read("roadmaps/%s/ROADMAP.md" % p.roadmap) is None:
         raise Fail("%s: unknown roadmap %r" % (p.dir, p.roadmap))
     with open(args.report, encoding="utf-8") as f:
         ratings = scope_ratings(f.read())
@@ -1029,6 +1112,32 @@ def cmd_verify_scripted(args, tree):
     print("ok: scripted %s commit" % args.kind)
 
 
+def cmd_dropped_only(args, tree):
+    """garden's changes to candidate directions: `Dropped (` lines under existing entries only."""
+    errs = []
+    for st, path in changed(tree, args.base, args.head, "roadmaps"):
+        if not re.match(r"^roadmaps/[A-Za-z0-9]+/directions\.md$", path):
+            continue
+        if st != "M":
+            errs.append("%s: %s (a directions.md is only modified)" % (path, st))
+            continue
+        old = Tree(tree.repo, args.base).read(path) or ""
+        new = Tree(tree.repo, args.head).read(path) or ""
+        errs += directions_append_only(old, new, path)
+        o, n = direction_entries(old), direction_entries(new)
+        if list(n) != list(o):
+            errs.append("%s: new entries %s (only the loop adds candidate directions)" % (
+                path, ", ".join(k for k in n if k not in o) or "?"))
+        oh = old.split("\n## ", 1)[0]
+        if not new.startswith(oh):
+            errs.append("%s: the header was changed" % path)
+    for e in errs:
+        print("error: " + e)
+    if errs:
+        sys.exit(1)
+    print("ok: only Dropped lines")
+
+
 # ---------------------------------------------------------------- main
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -1051,13 +1160,15 @@ def main(argv):
     s = sub.add_parser("approve-roadmap"); s.add_argument("--base", required=True); s.add_argument("--text", required=True)
     s = sub.add_parser("verify-scripted"); s.add_argument("--kind", required=True, choices=["approved", "directions"])
     s.add_argument("--parent", required=True); s.add_argument("--head", required=True)
+    s = sub.add_parser("dropped-only"); s.add_argument("--base", required=True); s.add_argument("--head", required=True)
     args = ap.parse_args(argv)
     tree = Tree(os.path.abspath(args.repo), args.ref)
     fn = {"report": cmd_report, "leanok": cmd_leanok, "bib": cmd_bib, "check": cmd_check,
           "items": cmd_items, "items-hash": cmd_items_hash, "dependants": cmd_dependants,
           "depchecks": cmd_depchecks, "disputed-deps": cmd_disputed_deps,
           "add-candidates": cmd_add_candidates, "proposal": cmd_proposal,
-          "approve-roadmap": cmd_approve_roadmap, "verify-scripted": cmd_verify_scripted}[args.cmd]
+          "approve-roadmap": cmd_approve_roadmap, "verify-scripted": cmd_verify_scripted,
+          "dropped-only": cmd_dropped_only}[args.cmd]
     try:
         fn(args, tree)
     except Fail as e:
