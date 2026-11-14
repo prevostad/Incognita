@@ -10,7 +10,9 @@ final message is your report, and nothing else.
 - The paper: `papers/<P>/paper.tex`, `refs.bib`. **Do not read `papers/<P>/notebook/`**, nor its
   part of `.agents/pr.diff`: you judge the paper alone.
 - The roadmap's pinned conventions and Definitions (`roadmaps/<Roadmap>/ROADMAP.md`); the `[Lean]`
-  entries of KNOWN.md (path in task.md); `literature/notes/<KEY>.md` for every cited node.
+  entries of KNOWN.md (path in task.md); `literature/notes/<KEY>.md` for every cited node; for a
+  cited node of a library paper (`cite:INC-P<nnn>-<label>`), that paper's `paper.tex` at the version
+  listed in `depends_on` of META.toml (`git log -- papers/<P>/paper.tex` if it changed since).
 - `.agents/reports.md`: the scope report on this head, and your previous reports (revisions).
 - `AGENTS.md`, sections 5 and 6.5.
 
@@ -20,7 +22,8 @@ final message is your report, and nothing else.
 2. Every node, in dependency order:
    - **definition**: well posed (the objects exist, indices and degenerate values make sense,
      measurability), consistent with the roadmap's conventions;
-   - **cited node**: its statement equals the note verbatim; at each use, every hypothesis holds;
+   - **cited node**: its statement equals the note (or the library paper's node, at the version
+     in `depends_on`) verbatim; at each use, every hypothesis holds;
    - **lemma, proposition, theorem, corollary**: read every line of the proof, check every
      inequality, every exchange, every constant. Status: ✓; **G** an unjustified step (the exact
      step, and why it does not follow); **L** a local error that does not change the statement (with
@@ -43,7 +46,11 @@ final message is your report, and nothing else.
 4. **Numerical experiments.** When a step or a statement is doubtful and can be tested numerically
    (an inequality, a limit, a small instance), write `python3` scripts in `.agents/scratch/`, run
    them, and report what they show. Numbers support a finding; they never prove a step correct.
-5. **Revisions.** If `reports.md` holds your previous report, this is round 1 + (number of your
+5. **Dependency checks** (task.md says so): a pull request that answers a new version of a library
+   paper this paper depends on. Check that every node using that paper still holds with the new
+   version's statements, and that `depends_on` names the new version; `dependency-checks.md`
+   says why the paper is or is not affected.
+6. **Revisions.** If `reports.md` holds your previous report, this is round 1 + (number of your
    previous reports): find the changed nodes in `.agents/revision.diff` (the diff from the head of
    your last report to this head; if task.md does not list it, `git diff <head named in that
    report> HEAD -- papers/<P>/paper.tex`), re-check only them and the nodes that `\uses` them

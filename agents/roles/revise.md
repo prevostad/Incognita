@@ -9,6 +9,9 @@ You **revise a paper** of the Incognita repository. Three situations (task.md sa
 - **Erratum**: an accepted paper with an entry `E<k>` in `papers/<P>/errata.md` that has neither a
   `Revised in` nor a `Resolved by` line (AGENTS.md §6.6, case b): the paper is disputed. You write a
   new version of `paper.tex`, on a new pull request.
+- **Dependency check**: an accepted paper that depends on a library paper which has a new version
+  since this paper cited it (AGENTS.md §5.6; task.md names `P<nnn>v<k>->v<m>`). You decide whether
+  this paper is affected, on a new pull request.
 
 ## Inputs
 
@@ -38,14 +41,28 @@ You **revise a paper** of the Incognita repository. Three situations (task.md sa
    `Revised in the version of <date>: <what changed>` (never edit the entry itself, never write
    `Resolved by`: `formalize-statements` adds it once the corrected statements are frozen, in a new
    statements pull request).
-5. **Labels**: a changed node keeps its label; a new node gets a new label; a removed label is never
+5. **Dependency check**: read the dependency's errata (`papers/<dep>/errata.md`) and compare, node
+   by node, what this paper uses of it (the cited nodes `cite:INC-P<nnn>-…`) with the new version.
+   - Not affected: `paper.tex` unchanged; in `META.toml`, `depends_on` names the new version (same
+     labels, or the new labels of the same results); add a line to
+     `papers/<P>/dependency-checks.md`: `- <date>, <model>: P<nnn>v<k> -> v<m>: not affected:
+     <reason, node by node>`.
+   - Affected: add an entry `E<j>` to this paper's `errata.md` (node, the dependency's change, why
+     it breaks), and write the next version as for an erratum (with `Revised in …` under the entry
+     and a line `… -> v<m>: affected, see E<j>` in `dependency-checks.md`).
+6. **Versions**: a new `paper.tex` of an accepted paper (an erratum, an affected dependency) has
+   `version` = the version on `main` + 1 in `META.toml`; during refereeing (a paper pull request),
+   the version stays 1. After any change of `META.toml` or of a title, run
+   `python3 scripts/certify.py bib` (it regenerates `papers/library.bib`) and
+   `python3 scripts/certify.py check --base origin/main`, and commit `papers/library.bib`.
+7. **Labels**: a changed node keeps its label; a new node gets a new label; a removed label is never
    reused. The referees re-check exactly the changed nodes and those that `\uses` them, so change
    nothing else. Stay within 12 pages and 25 nodes; update `\uses`, Closest known, Sanity checks,
-   Weak points and Attribution where the changes require it. Add your model to `authors` in
-   `META.toml`.
-6. **Notebook**: add a dated section: for each defect ID (or `E<k>`), "fixed" with the nodes changed,
+   Weak points, Open questions and Attribution where the changes require it. Add your model to
+   `authors` in `META.toml`.
+8. **Notebook**: add a dated section: for each defect ID (or `E<k>`), "fixed" with the nodes changed,
    or "disputed" with the argument; new dead ends with the reason they fail.
-7. **Compile** as `write-paper` does
+9. **Compile** as `write-paper` does
    (`latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`; no error, no
    `undefined`, no `multiply defined`; then `latexmk -C -cd papers/<P>/paper.tex`), `git add` the
    source files by name, commit `P<nnn>: revision for <IDs>`.
@@ -56,6 +73,6 @@ changed, or disputed; anything left).
 
 ## Do not
 
-Edit `paper.tex` of an accepted paper except for an erratum; touch another paper, a roadmap or
-KNOWN.md; renumber or delete entries of `errata.md`; write `\lean`, `\leanok` or `\mathlibok`;
-change nodes the reports do not concern.
+Edit `paper.tex` of an accepted paper except for an erratum (or an affected dependency); touch
+another paper, a roadmap, `directions.md` or KNOWN.md; renumber or delete entries of `errata.md`;
+write `\lean`, `\leanok` or `\mathlibok`; change nodes the reports do not concern.

@@ -1,6 +1,7 @@
 You do **phase 2 of the formalisation** of a paper of the Incognita repository: prove its frozen
 statements in Lean, lemma by lemma, following the paper's `\uses` graph, one coherent area per pull
-request.
+request. The loop gives you first the papers that other library papers depend on: their proofs
+lift the certification of every paper built on them (AGENTS.md sections 5.6 and 9).
 
 ## Inputs
 
@@ -21,6 +22,10 @@ request.
    `Incognita/<Roadmap>/`. The final theorem `Incognita.<prefix>.<name>` has **exactly** the frozen
    type: copy it verbatim from the `Statements/` file. Drafts with `sorry` go in
    `Exploration/<prefix>/`.
+   A result of a library paper this paper depends on (`depends_on` in META.toml) is used through
+   its proof `Incognita.P<nnn>.<name>` when it exists; otherwise prove that frozen statement first
+   (in the same area, with its proof marker). Docstrings cite library papers as
+   `[INC-P001, Theorem 2]`.
 3. **Only `lemma` and `theorem`**: no `def`, `abbrev`, `structure`, `class`, `instance`, `inductive`,
    `axiom`, `opaque`, `notation`. If you need a new object, stop and say so in the summary: it needs a
    statements pull request.

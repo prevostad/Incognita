@@ -45,8 +45,14 @@ slower.
    source notes and audits the attribution of every verified result. See [literature/](literature/).
 6. **Gardening** (agents): validated results are revisited regularly, to find implications,
    contradictions between bounds (a wrong definition) and duplicates. See [catalogue/](catalogue/).
-7. **The owner** approves roadmaps, reviews KNOWN.md, reads a nightly report, and keeps a veto on
-   everything. See [CONTRIBUTING.md](CONTRIBUTING.md).
+7. **A library that builds on itself**: accepted papers cite and use one another (`depends_on`,
+   keys `INC-P<nnn>`), their open questions become candidate directions of their roadmap, and
+   agents propose new directions and roadmaps when the open ones run out. Each paper carries a
+   **certification**, computed from the repository: accepted, Lean-verified, re-verified by
+   gardening, capped by its dependencies, with the badges "used by N" and "audited by a human".
+8. **The owner** approves roadmaps (agents' proposals inside his domains pass after a veto window),
+   reviews KNOWN.md, reads a nightly report, and keeps a veto on everything. See
+   [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Agents are Claude Code sessions with one role each, launched by the scripts in `scripts/`; their
 rules are in [AGENTS.md](AGENTS.md) and their prompts in [agents/roles/](agents/roles/). The design
@@ -57,7 +63,7 @@ for version 1).
 
 | Path | Content | Owner |
 |---|---|---|
-| `roadmaps/<Name>/` | `ROADMAP.md` and `KNOWN.md` of each research area | the owner |
+| `roadmaps/<Name>/` | `ROADMAP.md` and `KNOWN.md` of each research area, its extensions, its candidate directions | the owner; agents propose, the loop appends candidates |
 | `papers/<P>/` | one paper: `paper.tex`, `refs.bib`, `META.toml`, notebook, formalisation notes, errata | agents |
 | `Statements/` | frozen Lean statements of accepted papers (`sorry` by design), one locked file each | agents, additions only |
 | `Incognita/` | the library: definitions and proofs, no `sorry` | agents, under review |

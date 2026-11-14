@@ -10,7 +10,8 @@ stored here: the audit (`lake exe audit`) computes it.
 | `results/<prefix>-<name>.toml` | one proof marker per proved frozen statement (or refutation) | `prove`; **additions only** |
 | `attribution/<prefix>.md` | the bibliographer's attribution audit of a verified paper | `bibliographer` |
 | `relations.toml` | implications, contradictions, duplicates between results | `garden` |
-| `garden.md` | the log of gardening passes | `garden` |
+| `garden.md` | the log of gardening passes, re-checks included (certification level 3) | `garden` |
+| `certification.md` | the certification of every paper: level, re-checks, badges, dependencies | **generated** by `scripts/certify.py report` (CI's summary and artifact, the night report); never committed |
 
 ## Proof markers: `results/<prefix>-<name>.toml`
 
@@ -78,10 +79,23 @@ the owner.
 
 ## Gardening log: `garden.md`
 
-A table, one row per item examined, newest last:
+A table, one row per item examined, newest last; rows are never edited or deleted:
 
 ```
-| Date | Model | Item | Outcome |
-|---|---|---|---|
-| 2026-11-25 | claude-opus-5-5 | P001 thm:main | implied by P003 thm:main (relation recorded) |
+| Date | Model | Item | Check | Outcome | Main |
+|---|---|---|---|---|---|
+| 2026-11-25 | claude-opus-5-5 | P001 thm:main | implication | implied by P003 thm:main (relation recorded) | 3f2a9c1e0b7d |
+| 2026-11-26 | claude-sonnet-5 | P001 thm:main | back-translation | confirmed: the Lean says exactly the paper's statement | 3f2a9c1e0b7d |
 ```
+
+- `Item`: a paper prefix and a label (or the paper alone).
+- `Check`: `back-translation`, `double-formalisation`, `known-cases` (the **re-checks**, AGENTS.md
+  §8), or `implication`, `contradiction`, `duplicate`, `same-object`, `directions`.
+- `Outcome`: for a re-check, `confirmed` or `failed` first, then the details; a failed re-check comes
+  with an erratum or a statement correction of the paper.
+- `Main`: the commit of `main` the pass started from (`origin/main` in task.md).
+
+`scripts/certify.py` reads the re-checks: a paper reaches level 3 with one confirmed re-check, and
+its counter counts only the re-checks that bring something new (a check type or a model not yet
+used for it, or a library, `Incognita/`, changed since its last counted re-check); if its last
+re-check failed, the paper is disputed (level 0) and caps its dependants.

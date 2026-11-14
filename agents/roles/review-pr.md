@@ -36,7 +36,12 @@ head; `AGENTS.md`.
 - **Gardening** (`garden`): each implication claimed is proved in Lean and quantitatively at least
   as good (same constants and order, hypotheses no stronger); no theorem removed or changed; the
   entries of `catalogue/relations.toml` and `catalogue/garden.md` match what was done; a
-  contradiction is reported with an `Ask-owner:` line.
+  contradiction is reported with an `Ask-owner:` line. A re-check (`back-translation`,
+  `double-formalisation`, `known-cases`) logged `confirmed` was really done (its Lean or its
+  back-translation is in the pull request or its description) and brings something new for that
+  paper (AGENTS.md §9); a `failed` one comes with its erratum or statement correction. A `Dropped`
+  line in `directions.md` gives a checkable reason (a paper and label, or `[KEY, part]` you check);
+  `garden.md` and `directions.md` only gain lines.
 - **Literature** (`bibliographer`): check at least two notes or metadata entries against the source
   on the web (statements exactly as in the source, parts read honestly marked); for an attribution
   audit, queries recorded and the verdict justified.

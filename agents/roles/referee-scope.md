@@ -14,7 +14,8 @@ is known. You are read-only: change no file. Your final message is your report, 
   task.md.
 - `.agents/reports.md`: your previous reports on this paper (revisions) and the reports of the
   roadmap's rejected papers.
-- `literature/` (`bibliography.json`, `index.md`, `notes/`); the accepted papers under `papers/`.
+- `literature/` (`bibliography.json`, `index.md`, `notes/`); the accepted papers under `papers/`
+  (the library), and `papers/library.bib`.
 - `AGENTS.md`, sections 4, 5 and 7.
 
 ## Revisions
@@ -54,6 +55,12 @@ rule on each previous G and L (resolved or not, and why).
    missing nearest result, or an unjustified "this does not follow": **G**.
 8. **External papers** (`kind = "external"`): instead of novelty, check fidelity: each statement of
    the paper against `literature/notes/<KEY>.md` and against the source itself (read it).
+9. **The library** (AGENTS.md section 5.6). Each result of a library paper the proofs use is a
+   cited node `cite:INC-P<nnn>-<label>` copied verbatim from that paper at the version listed in
+   `depends_on` (**L** if not), cited `\cite[...]{INC-P<nnn>}`; a used library result missing from
+   `depends_on`, or a dependency on a paper that is disputed or withdrawn: **G**. A paper that
+   reproves a result of the library instead of citing it: **L** (or **F** if that is its main
+   result).
 
 ## 2. Roadmap fit and interest
 
@@ -69,6 +76,25 @@ rule on each previous G and L (resolved or not, and why).
   fidelity to its source replaces novelty and interest.
 - Mandatory sections present (AGENTS.md §5.2): a missing section is **G**; at most 12 pages and 25
   nodes (beyond: **G**, split required); clarity: **P**.
+
+## 3. Open questions (rate every one)
+
+The section "Open questions" (environments `openquestion`, labels `oq:<name>`) seeds the roadmap:
+the questions you accept become candidate directions `C<n>` of `roadmaps/<Roadmap>/directions.md`
+when the paper is accepted (the loop copies them, with your ratings, from your **latest** report).
+Rate each question:
+
+- **Interest**: `high`, `medium` or `low`, against the roadmap's "What would be an important
+  result";
+- **Novelty**: `open` (your searches, at least two queries per question, found no answer: record
+  them), or `known: [KEY, part]`, or `follows from <KNOWN entry, paper, label>`;
+- **Fit**: the roadmap item it extends (`D3`, `F2`, `C4`), or `out of scope`;
+- **Candidate**: `yes` only if interest is `high` or `medium`, novelty is `open`, it fits the
+  roadmap, and it is stated precisely enough to be the main result of a paper (quantifiers, class,
+  criterion); otherwise `no`, with the reason.
+
+A missing section, or an internal paper without any open question: **G**. An imprecise question
+is never a defect of the paper (rate it `no`).
 
 ## Verdict and report
 
@@ -98,6 +124,11 @@ Paper: <P>. Head: <SHA from task.md>. Round: <n>.
 | Criterion | Met | Why |
 
 ## Interest
+
+## Open questions
+| Question | Interest | Novelty | Fit | Candidate | Reason |
+|---|---|---|---|---|---|
+| oq:<name> | high, medium or low | open, known: [KEY, part], follows from … | D<n>, F<n>, C<n> or out of scope | yes or no | … |
 
 ## Previous defects G and L (revisions only)
 | ID | Resolved | Why |

@@ -44,7 +44,8 @@ work independently: do not trust their citations, check them in the source.
 
 ## Rules
 
-Record only what you read in the source; never fill a field from memory. Copy statements exactly in
+Library papers (`INC-P<nnn>`, `papers/library.bib`) are not your business: that file is generated
+(`scripts/certify.py bib`). Record only what you read in the source; never fill a field from memory. Copy statements exactly in
 notes; elsewhere, quote at most a short phrase and summarise. Write only in `literature/`,
 `catalogue/attribution/` and the metadata fields of `papers/*/refs.bib`. Commit with a message
 `Bibliographer: <what was checked>`. Summary (AGENTS.md §1): Results (notes written, metadata

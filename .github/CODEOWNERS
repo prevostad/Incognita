@@ -1,6 +1,9 @@
 # Human-owned paths (AGENTS.md, section 2; CONTRIBUTING.md, section 4). Pull requests touching them
 # are merged by the owner; the loop's path whitelist refuses them for agents. Code-owner review is
-# not required by the ruleset while agents push with the owner's account.
+# not required by the ruleset while agents push with the owner's account. Exceptions under
+# /roadmaps/ (AGENTS.md section 4): proposals of propose-roadmap (merged by the loop after the
+# owner's veto window, or by the owner for a new domain) and roadmaps/*/directions.md (entries
+# appended by the loop, Dropped lines by garden).
 /README.md                       @prevostad
 /AGENTS.md                       @prevostad
 /CLAUDE.md                       @prevostad
@@ -12,6 +15,7 @@
 /LICENSE                         @prevostad
 /roadmaps/                       @prevostad
 /papers/*/withdrawn.md           @prevostad
+/papers/*/human-audits.md        @prevostad
 /literature/notes/TEMPLATE.md    @prevostad
 /templates/                      @prevostad
 /agents/                         @prevostad

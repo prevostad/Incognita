@@ -36,6 +36,11 @@ Markdown and the catalogue, `[KEY, Theorem 4.3]`, `[KEY, (6)]` or `[KEY, proof o
 LMLExplore. A citation points to an entry whose cited part is marked as read in `index.md`;
 otherwise it is followed by "(to be checked)". A new entry is added with metadata `unchecked`.
 
+Papers of the Incognita library are not entries of `bibliography.json`: they are cited by their key
+`INC-P<nnn>` (`\cite[Theorem~2]{INC-P001}`, in Lean docstrings `[INC-P001, Theorem 2]`), from
+`papers/library.bib`, which `scripts/certify.py bib` generates; the version read goes in
+`depends_on` (AGENTS.md, section 5.6).
+
 ## Who checks
 
 Any writing role adds entries and notes for what it read. The bibliographer

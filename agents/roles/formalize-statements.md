@@ -14,6 +14,8 @@ than speed.
   that the bibliographer must write it first.
 - The roadmap's Definitions section (conventions, planned Lean names); `catalogue/definitions/`;
   `Incognita/<Roadmap>/`; `Statements/`; `AGENTS.md` §6.
+- The library papers this paper depends on (`depends_on` in META.toml): reuse their definitions
+  and frozen statements' objects, so that their results can be applied to yours in Lean.
 
 ## What to freeze
 
