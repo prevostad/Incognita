@@ -50,19 +50,23 @@ $m^\star < 1$. For a suboptimal arm $a$, $K_a := \mathcal K_{\inf}(\nu_a, m^\sta
 instance and every suboptimal arm $a$:
 
 1. (consistency at batch ends) $\mathbb E\, N_a(t_\ell) = o(t_\ell^\alpha)$ for every $\alpha > 0$;
-2. (optimality) $\lim_{\ell} K_a\, \mathbb E\, N_a(t_\ell) / L_\ell = x^2$?
+2. (upper bound) $\limsup_{\ell} K_a\, \mathbb E\, N_a(t_\ell) / L_\ell \le x^2$?
 
-Given 1, only the upper half of 2,
-$\limsup_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell \le x^2$, is new. It gives
-$\mathbb E N_a(t_\ell) = O(L_\ell)$. The owner's **[Lean]** lower bound in its $\liminf$ form
-([HY.md](../HY.md), item 1, for learners consistent at batch ends in any information model) then
-gives $\liminf_\ell \ge x^2$. Once that lower bound is ported, the frozen statement may therefore
-be the conjunction of 1 and the upper half of 2. If it is frozen before the port, it must state
-2 in full.
+**The frozen statement is the conjunction of 1 and 2**, as stated, and it does not depend on any
+result that has not been ported. Optimality, $\lim_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell = x^2$,
+is then a corollary. Item 2 gives $\mathbb E N_a(t_\ell) = O(L_\ell)$, and the owner's **[Lean]**
+lower bound in its $\liminf$ form ([HY.md](../HY.md), item 1, for learners consistent at batch
+ends in any information model) gives $\liminf_\ell \ge x^2$. That corollary is proved here only
+once that lower bound is ported ([PROGRAMME.md](../PROGRAMME.md), "Known results to formalise",
+item 4, on hold).
 
 "No" is a possible answer, and a likely one if HY's paced phase is there for a reason. A "no"
 means that some grid with $x_\ell \to x > 1$, some instance and some suboptimal arm make IMED-$y$
 either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell > x^2$.
+A failure of the lower half alone cannot happen. Suppose IMED-$y$ satisfies 1 and 2 but has
+$\liminf_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell < x^2$. That contradicts the owner's lower bound,
+whose $\liminf$ form applies because 2 gives counts $O(L_\ell)$. So the only possible "no" is a
+failure of 1 or of 2.
 
 ## Relation to known results
 
@@ -152,8 +156,8 @@ either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t
   - $N_c(t-1) \ge 1$ after batch 1;
   - $\tilde m_c < 1$, so every $\tilde K_\ell(c)$ is finite.
 - **The conclusions are not contradictory.** HY satisfies 1–2 on this grid and instance (owner's
-  **[Lean]** result). The question is only whether IMED-$y$ does too. On this example, a "yes"
-  predicts $\mathbb E N_2(t_\ell) \sim 4 L_\ell / K_2$.
+  **[Lean]** result). The question is only whether IMED-$y$ does too. On this example, a "yes",
+  with the owner's lower bound, predicts $\mathbb E N_2(t_\ell) \sim 4 L_\ell / K_2$.
 
 ## Natural fallback
 
@@ -178,16 +182,17 @@ either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t
 
 1. **Information model, class and criterion.** The information model is $M_0$ (IMED-$y$ is a
    fixed learner of $M_0$). The class is: rewards in $[0,1]$, $m^\star<1$, grids with
-   $x_\ell \to x \in (1,\infty)$. The criterion is counts at batch ends, with consistency and
-   $\lim$.
+   $x_\ell \to x \in (1,\infty)$. The criterion is counts at batch ends: consistency and the
+   upper bound $\limsup \le x^2$, with the $\lim$ as a corollary of the owner's lower bound.
 2. **Known result and not a corollary.** It extends the **[Lean]** results above. It is not a
    corollary: the catalogue is empty, and HY's statement does not cover IMED-$y$ (see above). The
    proposer tried a short proof and a short refutation, and neither went through: the flip
    estimate above is inconclusive.
 3. **Joint satisfiability.** One grid and one instance are given above.
 4. **Class of learners for a lower bound.** The question is about one explicit learner, so this
-   criterion does not apply. The lower half of item 2 uses the **[Lean]** lower bound, whose class
-   is the learners consistent at batch ends, in every information model.
+   criterion does not apply. The corollary $\lim = x^2$ uses the **[Lean]** lower bound, whose
+   class is the learners consistent at batch ends, in every information model. The frozen
+   statement does not use it.
 5. **"No" allowed, fallback named.** "No" is allowed, and the fallbacks are named above.
 
 ## Dead ends
