@@ -21,7 +21,7 @@ on:
       - 'scripts/certify.py'
       - '.github/workflows/papers.yml'
   push:
-    branches: [main, v3/integration]   # TEMPORARY (integration test of the branch): remove before merging
+    branches: [main]
     paths:
       - 'papers/**'
       - 'templates/paper/**'
