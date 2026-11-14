@@ -129,8 +129,8 @@ either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t
   on an imposed grid with $x > 1$. The queries were "batched IMED bandit fixed batch grid
   asymptotically optimal Indexed Minimum Empirical Divergence batches" and "bandit batches
   imposed by environment unknown batch sizes asymptotic regret constant x^2 explore two batches
-  ahead". The nearest hit was a search-result snippet of Kalkanlı–Özgür (arXiv:2110.00158), not
-  read. It reports that batched Thompson sampling keeps its sequential asymptotics when batch sizes
+  ahead". The nearest hit was a search-result snippet of [KO21b] (to be checked), not read. It
+  reports that batched Thompson sampling keeps its sequential asymptotics when batch sizes
   grow subexponentially. That regime is the $x = 1$ side, not this one. A negative search is weak
   evidence. The answer is not known to the proposer.
 
