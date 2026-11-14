@@ -79,7 +79,8 @@ and `scripts/agent.sh` refuses to start without it.
    `.agents/summary.md` (a regular file). The loop never runs git or lake in the agent's clone and
    **never opens a file of the output directory as itself**: it reads each one as the agent user
    (`sudo -u incognita-agent head -c`, after `test -f` and `! test -L`: a regular file, not a link
-   nor a FIFO; `out_read` in `scripts/lib.sh`), copies the bundle the same way (at most
+   nor a FIFO; `out_read` in `scripts/lib.sh`; any entry there that is not a regular file makes it
+   keep nothing: `out_irregular`), copies the bundle the same way (at most
    `INCOGNITA_BUNDLE_MAX` bytes), fetches it into its own clone (`transfer.fsckObjects`), checks
    the whitelist on `git diff --raw -z --no-renames`, and pushes with its own token. Uncommitted
    work is dropped.
