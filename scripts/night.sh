@@ -84,6 +84,7 @@ fi
 # ---------------------------------------------------------------- the night report (basic)
 iso() { date -u -d "@$1" +%Y-%m-%dT%H:%M:%SZ; }
 ev() { [ -f "$NIGHT_DIR/events.tsv" ] && awk -F'\t' -v k="$1" '$2 == k' "$NIGHT_DIR/events.tsv"; }
+or_none() { local x; x=$(cat); if [ -n "$x" ]; then printf '%s\n' "$x"; else echo "(none)"; fi; }
 write_report() {
   local f=$INCOGNITA_LOGS/$INCOGNITA_NIGHT-report.md end merged n title body role p
   end=$(now)
@@ -98,7 +99,7 @@ write_report() {
 
     echo "## 1. Decisions waiting for the owner"
     echo
-    ghr pr list --state open --label needs-human --limit 200 --json number,title,url \
+    { ghr pr list --state open --label needs-human --limit 200 --json number,title,url \
       --jq '.[] | "- needs-human: [#\(.number)](\(.url)) \(.title)"' 2>/dev/null
     ev owner-merge | awk -F'\t' '{ print $4 "\t" $5 }' | sort -u -k1,1n | while IFS=$'\t' read -r n why; do
       [ "$(gh pr view "$n" --json state --jq .state 2>/dev/null)" = OPEN ] && echo "- to merge by the owner: #$n ($why)"
@@ -106,6 +107,7 @@ write_report() {
     ghr pr list --state open --limit 200 --json number,title,headRefName,isCrossRepository \
       --jq '.[] | select(.isCrossRepository == false and (.headRefName | startswith("agent/") | not)) | "- human pull request open: #\(.number) \(.title)"' 2>/dev/null
     ev ask-owner | awk -F'\t' '{ print "- question (from #" $4 ", " $3 "): " $5 }'
+    } | or_none
     echo
 
     echo "## 2. Papers accepted tonight"
@@ -118,7 +120,7 @@ write_report() {
             show_main "papers/$p/paper.tex" | sed -n '/\\begin{abstract}/,/\\end{abstract}/p' | sed '1d;$d' | head -n 3 | sed 's/^/  > /'
           done
           echo "  - PDF: artifact of the CI run of $url (tab Checks)"
-        done
+        done | or_none
     echo
 
     echo "## 3. Statements frozen tonight"
@@ -127,7 +129,7 @@ write_report() {
       | while IFS=$'\t' read -r n url title; do
           echo "- [#$n]($url) $title"
           gh pr view "$n" --json files --jq '.files[].path | select(startswith("Statements/") and endswith(".lean"))' 2>/dev/null | sed 's/^/  - `/; s/$/`/'
-        done
+        done | or_none
     echo
 
     echo "## 4. Results verified tonight"
@@ -135,13 +137,13 @@ write_report() {
     if [ -s "$NIGHT_DIR/audit-end.txt" ]; then
       awk 'NR == FNR { s[$1 " " $2] = $3; next } $3 == "proved" && s[$1 " " $2] != "proved" { print "- `" $1 " " $2 "` proved" }
            $3 == "refuted" && s[$1 " " $2] != "refuted" { print "- `" $1 " " $2 "` REFUTED" }' \
-        "$NIGHT_DIR/audit-start.txt" "$NIGHT_DIR/audit-end.txt" 2>/dev/null
+        "$NIGHT_DIR/audit-start.txt" "$NIGHT_DIR/audit-end.txt" 2>/dev/null | or_none
     else echo "(no frozen statement, or the audit of main is unknown)"; fi
     echo
 
     echo "## 5. Papers rejected tonight"
     echo
-    ev rejected | awk -F'\t' '{ print "- #" $4 ": " $5 }'
+    ev rejected | awk -F'\t' '{ print "- #" $4 ": " $5 }' | or_none
     echo
 
     echo "## 6. Machine statistics"
@@ -177,7 +179,9 @@ write_report() {
   fi
 }
 
-if [ -n "$FAILED" ]; then
+if [ -n "$FAILED" ] && is_dry; then
+  log "dry run: startup checks failed (above); the dry pass runs anyway"
+elif [ -n "$FAILED" ]; then
   STOP_REASON="startup checks failed"
   record_event stop - - "startup checks failed"
   write_report

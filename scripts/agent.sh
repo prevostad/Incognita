@@ -145,6 +145,10 @@ case "$role:$target" in
       review-pr) [ "$kind" = generic ] || finish skip "not-a-generic-pr" ;;
     esac
     paper=$(paper_of_ref "$H" | head -n 1)
+    case "$pr_role" in
+      prove|formalize-statements) paper=$(paper_of_num "$(paper_num "$pr_target")") || paper=$pr_target ;;
+      revise) [[ "$pr_target" =~ ^P[0-9]+- ]] && paper=$pr_target ;;
+    esac
     base=$H
     if [ "$role" = fix-pr ]; then
       case "$pr_role" in
@@ -283,36 +287,37 @@ if is_review_role "$role"; then
 - A question only the owner can answer goes on its own line, starting with \`Ask-owner: \`; the script forwards it."
 else
   contract="- Commit your work on the current branch (\`incognita-task\`). You cannot push: the script pushes.
-- Then write \`.agents/summary.md\` (not committed): it becomes the pull request's description${pr:+ comment}.
+- Then write \`.agents/summary.md\` (not committed): it becomes $( [ -n "$pr" ] && echo "the comment of this round on the pull request" || echo "the description of the new pull request" ).
 - The script refuses the whole result if a commit changes a path your role may not change (see AGENTS.md;
   human-owned paths, dot-files, \`CLAUDE.md\`/\`AGENTS.md\`, symbolic links, files over 1 MB, a frozen
   statement that is not an addition), and keeps nothing that is not committed."
 fi
 end_local=$(date -d "@$(( $(now) + timeout_s ))" '+%H:%M' 2>/dev/null || echo "?")
-cat > "$ctx/task.md" <<EOF
-# Task (written by scripts/agent.sh)
-
-- Role: \`$role\`
-- Target: \`$target\`
-$( [ -n "$pr" ] && echo "- Pull request: #$pr, head \`$H\` (branch \`$branch\`), opened by the role \`$pr_role\` for \`$pr_target\`" )
-$( [ -n "$paper" ] && echo "- Paper: \`$paper\` (\`papers/$paper/\`)" )
-$( [ -n "$roadmap" ] && echo "- Roadmap: \`$roadmap\` (\`roadmaps/$roadmap/ROADMAP.md\`, \`roadmaps/$roadmap/KNOWN.md\`)" )
-- Base of your branch: \`$base\`; \`origin/main\` is \`$M\`
-- Deadline for this task: $end_local (server time), $(( timeout_s / 60 )) minutes from the start; the session is stopped then.
-- Model: \`$model\`, effort \`$effort\`, at most $turns turns
-- Context files in \`.agents/\`: $(for f in $files; do printf '`%s` ' "$f"; done)
-
-## Situation
-$situation
-## Output (enforced by the script)
-$contract
-EOF
-sed -i '/^$/N;/^\n$/D' "$ctx/task.md" 2>/dev/null || true
+{
+  echo "# Task (written by scripts/agent.sh)"
+  echo
+  echo "- Role: \`$role\`"
+  echo "- Target: \`$target\`"
+  [ -n "$pr" ] && echo "- Pull request: #$pr, head \`$H\` (branch \`$branch\`), opened by the role \`$pr_role\` for \`$pr_target\`"
+  [ -n "$paper" ] && echo "- Paper: \`$paper\` (\`papers/$paper/\`)"
+  [ -n "$roadmap" ] && echo "- Roadmap: \`$roadmap\` (\`roadmaps/$roadmap/ROADMAP.md\`, \`roadmaps/$roadmap/KNOWN.md\`)"
+  echo "- Base of your branch: \`$base\`; \`origin/main\` is \`$M\`"
+  echo "- Deadline for this task: $end_local (server time), $(( timeout_s / 60 )) minutes from the start; the session is stopped then."
+  echo "- Model: \`$model\`, effort \`$effort\`, at most $turns turns"
+  echo "- Context files in \`.agents/\`: $(for f in $files; do printf '`%s` ' "$f"; done)"
+  echo
+  echo "## Situation"
+  printf '%s' "$situation"
+  echo
+  echo "## Output (enforced by the script)"
+  echo "$contract"
+} > "$ctx/task.md"
 
 # ---------------------------------------------------------------- prompt
 prompt=$in/prompt.md
 if ! repo_git show "$M:agents/roles/$role.md" > "$tmp/role.md" 2>/dev/null; then
-  finish fail "no-prompt agents/roles/$role.md"
+  if is_dry; then log "dry run: no agents/roles/$role.md on main (the session would fail)"; echo "(missing)" > "$tmp/role.md"
+  else finish fail "no-prompt agents/roles/$role.md"; fi
 fi
 { sed -e "s|{TARGET}|$target|g" "$tmp/role.md"
   printf '\n\n---\nThe script wrote `.agents/task.md` for this task: read it first. It overrides nothing above;\nit gives the target, the deadline, the context files, and what the script does with your output.\n'
@@ -350,11 +355,18 @@ fi
 set_activity "$role $target (claude, until $end_local)"
 log "== session: $role $target, model $model, ${timeout_s}s${pr:+, PR #$pr head ${H:0:12}}"
 t0=$(now)
-run_sandboxed "incognita-$task" "$timeout_s" yes - -- \
-  "$INCOGNITA_AGENT_HOME/.local/bin/claude" -p --output-format json --model "$model" --effort "$effort" \
-  --max-turns "$turns" --permission-mode acceptEdits --allowedTools "$tools" \
-  < "$prompt" 2> "$tmp/session.err" | head -c 8000000 > "$tmp/result.json"
-rc=${PIPESTATUS[0]}
+# In the background, then `wait`: a TERM (night.sh stopping) runs our trap at once, which stops the
+# unit (stop_sandbox), instead of waiting for the end of the session.
+SANDBOX_UNIT="incognita-$task"
+{ run_sandboxed "incognita-$task" "$timeout_s" yes - -- \
+    "$INCOGNITA_AGENT_HOME/.local/bin/claude" -p --output-format json --model "$model" --effort "$effort" \
+    --max-turns "$turns" --permission-mode acceptEdits --allowedTools "$tools" \
+    < "$prompt" 2> "$tmp/session.err"
+  echo $? > "$tmp/rc"
+} | head -c 8000000 > "$tmp/result.json" &
+wait $!
+SANDBOX_UNIT=""
+rc=$(cat "$tmp/rc" 2>/dev/null || echo 1)
 elapsed=$(( $(now) - t0 ))
 counter_inc tasks-total >/dev/null
 

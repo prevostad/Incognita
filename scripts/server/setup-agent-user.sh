@@ -61,7 +61,7 @@ sandbox_test() {
       echo "id: $(id)"
       echo "claude: $(claude --version 2>&1 | head -n 1)"
       echo "lake: $(lake --version 2>&1 | head -n 1)"
-      echo "latexmk: $(latexmk -v 2>/dev/null | sed -n 2p)"
+      echo "latexmk: $(latexmk -v 2>/dev/null | grep -m1 Version)"
       echo "python3: $(python3 -c "import numpy, scipy, matplotlib; print(\"numpy\", numpy.__version__)" 2>&1)"
       if ls "$0" >/dev/null 2>&1; then echo "FAIL: the loop user home is readable"; else echo "ok: no access to $0"; fi
       if touch /usr/incognita-test 2>/dev/null; then echo "FAIL: /usr is writable"; else echo "ok: system read-only"; fi

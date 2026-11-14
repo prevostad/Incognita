@@ -20,14 +20,25 @@ if ! is_dry && [ -z "${INCOGNITA_LOGGING:-}" ]; then exec > >(tee -a "$LOG") 2>&
 trap 'log "error: exit $? at line $LINENO: $BASH_COMMAND"' ERR
 
 # Heartbeat: one line a minute with the current activity (read by night.sh and by the owner).
-( while kill -0 "$$" 2>/dev/null; do
-    printf '%s %s pid=%s %s\n' "$(now)" "$(date '+%F %T')" "$$" "$(cat "$INCOGNITA_HOME/activity" 2>/dev/null)" \
-      > "$INCOGNITA_HOME/heartbeat" 2>/dev/null
-    sleep 60
-  done ) &
-HB=$!
+# Detached from our output, so that nothing waits for its sleep.
+HB=""
+if ! is_dry; then
+  ( while kill -0 "$$" 2>/dev/null; do
+      printf '%s %s pid=%s %s\n' "$(now)" "$(date '+%F %T')" "$$" "$(cat "$INCOGNITA_HOME/activity" 2>/dev/null)" \
+        > "$INCOGNITA_HOME/heartbeat" 2>/dev/null
+      sleep 60
+    done ) </dev/null >/dev/null 2>&1 &
+  HB=$!
+fi
 work=$(mktemp -d)
-trap 'kill "$HB" 2>/dev/null; rm -rf "$work"; set_activity stopped' EXIT
+trap '[ -n "$HB" ] && kill "$HB" 2>/dev/null; rm -rf "$work"; set_activity stopped' EXIT
+AGENT_PID=""
+on_term() {
+  log "== loop terminated by a signal"
+  if [ -n "$AGENT_PID" ]; then kill -TERM "$AGENT_PID" 2>/dev/null; wait "$AGENT_PID" 2>/dev/null; fi
+  exit 143
+}
+trap on_term TERM INT
 
 PRS=$work/prs.json ROWS=$work/rows.tsv BUSY=$work/busy.txt
 declare -A STS=()
@@ -113,8 +124,8 @@ pick() {  # role target head note: select this task if allowed and it fits befor
   T_ROLE=$1 T_TARGET=$2 T_HEAD=$3 T_NOTE=$4 T_BUDGET=$b
   return 0
 }
-revise_rounds() {  # pr: revision rounds done (trusted "revise" comments)
-  trusted_comments "$1" | jq '[.[] | select(.kind == "revise")] | length'
+revise_rounds() {  # pr: "<rounds pushed> <rounds without change>" (trusted comments)
+  trusted_comments "$1" | jq -r '"\([.[] | select(.kind == "revise")] | length) \([.[] | select(.kind == "revise-nochange")] | length)"'
 }
 
 # ---------------------------------------------------------------- merge (D13, D15): one per pass
@@ -143,7 +154,7 @@ try_merge() {
     bad=""
     cats=$(repo_git diff --raw --no-renames --no-abbrev "$mb" "$H" \
       | awk -F'\t' '{ split($1, m, " "); print m[5] "\t" $2 }' \
-      | while IFS=$'\t' read -r st path; do path_category "$kind" "$path" "$st"; done | sort -u)
+      | while IFS=$'\t' read -r st path; do path_category "$kind" "$path" "$st"; done | sort -u | tr '\n' ' ')
     for c in $cats; do
       { [ "$c" != other ] && automerge_enabled "$c"; } || bad="$bad $c"
     done
@@ -189,18 +200,6 @@ try_merge() {
 }
 
 # ---------------------------------------------------------------- mechanical rebase (D13)
-resolve_imports() {  # worktree file: sorted union of the import lines of both sides
-  local wt=$1 f=$2 ours theirs
-  ours=$(git -C "$wt" show ":2:$f") || return 1
-  theirs=$(git -C "$wt" show ":3:$f") || return 1
-  { printf '%s\n' "$ours" | awk '/^(public )?import /{exit} {print}'
-    { printf '%s\n' "$ours"; printf '%s\n' "$theirs"; } | grep -E '^(public )?import ' | LC_ALL=C sort -u
-  } > "$wt/$f"
-}
-diff_signature() {  # base head: "mode blob status path" of every changed path, sorted
-  repo_git diff --raw --no-renames --no-abbrev "$1" "$2" \
-    | awk -F'\t' '{ split($1, m, " "); print m[2], m[4], m[5], $2 }' | LC_ALL=C sort
-}
 mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error, 3 nothing to do
   local n=$1 h=$2 br=$3 wt=$INCOGNITA_HOME/work/rebase-$1 gd newh i conflicted f
   fetch_pr_head "$n" "$h" || return 2
@@ -365,8 +364,11 @@ choose_task() {
       fi
       if [ "$sc" = major ] || [ "$sc" = minor ] || [ "$pv" = major ] || [ "$pv" = minor ]; then
         rounds=$(revise_rounds "$n") || continue
-        if [ "$rounds" -ge "$INCOGNITA_REVISION_ROUNDS" ]; then
-          close_rejected "$n" "$H" "gaps remain after $rounds revision rounds"; continue
+        set -- $rounds
+        # D2: at most INCOGNITA_REVISION_ROUNDS rounds; rounds that changed nothing count half.
+        if [ "${1:-0}" -ge "$INCOGNITA_REVISION_ROUNDS" ] \
+            || [ $(( ${1:-0} + ${2:-0} )) -ge $(( 2 * INCOGNITA_REVISION_ROUNDS )) ]; then
+          close_rejected "$n" "$H" "gaps remain after ${1:-0} revision rounds (${2:-0} without change)"; continue
         fi
         fixes_list="$fixes_list revise:$n:$H:referees"
         continue
@@ -492,8 +494,12 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 3 logged out
   case "$T_ROLE" in garden|bibliographer)
     counter_set since-rotation 0; printf '%s\n' "$T_ROLE" > "$INCOGNITA_STATE/last-rotation" ;;
   esac
+  # In the background, then `wait`: a TERM reaches our trap at once, which stops agent.sh (and its unit).
   INCOGNITA_HEAD=$T_HEAD INCOGNITA_TASK_TIMEOUT=$T_BUDGET INCOGNITA_NOTE=$T_NOTE \
-    bash "$INCOGNITA_SCRIPTS/agent.sh" "$T_ROLE" "$T_TARGET" || rc=$?
+    bash "$INCOGNITA_SCRIPTS/agent.sh" "$T_ROLE" "$T_TARGET" &
+  AGENT_PID=$!
+  wait "$AGENT_PID" || rc=$?
+  AGENT_PID=""
   case "$rc" in
     0) ;;
     3) return 3 ;;

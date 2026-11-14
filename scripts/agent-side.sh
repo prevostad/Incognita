@@ -62,7 +62,7 @@ EOF
   g checkout -q -f -B incognita-task "$base"
   g clean -q -ffdx -e /.lake/
   # Other local branches of earlier tasks are dropped.
-  g for-each-ref --format='%(refname:short)' refs/heads | grep -vx incognita-task \
+  g for-each-ref --format='%(refname:short)' refs/heads | { grep -vx incognita-task || true; } \
     | while read -r b; do g branch -q -D "$b" || true; done
   g update-ref -d refs/incognita/out 2>/dev/null || true
   mkdir -p .agents

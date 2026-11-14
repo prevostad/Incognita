@@ -117,6 +117,7 @@ is_parked() { [ -e "$INCOGNITA_STATE/parked/$(key_of "$1 $2")" ]; }
 # record_attempt <role> <target> <ok|fail|skip> <outcome...>
 record_attempt() {
   local role=$1 target=$2 kind=$3; shift 3
+  is_dry && return 0   # a dry run leaves the state alone
   printf '%s %s %s\n' "$(now)" "$kind" "$*" >> "$NIGHT_DIR/attempts/$(key_of "$role $target")"
   if [ "$kind" = fail ]; then
     local n
@@ -138,6 +139,7 @@ night_fails() {
 }
 # record_event <kind> <role> <target> <detail...>   (TSV, for the night report)
 record_event() {
+  is_dry && return 0
   local kind=$1 role=${2:--} target=${3:--}; shift 3 || shift $#
   local detail
   detail=$(printf '%s' "$*" | tr '\t\n\r' '   ' | cut -c1-500)
@@ -471,9 +473,14 @@ role_allows() {
       case "$role" in write-paper|revise|formalize-statements|prove|garden|fix-main) return 0 ;; esac ;;
   esac
   case "$role" in
-    write-paper|revise)
+    write-paper)   # its one new paper directory is checked by check_paths
       case "$path" in
-        papers/"$paper"/*) return 0 ;;
+        papers/*/*) return 0 ;;
+        literature/*) [ "$st" != D ] && return 0 ;;
+      esac ;;
+    revise)
+      case "$path" in
+        papers/"$paper"/*) [ -n "$paper" ] && return 0 ;;
         literature/*) [ "$st" != D ] && return 0 ;;
       esac ;;
     formalize-statements)
@@ -565,6 +572,21 @@ check_paths() {
     log "refused: the diff contains what looks like a Claude token"; bad=1
   fi
   return "$bad"
+}
+
+# Mechanical rebase helpers (D13). resolve_imports <worktree> <file>: during a conflicted rebase, the
+# file becomes the header of "ours" followed by the sorted union of the import lines of both sides.
+resolve_imports() {
+  local wt=$1 f=$2 ours theirs
+  ours=$(git -C "$wt" show ":2:$f") || return 1
+  theirs=$(git -C "$wt" show ":3:$f") || return 1
+  { printf '%s\n' "$ours" | awk '/^(public )?import /{exit} {print}'
+    { printf '%s\n' "$ours"; printf '%s\n' "$theirs"; } | grep -E '^(public )?import ' | LC_ALL=C sort -u
+  } > "$wt/$f"
+}
+diff_signature() {  # base head: "mode blob status path" of every changed path, sorted
+  repo_git diff --raw --no-renames --no-abbrev "$1" "$2" \
+    | awk -F'\t' '{ split($1, m, " "); print m[2], m[4], m[5], $2 }' | LC_ALL=C sort
 }
 
 # Merge categories (D15) of a path: papers literature proofs exploration statements other.
