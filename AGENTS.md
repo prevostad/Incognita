@@ -364,7 +364,7 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
   criterion (scope: novelty, roadmap fit, interest, bibliography, attribution, presentation;
   proofs: correctness, completeness, ready for Lean), its state (✅ no defect or P only, ⚠️ G or L,
   ❌ F) and a one-sentence summary naming the defect IDs. The scope referee also gives an
-  **interest score** from 1 to 5 (significance only; the scale is in its role file). The rubric is
+  **interest score** from 1 to 5: the significance of the result for the research community, as an expert of the field would judge it, not for the owner or the roadmap (the scale is in its role file). The rubric is
   a summary: the verdict is still computed from the defect table.
 - **Defect classes.** **F** fatal: the main statement is false, already known, a corollary of
   KNOWN.md or of the literature, out of the roadmap, or re-derives a private entry. **G** gap: an

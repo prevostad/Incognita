@@ -107,11 +107,14 @@ Verdict, computed: `reject` if any F; `major` if any G or L; otherwise `accept` 
 an accepted paper keeps no error). Your report, in this order (IDs `SC<round>.<n>`). It starts with
 a **rubric**, one row per criterion, for the reader who wants the state at a glance: ✅ no defect
 (or P only), ⚠️ G or L defects to fix, ❌ an F defect; the summary is one sentence and names the
-defect IDs. The **interest score** rates significance only, 1 to 5: 1 a correct but minor result,
-just above the routine bar of criterion 7; 2 a useful building block for the library; 3 a solid
-answer to a direction; 4 closes a direction, or would be accepted as it is by a good journal of
-the field; 5 a result that would interest the field broadly. Justify it in the summary. It never
-changes the verdict, and it is not a reward: do not inflate it.
+defect IDs. The **interest score** rates the significance of the result for the research community,
+as an expert of the field would judge it: not for the owner, not for the roadmap or this library.
+From 1 to 5: 1 a correct but minor result, of interest to few specialists; 2 a useful technical
+result or tool that specialists of the topic would reuse; 3 a solid contribution, of the level of a
+good specialized journal or conference of the field; 4 a strong result, of the level of the best
+venues of the field; 5 a result of interest beyond its field. Justify it in the summary by what the
+result changes in the published literature. It never changes the verdict, and it is not a reward:
+do not inflate it.
 
 ```
 Verdict: accept | major | reject
