@@ -314,7 +314,7 @@ print(week[0], week[1], session[0], session[1])
 # ("HTTP 403", "no token"...), when it cannot be read either way.
 usage_now() {
   local age=${1:-0} f=$INCOGNITA_STATE/usage-last t kind rest tmp code line
-  if [ "$age" -gt 0 ] && read -r t kind rest < "$f" 2>/dev/null && [[ "$t" =~ ^[0-9]+$ ]] \
+  if [ "$age" -gt 0 ] && read -r t kind rest 2>/dev/null < "$f" && [[ "$t" =~ ^[0-9]+$ ]] \
       && [ $(( $(now) - t )) -le "$age" ]; then
     echo "$rest"
     [ "$kind" = ok ]; return

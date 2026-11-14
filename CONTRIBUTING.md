@@ -190,13 +190,24 @@ account, GitHub cannot tell an agent from the owner; trust comes from the loop: 
 verdicts it posted itself (hidden markers), binds each verdict to the reviewed commit, and runs
 agents as a separate Unix user without GitHub credentials.
 
-## 8. Decisions pending (as of 2026-11-14)
+## 8. Decisions
+
+Taken on 2026-11-14:
+
+- StochasticBandits and TransferBandits are approved, with their KNOWN.md reviewed. They list
+  published results only: the owner's unpublished work is not put in KNOWN.md, and agents may find
+  it on their own (the owner's choice). A KNOWN entry is not formalised by itself: what is
+  formalised is the "Known results to formalise" items (F) and the accepted papers.
+
+Pending (as of 2026-11-14):
 
 - Whether agent papers that extend the owner's unpublished results are public (priority,
   double-blind review).
 - P000 of BatchedBandits: definitions written by agents, or a port of the owner's private Lean
   definitions.
-- What of the KNOWN.md draft is published.
+- What of the KNOWN.md draft of BatchedBandits is published.
+- Papers written by the owner: the loop referees only pull requests from `agent/*` branches; a
+  paper of the owner would need a small addition to the loop (not done yet).
 
 ## Attribution
 

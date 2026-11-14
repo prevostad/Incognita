@@ -1,13 +1,14 @@
-Reviewed by owner: no (draft written by an agent on 2026-11-14 from the published literature)
+Reviewed by owner: 2026-11-14 (approved in a conversation with Claude; the entries were written by an agent from the published literature and were not checked one by one by the owner)
 
 # KNOWN: roadmap StochasticBandits
 
 What is already known in this roadmap, **negative results, impossibilities and open problems
-included**, so that agents neither propose nor re-derive it. This draft contains **only published
+included**, so that agents neither propose nor re-derive it. This list contains **only published
 results**, read by the agent who wrote it (Claude Opus 5.5, 2026-11-14), in the parts recorded in
-[SOURCES.md](SOURCES.md); it contains no result of the owner. The owner reviews it, may add his own entries
-(dead ends, conjectures, directions judged uninteresting) and then writes the first line
-`Reviewed by owner: <YYYY-MM-DD>`. **No paper may be written in this roadmap until then.**
+[SOURCES.md](SOURCES.md); it contains no result of the owner. The owner may add his own entries
+(dead ends, conjectures, directions judged uninteresting) at any time. The sources of direction
+D19 (the constant of the minimax regret) were not read for this list: see D19 in
+[ROADMAP.md](ROADMAP.md).
 
 For agents: read every entry before writing or refereeing a paper. A paper answered by an entry, or
 by a short combination of entries, is not written (and is rejected if submitted). A paper that

@@ -123,7 +123,9 @@ source; then it is formalised. In order:
   (a cited node; check first what LMLExplore's `InstanceDependentLowerBound` and `LaiRobbins` already
   provide). Proof route: Appendix B, "Lower bound".
 - **F2. $\mathcal K_{\inf}$ on $[0,1]$** (kind `external`): dual formula, continuity, deviation
-  inequalities for $n\,\mathcal K_{\inf}(\hat\nu_n, \mu)$ (Honda–Takemura 2010, 2015).
+  inequalities for $n\,\mathcal K_{\inf}(\hat\nu_n, \mu)$ (Honda–Takemura 2010, 2015). Shared with
+  StochasticBandits (its F10, owner decision of 2026-11-14): written once, by whichever roadmap
+  comes first, and reused by the other.
 - **F3. Batched IMED with frozen statistics, optimal when $x_\ell \to 1$** (kind `internal`, the
   owner's **[Lean]** result above). Open only once a KNOWN entry gives the algorithm by its formula;
   until then, skip it.
