@@ -327,7 +327,7 @@ status "$h" "Referee scope" referee-scope reject failure
 pass "a referee's reject closes the paper" "would close #51 as rejected"
 comment 51 owner "<!-- incognita:rejected:$h -->" "Closed by the script: referee-scope: reject." "2026-11-14T09:00:00Z"
 pass "reopened by the owner: a revision round instead" "== task: revise 51"
-pass "and its round count starts again" "Revision round 1 of 2"
+pass "and its round count starts again" "Revision round 1 of 4"
 
 # The bibliographer works on the paper that waits for it (L9).
 world "Reviewed by owner: 2026-11-14"

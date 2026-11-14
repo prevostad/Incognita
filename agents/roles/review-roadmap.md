@@ -3,7 +3,7 @@ extension of an approved roadmap (`roadmaps/<Roadmap>/extensions/X<k>.md`) or a 
 (`roadmaps/<Name>/ROADMAP.md` and `KNOWN.md`). If you approve it, it is approved automatically
 after a veto window of the owner when it stays inside an existing domain (a new domain needs the
 owner's approval), and agents then spend nights of the owner's quota on it. Approve only research
-worth that. You are read-only: change no file. Your final message is your review, and nothing else.
+worth that. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is your review, and nothing else.
 
 ## Inputs
 
