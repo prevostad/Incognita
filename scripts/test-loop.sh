@@ -71,9 +71,28 @@ pr() {
       headRefName: "agent/\($r)-\($n)", headRefOid: $h, isCrossRepository: false, isDraft: $d,
       labels: (if $d then [{name: "incomplete"}] else [] end), mergeable: "MERGEABLE", author: {login: "owner"},
       baseRefName: "main", createdAt: "", updatedAt: "",
-      statusCheckRollup: [{name: "Build and check", status: "COMPLETED", conclusion: "SUCCESS"}]}]' \
+      statusCheckRollup: ([{name: "Build and check", status: "COMPLETED", conclusion: "SUCCESS"}]
+        + (if $r == "write-paper" or $r == "revise"
+           then [{name: "Compile papers", status: "COMPLETED", conclusion: "SUCCESS"}] else [] end))}]' \
     "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
   echo "$sha"
+}
+check() {  # <pr> <check name> <conclusion>: set the conclusion of a check of a PR
+  jq --argjson n "$1" --arg c "$2" --arg v "$3" \
+    'map(if .number == $n then .statusCheckRollup |= ([.[] | select(.name != $c)] + [{name: $c, status: "COMPLETED", conclusion: $v}]) else . end)' \
+    "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
+}
+on_main() {  # <path> <content>: commit a file on main (origin) and refresh the loop's clone
+  cd "$t/w" || exit 1
+  mkdir -p "$(dirname "$1")"; printf '%s\n' "$2" > "$1"
+  git add -A; git commit -qm "main: $1"; git push -q "$t/origin.git" main
+}
+nopass() {  # the dry pass must NOT print this fragment
+  local out
+  out=$(cd "$t/repo" && INCOGNITA_REPO=$t/repo INCOGNITA_HOME=$t/home INCOGNITA_GH_REPO=o/r INCOGNITA_DRY_RUN=1 \
+    INCOGNITA_DEADLINE_EPOCH=$(( $(date +%s) + 36000 )) bash "$here/loop.sh" 2>&1)
+  if [[ "$out" != *"$2"* && "$out" == *"dry run: one pass done"* ]]; then echo "ok   $1"
+  else echo "FAIL $1 (did not want \"$2\", or the pass did not end)"; printf '%s\n' "$out" | grep -E '== task|would|error|fatal' | head -n 5; fails=$(( fails + 1 )); fi
 }
 status() {  # sha context role verdict state
   local f=$FAKE/statuses-$1.json
@@ -91,6 +110,8 @@ pass() {  # expected "== task: ..." or "would merge" fragment
 
 world "Reviewed by owner: 2026-11-14"
 pass "an approved, reviewed roadmap gets a paper" "== task: write-paper BB"
+pass "task.md gives the number of the new paper" 'a new directory `papers/P000-<slug>/`'
+pass "task.md gives the roadmap and its KNOWN.md" 'KNOWN.md: `roadmaps/BB/KNOWN.md`'
 world "Reviewed by owner: no (draft)"
 pass "KNOWN not reviewed: no paper, fallback bibliographer" "== task: bibliographer -"
 world "Reviewed by owner: 2026-11-14" P001-old
@@ -124,6 +145,46 @@ pass "a workflow's status is not trusted: review-pr" "== task: review-pr 9"
 world "Reviewed by owner: 2026-11-14"
 h=$(pr 10 prove P001-x true)
 pass "an incomplete draft is continued" "== task: fix-pr 10"
+
+# Papers: the check "Compile papers" (workflow Papers) counts; repairs of paper PRs go to revise.
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 11 write-paper BB true)
+pass "an incomplete paper draft is continued by revise" "== task: revise 11"
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 12 write-paper BB)
+check 12 "Build and check" FAILURE
+pass "a paper whose build failed: revise (not fix-pr)" "== task: revise 12"
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 13 write-paper BB)
+check 13 "Compile papers" FAILURE
+status "$h" "Referee scope" referee-scope accept success
+status "$h" "Referee proofs" referee-proofs accept success
+status "$h" "Incognita review" referees accept success
+nopass "accepted but LaTeX fails: not merged" "would merge #13"
+pass "accepted but LaTeX fails: revise" "== task: revise 13"
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 14 write-paper BB)
+jq 'map(.statusCheckRollup |= map(select(.name != "Compile papers")))' "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
+nopass "Compile papers missing: no referee yet" "== task: referee-scope 14"
+
+# Errata and statement corrections (AGENTS.md §6.6).
+world "Reviewed by owner: 2026-11-14" P001-old
+on_main papers/P001-old/errata.md "$(printf '## E1 (d)\n- Node: thm:main')"
+pass "a disputed paper is revised" "== task: revise P001-old"
+pass "task.md names the errata entries" "for the errata entries E1"
+world "Reviewed by owner: 2026-11-14" P001-old
+on_main Statements/P001/main_thm.lock "x"
+on_main papers/P001-old/errata.md "$(printf '## E1 (d)\n- Node: thm:main\nRevised in the version of d: x')"
+pass "an erratum revised in a new version: corrected statements to freeze" "== task: formalize-statements P001-old"
+world "Reviewed by owner: 2026-11-14" P001-old
+on_main Statements/P001/main_thm.lock "x"
+on_main papers/P001-old/statement-corrections.md "$(printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.main_thm')"
+pass "a statement correction: corrected statement to freeze" "== task: formalize-statements P001-old"
+pass "task.md names the entries to resolve" "Entries to resolve: SC1"
+world "Reviewed by owner: 2026-11-14" P001-old
+on_main Statements/P001/main_thm.lock "x"
+on_main papers/P001-old/statement-corrections.md "$(printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.main_thm\nResolved by Incognita.Statements.P001.main_thm_v2')"
+nopass "a resolved correction needs nothing" "== task: formalize-statements P001-old"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

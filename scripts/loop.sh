@@ -107,10 +107,12 @@ can_try() {  # role target: not parked, fewer than INCOGNITA_MAX_FAILS failures 
   [ "$(night_fails "$1" "$2")" -lt "$INCOGNITA_MAX_FAILS" ]
 }
 task_budget() {  # role: seconds a task of this role may take now (0 if it does not fit)
-  local b max min
+  local b max min v
   b=$(( $(remaining) - 300 ))
   if is_review_role "$1"; then max=$INCOGNITA_TIMEOUT_REVIEW min=$INCOGNITA_MIN_REVIEW
   else max=$INCOGNITA_TIMEOUT_WRITE min=$INCOGNITA_MIN_WRITE; fi
+  v=INCOGNITA_TIMEOUT_$(printf '%s' "$1" | tr 'a-z-' 'A-Z_')   # per-role override, as in agent.sh
+  [ -n "${!v:-}" ] && max=${!v}
   [ "$b" -lt "$min" ] && { echo 0; return; }
   [ "$b" -gt "$max" ] && b=$max
   echo "$b"
@@ -259,20 +261,27 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
 }
 
 # ---------------------------------------------------------------- what to do (SPEC 3.4, D5, D6)
-paper_open_errata() {  # paper: disputed and not yet revised (errata.md with a line "Status: open")
-  show_main "papers/$1/errata.md" | grep -qiE '^status:[[:space:]]*open'
+paper_open_errata() {  # paper: disputed, not yet revised (an errata entry with neither "Revised in" nor "Resolved by")
+  [ -n "$(disputed_entries "$1")" ]
 }
-statements_state() {  # paper: none | open | verified (from the audit status of main)
-  local n locks
+needs_statements() {  # paper: no frozen statement yet, or entries waiting for corrected statements
+  [ -z "$(locks_of "$1")" ] || [ -n "$(freeze_entries "$1")" ]
+}
+# statements_state <paper>: none | open | verified | settled, from the audit status of main. Frozen
+# statements superseded by a resolved erratum or correction (papers/README.md) do not count.
+# open: some statement is still open (prove has work); verified: all proved; settled: none open,
+# some refuted (the paper is disputed or its corrected statements are frozen).
+statements_state() {
+  local n locks sup
   locks=$(locks_of "$1")
   [ -n "$locks" ] || { echo none; return; }
   n=$(paper_num "$1")
   if [ "$AUDIT_OK" != 1 ]; then echo open; return; fi
-  if printf '%s\n' "$AUDIT" | awk -v n="$n" '{ k = $1; sub(/^P0*/, "", k); sub(/[^0-9].*/, "", k) } k == n && $3 != "proved" { f = 1 } END { exit !f }'; then
-    echo open
-  else
-    echo verified
-  fi
+  sup=$(superseded "$1" | tr '\n' ' ')
+  printf '%s\n' "$AUDIT" | awk -v n="$n" -v sup=" $sup " '
+    { k = $1; sub(/^P0*/, "", k); sub(/[^0-9].*/, "", k) }
+    k == n && index(sup, " " $2 " ") == 0 { seen = 1; if ($3 == "open") o = 1; else if ($3 == "refuted") r = 1 }
+    END { if (o || !seen) print "open"; else if (r) print "settled"; else print "verified" }'
 }
 accepted_unverified() {  # roadmap: papers on main not verified yet (D5 cap)
   local r=$1 p c=0
@@ -290,14 +299,20 @@ has_material() {  # something validated to garden
   for p in $(papers_on_main); do [ "$(meta_get "$p" kind)" != definitions ] && return 0; done
   [ -n "$(ls_main catalogue/results)" ]
 }
-bib_needed() {  # external papers without source notes, or results with novelty unchecked
+bib_needed() {  # external papers without source notes, or verified papers without an attribution audit
   local p src
   for p in $(papers_on_main); do
-    [ "$(meta_get "$p" kind)" = external ] || continue
-    src=$(meta_get "$p" source | tr -d '[]')
-    [ -n "$src" ] && ! repo_git cat-file -e "origin/main:literature/notes/$src.md" 2>/dev/null && return 0
+    if [ "$(meta_get "$p" kind)" = external ]; then
+      src=$(meta_get "$p" source | tr -d '[]')
+      [ -n "$src" ] && ! repo_git cat-file -e "origin/main:literature/notes/$src.md" 2>/dev/null && return 0
+    fi
+    # Novelty lives in catalogue/attribution/<prefix>.md (proof markers are additions only).
+    [ "$AUDIT_OK" = 1 ] && [ "$(meta_get "$p" kind)" = internal ] \
+      && [ "$(statements_state "$p")" = verified ] \
+      && ! repo_git cat-file -e "origin/main:catalogue/attribution/$(printf '%s' "$p" | sed -E 's/^(P[0-9]+).*/\1/').md" 2>/dev/null \
+      && return 0
   done
-  repo_git grep -q -E '^novelty[[:space:]]*=[[:space:]]*"unchecked"' origin/main -- catalogue/results 2>/dev/null
+  return 1
 }
 pick_rotation() {  # garden / bibliographer, alternately
   local first second r
@@ -324,7 +339,7 @@ pick_write_paper() {  # cap: fewer than this many papers in review in the roadma
 
 choose_task() {
   T_ROLE="" T_TARGET="" T_HEAD="" T_NOTE="" T_BUDGET=0
-  local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes
+  local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes fixer
   local fixes_list="" reviews_list=""
   # 1. main is red: one fix-main task.
   if [ "$MAIN_RED" = 1 ] && ! is_busy fix-pr main; then
@@ -335,6 +350,10 @@ choose_task() {
     has_label "$labels" needs-human || has_label "$labels" rejected && continue
     kind=$(pr_kind "$role")
     fixes=$(counter_get "fix-rounds $n")
+    # Repairs (failed build, conflict, incomplete draft): `revise` for a paper PR (a repair round,
+    # not a revision round), `fix-pr` for any other.
+    fixer=fix-pr
+    [ "$kind" = paper ] && fixer=revise
     if [ "$draft" = draft ]; then
       has_label "$labels" incomplete || continue
       if [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then
@@ -342,7 +361,7 @@ choose_task() {
         else escalate "$n" "still incomplete after $fixes rounds"; fi
         continue
       fi
-      fixes_list="$fixes_list fix-pr:$n:$H:incomplete"
+      fixes_list="$fixes_list $fixer:$n:$H:incomplete"
       continue
     fi
     cie=$(ci_effective "$H" "$ci")
@@ -352,7 +371,7 @@ choose_task() {
         else escalate "$n" "$fixes fix rounds without success"; fi
         continue
       fi
-      fixes_list="$fixes_list fix-pr:$n:$H:$([ "$cie" = failed ] && echo build || echo conflict)"
+      fixes_list="$fixes_list $fixer:$n:$H:$([ "$cie" = failed ] && echo build || echo conflict)"
       continue
     fi
     load_sts "$H" || continue
@@ -420,13 +439,15 @@ choose_task() {
       pick prove "$p" "" "" && return 0
     done
   fi
-  # 6. formalize-statements: accepted papers without frozen statements.
+  # 6. formalize-statements: accepted papers without frozen statements, or with corrected statements
+  #    to freeze (an erratum revised in a new version, a statement correction), not disputed.
   for p in $(papers_on_main); do
-    [ -z "$(locks_of "$p")" ] || continue
+    paper_open_errata "$p" && continue
+    needs_statements "$p" || continue
     is_busy formalize-statements "$p" && continue
     pick formalize-statements "$p" "" "" && return 0
   done
-  # 7. revise: disputed papers (errata with an open entry).
+  # 7. revise: disputed papers (an errata entry neither revised nor resolved).
   for p in $(papers_on_main); do
     paper_open_errata "$p" || continue
     is_busy revise "$p" && continue

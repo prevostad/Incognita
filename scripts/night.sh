@@ -119,7 +119,7 @@ write_report() {
           for p in $(gh pr view "$n" --json files --jq '.files[].path' 2>/dev/null | sed -n -E 's#^papers/([^/]+)/paper\.tex$#\1#p' | sort -u); do
             show_main "papers/$p/paper.tex" | sed -n '/\\begin{abstract}/,/\\end{abstract}/p' | sed '1d;$d' | head -n 3 | sed 's/^/  > /'
           done
-          echo "  - PDF: artifact of the CI run of $url (tab Checks)"
+          echo "  - PDF: artifact \`papers-pdf\` of the run of the workflow Papers on $url (tab Checks)"
         done | or_none
     echo
 
@@ -157,7 +157,8 @@ write_report() {
     echo
     echo "- merges: $(ev merge | wc -l | tr -d ' '); mechanical rebases: $(ev rebase | wc -l | tr -d ' '); CI reruns: $(ev ci-rerun | wc -l | tr -d ' ')"
     echo "- quota waits: $(ev quota-wait | awk -F'\t' '{ s += $5 + 0 } END { print int(s / 60) }') min; idle: $(ev idle | awk -F'\t' '{ s += $5 + 0 } END { print int(s / 60) }') min"
-    echo "- parked targets: $(ev parked | awk -F'\t' '{ printf "%s %s; ", $3, $4 }')"
+    echo "- parked targets (tonight): $(ev parked | awk -F'\t' '{ printf "%s %s; ", $3, $4 }')"
+    echo "- parked targets (all; delete the file in $INCOGNITA_STATE/parked/ to retry): $(ls "$INCOGNITA_STATE/parked" 2>/dev/null | tr '\n' ' ')"
     echo "- loop restarts: $(ev loop-died | wc -l | tr -d ' ')"
     echo
     echo "Tasks:"

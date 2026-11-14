@@ -64,7 +64,8 @@ write_tools="$read_tools,Edit,Write,$lean_tools,$exec_tools,Bash(git add:*),Bash
 rebase_tools="Bash(git rebase origin/main),Bash(git rebase --continue),Bash(git rebase --abort),Bash(git merge-base:*)"
 case "$role" in
   referee-scope) tools=$read_tools ;;
-  referee-proofs) tools="$read_tools,$exec_tools" ;;
+  # Numerical experiments in .agents/scratch/ (a reviewer's files are never collected).
+  referee-proofs) tools="$read_tools,$exec_tools,Write,Bash(mkdir:*)" ;;
   review-statements|review-pr) tools="$read_tools,$lean_tools" ;;
   fix-pr|revise) tools="$write_tools,$rebase_tools" ;;
   *) tools=$write_tools ;;
@@ -219,13 +220,22 @@ if [ -n "$pr" ]; then
     die "cannot read the comments of #$pr"
   fi
   rounds=$(jq '[.[] | select(.kind == "revise")] | length' <<<"$comments")
-  fixes=$(jq '[.[] | select(.kind == "fix-pr" or .kind == "fix-pr-nochange")] | length' <<<"$comments")
+  fixes=$(jq '[.[] | select(.kind == "fix-pr" or .kind == "fix-pr-nochange" or .kind == "revise-fix" or .kind == "revise-fix-nochange")] | length' <<<"$comments")
+fi
+# revise on a paper PR: a revision round answers a referee's `major` on the head (it counts towards
+# INCOGNITA_REVISION_ROUNDS, comment kind `revise`); otherwise it is a repair (failed build,
+# conflict, incomplete draft: kind `revise-fix`, counted as a fix round).
+referee_round=0
+if [ "$role" = revise ] && [ -n "$pr" ]; then
+  sts=$(statuses_of "$H") || sts=""
+  case "$(verdict_in "$sts" "Referee scope" referee-scope) $(verdict_in "$sts" "Referee proofs" referee-proofs)" in
+    *major*|*minor*) referee_round=1 ;;
+  esac
 fi
 ci_state=""
 if [ -n "$H" ]; then
-  ci_state=$(jq -r --argjson n "$pr" '.[] | select(.number == $n)
-    | ([.statusCheckRollup[]? | select(.name == "Build and check")] | last) as $c
-    | if $c == null then "NONE" elif ($c.conclusion // "") != "" then $c.conclusion else $c.status end' "$prs_json")
+  ci_state=$(jq -r --argjson n "$pr" --arg role "$pr_role" "$CI_JQ"'
+    .[] | select(.number == $n) | ci_of($role)' "$prs_json")
   case "$ci_state" in
     FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR)
       ci_failed_log "$H" | tail -c 150000 > "$ctx/ci-log.txt" && files="$files ci-log.txt" ;;
@@ -233,7 +243,33 @@ if [ -n "$H" ]; then
 elif [ "$eff_role" = fix-main ]; then
   ci_failed_log "$M" | tail -c 150000 > "$ctx/ci-log.txt" && files="$files ci-log.txt"
 fi
+# Papers closed with the label `rejected`: "number head" lines, heads fetched (cached per task).
+rejected_prs() {
+  if [ ! -f "$tmp/rejected.txt" ]; then
+    ghr pr list --state closed --label rejected --limit 200 --json number,headRefOid \
+      --jq '.[] | "\(.number) \(.headRefOid)"' 2>/dev/null | while read -r n h; do
+        repo_git cat-file -e "$h^{commit}" 2>/dev/null \
+          || repo_git fetch -q origin "+refs/pull/$n/head:refs/incognita/pr/$n" 2>/dev/null || continue
+        echo "$n $h"
+      done > "$tmp/rejected.txt"
+  fi
+  cat "$tmp/rejected.txt"
+}
+# rejected_reports <roadmap>: the trusted reports on the rejected papers of the roadmap (D2: their
+# directions count as covered; writers and scope referees read why they failed).
+rejected_reports() {
+  local n h c
+  rejected_prs | while read -r n h; do
+    [ -n "$(meta_lines_at "$h" "$1")" ] || continue
+    c=$(trusted_comments "$n") || continue
+    printf '## Rejected pull request #%s (%s)\n\n' "$n" "$(meta_lines_at "$h" "$1" | cut -f1 | tr '\n' ' ')"
+    jq -r '.[] | select(.kind == "referee-scope" or .kind == "referee-proofs" or .kind == "rejected")
+      | "### \(.kind) on `\(.sha[0:12])`, \(.created_at)\n\n\(.body)\n"' <<<"$c" | head -c 100000
+  done
+}
 if [ "$role" = write-paper ]; then
+  : > "$tmp/taken"
+  papers_on_main >> "$tmp/taken"
   { echo "# Papers of the roadmap $roadmap and the directions they serve"
     echo
     echo "## On main"
@@ -243,32 +279,70 @@ if [ "$role" = write-paper ]; then
     jq -r '.[] | select(.isCrossRepository == false) | "\(.number) \(.headRefOid)"' "$prs_json" \
       | while read -r n h; do
           fetch_pr_head "$n" "$h" 2>/dev/null || continue
+          repo_git ls-tree --name-only "refs/incognita/pr/$n:papers" 2>/dev/null | grep -E '^P[0-9]+-' >> "$tmp/taken"
           meta_lines_at "refs/incognita/pr/$n" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 ": " $2}'
         done
     echo
     echo "## Rejected (closed with the label rejected): these directions count as covered"
-    ghr pr list --state closed --label rejected --limit 200 --json number,headRefOid,title \
-      --jq '.[] | "\(.number) \(.headRefOid)"' 2>/dev/null | while read -r n h; do
-        repo_git cat-file -e "$h^{commit}" 2>/dev/null || repo_git fetch -q origin "+refs/pull/$n/head:refs/incognita/pr/$n" 2>/dev/null || continue
+    rejected_prs | while read -r n h; do
+        repo_git ls-tree --name-only "$h:papers" 2>/dev/null | grep -E '^P[0-9]+-' >> "$tmp/taken"
         meta_lines_at "$h" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 ": " $2}'
       done
   } > "$ctx/papers.md" 2>/dev/null
   files="$files papers.md"
+  # The number of the new paper: one more than every number on main, in open PRs and rejected.
+  last=$(sed -n -E 's/^P0*([0-9]+)-.*/\1/p' "$tmp/taken" | sort -n | tail -n 1)
+  paper_number=$(printf 'P%03d' $(( ${last:--1} + 1 )))
+fi
+if [ "$role" = write-paper ] || [ "$role" = referee-scope ]; then
+  if [ -n "$roadmap" ]; then
+    rejected_reports "$roadmap" > "$tmp/rejected.md" 2>/dev/null
+    if [ -s "$tmp/rejected.md" ]; then
+      { [ -s "$ctx/reports.md" ] && { cat "$ctx/reports.md"; echo; }
+        echo "# Reports on the rejected papers of the roadmap $roadmap"
+        echo
+        cat "$tmp/rejected.md"
+      } | head -c 600000 > "$tmp/reports-all.md"
+      mv "$tmp/reports-all.md" "$ctx/reports.md"
+      in_list reports.md "$files" || files="$files reports.md"
+    fi
+  fi
+fi
+# Entries of KNOWN.md kept outside the repository (CONTRIBUTING.md §2): the owner's private file
+# $INCOGNITA_PRIVATE_KNOWN/<Roadmap>.md, if any, given to the sessions of that roadmap.
+if [ -n "$roadmap" ] && [ -n "${INCOGNITA_PRIVATE_KNOWN:-}" ] && [ -f "$INCOGNITA_PRIVATE_KNOWN/$roadmap.md" ]; then
+  head -c 400000 "$INCOGNITA_PRIVATE_KNOWN/$roadmap.md" > "$ctx/known-private.md" && files="$files known-private.md"
 fi
 
 situation=""
 add_situation() { situation="$situation- $*
 "; }
 [ -n "${INCOGNITA_NOTE:-}" ] && add_situation "$INCOGNITA_NOTE"
-case "$ci_state" in FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR) add_situation "The build (CI \"Build and check\") failed on the head: see \`ci-log.txt\`." ;; esac
+case "$ci_state" in FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR) add_situation "The build failed on the head (check \"Build and check\" of the workflow CI, or \"Compile papers\" of the workflow Papers): see \`ci-log.txt\`." ;; esac
 if [ -n "$H" ] && ! repo_git merge-base --is-ancestor "$M" "$H"; then
   add_situation "The branch is behind \`origin/main\`. If it conflicts, or for a Lean change, rebase it: \`git rebase origin/main\`."
 fi
 case ",$pr_labels," in *,incomplete,*) add_situation "This pull request is a draft labelled \`incomplete\`: an earlier session stopped before the end. Continue its work." ;; esac
-[ "$role" = revise ] && [ -n "$pr" ] && add_situation "Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: address the referees' latest reports (\`reports.md\`)."
-[ "$role" = fix-pr ] && [ -n "$pr" ] && add_situation "Fix round $(( fixes + 1 )); the pull request was opened by the role \`$pr_role\` (target \`$pr_target\`): keep its purpose."
+if [ "$role" = revise ] && [ -n "$pr" ]; then
+  if [ "$referee_round" = 1 ]; then
+    add_situation "Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: address the referees' latest reports (\`reports.md\`)."
+  else
+    add_situation "Repair of a paper pull request (failed build, conflict with \`main\`, or an incomplete draft), not a revision round: no referee asked for changes on this head."
+  fi
+fi
+[ "$role" = fix-pr ] && [ -n "$pr" ] && add_situation "Fix round $(( fixes + 1 )); the pull request was opened by the role \`$pr_role\` (target \`$pr_target\`): keep its purpose, and its paths (AGENTS.md §2, line \`$eff_role\`)."
 [ "$eff_role" = fix-main ] && [ -z "$pr" ] && add_situation "The build of \`main\` is red (see \`ci-log.txt\`): repair it with the smallest change; a new pull request \"fix main\" is opened."
-[ "$role" = revise ] && [ -z "$pr" ] && add_situation "The paper \`$paper\` is disputed (see \`papers/$paper/errata.md\`): write its next version."
+if [ "$role" = revise ] && [ -z "$pr" ]; then
+  add_situation "The paper \`$paper\` is disputed: write its next version for the errata entries $(disputed_entries "$paper" | tr '\n' ' ')(\`papers/$paper/errata.md\`), on a new pull request."
+fi
+if [ "$role" = formalize-statements ] && [ -n "$paper" ]; then
+  fe=$(freeze_entries "$paper" | tr '\n' ' ')
+  if [ -n "$fe" ]; then
+    add_situation "Entries to resolve: $fe(\`papers/$paper/errata.md\` revised in a new version, or \`statement-corrections.md\`): freeze the corrected statements under new names and add the \`Resolved by\` lines (AGENTS.md §6.6)."
+  elif [ -n "$(locks_of "$paper")" ]; then
+    add_situation "The paper already has frozen statements: freeze only what is missing."
+  fi
+fi
 if [ "$role" = prove ] || [ "$role" = formalize-statements ]; then
   st=$(audit_status 2>/dev/null | awk -v n="$(paper_num "$paper")" '{ k = $1; sub(/^P0*/, "", k); sub(/[^0-9].*/, "", k); if (k == n) print }')
   [ -n "$st" ] && add_situation "Frozen statements of this paper (\`lake exe audit --status\` on main):
@@ -281,8 +355,13 @@ if is_review_role "$role"; then
     referee-*) vlist='accept|major|reject' ;;
     *) vlist='approve|request_changes|reject' ;;
   esac
-  contract="- You change no file and make no commit: your final answer is your report.
-- Its first line is exactly \`Verdict: <$vlist>\`; the script reads the first line that starts with \`Verdict: \`.
+  vrule=""
+  case "$role" in referee-*) vrule="
+- The verdict is computed from your defect table: \`reject\` if any F, \`major\` if any G or L, otherwise \`accept\` (P defects only). The script reads \`minor\` as \`major\`." ;; esac
+  scratch=""
+  [ "$role" = referee-proofs ] && scratch=" (numerical experiments only in \`.agents/scratch/\`, never collected)"
+  contract="- You change no file of the repository and make no commit$scratch: your final answer is your report.
+- Its first line is exactly \`Verdict: <$vlist>\`; the script reads the first line that starts with \`Verdict: \`.$vrule
 - The script posts the report on pull request #$pr as a comment and sets the commit status of the head \`${H:0:12}\` from the verdict.
 - A question only the owner can answer goes on its own line, starting with \`Ask-owner: \`; the script forwards it."
 else
@@ -299,8 +378,9 @@ end_local=$(date -d "@$(( $(now) + timeout_s ))" '+%H:%M' 2>/dev/null || echo "?
   echo "- Role: \`$role\`"
   echo "- Target: \`$target\`"
   [ -n "$pr" ] && echo "- Pull request: #$pr, head \`$H\` (branch \`$branch\`), opened by the role \`$pr_role\` for \`$pr_target\`"
-  [ -n "$paper" ] && echo "- Paper: \`$paper\` (\`papers/$paper/\`)"
-  [ -n "$roadmap" ] && echo "- Roadmap: \`$roadmap\` (\`roadmaps/$roadmap/ROADMAP.md\`, \`roadmaps/$roadmap/KNOWN.md\`)"
+  [ -n "$paper" ] && echo "- Paper: \`$paper\` (\`papers/$paper/\`, Lean prefix \`$(printf '%s' "$paper" | sed -E 's/^(P[0-9]+).*/\1/')\`)"
+  [ -n "${paper_number:-}" ] && echo "- Paper: \`$paper_number\`, a new directory \`papers/$paper_number-<slug>/\` (choose the slug; Lean prefix \`$paper_number\`)"
+  [ -n "$roadmap" ] && echo "- Roadmap: \`$roadmap\` (\`roadmaps/$roadmap/ROADMAP.md\`; KNOWN.md: \`roadmaps/$roadmap/KNOWN.md\`$( [ -f "$ctx/known-private.md" ] && echo ", and the private entries in \`.agents/known-private.md\`"))"
   echo "- Base of your branch: \`$base\`; \`origin/main\` is \`$M\`"
   echo "- Deadline for this task: $end_local (server time), $(( timeout_s / 60 )) minutes from the start; the session is stopped then."
   echo "- Model: \`$model\`, effort \`$effort\`, at most $turns turns"
@@ -319,7 +399,8 @@ if ! repo_git show "$M:agents/roles/$role.md" > "$tmp/role.md" 2>/dev/null; then
   if is_dry; then log "dry run: no agents/roles/$role.md on main (the session would fail)"; echo "(missing)" > "$tmp/role.md"
   else finish fail "no-prompt agents/roles/$role.md"; fi
 fi
-{ sed -e "s|{TARGET}|$target|g" "$tmp/role.md"
+# The role file verbatim (no substitution: everything specific to the task is in task.md).
+{ cat "$tmp/role.md"
   printf '\n\n---\nThe script wrote `.agents/task.md` for this task: read it first. It overrides nothing above;\nit gives the target, the deadline, the context files, and what the script does with your output.\n'
 } > "$prompt"
 
@@ -408,6 +489,18 @@ if [ "$is_error" = true ]; then
   fi
 fi
 
+# forward_questions <file> <origin> <sha>: the lines "Ask-owner: ..." of a report or summary go to the
+# pinned issue "Questions for the owner" (AGENTS.md §1, §5.4).
+forward_questions() {
+  grep -qE '^(- )?Ask-owner:' "$1" 2>/dev/null || return 0
+  local q
+  q=$(pinned_issue "Questions for the owner") || return 1
+  { printf 'From %s (`%s` on `%s`):\n\n' "$2" "$role" "${3:0:12}"
+    grep -E '^(- )?Ask-owner:' "$1" | sed -E 's/^- //' | sanitize 20000; } > "$tmp/ask.md"
+  post_comment "$q" ask-owner "$3" "$tmp/ask.md" >/dev/null
+  record_event ask-owner "$role" "$target" "$(grep -E '^(- )?Ask-owner:' "$1" | head -n 3 | one_line 400)"
+}
+
 footer() {  # the line under every comment
   printf '\n---\n:robot: `%s` (role `%s`, head `%s`, scripts/agent.sh)%s\n' "$model" "$role" "${1:0:12}" "${2:-}"
 }
@@ -418,7 +511,7 @@ if is_review_role "$role"; then
   verdict=$(grep -m1 -E '^Verdict: ' "$report" | sed -E 's/^Verdict: *`?([a-z_]+).*/\1/')
   case "$role:$verdict" in
     referee-*:accept|referee-*:major|referee-*:reject) ;;
-    referee-*:minor) verdict=major ;;   # D2: L and P need no new round, but a "minor" verdict is a G
+    referee-*:minor) verdict=major ;;   # reject if any F, major if any G or L, accept if P only
     review-*:approve|review-*:request_changes|review-*:reject) ;;
     *)
       n=$(counter_inc "review-fail $pr")
@@ -456,14 +549,7 @@ if is_review_role "$role"; then
   esac
   counter_set "review-fail $pr" 0
   # Questions for the owner.
-  if grep -qE '^Ask-owner:' "$report"; then
-    if q=$(pinned_issue "Questions for the owner"); then
-      { printf 'From #%s (`%s` on `%s`):\n\n' "$pr" "$role" "${H:0:12}"
-        grep -E '^Ask-owner:' "$report" | sanitize 20000; } > "$tmp/ask.md"
-      post_comment "$q" ask-owner "$H" "$tmp/ask.md" >/dev/null
-      record_event ask-owner "$role" "$pr" "$(grep -E '^Ask-owner:' "$report" | head -n 3 | one_line 400)"
-    fi
-  fi
+  forward_questions "$report" "#$pr" "$H"
   # Papers: a rejection, or a G after the last revision round, closes the PR (D2).
   if [ "$kind" = paper ]; then
     why=""
@@ -489,16 +575,23 @@ newhead=$(head -c 41 "$out/head" 2>/dev/null | tr -dc 0-9a-f)
 summary=$tmp/summary.md
 if [ -s "$out/summary.md" ]; then sanitize 60000 < "$out/summary.md" > "$summary"
 else echo "(The agent wrote no summary.)" > "$summary"; fi
+# Questions of a writing session, whatever its outcome (a writer may stop without a commit to ask).
+forward_questions "$summary" "$( [ -n "$pr" ] && echo "#$pr" || echo "the task $task ($role $target)" )" "${H:-$M}"
 
 failed_session=false
 [ "$is_error" = true ] || [ "$subtype" != success ] && failed_session=true
 
+# Comment kind of this round on a PR: `revise` (a revision round, counted by the loop), `revise-fix`
+# (a repair of a paper PR) or `fix-pr`; `<kind>-nochange` when nothing was pushed.
+ckind=$role
+[ "$role" = revise ] && [ "$referee_round" != 1 ] && ckind=revise-fix
+is_fix_round() { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }
+
 if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
   if [ -n "$pr" ]; then
-    kindc=$role-nochange
-    { printf '%s round: no change (%s).\n\n' "$( [ "$role" = revise ] && echo Revision || echo Fix )" "$subtype"; cat "$summary"; footer "$H"; } > "$tmp/body.md"
-    post_comment "$pr" "$kindc" "$H" "$tmp/body.md" >/dev/null
-    [ "$role" = fix-pr ] && counter_inc "fix-rounds $pr" >/dev/null
+    { printf '%s round: no change (%s).\n\n' "$( [ "$ckind" = revise ] && echo Revision || echo Fix )" "$subtype"; cat "$summary"; footer "$H"; } > "$tmp/body.md"
+    post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
+    is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
   fi
   finish fail "no-commit ($subtype)"
 fi
@@ -510,14 +603,24 @@ new=$(repo_git rev-parse "refs/incognita/tasks/$task") || finish fail "bundle-wi
 nb=$(repo_git rev-list --count "$new" "^$M" ${H:+"^$H"})
 [ "$nb" -le 300 ] || finish fail "too-many-commits ($nb)"
 cbase=$(repo_git merge-base "$M" "$new") || finish fail "no-merge-base"
-if ! check_paths "$eff_role" "$paper" "$cbase" "$new" 2> "$tmp/paths.log"; then
+paths_ok() {
+  check_paths "$eff_role" "$paper" "$cbase" "$new" || return 1
+  # write-paper: the new directory has the number given in task.md.
+  if [ -n "${paper_number:-}" ]; then
+    local d
+    d=$(repo_git diff --name-only --no-renames "$cbase" "$new" -- papers | sed -n -E 's#^papers/([^/]+)/.*#\1#p' | sort -u)
+    case "$d" in "$paper_number"-*) ;; *) log "refused: the paper directory must be papers/$paper_number-<slug>/, not papers/$d/"; return 1 ;; esac
+  fi
+  return 0
+}
+if ! paths_ok 2> "$tmp/paths.log"; then
   cat "$tmp/paths.log" >&2
   record_event refused "$role" "$target" "$(one_line 400 < "$tmp/paths.log")"
   repo_git update-ref "refs/incognita/refused/$task" "$new"   # kept for inspection
   if [ -n "$pr" ]; then
     { echo "The script refused this session's commits (not pushed):"; echo; sed 's/^/    /' "$tmp/paths.log" | sanitize 10000; footer "$H"; } > "$tmp/body.md"
-    post_comment "$pr" "$role-nochange" "$H" "$tmp/body.md" >/dev/null
-    [ "$role" = fix-pr ] && counter_inc "fix-rounds $pr" >/dev/null
+    post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
+    is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
   fi
   finish fail "refused-paths (kept as refs/incognita/refused/$task)"
 fi
@@ -527,12 +630,10 @@ if [ -n "$pr" ]; then
   if ! repo_git push -q --force-with-lease="refs/heads/$branch:$H" origin "$new:refs/heads/$branch"; then
     finish fail "push-rejected (the branch moved)"
   fi
-  if [ "$role" = revise ]; then
+  if [ "$ckind" = revise ]; then
     title="Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: pushed \`${new:0:12}\`."
-    ckind=revise
   else
     title="Fix round: pushed \`${new:0:12}\`."
-    ckind=fix-pr
     counter_inc "fix-rounds $pr" >/dev/null
   fi
   [ "$failed_session" = true ] && title="$title The session stopped before the end ($subtype): the pull request is marked \`incomplete\`."

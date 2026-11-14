@@ -295,19 +295,40 @@ escalate() {  # <pr> <reason>: label needs-human (non-paper PRs), once
 PR_FIELDS=number,title,body,headRefName,headRefOid,isCrossRepository,isDraft,labels,mergeable,statusCheckRollup,author,createdAt,updatedAt,baseRefName
 fetch_open_prs() { ghr pr list --state open --limit 200 --json "$PR_FIELDS"; }
 
+# The build of a PR head, from its statusCheckRollup (a PR object). Two checks count: "Build and
+# check" (job of the workflow CI, a required check of main) and "Compile papers" (job of the
+# workflow Papers, path-filtered, so never a required check). Paper PRs (roles write-paper, revise)
+# need both; any other PR needs "Build and check", and "Compile papers" too when it ran (it touched
+# papers/). Result: SUCCESS, a failure (FAILURE, TIMED_OUT, STARTUP_FAILURE, ERROR), NONE (a needed
+# check is missing) or the state of a check still running or cancelled.
+CI_JQ='
+  def ci_of($role):
+    ([.statusCheckRollup[]? | select(.name == "Build and check" or .name == "Compile papers")]
+     | group_by(.name) | map(last)) as $present
+    | ([$present[].name]
+       + (if ($role == "write-paper" or $role == "revise") then ["Build and check", "Compile papers"]
+          else ["Build and check"] end) | unique) as $names
+    | [$names[] as $nm | ([$present[] | select(.name == $nm)] | first) as $c
+       | if $c == null then "NONE"
+         elif ($c.conclusion // "") != "" then $c.conclusion else ($c.status // "NONE") end] as $v
+    | def bad: . == "FAILURE" or . == "TIMED_OUT" or . == "STARTUP_FAILURE" or . == "ERROR";
+      def good: . == "SUCCESS" or . == "NEUTRAL" or . == "SKIPPED";
+      if any($v[]; bad) then ([$v[] | select(bad)] | first)
+      elif all($v[]; good) then "SUCCESS"
+      elif any($v[]; . == "NONE") then "NONE"
+      else ([$v[] | select(good | not)] | first) end;'
+
 # jq: one row per agent PR (same repository, branch agent/*, opened by OWNER, with a Role line):
 # number H branch draft mergeable role target labels ci
-AGENT_ROWS_JQ='
+AGENT_ROWS_JQ=$CI_JQ'
   .[] | select(.isCrossRepository == false and (.headRefName | startswith("agent/"))
                and .author.login == $o and .baseRefName == "main")
   | ((.body // "") | split("\n")[0]
      | capture("^Role: `(?<role>[a-z-]+)`\\. Target: `(?<target>[^`]*)`\\.")) as $r
-  | ([.statusCheckRollup[]? | select(.name == "Build and check")] | last) as $c
   | [.number, .headRefOid, .headRefName, (if .isDraft then "draft" else "ready" end),
      (.mergeable // "UNKNOWN"), $r.role, (if $r.target == "" then "-" else $r.target end),
      ([.labels[].name] | join(",") | if . == "" then "-" else . end),
-     (if $c == null then "NONE"
-      elif ($c.conclusion // "") != "" then $c.conclusion else ($c.status // "NONE") end)]
+     ci_of($r.role)]
   | @tsv'
 agent_rows() { jq -r --arg o "$OWNER" "$AGENT_ROWS_JQ" "$1"; }
 
@@ -323,14 +344,17 @@ open_prs_md() {  # the context file .agents/open-prs.md
 }
 
 # ---------------------------------------------------------------- CI
-ci_runs_of() {  # sha [event]: the runs of the workflow "CI" on this commit, newest first
-  local q="head_sha=$1&per_page=50"
+# ci_runs_of <sha> [event] [workflows]: the runs on this commit of the workflows named by the regex
+# <workflows> (default: CI and Papers, the two workflows whose checks count), newest first.
+ci_runs_of() {
+  local q="head_sha=$1&per_page=50" w=${3:-CI|Papers}
   [ -n "${2:-}" ] && q="$q&event=$2"
   ghr api "repos/$GH_REPO/actions/runs?$q" \
-    --jq '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | reverse'
+    --jq "[.workflow_runs[] | select(.name | test(\"^($w)\$\"))] | sort_by(.created_at) | reverse"
 }
 # ci_effective <sha> <rollup-state>: success | pending | failed. A failure is rerun once (failed
-# jobs); a cancelled or missing run older than 2 h is rerun once. Unknown is "pending".
+# jobs of the failed run); a cancelled or missing run older than 2 h is rerun once. Unknown is
+# "pending". <rollup-state> is the ci column of the rows (CI_JQ).
 ci_effective() {
   local sha=$1 st=$2 runs id attempt age
   case "$st" in
@@ -338,14 +362,15 @@ ci_effective() {
     IN_PROGRESS|QUEUED|PENDING|WAITING|REQUESTED|EXPECTED) echo pending; return 0 ;;
   esac
   runs=$(ci_runs_of "$sha") || { echo pending; return 0; }
-  id=$(printf '%s' "$runs" | jq -r '.[0].id // empty')
-  attempt=$(printf '%s' "$runs" | jq -r '.[0].run_attempt // 0')
+  # The run to look at: the newest failed one if any, else the newest.
+  id=$(printf '%s' "$runs" | jq -r '([.[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure")] + .) | .[0].id // empty')
+  attempt=$(printf '%s' "$runs" | jq -r --arg id "$id" '[.[] | select((.id | tostring) == $id)] | .[0].run_attempt // 0')
   case "$st" in
     FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR)
-      if [ -n "$id" ] && [ "$attempt" -le 1 ] && ! mark_has "rerun $sha"; then
+      if [ -n "$id" ] && [ "$attempt" -le 1 ] && ! mark_has "rerun $sha $id"; then
         if is_dry; then log "dry run: would rerun the failed jobs of run $id (${sha:0:12})"
         else
-          mark_set "rerun $sha"
+          mark_set "rerun $sha $id"
           gh run rerun "$id" --failed >/dev/null 2>&1 && log "CI of ${sha:0:12} failed: rerun $id" \
             && record_event ci-rerun - - "${sha:0:12} run $id"
         fi
@@ -368,7 +393,7 @@ ci_effective() {
 # main_red <M>: 0 if the build of main's head M failed on a push run after one rerun.
 main_red() {
   local m=$1 runs st attempt id
-  runs=$(ci_runs_of "$m" push) || return 1
+  runs=$(ci_runs_of "$m" push CI) || return 1
   st=$(printf '%s' "$runs" | jq -r '.[0].conclusion // "none"')
   attempt=$(printf '%s' "$runs" | jq -r '.[0].run_attempt // 0')
   id=$(printf '%s' "$runs" | jq -r '.[0].id // empty')
@@ -383,11 +408,18 @@ main_red() {
   esac
   return 1
 }
-ci_failed_log() {  # sha → the end of the log of the failed jobs of its latest CI run
-  local id
-  id=$(ci_runs_of "$1" | jq -r '.[0].id // empty') || return 1
-  [ -n "$id" ] || return 1
-  gh run view "$id" --log-failed 2>/dev/null | tail -n 400
+ci_failed_log() {  # sha [workflows] → the end of the logs of the failed jobs of its failed runs
+  local runs id name found=1
+  runs=$(ci_runs_of "$1" "" "${2:-CI|Papers}") || return 1
+  while IFS=$'\t' read -r id name; do
+    [ -n "$id" ] || continue
+    printf '===== workflow %s, run %s: failed jobs\n' "$name" "$id"
+    gh run view "$id" --log-failed 2>/dev/null | tail -n 400
+    found=0
+  done < <(printf '%s' "$runs" | jq -r 'group_by(.name) | map(.[0]) | .[]
+    | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure")
+    | [.id, .name] | @tsv')
+  return $found
 }
 
 # ---------------------------------------------------------------- the loop's own clone (trusted)
@@ -435,6 +467,38 @@ locks_of() {  # paper: lock files of its frozen statements (any Statements/ dir 
   done
 }
 
+# Errata and statement corrections (AGENTS.md §6.6; papers/README.md). An entry starts with a line
+# "## E<k> ..." (errata.md) or "## SC<n> ..." (statement-corrections.md); later roles add, under it,
+# a line "Revised in ..." (revise: a new version of the paper exists) and a line "Resolved by ..."
+# (formalize-statements: the corrected statements are frozen, or nothing needs freezing), possibly
+# as list items ("- Resolved by ..."). An optional line "- Frozen statement: <Lean name>" names the
+# frozen statement the entry is about.
+# entry_flags < file: one line per entry: "<id> <revised 0|1> <resolved 0|1> <frozen statement|->".
+entry_flags() {
+  awk '
+    function flush() { if (id != "") print id, rev, res, (fs == "" ? "-" : fs) }
+    /^## (E|SC)[0-9]+([^0-9]|$)/ { flush(); id = $2; sub(/[^A-Z0-9].*$/, "", id); rev = 0; res = 0; fs = ""; next }
+    /^## / { flush(); id = ""; next }
+    id != "" && /^(- )?Revised in / { rev = 1 }
+    id != "" && /^(- )?Resolved by / { res = 1 }
+    id != "" && /^- Frozen statement:/ {
+      fs = $0; sub(/^- Frozen statement:[ \t]*/, "", fs); gsub(/`/, "", fs); sub(/[ \t].*$/, "", fs) }
+    END { flush() }'
+}
+# disputed_entries <paper>: errata entries of the paper on main neither revised nor resolved.
+disputed_entries() { show_main "papers/$1/errata.md" | entry_flags | awk '$2 == 0 && $3 == 0 { print $1 }'; }
+# freeze_entries <paper>: entries waiting for a statements PR: errata revised but not resolved, and
+# statement corrections not resolved.
+freeze_entries() {
+  { show_main "papers/$1/errata.md" | entry_flags | awk '$2 == 1 && $3 == 0 { print $1 }'
+    show_main "papers/$1/statement-corrections.md" | entry_flags | awk '$3 == 0 { print $1 }'; }
+}
+# superseded <paper>: short Lean names of frozen statements replaced by a resolved entry.
+superseded() {
+  { show_main "papers/$1/errata.md"; echo; show_main "papers/$1/statement-corrections.md"; } \
+    | entry_flags | awk '$3 == 1 && $4 != "-" { n = $4; sub(/^Incognita\.Statements\.[^.]*\./, "", n); print n }' | sort -u
+}
+
 # Audit status of main (lines "<P> <name> open|proved|refuted"), from the loop's own clone of
 # main only (trusted after merge), cached per commit. Interface: `lake exe audit --status`.
 audit_status() {
@@ -465,51 +529,60 @@ audit_status() {
 
 # ---------------------------------------------------------------- paths (D12)
 
-# role_allows <role> <paper> <path> <status>: may this role make this change?
+# paper_file <path> <paper|""> <regex>: is <path> papers/<paper>/<f> with <f> matching <regex>
+# (any paper directory when <paper> is empty)?
+paper_file() {
+  local p=${2:-[^/]+}
+  [[ "$1" =~ ^papers/${p}/(${3})$ ]]
+}
+# role_allows <role> <paper> <path> <status>: may this role make this change? This is the table
+# of AGENTS.md §2, line for line (keep them identical; scripts/test-lib.sh tests every line).
+# <paper> is the paper directory of the task (empty for write-paper: check_paths checks that the
+# PR adds exactly one new directory). <status>: A, M or D (git diff --raw --no-renames). fix-pr
+# uses the line of the role that opened the PR; fix-main is fix-pr on main. Reviewers: nothing.
 role_allows() {
   local role=$1 paper=$2 path=$3 st=$4
+  # Lean drafts: every writing role but the bibliographer.
   case "$path" in
     Exploration/*|Exploration.lean)
-      case "$role" in write-paper|revise|formalize-statements|prove|garden|fix-main) return 0 ;; esac ;;
+      case "$role" in write-paper|revise|formalize-statements|prove|garden|fix-main) return 0 ;; esac
+      return 1 ;;
   esac
+  # Nothing is ever deleted under papers/.
+  case "$path" in papers/*) [ "$st" = D ] && return 1 ;; esac
   case "$role" in
-    write-paper)   # its one new paper directory is checked by check_paths
-      case "$path" in
-        papers/*/*) return 0 ;;
-        literature/*) [ "$st" != D ] && return 0 ;;
-      esac ;;
+    write-paper)
+      paper_file "$path" "" 'paper\.tex|refs\.bib|META\.toml|notebook/.+' && return 0
+      case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
     revise)
-      case "$path" in
-        papers/"$paper"/*) [ -n "$paper" ] && return 0 ;;
-        literature/*) [ "$st" != D ] && return 0 ;;
-      esac ;;
+      [ -n "$paper" ] && paper_file "$path" "$paper" 'paper\.tex|refs\.bib|META\.toml|notebook/.+|errata\.md' && return 0
+      case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
     formalize-statements)
       case "$path" in
-        Statements/*) [ "$st" = A ] && return 0 ;;
-        Statements.lean|Incognita/*|Incognita.lean|catalogue/definitions/*) return 0 ;;
-        papers/"$paper"/blueprint.md|papers/"$paper"/paper.tex|papers/"$paper"/notebook/*) return 0 ;;
-        papers/"$paper"/formalisation.tex|papers/"$paper"/errata.md|papers/"$paper"/statement-corrections.md) return 0 ;;
-      esac ;;
+        Statements/*) [ "$st" = A ] && [[ "$path" =~ ^Statements/P[0-9]{3}/.+\.(lean|lock)$ ]] && return 0 ;;
+        Statements.lean|Incognita.lean) return 0 ;;
+        Incognita/*|catalogue/definitions/*) [ "$st" != D ] && return 0 ;;
+      esac
+      [ -n "$paper" ] && paper_file "$path" "$paper" 'blueprint\.md|errata\.md|statement-corrections\.md' && return 0 ;;
     prove)
       case "$path" in
-        Incognita/*|Incognita.lean) return 0 ;;
-        catalogue/results/*) [ "$st" = A ] && return 0 ;;
-        papers/"$paper"/notebook/*|papers/"$paper"/formalisation.tex) return 0 ;;
-        papers/"$paper"/errata.md|papers/"$paper"/statement-corrections.md) return 0 ;;
-      esac ;;
+        Incognita.lean) return 0 ;;
+        Incognita/*) [ "$st" != D ] && return 0 ;;
+        catalogue/results/*) [ "$st" = A ] && [[ "$path" =~ ^catalogue/results/P[0-9]{3}-[^/]+\.toml$ ]] && return 0 ;;
+      esac
+      [ -n "$paper" ] && paper_file "$path" "$paper" 'blueprint\.md|formalisation\.tex|errata\.md|statement-corrections\.md' && return 0 ;;
     bibliographer)
-      case "$path" in
-        literature/*|catalogue/*) [ "$st" != D ] && return 0 ;;
-        papers/*/refs.bib) return 0 ;;
-      esac ;;
+      case "$path" in literature/*|catalogue/attribution/*) [ "$st" != D ] && return 0 ;; esac
+      paper_file "$path" "" 'refs\.bib' && return 0 ;;
     garden)
       case "$path" in
-        Incognita/*|Incognita.lean) return 0 ;;
-        catalogue/*|literature/*) [ "$st" != D ] && return 0 ;;
+        Incognita.lean) return 0 ;;
+        Incognita/*|catalogue/relations.toml|catalogue/garden.md) [ "$st" != D ] && return 0 ;;
       esac ;;
     fix-main)
       case "$path" in
-        Incognita/*|Incognita.lean|Statements.lean|papers/*|literature/*|catalogue/*) [ "$st" != D ] && return 0 ;;
+        Incognita.lean|Statements.lean) return 0 ;;
+        Incognita/*) [ "$st" != D ] && return 0 ;;
       esac ;;
   esac
   return 1
@@ -530,14 +603,14 @@ check_paths() {
     case "$nmode" in 120000|160000) log "refused: $path is a symlink or submodule"; bad=1; continue ;; esac
     case "/$path" in */.*) log "refused: $path (a path component starts with a dot)"; bad=1; continue ;; esac
     case "${path##*/}" in
-      CLAUDE.md|AGENTS.md|lakefile.lean|.gitmodules) log "refused: $path"; bad=1; continue ;;
+      CLAUDE.md|AGENTS.md|CONTRIBUTING.md|README.md|lakefile.lean|.gitmodules) log "refused: $path (human-owned, anywhere)"; bad=1; continue ;;
     esac
     if [ "$st" != D ]; then
       size=$(repo_git cat-file -s "$nsha" 2>/dev/null || echo 0)
       [ "$size" -gt 1048576 ] && { log "refused: $path is larger than 1 MB"; bad=1; continue; }
     fi
     case "$path" in
-      README.md|CONTRIBUTING.md|LICENSE|lakefile.toml|lean-toolchain|lake-manifest.json|templates/*|agents/*|docs/*|scripts/*|roadmaps/*|programmes/*|catalogue/README.md|papers/README.md)
+      LICENSE|lakefile.toml|lean-toolchain|lake-manifest.json|templates/*|agents/*|docs/*|scripts/*|tests/*|roadmaps/*|programmes/*|literature/notes/TEMPLATE.md|papers/*/withdrawn.md)
         log "refused: human-owned path $path"; bad=1; continue ;;
     esac
     case "$path" in Statements/*) [ "$st" = A ] || { log "refused: $st on frozen $path"; bad=1; continue; } ;; esac
@@ -603,10 +676,12 @@ path_category() {  # kind path status
       if [ "$kind" = paper ]; then echo papers
       elif [ "$kind" = statements ]; then echo statements
       else
-        # A proof PR may add notebook files and formalisation.tex (extra lemmas, not re-refereed);
-        # errata and statement corrections go to the owner.
+        # A proof PR may add rows to blueprint.md and lemmas to formalisation.tex (not re-refereed:
+        # Lean checks them); a bibliographer fixes metadata in refs.bib. Errata and statement
+        # corrections (a paper becomes disputed) go to the owner.
         case "$path" in
-          papers/*/notebook/*|papers/*/formalisation.tex) echo proofs ;;
+          papers/*/blueprint.md|papers/*/formalisation.tex) echo proofs ;;
+          papers/*/refs.bib) echo literature ;;
           *) echo other ;;
         esac
       fi ;;

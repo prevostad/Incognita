@@ -2,21 +2,27 @@
 """Keep one state label, and one role label, on every open pull request (for humans; the loop reads
 the commit statuses themselves).
 
-State labels (exactly one per open pull request of this repository):
+State labels (exactly one per open pull request of this repository, none when it has needs-human):
   merge-conflict   no longer merges cleanly into main
   awaiting-CI      the build has not reported on the last commit yet
   ci-failed        the build failed on the last commit
   awaiting-review  the build is green; the needed reviews of the last commit are not all there
-  awaiting-author  a reviewer or referee asked for changes (or rejected) on the last commit
+  awaiting-author  a reviewer or referee asked for changes (or rejected) on the last commit, or the
+                   pull request is a draft labelled incomplete (an agent continues it)
   ready-to-merge   build green and the needed reviews accept the last commit
+The build is the check "Build and check" (workflow CI) and, for paper pull requests or when it ran,
+"Compile papers" (workflow Papers), as in scripts/lib.sh (CI_JQ).
 Agents' pull requests (branch agent/*, opened by the owner's account, first line "Role: `<role>`...")
 need trusted commit statuses, i.e. created by the owner's account (the loop), never by a workflow:
 papers (roles write-paper, revise) "Referee scope" and "Referee proofs" (verdict accept) and
 "Incognita review"; other pull requests "Incognita review" (verdict approve).
 Pull requests from forks get the label `fork` and no state: the agents ignore them.
-The labels needs-human, incomplete and rejected (set by the loop) are left alone.
+The labels set by the loop (scripts/lib.sh, ensure_labels) are created here with the same colours
+and never removed: incomplete (a draft whose session stopped), rejected (a paper closed by the
+referees), needs-human (the agents gave up: the owner decides; no state label then).
 
-Role labels: role:<role>, from the first line of the description of an agent's pull request.
+Role labels: role:<role>, for the roles of v3 (agents/roles/), from the first line of the
+description of an agent's pull request.
 
 Run by .github/workflows/pr-labels.yml (GH_TOKEN, GH_REPO, INCOGNITA_OWNER in the environment); safe to
 run by hand (the owner is then the account of `gh`).
@@ -35,9 +41,18 @@ STATES = {
     "ready-to-merge": ("1D76DB", "Build green and the last commit accepted by the needed reviews"),
 }
 FORK = ("fork", "BFD4F2", "From a fork: ignored by the agents")
+LOOP_LABELS = {  # same as ensure_labels in scripts/lib.sh
+    "incomplete": ("FBCA04", "A session stopped before the end: its work is kept, an agent continues it"),
+    "rejected": ("B60205", "Paper rejected by the referees (reports kept); the owner may reopen it"),
+    "needs-human": ("B60205", "The agents cannot go further: the owner decides"),
+}
 ROLE_COLOR = "EDEDED"
 ROLE_LINE = re.compile(r"^Role: `([a-z-]+)`\. Target: `([^`]*)`\.")
+# The roles that open pull requests (ROLES in scripts/lib.sh, without the reviewers).
+ROLES = {"write-paper", "revise", "formalize-statements", "prove", "fix-pr", "bibliographer", "garden"}
 PAPER_ROLES = {"write-paper", "revise"}
+BAD = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ERROR"}   # cancelled: rerun by the loop after 2 h
+GOOD = {"SUCCESS", "NEUTRAL", "SKIPPED"}
 
 
 def gh(*args, check=True):
@@ -86,17 +101,32 @@ def role_of(pr, me):
     if (pr.get("author") or {}).get("login") != me:
         return None
     m = ROLE_LINE.match((pr.get("body") or "").split("\n", 1)[0])
-    return m.group(1) if m else None
+    return m.group(1) if m and m.group(1) in ROLES else None
+
+
+def build_of(pr, role):
+    """SUCCESS, a failure, or None (still running or missing), as CI_JQ in scripts/lib.sh."""
+    present = {}
+    for c in pr.get("statusCheckRollup") or []:
+        if c.get("name") in ("Build and check", "Compile papers"):  # check runs
+            present[c["name"]] = c.get("conclusion") or c.get("status")
+    needed = {"Build and check"} | ({"Compile papers"} if role in PAPER_ROLES else set())
+    values = [present.get(name) for name in sorted(needed | set(present))]
+    for v in values:
+        if v in BAD:
+            return v
+    if all(v in GOOD for v in values):
+        return "SUCCESS"
+    return None
 
 
 def state_of(pr, role, repo, me):
     if pr.get("mergeable") == "CONFLICTING":
         return "merge-conflict"
-    build = None
-    for c in pr.get("statusCheckRollup") or []:
-        if c.get("name") == "Build and check":  # a check run
-            build = c.get("conclusion") or c.get("status")
-    if build in (None, "QUEUED", "IN_PROGRESS", "PENDING", "WAITING", "REQUESTED", ""):
+    if pr.get("isDraft") and "incomplete" in {label["name"] for label in pr.get("labels") or []}:
+        return "awaiting-author"
+    build = build_of(pr, role)
+    if build is None:
         return "awaiting-CI"
     if build != "SUCCESS":
         return "ci-failed"
@@ -124,12 +154,12 @@ def state_of(pr, role, repo, me):
 def main():
     repo = os.environ.get("GH_REPO") or gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner").strip()
     me = owner()
-    for name, (color, description) in STATES.items():
+    for name, (color, description) in {**STATES, **LOOP_LABELS}.items():
         ensure_label(name, color, description)
     ensure_label(*FORK)
     prs = json.loads(gh("pr", "list", "--state", "open", "--limit", "200", "--json",
                         "number,mergeable,labels,body,statusCheckRollup,headRefName,headRefOid,"
-                        "isCrossRepository,author"))
+                        "isCrossRepository,author,isDraft"))
     for pr in prs:
         current = {label["name"] for label in pr["labels"]}
         add, remove = [], []
@@ -140,7 +170,8 @@ def main():
                 add.append(FORK[0])
         else:
             role = role_of(pr, me)
-            wanted = state_of(pr, role, repo, me)
+            # needs-human: the owner decides; no state label competes with it.
+            wanted = "needs-human" if "needs-human" in current else state_of(pr, role, repo, me)
             remove = [s for s in STATES if s in current and s != wanted]
             if wanted not in current:
                 add.append(wanted)
