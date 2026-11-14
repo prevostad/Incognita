@@ -29,7 +29,8 @@ git = "https://github.com/PatrickMassot/checkdecls.git"
 [[lean_lib]]
 name = "Incognita"
 
-# Frozen statements of validated questions, with `sorry` by design. Human-approved changes only.
+# Frozen statements of accepted papers, with `sorry` by design, locked (`lake exe audit`):
+# additions only, any other change is the owner's.
 [[lean_lib]]
 name = "Statements"
 
@@ -37,7 +38,9 @@ name = "Statements"
 [[lean_lib]]
 name = "Exploration"
 
-# Human-owned audit: axioms of the library and frozen statements (scripts/Audit.lean).
+# Human-owned audit: axioms of the library, frozen statements and their locks, proof markers
+# (scripts/Audit.lean). It reads the libraries' build outputs, so it builds them first.
 [[lean_exe]]
 name = "audit"
 root = "scripts.Audit"
+needs = ["Incognita", "Statements"]

@@ -1,17 +1,30 @@
-# Human-owned paths (see AGENTS.md). Pull requests touching them need the owner's review once
-# branch protection requires code-owner reviews.
+# Human-owned paths (AGENTS.md, section 2; CONTRIBUTING.md, section 4). Pull requests touching them
+# are merged by the owner; the loop's path whitelist refuses them for agents. Code-owner review is
+# not required by the ruleset while agents push with the owner's account. Exceptions under
+# /roadmaps/ (AGENTS.md section 4): proposals of propose-roadmap (merged by the loop after the
+# owner's veto window, or by the owner for a new domain) and roadmaps/*/directions.md (entries
+# appended by the loop, Dropped lines by garden).
 /README.md                       @prevostad
 /AGENTS.md                       @prevostad
 /CLAUDE.md                       @prevostad
 /CONTRIBUTING.md                 @prevostad
-/programmes/*/PROGRAMME.md       @prevostad
-/programmes/*/*.md               @prevostad
-/Statements/                     @prevostad
+**/AGENTS.md                     @prevostad
+**/CLAUDE.md                     @prevostad
+**/README.md                     @prevostad
+**/CONTRIBUTING.md               @prevostad
+/LICENSE                         @prevostad
+/roadmaps/                       @prevostad
+/papers/*/withdrawn.md           @prevostad
+/papers/*/human-audits.md        @prevostad
+/literature/notes/TEMPLATE.md    @prevostad
 /templates/                      @prevostad
 /agents/                         @prevostad
 /docs/                           @prevostad
 /scripts/                        @prevostad
+/tests/                          @prevostad
 /.github/                        @prevostad
 /lakefile.toml                   @prevostad
 /lean-toolchain                  @prevostad
 /lake-manifest.json              @prevostad
+# Frozen statements: agents only add files; any other change is the owner's (admin bypass).
+/Statements/                     @prevostad

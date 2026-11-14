@@ -1,17 +1,19 @@
 name: PR labels
 
 # One state label per open pull request (awaiting-CI, ci-failed, awaiting-review, awaiting-author,
-# merge-conflict, ready-to-merge) and a role label for agents' pull requests; see scripts/pr_labels.py.
-# Recomputed whenever something that changes the state happens, and every half hour as a fallback.
+# merge-conflict, ready-to-merge), a role label for agents' pull requests, and `fork` for pull
+# requests from forks (ignored by the agents); see scripts/pr_labels.py. Recomputed whenever something
+# that changes the state happens, and every half hour as a fallback. The labels are for humans only:
+# the loop reads the commit statuses themselves.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited, ready_for_review, converted_to_draft]
   issue_comment:
     types: [created]
   status:
   workflow_run:
-    workflows: [CI]
+    workflows: [CI, Papers]
     types: [completed]
   schedule:
     - cron: '*/30 * * * *'
@@ -40,4 +42,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          INCOGNITA_OWNER: ${{ github.repository_owner }}
         run: python3 scripts/pr_labels.py

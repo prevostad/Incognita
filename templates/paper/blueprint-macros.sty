@@ -1,0 +1,160 @@
+% blueprint-macros.sty: leanblueprint's macros for plain LaTeX (pdflatex), for Incognita papers.
+%
+% A paper is also the blueprint of its formalisation (AGENTS.md, section 5.2). This package lets
+% the same source compile to a PDF without plasTeX:
+%   \uses{l1, l2}  statement: definitions it uses (printed in grey under the statement);
+%                  proof: every node it uses (printed in grey where it stands);
+%   \proves{l}     links a proof to a statement placed elsewhere (printed nothing);
+%   \lean{N1, N2}  Lean names of the node (in formalisation.tex; printed in grey);
+%   \leanok        set by CI from the audit, never by agents: prints the green box
+%                  "LEAN APPROVED" under the statement, with its Lean names;
+%   \mathlibok     the node is in a dependency (Mathlib, LML, LMLExplore): a box "IN A DEPENDENCY";
+%   \notready      the node is not ready for formalisation (printed in grey);
+%   \discussion{n} a link to an issue (printed nothing).
+% It also defines the theorem environments of a paper (option `notheorems` to skip them): one
+% shared counter for definition, lemma, proposition, theorem, corollary, remark, example; and the
+% environment openquestion (section "Open questions", its own counter, not a node).
+%
+% Certification (AGENTS.md, section 9). When the file certification.tex exists in the paper's
+% directory, it is read at the end of this package. CI generates it and it is never committed
+% (`python3 scripts/certify.py leanok`, from the proof markers checked by the audit); it holds
+%   \incognitaverified{<label>}{<Lean name>}   the node <label> is proved in Lean: the green box
+%                                              "LEAN APPROVED" is printed under it;
+%   \incognitacertification{<text>}            the certification line of the paper, printed
+%                                              under the date of the title.
+% Without that file (an agent's local build), neither is printed.
+% Papers load it by a relative path, \usepackage{../../templates/paper/blueprint-macros}, which
+% works from papers/<P>/ and from templates/paper/ (both two levels deep): no TEXINPUTS needed.
+% There is no \ProvidesPackage, because LaTeX would warn about the relative name. Version of
+% 2026-11-14. Requires LaTeX 2020-10 or later (hooks).
+\NeedsTeXFormat{LaTeX2e}[2020/10/01]
+
+\newif\ifincognita@theorems \incognita@theoremstrue
+\DeclareOption{notheorems}{\incognita@theoremsfalse}
+\ProcessOptions\relax
+
+\RequirePackage{amsthm}
+\RequirePackage{xcolor}
+
+\definecolor{incognitaLean}{RGB}{0,110,40}
+\definecolor{incognitaGrey}{gray}{0.42}
+
+\newif\ifincognita@leanok
+\newif\ifincognita@mathlibok
+\newif\ifincognita@notready
+\newif\ifincognita@inproof
+\def\incognita@leannames{}
+\def\incognita@uses{}
+
+% A comma-separated list of labels, printed as "2.1 (def:grid), 3.4 (lem:tail)".
+\ExplSyntaxOn
+\seq_new:N \l__incognita_refs_seq
+\cs_new_protected:Npn \incognita@printrefs #1
+  {
+    \seq_clear:N \l__incognita_refs_seq
+    \exp_args:No \clist_map_inline:nn {#1}
+      {
+        \seq_put_right:Nn \l__incognita_refs_seq
+          { \ref{##1}~(\texttt{\detokenize{##1}}) }
+      }
+    \seq_use:Nn \l__incognita_refs_seq { ,~ }
+  }
+\ExplSyntaxOff
+
+\newcommand{\incognita@greyline}[1]{%
+  \par\smallskip{\normalfont\footnotesize\color{incognitaGrey}#1\par}}
+
+% Verified nodes (certification.tex): inside a statement environment, \label{<l>} sets \leanok
+% when <l> is verified. \label is wrapped locally, inside the group of the environment only.
+\newcommand{\incognitaverified}[2]{\expandafter\def\csname incognita@ok@#1\endcsname{#2}}
+\def\incognita@cert{}
+\newcommand{\incognitacertification}[1]{\def\incognita@cert{#1}}
+\newcommand{\incognita@checklabel}[1]{%
+  \ifcsname incognita@ok@#1\endcsname
+    \incognita@leanoktrue
+    \expandafter\let\expandafter\incognita@leannames\csname incognita@ok@#1\endcsname
+  \fi}
+\newcommand{\incognita@watchlabel}{%
+  \let\incognita@savedlabel\label
+  \def\label##1{\incognita@savedlabel{##1}\incognita@checklabel{##1}}}
+
+\newcommand{\lean}[1]{\def\incognita@leannames{#1}}
+\newcommand{\leanok}{\incognita@leanoktrue}
+\newcommand{\mathlibok}{\incognita@mathliboktrue}
+\newcommand{\notready}{\incognita@notreadytrue}
+\newcommand{\proves}[1]{}
+\newcommand{\discussion}[1]{}
+\newcommand{\uses}[1]{%
+  \ifincognita@inproof
+    \incognita@greyline{Uses: \incognita@printrefs{#1}}%
+  \else
+    \def\incognita@uses{#1}%
+  \fi}
+
+\newcommand{\incognita@leannamesline}{%
+  \texttt{\detokenize\expandafter{\incognita@leannames}}}
+
+\newcommand{\incognita@box}[1]{%
+  \par\medskip
+  {\normalfont\setlength{\fboxsep}{5pt}\setlength{\fboxrule}{1.2pt}%
+   \noindent\fcolorbox{incognitaLean}{incognitaLean!8}{%
+     \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\centering
+       {\color{incognitaLean}\sffamily\bfseries #1}%
+       \ifx\incognita@leannames\@empty\else
+         \\[2pt]{\footnotesize\incognita@leannamesline}%
+       \fi}}\par}}
+
+% Printed at the end of every statement environment, inside it.
+\newcommand{\incognita@statementend}{%
+  \ifx\incognita@uses\@empty\else
+    \incognita@greyline{Uses: \incognita@printrefs{\incognita@uses}}%
+  \fi
+  \ifincognita@notready
+    \incognita@greyline{Not ready for formalisation.}%
+  \fi
+  \ifincognita@leanok
+    \incognita@box{LEAN APPROVED}%
+  \else\ifincognita@mathlibok
+    \incognita@box{IN A DEPENDENCY}%
+  \else
+    \ifx\incognita@leannames\@empty\else
+      \incognita@greyline{Lean: \incognita@leannamesline\ (not verified)}%
+    \fi
+  \fi\fi}
+
+\ifincognita@theorems
+  \theoremstyle{plain}
+  \newtheorem{theorem}{Theorem}[section]
+  \newtheorem{lemma}[theorem]{Lemma}
+  \newtheorem{proposition}[theorem]{Proposition}
+  \newtheorem{corollary}[theorem]{Corollary}
+  \theoremstyle{definition}
+  \newtheorem{definition}[theorem]{Definition}
+  \newtheorem{example}[theorem]{Example}
+  \theoremstyle{remark}
+  \newtheorem{remark}[theorem]{Remark}
+  \theoremstyle{definition}
+  \newtheorem{openquestion}{Open question}
+\fi
+
+\AddToHook{env/theorem/end}{\incognita@statementend}
+\AddToHook{env/lemma/end}{\incognita@statementend}
+\AddToHook{env/proposition/end}{\incognita@statementend}
+\AddToHook{env/corollary/end}{\incognita@statementend}
+\AddToHook{env/definition/end}{\incognita@statementend}
+\AddToHook{env/proof/begin}{\incognita@inprooftrue}
+\AddToHook{env/theorem/begin}{\incognita@watchlabel}
+\AddToHook{env/lemma/begin}{\incognita@watchlabel}
+\AddToHook{env/proposition/begin}{\incognita@watchlabel}
+\AddToHook{env/corollary/begin}{\incognita@watchlabel}
+\AddToHook{env/definition/begin}{\incognita@watchlabel}
+
+% The certification of the paper (generated by CI), printed under the date of the title.
+\InputIfFileExists{certification.tex}{}{}
+\AtBeginDocument{%
+  \ifx\incognita@cert\@empty\else
+    \expandafter\def\expandafter\@date\expandafter{\@date\par\smallskip
+      {\normalfont\footnotesize\color{incognitaLean}\incognita@cert\par}}%
+  \fi}
+
+\endinput

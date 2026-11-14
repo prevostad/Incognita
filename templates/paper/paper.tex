@@ -1,0 +1,143 @@
+% Incognita paper template. Copy paper.tex, refs.bib and META.toml to papers/P<nnn>-<slug>/ and
+% replace every <...>. Rules: AGENTS.md, section 5 (keep this preamble; at most 12 pages and 25
+% nodes). Working notes go in notebook/, never in this file.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex (as CI),
+% after `python3 scripts/certify.py bib` (papers/library.bib, the library's papers; AGENTS.md 5.6).
+% Blueprint conventions: every definition/lemma/proposition/theorem/corollary has a \label;
+% statements start with \uses{def:...} when they use definitions; every proof starts with an
+% exhaustive \uses{...}; a proof away from its statement has \proves{...}. Never write \lean,
+% \leanok or \mathlibok in this file. After acceptance this file is never edited (AGENTS.md 6.6).
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+
+% Macros of this paper: \newcommand only.
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\kl}{\mathrm{kl}}
+
+\title{<Title: the main result in words>}
+\author{<Model(s)>, Incognita agents\thanks{Written by an AI agent (role write-paper) of the
+  Incognita project, refereed by AI agents. Roadmap: <Roadmap>, items <D/F/C numbers>.}}
+\date{<YYYY-MM-DD>}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+<Three to six sentences: the setting, the main result with its constant, how it compares with
+the closest known result, and the nature of the proof.>
+\end{abstract}
+
+\section{Main result}\label{sec:main}
+
+<One paragraph of context: which roadmap item this paper serves and why it matters.>
+
+\begin{theorem}[<Short name>]\label{thm:main}
+\uses{def:example}
+<The complete statement, with every quantifier in order: the class of instances, the class of
+learners (information model, consistency notion) or the algorithm, the criterion (which limit,
+along which times). A negative result or a counterexample is stated the same way.>
+\end{theorem}
+
+\paragraph{Constants.} <Explicit, or existential; on what they depend; their size if known.>
+
+\paragraph{Roadmap items.} <D, F or C numbers served (C: a candidate direction of
+\texttt{roadmaps/<Roadmap>/directions.md}). If the result is weaker than the item asks:
+what is missing, and why.>
+
+\section{Setting}\label{sec:setting}
+
+<The roadmap's pinned conventions used here, restated briefly; any convention changed, and why.>
+
+\begin{definition}[<Name>]\label{def:example}
+<A definition, in the roadmap's conventions. One node per object.>
+\end{definition}
+
+\section{Closest known}\label{sec:closest}
+
+<For each nearest KNOWN entry (by id: K3, never quoting a private one) and published result
+(\cite[<part>]{GMS19}) and library paper (cited as \texttt{\textbackslash cite[Theorem\~{}2]\{INC-P001\}},
+its version recorded in \texttt{depends\_on} of META.toml): what it says, the difference with
+Theorem~\ref{thm:main}, and an honest attempt to derive Theorem~\ref{thm:main} from it, with the
+step where the attempt fails.>
+
+\section{Proofs}\label{sec:proofs}
+
+\begin{lemma}[{\cite[inequality~(6)]{GMS19}}]\label{cite:GMS19-6}
+<A cited result: its statement copied verbatim from literature/notes/<KEY>.md, no proof.>
+For every random variable $Z \in [0,1]$ measurable with respect to the history up to $T$:
+$\sum_a \E_\nu[N_a(T)]\,\KL(\nu_a, \nu'_a) \ge \kl(\E_\nu Z, \E_{\nu'} Z)$, with $\kl$ the
+Bernoulli divergence.
+\end{lemma}
+
+% A result of a library paper used in a proof is a cited node too: \label{cite:INC-P001-thm:main}
+% (cite:INC-P<nnn>-<label>),
+% optional argument [{\cite[Theorem~2]{INC-P001}}], its statement copied verbatim from
+% papers/P001-.../paper.tex at the version recorded in depends_on ("P001v2:thm:main"), no proof.
+
+\begin{lemma}[<Short name>]\label{lem:example}
+\uses{def:example}
+<A step of the proof, short enough to be checked and formalised on its own.>
+\end{lemma}
+
+\begin{proof}
+\uses{def:example, cite:GMS19-6}
+<Its proof. A proof longer than one page is split into lemmas.>
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{def:example, lem:example}
+<The proof, citing each lemma where it is used.>
+\end{proof}
+
+\section{Sanity checks}\label{sec:sanity}
+
+<Degenerate cases (for example $x = 1$, $K = 2$, Bernoulli rewards, $N = 0$, ties, infinite
+divergences); consistency with every [Lean] entry of KNOWN.md and with the roadmap's known results;
+one explicit example satisfying all the hypotheses of Theorem~\ref{thm:main} at once.>
+
+\section{Weak points}\label{sec:weak}
+
+<The three steps the author is least sure of, each by label and step, most doubtful first:
+(1) Lemma~\ref{lem:example}, <step>: <why>; (2) ...; (3) ....>
+
+\section{Open questions}\label{sec:open}
+
+<One to five questions this paper leaves open, each precise enough to be the main result of a
+next paper: every quantifier, the class, the criterion; why it is open (where the method of this
+paper fails); the roadmap item it extends. The scope referee rates each one (interest, novelty,
+fit); those it accepts become candidate directions of the roadmap when the paper is accepted
+(\texttt{roadmaps/<Roadmap>/directions.md}). External and definitions papers may write ``None''.>
+
+\begin{openquestion}[<Short name>]\label{oq:example}
+<The question, stated completely: for example, does the conclusion of Theorem~\ref{thm:main} hold
+on every grid with $x_\ell \to x > 1$, with the constant $x^2$?>
+\end{openquestion}
+
+\section{Attribution}\label{sec:attribution}
+
+\begin{center}
+\begin{tabular}{p{0.42\textwidth}p{0.48\textwidth}}
+\hline
+Technique (where) & Earliest source found \\
+\hline
+<Change of measure, Lemma~\ref{lem:example}> & \cite[inequality~(6)]{GMS19}, <or ``source not known''> \\
+\hline
+\end{tabular}
+\end{center}
+
+\paragraph{Searches.} <The web queries run, with the date, and what they found.>
+
+\bibliographystyle{alpha}
+% refs: the works cited; ../../papers/library: the library's papers (generated; keys INC-P<nnn>).
+\bibliography{refs,../../papers/library}
+
+\end{document}

@@ -1,6 +1,8 @@
 name: CI
 
 # Build and checks. Steps adapted from lml-paper-template's shared workflow (Apache 2.0).
+# Order: checks that need no build first (no Lean code runs before them), then the library, the
+# frozen statements, the audit and its canaries, the remaining checks, and the drafts last.
 
 on:
   push:
@@ -35,6 +37,42 @@ jobs:
 
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Before any build: code that runs at elaboration time is refused.
+      - name: No metaprogramming in the Lean sources
+        run: python3 scripts/ci/check-meta.py
+
+      # Frozen statements, their locks and the proof markers only grow; the owner merges a
+      # deliberate non-additive change with the ruleset's admin bypass.
+      - name: Statements and proof markers are append-only
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bash scripts/ci/check-additive.sh "origin/$BASE_REF"
+
+      - name: Canaries of the CI scripts
+        run: bash tests/canaries/scripts.sh
+
+      # META.toml (roadmap, version, depends_on), citations of library papers (INC-P<nnn>), open
+      # questions, candidate directions; on pull requests, the version and append-only rules against
+      # the base: directions.md, catalogue/garden.md, errata and statement corrections
+      # (scripts/certify.py, AGENTS.md sections 2, 5 and 9). papers/library.bib is never committed.
+      - name: Library metadata
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then python3 scripts/certify.py check --base "origin/$BASE_REF"
+          else python3 scripts/certify.py check; fi
+
+      # The loop's own tests (fake gh, local repositories; no network, no Claude), and those of the
+      # launcher and the weekly cap (Paris time, fake usage answers, a fake claude setup-token).
+      - name: Offline tests of the loop
+        run: |
+          bash scripts/test-lib.sh
+          bash scripts/test-loop.sh
+          bash scripts/test-start.sh
 
       - name: Install elan
         run: |
@@ -65,13 +103,13 @@ jobs:
       - name: Statements
         run: bash scripts/check-build.sh Statements
 
-      # Drafts: must compile; warnings allowed.
-      - name: Exploration
-        run: bash scripts/build.sh Exploration
-
-      # Library axioms, and proofs of frozen statements have exactly the frozen type.
+      # Axioms, frozen statements and their locks, proofs, proof markers, kernel replay.
       - name: Audit
-        run: lake exe audit
+        run: lake exe audit --check
+
+      # The audit must fail on each broken example (in a temporary copy of the repository).
+      - name: Canaries of the audit
+        run: bash tests/canaries/run.sh
 
       - name: Mathlib's linters
         run: lake lint
@@ -85,3 +123,23 @@ jobs:
           for lib in Incognita Statements Exploration; do
             lake exe mk_all --check --lib "$lib"
           done
+
+      # Drafts, last: must compile; warnings allowed.
+      - name: Exploration
+        run: bash scripts/build.sh Exploration
+
+      # The certification of every paper (levels, re-checks, badges), from the audit's statuses:
+      # in the run's summary and the artifact `certification` (generated, never committed).
+      - name: Certification
+        run: |
+          set -euo pipefail
+          mkdir -p certification
+          lake exe audit --status > certification/audit-status.txt
+          python3 scripts/certify.py report --audit certification/audit-status.txt --out certification/certification.md
+          cat certification/certification.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the certification
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification
+          path: certification/

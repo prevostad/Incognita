@@ -1,10 +1,13 @@
 name: Incognita review
 
-# The ruleset of main requires the check "Incognita review". On the pull requests of agents
-# (branches agent/*), the automated reviewer sets it (scripts/agent.sh, role review-pr): green for
-# "Verdict: approve", red otherwise, and missing (so merging is blocked) on a commit not reviewed
-# yet. Pull requests of humans are reviewed by the human who merges them: this workflow marks them
-# as such.
+# The ruleset of main requires the commit status "Incognita review".
+# - Agents' pull requests (branches agent/*, opened by the loop's account): the loop sets it on the
+#   reviewed head (scripts/agent.sh, DECISIONS D13), from the trusted verdicts of review-pr,
+#   review-statements, or both referees for a paper. It is missing (so merging is blocked) on a head
+#   not reviewed yet. The loop trusts only statuses created by its own account, never this workflow's.
+# - Human pull requests from THIS repository are reviewed by the human who merges them: this workflow
+#   marks them as such.
+# - Pull requests from forks: never marked; the agents ignore them.
 
 on:
   pull_request:
@@ -15,7 +18,9 @@ permissions:
 
 jobs:
   human:
-    if: ${{ !startsWith(github.event.pull_request.head.ref, 'agent/') }}
+    if: >-
+      ${{ github.event.pull_request.head.repo.full_name == github.repository
+          && !startsWith(github.event.pull_request.head.ref, 'agent/') }}
     runs-on: ubuntu-latest
     name: Human pull request
     steps:
