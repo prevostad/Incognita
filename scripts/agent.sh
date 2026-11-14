@@ -6,7 +6,8 @@
 #   write-paper <Roadmap>          formalize-statements <Paper>     prove <Paper>
 #   referee-scope <PR>             referee-proofs <PR>              review-statements <PR>
 #   review-pr <PR>                 revise <PR> | revise <Paper>     fix-pr <PR> | fix-pr main
-#   bibliographer                  garden
+#   bibliographer                  garden                           propose-roadmap <Roadmap> | -
+#   review-roadmap <PR>
 #
 # Run by the user `lean` in its clone of main (never edited by hand), normally from scripts/loop.sh.
 # The loop never runs git or lake inside the agent's clone: inputs go in as a git bundle, outputs
@@ -143,6 +144,7 @@ case "$role:$target" in
     case "$role" in
       referee-scope|referee-proofs|revise) [ "$kind" = paper ] || finish skip "not-a-paper-pr" ;;
       review-statements) [ "$kind" = statements ] || finish skip "not-a-statements-pr" ;;
+      review-roadmap) [ "$kind" = roadmap ] || finish skip "not-a-roadmap-pr" ;;
       review-pr) [ "$kind" = generic ] || finish skip "not-a-generic-pr" ;;
     esac
     paper=$(paper_of_ref "$H" | head -n 1)
@@ -167,6 +169,9 @@ case "$role:$target" in
   write-paper:*)
     [[ "$target" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "write-paper needs a roadmap" >&2; exit 2; }
     roadmap=$target ;;
+  propose-roadmap:*)
+    [ "$target" = - ] || [[ "$target" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "propose-roadmap needs a roadmap or -" >&2; exit 2; }
+    [ "$target" = - ] || roadmap=$target ;;
   formalize-statements:*|prove:*)
     [[ "$target" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "$role needs a paper" >&2; exit 2; }
     paper=$(paper_of_num "$(paper_num "$target")") || paper=$target ;;
@@ -294,6 +299,43 @@ if [ "$role" = write-paper ]; then
   last=$(sed -n -E 's/^P0*([0-9]+)-.*/\1/p' "$tmp/taken" | sort -n | tail -n 1)
   paper_number=$(printf 'P%03d' $(( ${last:--1} + 1 )))
 fi
+# The items of the roadmap on main (directions, known results, candidate directions; computed by
+# scripts/certify.py items), for writers and proposers.
+if { [ "$role" = write-paper ] || [ "$role" = propose-roadmap ]; } && [ -n "$roadmap" ]; then
+  { echo "# Items of the roadmap $roadmap on main (computed by scripts/certify.py items)"
+    echo
+    echo "One line per item: open (no paper on main serves it: check papers.md for open and rejected"
+    echo "pull requests), closed (pending owner decision, on hold, closed, or in a proposed extension),"
+    echo "covered (the papers on main that serve it), dropped (a candidate direction)."
+    echo
+    certify_py items "$roadmap" 2>&1 | sed 's/^/- /'
+  } > "$ctx/items.md"
+  files="$files items.md"
+fi
+# The roadmaps, for a proposer: status, domain, KNOWN.md reviewed or not, free items.
+if [ "$role" = propose-roadmap ]; then
+  { echo "# Roadmaps on main"
+    echo
+    echo "| Roadmap | Status | Domain | KNOWN.md | Extensions | Free items |"
+    echo "|---|---|---|---|---|---|"
+    for r in $(ls_main roadmaps); do
+      rm_text=$(show_main "roadmaps/$r/ROADMAP.md") || continue
+      st=$(printf '%s\n' "$rm_text" | sed -n -E 's/^\| Status \| \*\*([a-z]+)\*\*.*/\1/p' | head -n 1)
+      dom=$(printf '%s\n' "$rm_text" | sed -n -E 's/^\| Domain \| `?([a-z0-9-]+)`?.*/\1/p' | head -n 1)
+      kn=$(show_main "roadmaps/$r/KNOWN.md" | head -n 1)
+      ext=$(ls_main "roadmaps/$r/extensions" | tr '\n' ' ')
+      fr=$(certify_py items "$r" --free 2>/dev/null | cut -d' ' -f1 | tr '\n' ' ')
+      echo "| $r | ${st:-?} | ${dom:-?} | ${kn:-?} | ${ext:--} | ${fr:-none} |"
+    done
+    echo
+    echo "Domains of the approved roadmaps (a proposal inside one of them is approved after a veto"
+    echo "window; a new domain needs the owner's explicit approval): $(for r in $(ls_main roadmaps); do
+        show_main "roadmaps/$r/ROADMAP.md" | grep -q '^| Status | \*\*approved' || continue
+        show_main "roadmaps/$r/ROADMAP.md" | sed -n -E 's/^\| Domain \| `?([a-z0-9-]+)`?.*/\1/p' | head -n 1
+      done | sort -u | tr '\n' ' ')"
+  } > "$ctx/roadmaps.md"
+  files="$files roadmaps.md"
+fi
 if [ "$role" = write-paper ] || [ "$role" = referee-scope ]; then
   if [ -n "$roadmap" ]; then
     rejected_reports "$roadmap" > "$tmp/rejected.md" 2>/dev/null
@@ -333,7 +375,14 @@ fi
 [ "$role" = fix-pr ] && [ -n "$pr" ] && add_situation "Fix round $(( fixes + 1 )); the pull request was opened by the role \`$pr_role\` (target \`$pr_target\`): keep its purpose, and its paths (AGENTS.md §2, line \`$eff_role\`)."
 [ "$eff_role" = fix-main ] && [ -z "$pr" ] && add_situation "The build of \`main\` is red (see \`ci-log.txt\`): repair it with the smallest change; a new pull request \"fix main\" is opened."
 if [ "$role" = revise ] && [ -z "$pr" ]; then
-  add_situation "The paper \`$paper\` is disputed: write its next version for the errata entries $(disputed_entries "$paper" | tr '\n' ' ')(\`papers/$paper/errata.md\`), on a new pull request."
+  cur_version=$(show_main "papers/$paper/META.toml" | sed -n -E 's/^version[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -n 1)
+  de=$(disputed_entries "$paper" | tr '\n' ' ')
+  [ -n "$de" ] && add_situation "The paper \`$paper\` is disputed: write its next version for the errata entries $de(\`papers/$paper/errata.md\`), on a new pull request: \`version = $(( ${cur_version:-1} + 1 ))\` in META.toml, and \`python3 scripts/certify.py bib\`."
+  dc=$(certify_py depchecks 2>/dev/null | awk -v p="$paper" '$1 == p { printf "%s ", $2 }')
+  [ -n "$dc" ] && add_situation "Dependency check (AGENTS.md section 5.6): library papers this paper depends on have a new version since it cited them: $dc. For each, compare the nodes this paper uses (\`depends_on\` in META.toml) with the new version. Not affected: add a line to \`papers/$paper/dependency-checks.md\` and update \`depends_on\` to the new version (paper.tex unchanged, same version). Affected: add an entry \`E<k>\` to \`papers/$paper/errata.md\` and write the next version (\`version = $(( ${cur_version:-1} + 1 ))\`), with the line \`Revised in …\` under it."
+fi
+if [ "$role" = write-paper ]; then
+  add_situation "A new paper has \`version = 1\` and lists in \`depends_on\` the results of library papers it uses (each cited as \`\\cite[...]{INC-P<nnn>}\`); run \`python3 scripts/certify.py bib\` and \`python3 scripts/certify.py check\` before the last commit."
 fi
 if [ "$role" = formalize-statements ] && [ -n "$paper" ]; then
   fe=$(freeze_entries "$paper" | tr '\n' ' ')
@@ -526,7 +575,7 @@ if is_review_role "$role"; then
   url=$(post_comment "$pr" "$role" "$H" "$tmp/body.md") || finish fail "comment-failed"
   desc="role=$role verdict=$verdict pr=$pr"
   case "$role" in
-    review-pr|review-statements)
+    review-pr|review-statements|review-roadmap)
       if [ "$verdict" = approve ]; then st=success; else st=failure; fi
       set_status "$H" "Incognita review" "$st" "$desc" ;;
     referee-scope)
@@ -556,6 +605,8 @@ if is_review_role "$role"; then
     [ "$verdict" = reject ] && why="$role: reject"
     [ "$verdict" = major ] && [ "$rounds" -ge "$INCOGNITA_REVISION_ROUNDS" ] && why="$role: major after $rounds revision rounds"
     [ -n "$why" ] && close_rejected "$pr" "$H" "$why" "$(printf '%s' "$pr_title" | one_line 120)"
+  elif [ "$verdict" = reject ] && [ "$kind" = roadmap ]; then
+    close_rejected "$pr" "$H" "$role: reject" "$(printf '%s' "$pr_title" | one_line 120)"
   elif [ "$verdict" = reject ]; then
     escalate "$pr" "$role: reject"
   fi
@@ -588,6 +639,13 @@ ckind=$role
 is_fix_round() { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }
 
 if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
+  # A writer that found no open item says so (line "No open item in <Roadmap>."): the roadmap is
+  # exhausted until its items change, and the loop proposes an extension (AGENTS.md section 4).
+  if [ "$role" = write-paper ] && [ -n "$roadmap" ] && grep -qE '^(- )?No open item' "$summary" \
+      && h=$(certify_py items-hash "$roadmap" 2>/dev/null); then
+    mark_set "exhausted $roadmap $h"
+    record_event exhausted "$role" "$roadmap" "no open item"
+  fi
   if [ -n "$pr" ]; then
     { printf '%s round: no change (%s).\n\n' "$( [ "$ckind" = revise ] && echo Revision || echo Fix )" "$subtype"; cat "$summary"; footer "$H"; } > "$tmp/body.md"
     post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null

@@ -101,10 +101,13 @@ ok "CI: the same rule in agent.sh (ci_of)" '[ "$(jq -r --arg role write-paper "$
 # ---- path whitelist on a scratch repository
 cd "$INCOGNITA_REPO" || exit 1
 git init -q -b main . && git config user.name t && git config user.email t@t
-mkdir -p Statements Incognita papers literature
+mkdir -p Statements Incognita papers literature roadmaps/BB
 printf 'module\n\npublic import Statements.Basic\n' > Statements.lean
 printf 'module\n\npublic import Incognita.Basic\n' > Incognita.lean
 echo x > Statements/Basic.lean; echo x > Incognita/Basic.lean; echo r > README.md
+printf '# Roadmap\n\n| | |\n|---|---|\n| Status | **approved** (2026-11-14) |\n| Domain | `bandits` |\n\n## Open directions\n\n- **D1. One.** Text.\n- **D2. Two.** On hold.\n' > roadmaps/BB/ROADMAP.md
+printf 'Reviewed by owner: 2026-11-14\n' > roadmaps/BB/KNOWN.md
+printf '# Candidate directions of BB\n' > roadmaps/BB/directions.md
 git add -A && git commit -qm base && git update-ref refs/remotes/origin/main HEAD
 base=$(git rev-parse HEAD)
 try() {  # name role paper expect(0 pass, 1 refuse) setup-commands
@@ -187,7 +190,34 @@ try "garden may not write attribution audits" garden "" 1 'mkdir -p catalogue/at
 try "fix-main: Statements.lean imports" fix-main "" 0 'echo "public import Statements.P001.x" >> Statements.lean'
 try "fix-main may not touch papers/" fix-main "" 1 'mkdir -p papers/P001-test; echo p > papers/P001-test/blueprint.md'
 try "fix-main may not touch Statements/" fix-main "" 1 'mkdir -p Statements/P001; echo t > Statements/P001/x.lean'
+# library.bib, dependency checks (AGENTS.md 5.6)
+try "write-paper may regenerate papers/library.bib" write-paper "" 0 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/library.bib'
+try "revise: dependency-checks.md, library.bib" revise P001-test 0 'mkdir -p papers/P001-test; echo d > papers/P001-test/dependency-checks.md; echo b > papers/library.bib'
+try "prove may not write library.bib" prove P001-test 1 'mkdir -p papers; echo b > papers/library.bib'
+try "fix-main may regenerate library.bib" fix-main "" 0 'mkdir -p papers; echo b > papers/library.bib'
+# candidate directions (roadmaps/<R>/directions.md): entries by the loop, Dropped lines by garden
+try "garden may add a Dropped line to directions.md" garden "" 0 'echo "Dropped (d, garden, m): known." >> roadmaps/BB/directions.md'
+try "garden may not create directions.md" garden "" 1 'mkdir -p roadmaps/XX; echo x > roadmaps/XX/directions.md'
+try "garden may not touch ROADMAP.md" garden "" 1 'echo x >> roadmaps/BB/ROADMAP.md'
+try "garden: an erratum after a failed re-check" garden "" 0 'mkdir -p papers/P001-test; echo e > papers/P001-test/errata.md'
+try "write-paper may not touch directions.md" write-paper "" 1 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo x >> roadmaps/BB/directions.md'
+# roadmap proposals (propose-roadmap): one new roadmap or one extension, status proposed
+newrm='mkdir -p roadmaps/NewArea; printf "# R\n\n| | |\n|---|---|\n| Status | **proposed** (by propose-roadmap, m, d) |\n| Domain | \`bandits\` |\n\n- **D1. A.** x\n" > roadmaps/NewArea/ROADMAP.md'
+try "propose-roadmap: a new roadmap" propose-roadmap "" 0 "$newrm; printf 'Reviewed by owner: no\n' > roadmaps/NewArea/KNOWN.md"
+try "propose-roadmap: KNOWN.md not reviewed" propose-roadmap "" 1 "$newrm; printf 'Reviewed by owner: 2026-01-01\n' > roadmaps/NewArea/KNOWN.md"
+try "propose-roadmap: never approved by the agent" propose-roadmap "" 1 "$newrm; sed -i 's/proposed/approved/' roadmaps/NewArea/ROADMAP.md; printf 'Reviewed by owner: no\n' > roadmaps/NewArea/KNOWN.md"
+try "propose-roadmap: without KNOWN.md" propose-roadmap "" 1 "$newrm"
+ext='mkdir -p roadmaps/BB/extensions; printf "# X1\n\n| | |\n|---|---|\n| Status | **proposed** (by propose-roadmap, m, d) |\n\n- **D3. New.** x\n" > roadmaps/BB/extensions/X1.md'
+try "propose-roadmap: an extension" propose-roadmap "" 0 "$ext"
+try "propose-roadmap: an extension reuses no direction number" propose-roadmap "" 1 "$ext; sed -i 's/D3/D2/' roadmaps/BB/extensions/X1.md"
+try "propose-roadmap: extensions are numbered" propose-roadmap "" 1 "$ext; git mv -f roadmaps/BB/extensions/X1.md roadmaps/BB/extensions/X2.md 2>/dev/null || mv roadmaps/BB/extensions/X1.md roadmaps/BB/extensions/X2.md"
+try "propose-roadmap: one proposal per pull request" propose-roadmap "" 1 "$ext; $newrm; printf 'Reviewed by owner: no\n' > roadmaps/NewArea/KNOWN.md"
+try "propose-roadmap may not edit a roadmap" propose-roadmap "" 1 'echo x >> roadmaps/BB/ROADMAP.md'
+try "propose-roadmap may not write papers" propose-roadmap "" 1 "$ext; mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex"
+try "review-roadmap changes nothing" review-roadmap "" 1 "$ext"
 # the owner's paths, for every role
+try "human audits are the owner's" garden "" 1 'mkdir -p papers/P001-test; echo h > papers/P001-test/human-audits.md'
+try "the certification is generated, never committed" fix-main "" 1 'mkdir -p papers/P001-test; echo c > papers/P001-test/certification.tex'
 try "README.md anywhere is the owner's" bibliographer "" 1 'mkdir -p literature; echo r > literature/README.md'
 try "withdrawn.md is the owner's" revise P001-test 1 'mkdir -p papers/P001-test; echo w > papers/P001-test/withdrawn.md'
 try "tests/ is the owner's" prove P001-test 1 'mkdir -p tests; echo t > tests/x.sh'
@@ -203,6 +233,10 @@ ok "papers/ in a proof PR: blueprint.md, formalisation.tex ok; errata, paper.tex
 ok "refs.bib fixed by the bibliographer: literature" '[ "$(path_category generic papers/P001-a/refs.bib M)" = literature ]'
 ok "category statements" '[ "$(path_category generic Statements/P/x.lean A)" = statements ]'
 ok "results markers: additions are proofs" '[ "$(path_category generic catalogue/results/x.toml A)" = proofs ] && [ "$(path_category generic catalogue/results/x.toml M)" = literature ]'
+ok "categories directions and roadmap" '[ "$(path_category generic roadmaps/BB/directions.md M)" = directions ] && [ "$(path_category roadmap roadmaps/X/ROADMAP.md A)" = roadmap ]'
+ok "library.bib: papers in a paper PR, literature otherwise" '[ "$(path_category paper papers/library.bib M)" = papers ] && [ "$(path_category generic papers/library.bib M)" = literature ]'
+ok "pr_kind of a proposal" '[ "$(pr_kind propose-roadmap)" = roadmap ]'
+ok "roadmap is never an automerge category by default" '! automerge_enabled roadmap && automerge_enabled directions'
 git checkout -q -f "$base"; mkdir -p Incognita/P; printf 'theorem a : True := trivial\n' > Incognita/P/A.lean; git add -A; git commit -qm thm
 ok "a theorem is a proof" 'adds_only_theorems "$base" HEAD'
 printf 'noncomputable def f : Nat := 0\n' >> Incognita/P/A.lean; git add -A; git commit -qm def
@@ -250,6 +284,125 @@ ok "to freeze: errata revised, corrections not resolved" '[ "$(freeze_entries P0
 ok "superseded: frozen statements of resolved entries" '[ "$(superseded P001-test | tr "\n" " ")" = "a c " ]'
 ok "no errata file: nothing" '[ -z "$(disputed_entries P009-none)$(freeze_entries P009-none)" ]'
 git update-ref refs/remotes/origin/main "$base"
+
+# ---- library metadata (scripts/certify.py): versions, dependencies, library.bib, certification,
+#      roadmap items, candidate directions, roadmap proposals
+L=$t/lib; mkdir -p "$L"; cd "$L" || exit 1
+git init -q -b main . && git config user.name t && git config user.email t@t
+C() { python3 "$here/certify.py" --repo "$L" "$@"; }
+mkpaper() {  # dir version depends_on cite-line [directions]
+  mkdir -p "papers/$1"
+  printf 'roadmap = "BB"\nkind = "internal"\ndirections = [%s]\nauthors = ["m"]\nversion = %s\ndepends_on = %s\n' \
+    "${5:-\"D1\"}" "$2" "$3" > "papers/$1/META.toml"
+  cat > "papers/$1/paper.tex" <<EOF
+\title{Paper $1\thanks{Written by agents.}}
+\date{2026-11-20}
+\begin{theorem}\label{thm:main} T. \end{theorem}
+$4
+\section{Open questions}
+\begin{openquestion}[Rate]\label{oq:rate}
+Is the rate optimal on every grid?
+\end{openquestion}
+\begin{openquestion}\label{oq:other}
+Another question.
+\end{openquestion}
+EOF
+}
+mkdir -p roadmaps/BB
+printf '# R\n\n| | |\n|---|---|\n| Status | **approved** (d) |\n| Domain | `bandits` |\n\n- **F0. Setting.** x\n- **D1. One.** x\n- **D2. Two.** **On hold**.\n' > roadmaps/BB/ROADMAP.md
+printf 'Reviewed by owner: 2026-11-14\n' > roadmaps/BB/KNOWN.md
+mkpaper P001-first 1 '[]' ''
+mkpaper P002-second 1 '["P001v1:thm:main"]' 'By \cite[Theorem~1]{INC-P001}.' '"D2"'
+C bib >/dev/null
+ok "certify: a consistent library passes" 'C check >/dev/null'
+ok "certify: library.bib has the key and the version" 'grep -q "@misc{INC-P002," papers/library.bib && grep -q "version      = {1}" papers/library.bib && grep -q "title        = {{Paper P001-first}}" papers/library.bib'
+git add -A; git commit -qm "P001, P002
+
+Incognita-Role: write-paper
+Incognita-Reviews: referee-scope=accept referee-proofs=accept"
+base=$(git rev-parse HEAD)
+sed -i 's/By .cite.Theorem~1..INC-P001../By the first paper./' papers/P002-second/paper.tex
+ok "certify: depends_on without a citation fails" '! C check >/dev/null'
+git checkout -q -- .
+sed -i 's/thm:main/thm:nope/' papers/P002-second/META.toml
+ok "certify: a dependency on a missing label fails" '! C check >/dev/null'
+git checkout -q -- .
+echo '% stale' >> papers/library.bib
+ok "certify: a stale library.bib fails" '! C check >/dev/null'
+git checkout -q -- .
+echo 'More.' >> papers/P001-first/paper.tex
+ok "certify: a new paper.tex needs a new version" '! C check --base "$base" >/dev/null'
+sed -i 's/^version = 1/version = 2/' papers/P001-first/META.toml; C bib >/dev/null
+ok "certify: version 2 with the new paper.tex passes" 'C check --base "$base" >/dev/null'
+ok "certify: the dependants of a revised paper need a check" '[ "$(C depchecks)" = "P002-second P001v1->v2" ]'
+ok "certify: formalisation priority (dependants)" '[ "$(C dependants | tr "\n" " ")" = "P001-first 1 P002-second 0 " ]'
+git add -A; git commit -qm "P001 v2"
+lv() { C report | awk -F'|' -v p="$1" 'index($2, "[" p "]") { print $5 }' | sed 's/^ *//; s/ *$//'; }
+ok "certify: a paper.tex last merged outside the loop is accepted by the owner" '[ "$(lv P001)" = "1 accepted (by the owner)" ]'
+# Certification: frozen statements (locks), proof markers, garden log, human audits.
+mkdir -p Statements/P001 Statements/P002 catalogue/results
+: > Statements/P001/main.lock
+printf 'paper = "P001-first"\nlabel = "thm:main"\nstatement = "Incognita.Statements.P001.main"\nproof = "Incognita.P001.main"\nstatus = "proved"\n' > catalogue/results/P001-main.toml
+git add -A; git commit -qm "P001 proved"
+ok "certify: level 2 when every frozen statement is proved" '[[ "$(lv P001)" == "2 Lean-verified" ]]'
+ok "certify: level 1 without frozen statements (accepted by both referees)" '[ "$(lv P002)" = "1 accepted" ]'
+: > Statements/P002/main.lock
+printf 'paper = "P002-second"\nlabel = "thm:main"\nstatus = "proved"\n' > catalogue/results/P002-main.toml
+m1=$(git rev-parse HEAD)
+printf '| Date | Model | Item | Check | Outcome | Main |\n|---|---|---|---|---|---|\n| 2026-11-21 | m1 | P001 | back-translation | confirmed | %s |\n| 2026-11-22 | m1 | P001 thm:main | back-translation | confirmed | %s |\n' "$m1" "$m1" > catalogue/garden.md
+ok "certify: level 3 after a re-check; a repeated pass brings nothing new" '[[ "$(lv P001)" == "3 re-verified" ]] && C report | grep -q "| 1 (back-translation by m1) |"'
+printf '| 2026-11-23 | m2 | P001 | back-translation | confirmed | %s |\n' "$m1" >> catalogue/garden.md
+ok "certify: another model counts" 'C report | grep -q "| 2 (back-translation by m1, back-translation by m2) |"'
+ok "certify: used by a verified paper" 'C report | grep -F "[P001]" | grep -q "used by 1 (P002)"'
+printf -- '- A. Owner, 2026-11-25, v1: read thm:main.\n' > papers/P001-first/human-audits.md
+ok "certify: audited by a human (of an older version)" 'C report | grep -F "[P001]" | grep -q "audited by a human: A. Owner, 2026-11-25, v1 (current: v2)"'
+C leanok >/dev/null
+ok "certify: the PDF gets the verified node" 'grep -qF "\\incognitaverified{thm:main}{Incognita.P001.main}" papers/P001-first/certification.tex'
+mkpaper P003-third 1 '["P002v1:thm:main"]' 'From \cite{INC-P002}.'
+mkdir -p Statements/P003; : > Statements/P003/main.lock
+printf 'paper = "P003-third"\nlabel = "thm:main"\nstatus = "proved"\n' > catalogue/results/P003-main.toml
+printf '| 2026-11-24 | m1 | P002 | known-cases | failed | %s |\n' "$m1" >> catalogue/garden.md
+ok "certify: a failed re-check disputes the paper" '[[ "$(lv P002)" == "0 disputed"* ]]'
+ok "certify: and caps its dependants" '[ "$(lv P003)" = "0 capped (own level 2 Lean-verified)" ] && C report | grep -F "[P003]" | grep -q "conditional on P002v1:thm:main"'
+ok "certify: papers depending on a disputed paper" '[ "$(C disputed-deps)" = "P003-third P002 disputed" ]'
+rm -rf papers/P003-third Statements/P003 catalogue/results/P003-main.toml; git checkout -q -- catalogue/garden.md 2>/dev/null; rm -f catalogue/garden.md
+# Roadmap items and candidate directions.
+ok "certify: items (closed, covered, open)" '[ "$(C items BB | tr "\n" ";")" = "F0 open;D1 covered P001;D2 closed;" ]'
+cat > "$t/scope.md" <<'EOF'
+Verdict: accept
+
+## Open questions
+| Question | Interest | Novelty | Fit | Candidate | Reason |
+|---|---|---|---|---|---|
+| oq:rate | high | open | D1 | yes | |
+| `oq:other` | low | open | D1 | no | |
+EOF
+ok "certify: accepted open questions become candidate directions" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789 --date 2026-11-26)" = 1 ]'
+ok "certify: the entry" 'grep -q "^## C1 (2026-11-26, from P002v1 oq:rate)" roadmaps/BB/directions.md && grep -q "^- Rating: interest high; novelty open; fit D1 (referee-scope, pull request #7, head abcdef012345)" roadmaps/BB/directions.md'
+ok "certify: candidates are added once" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789)" = 0 ] && C check >/dev/null'
+ok "certify: a candidate is an item" 'C items BB --free | grep -qx "C1 open"'
+git add -A; git commit -qm "directions"; base=$(git rev-parse HEAD)
+printf 'Dropped (2026-11-27, garden, m): answered by P001.\n' >> roadmaps/BB/directions.md
+ok "certify: a Dropped line may be added" 'C check --base "$base" >/dev/null && C items BB | grep -qx "C1 dropped"'
+sed -i 's/^- Title: Rate/- Title: Speed/' roadmaps/BB/directions.md
+ok "certify: an entry is never edited" '! C check --base "$base" >/dev/null'
+git checkout -q -- .
+# Roadmap proposals: validity, scripted approval, verification of scripted commits.
+git checkout -q -b proposal
+mkdir -p roadmaps/NewArea
+printf '# R\n\n| | |\n|---|---|\n| Status | **proposed** (by propose-roadmap, m, d) |\n| Domain | `bandits` |\n\n- **D1. A.** x\n' > roadmaps/NewArea/ROADMAP.md
+printf 'Reviewed by owner: no\n' > roadmaps/NewArea/KNOWN.md
+git add -A; git commit -qm proposal; ph=$(git rev-parse HEAD)
+ok "certify: a proposal in an existing domain" '[ "$(C proposal --base main --head HEAD)" = "new NewArea bandits existing" ]'
+sed -i 's/`bandits`/`games`/' roadmaps/NewArea/ROADMAP.md; git commit -qam "other domain"
+ok "certify: a proposal in a new domain" '[ "$(C proposal --base main --head HEAD)" = "new NewArea games new" ]'
+C approve-roadmap --base main --text "by the loop on 2026-11-30: test" >/dev/null; git commit -qam "Incognita loop: approved"
+ok "certify: the scripted approval sets the status" 'grep -q "^| Status | \*\*approved\*\* (by the loop on 2026-11-30: test) |$" roadmaps/NewArea/ROADMAP.md'
+ok "certify: the scripted approval checks" 'C verify-scripted --kind approved --parent HEAD^ --head HEAD >/dev/null'
+echo "- **D2. Smuggled.** x" >> roadmaps/NewArea/ROADMAP.md; git commit -qam "tampered"
+ok "certify: anything else in a scripted commit is refused" '! C verify-scripted --kind approved --parent HEAD^ --head HEAD >/dev/null 2>&1'
+git checkout -q main
+cd "$INCOGNITA_REPO" || exit 1
 
 # ---- state
 record_attempt prove P001-x fail no-commit

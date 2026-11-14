@@ -130,51 +130,144 @@ revise_rounds() {  # pr: "<rounds pushed> <rounds without change>" (trusted comm
   trusted_comments "$1" | jq -r '"\([.[] | select(.kind == "revise")] | length) \([.[] | select(.kind == "revise-nochange")] | length)"'
 }
 
+# ---------------------------------------------------------------- scripted commits (D13)
+# scripted_commit <pr> <H> <branch> <kind> <message> <certify.py args...>: one commit of the loop on
+# top of the reviewed head H ("scripted edits after a verdict"), written by scripts/certify.py in a
+# worktree (kinds: `directions`, the accepted open questions of a paper; `approved`, the status of a
+# roadmap proposal), pushed with a lease on H. The trusted statuses of H are copied to the new head,
+# with the status "Incognita loop" (role=loop verdict=<kind>); the merge, at a later pass after CI,
+# checks the scripted commit apart (certify.py verify-scripted). 0 pushed, 3 nothing to commit,
+# 2 error.
+scripted_commit() {
+  local n=$1 h=$2 br=$3 kind=$4 msg=$5; shift 5
+  local wt=$INCOGNITA_HOME/work/scripted-$n newh ctx state trusted desc d rc=0
+  fetch_pr_head "$n" "$h" || return 2
+  repo_git worktree remove --force "$wt" >/dev/null 2>&1; rm -rf "$wt"; repo_git worktree prune
+  repo_git worktree add -q --detach "$wt" "$h" || return 2
+  local g=(git -C "$wt" -c core.hooksPath=/dev/null -c core.fsmonitor=false
+           -c "user.name=$INCOGNITA_BOT_NAME" -c "user.email=$INCOGNITA_BOT_EMAIL")
+  if ! certify_py --repo "$wt" "$@" > "$work/scripted.out" 2>&1; then
+    log "#$n: scripts/certify.py $1 failed: $(tail -n 3 "$work/scripted.out" | tr '\n' ' ')"; rc=2
+  elif [ -z "$("${g[@]}" status --porcelain -- roadmaps)" ]; then rc=3
+  elif is_dry; then log "dry run: would push a scripted commit ($kind) to #$n: $(head -c 300 "$work/scripted.out" | tr '\n' ' ')"
+  elif ! { "${g[@]}" add -A -- roadmaps && "${g[@]}" commit -qm "$msg"; }; then rc=2
+  else newh=$("${g[@]}" rev-parse HEAD); fi
+  repo_git worktree remove --force "$wt" >/dev/null 2>&1
+  [ "$rc" = 0 ] || return "$rc"
+  is_dry && return 0
+  if ! repo_git push -q --force-with-lease="refs/heads/$br:$h" origin "$newh:refs/heads/$br"; then
+    log "#$n: push of the scripted commit refused (the branch moved)"; return 2
+  fi
+  load_sts "$h"
+  while IFS=$'\t' read -r ctx state trusted desc; do
+    [ "$trusted" = yes ] || continue
+    case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review") ;; *) continue ;; esac
+    d=${desc%% copied-from=*}; d=${d%% scripted-from=*}
+    set_status "$newh" "$ctx" "$state" "$d scripted-from=${h:0:12}"
+  done <<< "$STS_CUR"
+  set_status "$newh" "Incognita loop" success "role=loop verdict=$kind pr=$n parent=${h:0:12}"
+  printf '%s %s\n' "$n" "$newh" > "$INCOGNITA_STATE/finalizing-$kind"
+  { printf 'Scripted commit of the loop (`%s`, no agent) on the reviewed head `%s` → `%s`: %s. ' "$kind" "${h:0:12}" "${newh:0:12}" "$msg"
+    printf 'The pull request is merged after CI on the new head.\n\n```\n'; head -c 3000 "$work/scripted.out"; printf '\n```\n'
+  } > "$work/scripted.md"
+  post_comment "$n" scripted "$newh" "$work/scripted.md" >/dev/null
+  log "== scripted commit ($kind) on #$n: ${h:0:12} -> ${newh:0:12}"
+  return 0
+}
+# add_candidates <pr> <H> <branch> <paper>: the open questions of an accepted paper that the scope
+# referee rated as candidates (its latest report) become entries C<n> of roadmaps/<R>/directions.md.
+add_candidates() {
+  local n=$1 h=$2 br=$3 p=$4 rep=$work/scope-$1.md rc=0
+  [ -n "$p" ] || return 3
+  trusted_comments "$n" | jq -r '[.[] | select(.kind == "referee-scope")] | last | .body // ""' > "$rep" || return 2
+  [ -s "$rep" ] || return 3
+  scripted_commit "$n" "$h" "$br" directions "Incognita loop: candidate directions from $p (#$n)" \
+    add-candidates --paper "$p" --report "$rep" --pr "$n" --head "$h" || rc=$?
+  [ "$rc" = 0 ] && record_event directions - "$n" "$p: $(cat "$work/scripted.out" 2>/dev/null | tail -n 1) candidate directions"
+  return "$rc"
+}
+finalizing_other() {  # pr: another open PR carries a scripted directions commit not merged yet
+  local f=$INCOGNITA_STATE/finalizing-directions p s
+  [ -f "$f" ] || return 1
+  read -r p s < "$f"
+  [ "$p" != "$1" ] && awk -F'\t' -v p="$p" -v s="$s" '$1 == p && $2 == s' "$ROWS" | grep -q .
+}
+# merge_trailers <role> <target> <H> <statuses>: the trailers of a merge commit, read by
+# scripts/certify.py (which referees accepted a paper).
+merge_trailers() {
+  local reviews
+  case "$(pr_kind "$1")" in
+    paper) reviews="referee-scope=$(verdict_in "$4" "Referee scope" referee-scope) referee-proofs=$(verdict_in "$4" "Referee proofs" referee-proofs)" ;;
+    statements) reviews="review-statements=$(verdict_in "$4" "Incognita review" review-statements)" ;;
+    roadmap) reviews="review-roadmap=$(verdict_in "$4" "Incognita review" review-roadmap) loop=$(verdict_in "$4" "Incognita loop" loop)" ;;
+    *) reviews="review-pr=$(verdict_in "$4" "Incognita review" review-pr)" ;;
+  esac
+  printf 'Incognita-Role: %s\nIncognita-Target: %s\nIncognita-Head: %s\nIncognita-Reviews: %s\n' "$1" "$2" "$3" "$reviews"
+}
+
 # ---------------------------------------------------------------- merge (D13, D15): one per pass
 NEEDS_REBASE=""
 try_merge() {
-  local n H br draft mg role target labels ci kind mb cats c bad eff paper title
+  local n H br draft mg role target labels ci kind mb cats c bad eff paper title scr ah rc
   while IFS=$'\t' read -r n H br draft mg role target labels ci; do
     [ "$draft" = ready ] || continue
-    has_label "$labels" needs-human || has_label "$labels" incomplete || has_label "$labels" rejected && continue
+    has_label "$labels" needs-human || has_label "$labels" incomplete || has_label "$labels" rejected \
+      || has_label "$labels" veto && continue
     [ "$mg" = MERGEABLE ] || continue
     [ "$ci" = SUCCESS ] || continue
     if [ "$MAIN_RED" = 1 ] && ! { [ "$role" = fix-pr ] && [ "$target" = main ]; }; then continue; fi
     kind=$(pr_kind "$role")
     load_sts "$H" || continue
+    scr=$(verdict_in "$STS_CUR" "Incognita loop" loop)
     case "$kind" in
       paper)
         [ "$(verdict_in "$STS_CUR" "Referee scope" referee-scope)" = accept ] \
           && [ "$(verdict_in "$STS_CUR" "Referee proofs" referee-proofs)" = accept ] \
           && [ "$(verdict_in "$STS_CUR" "Incognita review" referees)" = accept ] || continue ;;
       statements) [ "$(verdict_in "$STS_CUR" "Incognita review" review-statements)" = approve ] || continue ;;
+      # A roadmap proposal merges only after the scripted approval (roadmap_approvals).
+      roadmap) [ "$(verdict_in "$STS_CUR" "Incognita review" review-roadmap)" = approve ] && [ "$scr" = approved ] || continue ;;
       *) [ "$(verdict_in "$STS_CUR" "Incognita review" review-pr)" = approve ] || continue ;;
     esac
     fetch_pr_head "$n" "$H" || continue
     mb=$(repo_git merge-base origin/main "$H") || continue
-    # Categories: every changed path in an enabled category.
+    # A scripted commit of the loop on top of the reviewed head is checked apart; the agent's part
+    # is merge-base..its parent.
+    ah=$H
+    if [ "$scr" = approved ] || [ "$scr" = directions ]; then
+      ah=$(repo_git rev-parse "$H^") || continue
+      if ! certify_py verify-scripted --kind "$scr" --parent "$ah" --head "$H" > "$work/scr.log" 2>&1; then
+        log "#$n: the scripted commit does not check: $(tail -n 2 "$work/scr.log" | tr '\n' ' ')"
+        escalate "$n" "scripted commit refused at merge time"
+        continue
+      fi
+    fi
+    # Categories: every path the agent changed in an enabled category (a scripted approval merges
+    # the category `roadmap`; scripted candidate directions are the category `directions`).
     bad=""
-    cats=$(repo_git diff --raw --no-renames --no-abbrev "$mb" "$H" \
+    cats=$(repo_git diff --raw --no-renames --no-abbrev "$mb" "$ah" \
       | awk -F'\t' '{ split($1, m, " "); print m[5] "\t" $2 }' \
       | while IFS=$'\t' read -r st path; do path_category "$kind" "$path" "$st"; done | sort -u | tr '\n' ' ')
+    [ "$scr" = directions ] && cats="$cats directions"
     for c in $cats; do
-      { [ "$c" != other ] && automerge_enabled "$c"; } || bad="$bad $c"
+      [ "$c" = roadmap ] && [ "$kind" = roadmap ] && [ "$scr" = approved ] && continue
+      { [ "$c" != other ] && [ "$c" != roadmap ] && automerge_enabled "$c"; } || bad="$bad $c"
     done
     if [ -n "$bad" ]; then
       mark_has "owner-merge $H" || { log "#$n is ready but waits for the owner (categories:$bad)"; mark_set "owner-merge $H"
         record_event owner-merge - "$n" "categories:$bad"; }
       continue
     fi
-    if in_list proofs "$cats" && ! adds_only_theorems "$mb" "$H"; then
+    if in_list proofs "$cats" && ! adds_only_theorems "$mb" "$ah"; then
       mark_has "owner-merge $H" || { log "#$n adds definitions: waits for the owner"; mark_set "owner-merge $H"
         record_event owner-merge - "$n" "adds definitions"; }
       continue
     fi
-    # Defence in depth: the whitelist of the role that opened the PR, again, on the whole PR.
+    # Defence in depth: the whitelist of the role that opened the PR, again, on the agent's part.
     case "$role" in fix-pr) eff=fix-main ;; *) eff=$role ;; esac
-    paper=$(repo_git diff --name-only --no-renames "$mb" "$H" -- papers | sed -n -E 's#^papers/([^/]+)/.*#\1#p' | head -n 1)
+    paper=$(repo_git diff --name-only --no-renames "$mb" "$ah" -- papers | sed -n -E 's#^papers/(P[^/]+)/.*#\1#p' | head -n 1)
     [ "$role" = formalize-statements ] || [ "$role" = prove ] && paper=$(paper_of_num "$(paper_num "$target")" || echo "$target")
-    if ! check_paths "$eff" "$paper" "$mb" "$H" 2>"$work/paths.log"; then
+    if ! check_paths "$eff" "$paper" "$mb" "$ah" 2>"$work/paths.log"; then
       log "#$n: paths refused at merge time:"; cat "$work/paths.log" >&2
       escalate "$n" "paths refused at merge time"
       continue
@@ -185,18 +278,98 @@ try_merge() {
       NEEDS_REBASE="$NEEDS_REBASE $n"
       continue
     fi
+    # An accepted paper: its accepted open questions become candidate directions of the roadmap
+    # (AGENTS.md section 4), by a scripted commit on top of main (for the numbering), one paper at
+    # a time; the merge follows at a later pass, once CI is green on the new head.
+    if [ "$kind" = paper ] && [ "$scr" != directions ] && ! mark_has "no-candidates $H"; then
+      if ! repo_git merge-base --is-ancestor origin/main "$H"; then NEEDS_REBASE="$NEEDS_REBASE $n"; continue; fi
+      finalizing_other "$n" && continue
+      rc=0; add_candidates "$n" "$H" "$br" "$paper" || rc=$?
+      case "$rc" in
+        0) return 0 ;;
+        3) is_dry || mark_set "no-candidates $H" ;;
+        *) continue ;;
+      esac
+    fi
     title=$(jq -r --argjson n "$n" '.[] | select(.number == $n) | .title' "$PRS" | one_line 200)
     if is_dry; then log "dry run: would merge #$n ($kind, categories: $(echo $cats)) at ${H:0:12}"; return 0; fi
     set_activity "merging #$n"
     if ghr api -X PUT "repos/$GH_REPO/pulls/$n/merge" -f sha="$H" -f merge_method=squash \
         -f commit_title="$title (#$n)" \
-        -f commit_message="Merged by the Incognita loop: role $role, target $target, categories $(echo $cats), reviews on $H." >/dev/null; then
+        -f commit_message="Merged by the Incognita loop: role $role, target $target, categories $(echo $cats), reviews on $H.
+
+$(merge_trailers "$role" "$target" "$H" "$STS_CUR")" >/dev/null; then
       log "== merged #$n ($kind: $(echo $cats)) $title"
       record_event merge "$role" "$n" "$kind $(echo $cats) — $title"
       gh api -X DELETE "repos/$GH_REPO/git/refs/heads/$br" >/dev/null 2>&1 || true
       return 0
     fi
     log "merge of #$n failed"
+  done < "$ROWS"
+  return 1
+}
+
+# ---------------------------------------------------------------- roadmap proposals (AGENTS.md section 4)
+# A proposal that review-roadmap approved is approved by the loop (a scripted commit sets its status
+# to `approved`, with the dates; then try_merge merges it): at once if the owner comments
+# `approve`; inside an existing domain, after INCOGNITA_VETO_NIGHTS nights without veto (the label
+# `veto`, or a comment of the owner starting with `veto`). A new domain needs the owner's comment.
+open_window() {  # pr H kind text: post a trusted comment of this kind, once per head
+  mark_has "$3 $2" && return 0
+  printf '%s\n' "$4" > "$work/window.md"
+  post_comment "$1" "$3" "$2" "$work/window.md" >/dev/null || return 1
+  is_dry || mark_set "$3 $2"
+  record_event "$3" - "$1" "$(head -n 1 "$work/window.md")"
+}
+roadmap_approvals() {
+  local n H br draft mg role target labels ci raw tc prop words win end text mb rc today=$INCOGNITA_NIGHT
+  while IFS=$'\t' read -r n H br draft mg role target labels ci; do
+    [ "$role" = propose-roadmap ] && [ "$draft" = ready ] && [ "$ci" = SUCCESS ] && [ "$mg" = MERGEABLE ] || continue
+    has_label "$labels" needs-human || has_label "$labels" rejected && continue
+    load_sts "$H" || continue
+    [ "$(verdict_in "$STS_CUR" "Incognita review" review-roadmap)" = approve ] || continue
+    [ "$(verdict_in "$STS_CUR" "Incognita loop" loop)" = none ] || continue
+    fetch_pr_head "$n" "$H" || continue
+    mb=$(repo_git merge-base origin/main "$H") || continue
+    if ! prop=$(certify_py proposal --base "$mb" --head "$H" 2>"$work/prop.log"); then
+      log "#$n: not a valid roadmap proposal: $(tr '\n' ' ' < "$work/prop.log")"
+      escalate "$n" "invalid roadmap proposal"; continue
+    fi
+    set -- $prop   # new <Name> <domain> existing|new, or extension <R>/X<k> <domain> existing
+    raw=$(ghr api --paginate "repos/$GH_REPO/issues/$n/comments?per_page=100") || continue
+    tc=$(trusted_of "$raw") || continue
+    words=$(owner_words "$raw")
+    if has_label "$labels" veto || [ "${words%% *}" = veto ]; then
+      mark_has "vetoed $H" || { log "#$n: vetoed by the owner"; is_dry || mark_set "vetoed $H"
+        record_event roadmap-vetoed - "$n" "$1 $2"; }
+      continue
+    fi
+    # The veto window of this content: the latest `veto-window` comment, unless an agent pushed
+    # (a fix round) after it.
+    win=$(jq -r '([.[] | select(.kind == "veto-window")] | last) as $w
+      | if $w == null then ""
+        elif ([.[] | select(.kind == "fix-pr" and .created_at > $w.created_at)] | length) > 0 then ""
+        else ($w.body | capture("Window: (?<s>[0-9]{4}-[0-9]{2}-[0-9]{2}) to (?<e>[0-9]{4}-[0-9]{2}-[0-9]{2})") | "\(.s) \(.e)") // "" end' <<< "$tc")
+    if [ "${words%% *}" = approve ]; then
+      text="by the owner's comment of ${words#* }, after review-roadmap approved pull request #$n; scripted by the loop on $today"
+    elif [ "$4" = new ]; then
+      open_window "$n" "$H" owner-approval "Review-roadmap approved this proposal ($1 $2), in the new domain \`$3\`: a new domain needs the owner's approval. Comment \`approve\` to approve it (the loop then sets its status and merges it), or \`veto\`."
+      continue
+    elif [ -z "$win" ]; then
+      end=$(date -d "$today + $INCOGNITA_VETO_NIGHTS days" +%F)
+      mark_has "veto-window $H" && continue
+      open_window "$n" "$H" veto-window "Veto window: review-roadmap approved this proposal ($1 $2, domain \`$3\`). Unless the owner vetoes it (a comment starting with \`veto\`, or the label \`veto\`), the loop approves and merges it on the night of $end: a scripted commit sets its status to \`approved\`, with these dates. A comment starting with \`approve\` approves it at once.
+Window: $today to $end"
+      continue
+    else
+      end=${win#* }
+      [ "$(days_between "$end" "$today")" -ge 0 ] || continue
+      text="by the loop on $today: review-roadmap approved pull request #$n; veto window ${win% *} to $end without veto"
+    fi
+    rc=0
+    scripted_commit "$n" "$H" "$br" approved "Incognita loop: roadmap proposal approved (#$n)" \
+      approve-roadmap --base "$mb" --text "$text" || rc=$?
+    if [ "$rc" = 0 ]; then record_event roadmap-approved - "$n" "$1 $2 ($3): approved $text"; return 0; fi
   done < "$ROWS"
   return 1
 }
@@ -220,6 +393,8 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
     for f in $conflicted; do
       if in_list "$f" "$ROOT_FILES" && resolve_imports "$wt" "$f"; then
         "${g[@]}" add -- "$f"
+      elif [ "$f" = papers/library.bib ] && certify_py --repo "$wt" bib >/dev/null 2>&1; then
+        "${g[@]}" add -- "$f"   # generated: regenerated from the merged tree
       else
         log "#$n: conflict on $f: left to fix-pr"
         "${g[@]}" rebase --abort >/dev/null 2>&1
@@ -248,7 +423,7 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
     local ctx state trusted desc
     while IFS=$'\t' read -r ctx state trusted desc; do
       [ "$trusted" = yes ] || continue
-      case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review") ;; *) continue ;; esac
+      case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review"|"Incognita loop") ;; *) continue ;; esac
       set_status "$newh" "$ctx" "$state" "${desc%% copied-from=*} copied-from=${h:0:12}" && copied=yes
     done <<< "$STS_CUR"
   fi
@@ -325,9 +500,41 @@ pick_rotation() {  # garden / bibliographer, alternately
   done
   return 1
 }
+# exhausted <roadmap>: no free item (D, F, C) on main (scripts/certify.py items --free), or a
+# write-paper session found none since the items last changed (mark set by scripts/agent.sh).
+exhausted() {
+  local h
+  [ -z "$(certify_py items "$1" --free 2>/dev/null)" ] && return 0
+  h=$(certify_py items-hash "$1" 2>/dev/null) && mark_has "exhausted $1 $h"
+}
+# roadmaps_waiting: approved roadmaps whose KNOWN.md the owner has not reviewed yet.
+roadmaps_waiting() {
+  local r c=0
+  for r in $(ls_main roadmaps); do
+    show_main "roadmaps/$r/ROADMAP.md" | grep -q '^| Status | \*\*approved' || continue
+    show_main "roadmaps/$r/KNOWN.md" | head -n 1 | grep -Eq '^Reviewed by owner:[[:space:]]*[0-9]' || c=$(( c + 1 ))
+  done
+  echo "$c"
+}
+propose_note() {  # why: the situation line of a propose-roadmap task
+  local w
+  w=$(roadmaps_waiting)
+  if [ "$w" -ge "$INCOGNITA_ROADMAPS_WAITING_MAX" ]; then
+    printf '%s Only an extension of an approved roadmap may be proposed now: %s approved roadmaps already wait for the owner to review their KNOWN.md.' "$1" "$w"
+  else
+    printf '%s A new roadmap or an extension of an approved roadmap may be proposed.' "$1"
+  fi
+}
+propose_due() {  # the periodic proposal: INCOGNITA_PROPOSE_EVERY nights since the last one
+  local last
+  [ "$INCOGNITA_PROPOSE_EVERY" -gt 0 ] || return 1
+  last=$(cat "$INCOGNITA_STATE/last-propose-night" 2>/dev/null || cat "$INCOGNITA_STATE/first-night" 2>/dev/null || echo "$INCOGNITA_NIGHT")
+  [ "$(days_between "$last" "$INCOGNITA_NIGHT")" -ge "$INCOGNITA_PROPOSE_EVERY" ]
+}
 pick_write_paper() {  # cap: fewer than this many papers in review in the roadmap
   local cap=$1 r best="" bestc=999 c
   for r in $(roadmaps_writable); do
+    exhausted "$r" && continue
     c=$(in_review "$r")
     [ "$c" -lt "$cap" ] || continue
     [ "$(accepted_unverified "$r")" -lt "$INCOGNITA_ACCEPTED_UNVERIFIED_MAX" ] || continue
@@ -394,7 +601,11 @@ choose_task() {
       fi
     else
       case "$kind" in statements) rv=$(verdict_in "$STS_CUR" "Incognita review" review-statements) ;;
+                      roadmap) rv=$(verdict_in "$STS_CUR" "Incognita review" review-roadmap) ;;
                       *) rv=$(verdict_in "$STS_CUR" "Incognita review" review-pr) ;; esac
+      if [ "$rv" = reject ] && [ "$kind" = roadmap ]; then
+        close_rejected "$n" "$H" "review-roadmap rejected the proposal"; continue
+      fi
       if [ "$rv" = reject ]; then escalate "$n" "review verdict reject"; continue; fi
       if [ "$rv" = request_changes ]; then
         if [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then escalate "$n" "$fixes fix rounds without approval"; continue; fi
@@ -410,6 +621,7 @@ choose_task() {
         if [ "$sc" = none ]; then reviews_list="$reviews_list referee-scope:$n:$H:-"
         elif [ "$sc" = accept ] && [ "$pv" = none ]; then reviews_list="$reviews_list referee-proofs:$n:$H:-"; fi ;;
       statements) [ "$rv" = none ] && reviews_list="$reviews_list review-statements:$n:$H:-" ;;
+      roadmap) [ "$rv" = none ] && reviews_list="$reviews_list review-roadmap:$n:$H:-" ;;
       *) [ "$rv" = none ] && reviews_list="$reviews_list review-pr:$n:$H:-" ;;
     esac
   done < "$ROWS"
@@ -430,10 +642,11 @@ choose_task() {
   if [ "$(counter_get since-rotation)" -ge "$INCOGNITA_ROTATION_EVERY" ]; then
     pick_rotation && return 0
   fi
-  # 5. prove: frozen, unproved statements, oldest paper first (D5: formalisation first).
+  # 5. prove: frozen, unproved statements (D5: formalisation first); the papers that more library
+  #    papers depend on first, then the oldest (AGENTS.md section 5.6).
   local p
   if [ "$AUDIT_OK" = 1 ]; then
-    for p in $(papers_on_main); do
+    for p in $(certify_py dependants 2>/dev/null | sort -k2,2nr -k1,1 | cut -d' ' -f1); do
       [ "$(statements_state "$p")" = open ] || continue
       is_busy prove "$p" && continue
       pick prove "$p" "" "" && return 0
@@ -453,13 +666,33 @@ choose_task() {
     is_busy revise "$p" && continue
     pick revise "$p" "" "The paper is disputed: write its next version." && return 0
   done
+  # 7b. revise: dependency checks, for papers that depend on a library paper revised since they
+  #     cited it (an erratum propagates: AGENTS.md section 5.6).
+  local dc
+  for p in $(certify_py depchecks 2>/dev/null | cut -d' ' -f1 | sort -u); do
+    paper_open_errata "$p" && continue
+    is_busy revise "$p" && continue
+    dc=$(certify_py depchecks 2>/dev/null | awk -v p="$p" '$1 == p { printf "%s ", $2 }')
+    pick revise "$p" "" "Dependency check: ${dc}changed since this paper cited them." && return 0
+  done
   # 8. bibliographer when something waits for it.
   if ! is_busy bibliographer "*" && bib_needed; then
     pick bibliographer - "" "Source notes or novelty checks are missing." && return 0
   fi
-  # 9. write-paper, below INCOGNITA_PAPERS_IN_REVIEW papers in review per roadmap.
+  # 9. propose-roadmap for an approved roadmap with no free item left (AGENTS.md section 4).
+  if ! is_busy propose-roadmap "*"; then
+    for r in $(roadmaps_writable); do
+      exhausted "$r" || continue
+      pick propose-roadmap "$r" "" "$(propose_note "The roadmap $r has no free item (direction, known result or candidate direction).")" && return 0
+    done
+  fi
+  # 10. write-paper, below INCOGNITA_PAPERS_IN_REVIEW papers in review per roadmap.
   pick_write_paper "$INCOGNITA_PAPERS_IN_REVIEW" && return 0
-  # 10. Fallback: write-paper up to INCOGNITA_PAPERS_MAX, then garden, then bibliographer.
+  # 11. propose-roadmap every INCOGNITA_PROPOSE_EVERY nights.
+  if ! is_busy propose-roadmap "*" && propose_due; then
+    pick propose-roadmap - "" "$(propose_note "Periodic proposal (every $INCOGNITA_PROPOSE_EVERY nights).")" && return 0
+  fi
+  # 12. Fallback: write-paper up to INCOGNITA_PAPERS_MAX, then garden, then bibliographer.
   pick_write_paper "$INCOGNITA_PAPERS_MAX" && return 0
   if ! is_busy garden "*" && has_material; then pick garden - "" "Fallback gardening pass." && return 0; fi
   if ! is_busy bibliographer "*"; then pick bibliographer - "" "Fallback bibliography pass." && return 0; fi
@@ -482,8 +715,10 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 3 logged out
     MAIN_RED=1
   else MAIN_RED=0; fi
   if AUDIT=$(audit_status); then AUDIT_OK=1; else AUDIT_OK=0; log "audit status of main unknown"; fi
-  # Merge one PR.
+  # Merge one PR (or add the scripted commit an accepted paper needs first).
   try_merge && did=1
+  # Roadmap proposals: veto windows, scripted approvals.
+  [ "$MAIN_RED" = 1 ] || { roadmap_approvals && did=1; }
   # Mechanical rebases: conflicting agent PRs, and ready Lean PRs behind main (at most 2 per pass).
   k=0
   while IFS=$'\t' read -r n H br draft mg role target labels ci; do
@@ -515,6 +750,7 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 3 logged out
   case "$T_ROLE" in garden|bibliographer)
     counter_set since-rotation 0; printf '%s\n' "$T_ROLE" > "$INCOGNITA_STATE/last-rotation" ;;
   esac
+  [ "$T_ROLE" = propose-roadmap ] && printf '%s\n' "$INCOGNITA_NIGHT" > "$INCOGNITA_STATE/last-propose-night"
   # In the background, then `wait`: a TERM reaches our trap at once, which stops agent.sh (and its unit).
   INCOGNITA_HEAD=$T_HEAD INCOGNITA_TASK_TIMEOUT=$T_BUDGET INCOGNITA_NOTE=$T_NOTE \
     bash "$INCOGNITA_SCRIPTS/agent.sh" "$T_ROLE" "$T_TARGET" &

@@ -125,6 +125,42 @@ case_ "other line added to Statements.lean" fail "echo 'set_option x true' >> St
 case_ "marker edited" fail "echo 'status = \"refuted\"' >> catalogue/results/P001-a.toml"
 case_ "marker removed" fail "rm catalogue/results/P001-a.toml"
 
+# --- certify.py check (library metadata) ------------------------------------------------------
+
+lib="$work/library"
+mkdir -p "$lib/papers/P001-one" "$lib/roadmaps/R" && cd "$lib" || exit 2
+git init -q -b main
+printf 'roadmap = "R"\nkind = "internal"\ndirections = ["D1"]\nauthors = ["m"]\nversion = 1\ndepends_on = []\n' > papers/P001-one/META.toml
+cat > papers/P001-one/paper.tex <<'EOF'
+\title{One}
+\begin{theorem}\label{thm:main} T. \end{theorem}
+\section{Open questions}
+\begin{openquestion}\label{oq:a} Q? \end{openquestion}
+EOF
+printf '# Candidate directions of R\n\n## C1 (d, from P001v1 oq:a)\n- Title: -\n- Statement: Q?\n- Source: s\n- Rating: r\n' > roadmaps/R/directions.md
+python3 "$root/scripts/certify.py" bib > /dev/null
+g add -A && g commit -qm base
+lbase=$(git rev-parse HEAD)
+# lcase <name> <expected: pass|fail> <commands...>: run the commands on a branch from lbase.
+lcase() {
+  local name=$1 want=$2
+  shift 2
+  g checkout -q -f -B "l-$RANDOM" "$lbase" && git clean -qfd
+  eval "$*"
+  if python3 "$root/scripts/certify.py" check --base "$lbase" > "$work/lib.out" 2>&1; then got=pass; else got=fail; fi
+  if [ "$got" = "$want" ]; then pass "certify check: $name ($want)"
+  else fail "certify check: $name (expected $want, got $got)"; cat "$work/lib.out"; fi
+}
+lcase "a consistent library" pass "true"
+lcase "library.bib out of date" fail "echo '% x' >> papers/library.bib"
+lcase "\\leanok written in a paper" fail "printf '%s\n' '\\leanok' >> papers/P001-one/paper.tex"
+lcase "a new paper.tex without a new version" fail "echo x >> papers/P001-one/paper.tex"
+lcase "a new paper.tex with a new version" pass "echo x >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; python3 '$root/scripts/certify.py' bib >/dev/null"
+lcase "a citation of a library paper not in depends_on" fail "printf '%s\n' 'See \\cite{INC-P001}.' >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; python3 '$root/scripts/certify.py' bib >/dev/null"
+lcase "a candidate direction edited" fail "sed -i 's/Statement: Q?/Statement: R?/' roadmaps/R/directions.md"
+lcase "a candidate direction dropped" pass "echo 'Dropped (d, garden, m): known.' >> roadmaps/R/directions.md"
+cd "$root" || exit 2
+
 if [ "$failures" = 0 ]; then
   echo "CI script canaries: all passed"
 else

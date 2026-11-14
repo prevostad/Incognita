@@ -15,7 +15,9 @@
 #   3. /srv/incognita/{in,out,template}: in/ written by the loop user and read by the agent (group),
 #      out/<task>/ created per task by the loop (via sudo) and written by the agent;
 #   4. /etc/incognita/agent.env (root, 600): CLAUDE_CODE_OAUTH_TOKEN=<token> — a placeholder is
-#      written if the file is missing. Put the long-lived token of `claude setup-token` there:
+#      written if the file is missing. Before EVERY night, put a new long-lived token there (the
+#      owner's choice: scripts/night.sh puts REPLACE_ME back at the end of every night, so that no
+#      token stays on the server or in its snapshots; agents/README.md, "The token"):
 #        claude setup-token                      (as the owner, anywhere; prints sk-ant-oat01-...)
 #        sudo nano /etc/incognita/agent.env      (replace REPLACE_ME; never commit or print it)
 #   5. for the agent: elan and the Lean toolchain, Claude Code (native installer, same version as
@@ -127,7 +129,7 @@ install -d -o root -g root -m 700 "$(dirname "$ENV_FILE")"
 if [ ! -f "$ENV_FILE" ]; then
   say "writing a placeholder $ENV_FILE: put the token of 'claude setup-token' in it"
   umask 077
-  printf '# Long-lived Claude token of the owner for the agents (claude setup-token). Root only.\nCLAUDE_CODE_OAUTH_TOKEN=REPLACE_ME\n' > "$ENV_FILE"
+  printf '# Long-lived Claude token of the owner for the agents (claude setup-token). Root only.\n# scripts/night.sh puts REPLACE_ME back at the end of every night: a new token before each launch.\nCLAUDE_CODE_OAUTH_TOKEN=REPLACE_ME\n' > "$ENV_FILE"
   umask 022
 fi
 chown root:root "$ENV_FILE"; chmod 600 "$ENV_FILE"

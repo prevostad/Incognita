@@ -55,6 +55,22 @@ jobs:
       - name: Canaries of the CI scripts
         run: bash tests/canaries/scripts.sh
 
+      # META.toml (version, depends_on), citations of library papers (INC-P<nnn>), the generated
+      # papers/library.bib, open questions, candidate directions; on pull requests, the version and
+      # append-only rules against the base (scripts/certify.py, AGENTS.md sections 5 and 9).
+      - name: Library metadata
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then python3 scripts/certify.py check --base "origin/$BASE_REF"
+          else python3 scripts/certify.py check; fi
+
+      # The loop's own tests (fake gh, local repositories; no network, no Claude).
+      - name: Offline tests of the loop
+        run: |
+          bash scripts/test-lib.sh
+          bash scripts/test-loop.sh
+
       - name: Install elan
         run: |
           set -euo pipefail
@@ -108,3 +124,19 @@ jobs:
       # Drafts, last: must compile; warnings allowed.
       - name: Exploration
         run: bash scripts/build.sh Exploration
+
+      # The certification of every paper (levels, re-checks, badges), from the audit's statuses:
+      # in the run's summary and the artifact `certification` (generated, never committed).
+      - name: Certification
+        run: |
+          set -euo pipefail
+          mkdir -p certification
+          lake exe audit --status > certification/audit-status.txt
+          python3 scripts/certify.py report --audit certification/audit-status.txt --out certification/certification.md
+          cat certification/certification.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the certification
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification
+          path: certification/

@@ -24,7 +24,7 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_TIMEOUT_WRITE:=5400}"        # seconds; writing roles
 : "${INCOGNITA_MIN_REVIEW:=900}"            # a task is started only with at least this much time...
 : "${INCOGNITA_MIN_WRITE:=2400}"            # ...left before the deadline (seconds)
-: "${INCOGNITA_AUTOMERGE=papers,literature,proofs,exploration}"   # D15; add `statements` later
+: "${INCOGNITA_AUTOMERGE=papers,literature,proofs,exploration,directions}"   # D15; add `statements` later
 : "${INCOGNITA_PAPERS_IN_REVIEW:=3}"
 : "${INCOGNITA_PAPERS_MAX:=6}"
 : "${INCOGNITA_ACCEPTED_UNVERIFIED_MAX:=2}"
@@ -35,6 +35,9 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_PARK_AFTER:=4}"              # failed attempts on a target (all nights), then parked
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task
 : "${INCOGNITA_IDLE_SLEEP:=1200}"
+: "${INCOGNITA_VETO_NIGHTS:=2}"             # nights of veto before a roadmap proposal is approved
+: "${INCOGNITA_PROPOSE_EVERY:=7}"           # nights between two periodic roadmap proposals (0: never)
+: "${INCOGNITA_ROADMAPS_WAITING_MAX:=2}"    # approved roadmaps whose KNOWN.md waits for the owner
 : "${INCOGNITA_DRY_RUN:=0}"
 : "${INCOGNITA_BOT_NAME:=Incognita agents}"
 : "${INCOGNITA_BOT_EMAIL:=incognita-agents@users.noreply.github.com}"
@@ -47,8 +50,8 @@ fi
 export GH_REPO=$INCOGNITA_GH_REPO
 export GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1
 
-ROLES="write-paper referee-scope referee-proofs revise formalize-statements review-statements prove review-pr fix-pr bibliographer garden"
-REVIEW_ROLES="referee-scope referee-proofs review-statements review-pr"
+ROLES="write-paper referee-scope referee-proofs revise formalize-statements review-statements prove review-pr fix-pr bibliographer garden propose-roadmap review-roadmap"
+REVIEW_ROLES="referee-scope referee-proofs review-statements review-pr review-roadmap"
 ROOT_FILES="Incognita.lean Statements.lean Exploration.lean"
 
 # ---------------------------------------------------------------- small helpers
@@ -100,6 +103,14 @@ init_state() {
   export INCOGNITA_NIGHT
   NIGHT_DIR=$INCOGNITA_STATE/nights/$INCOGNITA_NIGHT
   mkdir -p "$NIGHT_DIR/attempts"
+  # The first night, for the periodic roadmap proposals (a dry run records nothing).
+  is_dry || [ -f "$INCOGNITA_STATE/first-night" ] || printf '%s\n' "$INCOGNITA_NIGHT" > "$INCOGNITA_STATE/first-night"
+}
+# days_between <YYYY-MM-DD> <YYYY-MM-DD>: whole days from the first date to the second.
+days_between() {
+  local a b
+  a=$(date -u -d "$1" +%s 2>/dev/null) && b=$(date -u -d "$2" +%s 2>/dev/null) || { echo 0; return; }
+  echo $(( (b - a) / 86400 ))
 }
 counter_get() { cat "$INCOGNITA_STATE/lifetime/$(key_of "$1")" 2>/dev/null || echo 0; }
 counter_inc() {
@@ -175,6 +186,23 @@ ensure_labels() {
   ensure_label incomplete FBCA04 "A session stopped before the end: its work is kept, an agent continues it"
   ensure_label rejected B60205 "Paper rejected by the referees (reports kept); the owner may reopen it"
   ensure_label needs-human B60205 "The agents cannot go further: the owner decides"
+  ensure_label veto B60205 "The owner vetoes this roadmap proposal (or comments: veto)"
+}
+
+# certify_py <args...>: scripts/certify.py of the loop's own clone (never the agent's copy), on the
+# loop's clone by default (pass --repo first to read another tree).
+certify_py() {
+  case "${1:-}" in --repo) python3 "$INCOGNITA_SCRIPTS/certify.py" "$@" ;;
+                   *) python3 "$INCOGNITA_SCRIPTS/certify.py" --repo "$INCOGNITA_REPO" "$@" ;; esac
+}
+
+# owner_words <comments-json>: "<veto|approve> <created_at>" of the latest comment written by the
+# owner himself (OWNER, without the loop's marker) whose first word is veto or approve.
+owner_words() {
+  printf '%s' "$1" | jq -rs --arg o "$OWNER" '
+    add // [] | map(select(.user.login == $o and ((.body // "") | startswith("<!-- incognita:") | not))
+      | {w: ((.body // "") | ascii_downcase | capture("^\\s*(?<w>veto|approve)\\b").w? // empty), created_at})
+    | map(select(.w != null)) | sort_by(.created_at) | last | if . == null then empty else "\(.w) \(.created_at)" end'
 }
 
 # Agent text posted to GitHub: control and bidi characters removed, tokens redacted, `<!--`
@@ -213,16 +241,19 @@ post_comment() {
 }
 
 # trusted_comments <pr>: JSON array of the comments by OWNER whose first line is a marker, with
-# fields kind, sha, body (marker removed), created_at.
-trusted_comments() {
-  local raw
-  raw=$(ghr api --paginate "repos/$GH_REPO/issues/$1/comments?per_page=100") || return 1
-  printf '%s' "$raw" | jq -s --arg o "$OWNER" '
+# fields kind, sha, body (marker removed), created_at. trusted_of <raw comments> does the same on
+# comments already fetched (`gh api --paginate .../comments`).
+TRUSTED_JQ='
     add // [] | map(select(.user.login == $o)
       | (.body | split("\n")) as $l
       | ($l[0] | capture("^<!-- incognita:(?<kind>[a-z-]+):(?<sha>[0-9a-f]{40}) -->$")) as $m
       | {kind: $m.kind, sha: $m.sha, created_at, url: .html_url, body: ($l[1:] | join("\n"))})
     | sort_by(.created_at)'
+trusted_of() { printf '%s' "$1" | jq -s --arg o "$OWNER" "$TRUSTED_JQ"; }
+trusted_comments() {
+  local raw
+  raw=$(ghr api --paginate "repos/$GH_REPO/issues/$1/comments?per_page=100") || return 1
+  trusted_of "$raw"
 }
 
 # statuses_of <sha>: one line per context: context<TAB>state<TAB>trusted<TAB>description, for the
@@ -553,10 +584,20 @@ role_allows() {
   case "$role" in
     write-paper)
       paper_file "$path" "" 'paper\.tex|refs\.bib|META\.toml|notebook/.+' && return 0
-      case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
+      case "$path" in literature/*|papers/library.bib) [ "$st" != D ] && return 0 ;; esac ;;
     revise)
-      [ -n "$paper" ] && paper_file "$path" "$paper" 'paper\.tex|refs\.bib|META\.toml|notebook/.+|errata\.md' && return 0
-      case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
+      [ -n "$paper" ] && paper_file "$path" "$paper" 'paper\.tex|refs\.bib|META\.toml|notebook/.+|errata\.md|dependency-checks\.md' && return 0
+      case "$path" in literature/*|papers/library.bib) [ "$st" != D ] && return 0 ;; esac ;;
+    propose-roadmap)
+      # One new roadmap (ROADMAP.md and KNOWN.md of a new directory) or one new extension of an
+      # approved roadmap; check_paths checks the whole proposal (scripts/certify.py proposal).
+      case "$path" in
+        roadmaps/*/ROADMAP.md|roadmaps/*/KNOWN.md)
+          [ "$st" = A ] && [[ "$path" =~ ^roadmaps/[A-Z][A-Za-z0-9]+/(ROADMAP|KNOWN)\.md$ ]] && return 0 ;;
+        roadmaps/*/extensions/*)
+          [ "$st" = A ] && [[ "$path" =~ ^roadmaps/[A-Za-z0-9]+/extensions/X[0-9]+\.md$ ]] && return 0 ;;
+        literature/*) [ "$st" != D ] && return 0 ;;
+      esac ;;
     formalize-statements)
       case "$path" in
         Statements/*) [ "$st" = A ] && [[ "$path" =~ ^Statements/P[0-9]{3}/.+\.(lean|lock)$ ]] && return 0 ;;
@@ -578,11 +619,15 @@ role_allows() {
       case "$path" in
         Incognita.lean) return 0 ;;
         Incognita/*|catalogue/relations.toml|catalogue/garden.md) [ "$st" != D ] && return 0 ;;
-      esac ;;
+        # Dropped lines under candidate directions (the file exists: entries come from the loop).
+        roadmaps/*/directions.md) [ "$st" = M ] && [[ "$path" =~ ^roadmaps/[A-Za-z0-9]+/directions\.md$ ]] && return 0 ;;
+      esac
+      # A failed re-check: an erratum or a statement correction of the paper re-checked.
+      paper_file "$path" "" 'errata\.md|statement-corrections\.md' && return 0 ;;
     fix-main)
       case "$path" in
         Incognita.lean|Statements.lean) return 0 ;;
-        Incognita/*) [ "$st" != D ] && return 0 ;;
+        Incognita/*|papers/library.bib) [ "$st" != D ] && return 0 ;;
       esac ;;
   esac
   return 1
@@ -610,8 +655,15 @@ check_paths() {
       [ "$size" -gt 1048576 ] && { log "refused: $path is larger than 1 MB"; bad=1; continue; }
     fi
     case "$path" in
-      LICENSE|lakefile.toml|lean-toolchain|lake-manifest.json|templates/*|agents/*|docs/*|scripts/*|tests/*|roadmaps/*|programmes/*|literature/notes/TEMPLATE.md|papers/*/withdrawn.md)
+      LICENSE|lakefile.toml|lean-toolchain|lake-manifest.json|templates/*|agents/*|docs/*|scripts/*|tests/*|programmes/*|literature/notes/TEMPLATE.md|papers/*/withdrawn.md|papers/*/human-audits.md)
         log "refused: human-owned path $path"; bad=1; continue ;;
+      # Generated, never committed (scripts/certify.py).
+      catalogue/certification.md|papers/*/certification.tex)
+        log "refused: $path is generated, never committed"; bad=1; continue ;;
+      # roadmaps/ is the owner's, except a proposal (propose-roadmap) and dropped candidate
+      # directions (garden): role_allows decides.
+      roadmaps/*)
+        role_allows "$role" "$paper" "$path" "$st" || { log "refused: human-owned path $path"; bad=1; continue; } ;;
     esac
     case "$path" in Statements/*) [ "$st" = A ] || { log "refused: $st on frozen $path"; bad=1; continue; } ;; esac
     case "$path" in papers/*/*) f=${path#papers/}; f=${f%%/*}; in_list "$f" "$papers_touched" || papers_touched="$papers_touched $f" ;; esac
@@ -627,6 +679,10 @@ check_paths() {
     elif [ -n "$(papers_on_main | awk -v n="$(paper_num "$1")" '{ sub(/^P0*/, ""); sub(/-.*/, ""); if ($0 == n) print }')" ]; then
       log "refused: the number of $1 is taken on main"; bad=1
     fi
+  fi
+  # propose-roadmap: one complete proposal, with the status `proposed` (scripts/certify.py).
+  if [ "$role" = propose-roadmap ] && [ "$bad" = 0 ]; then
+    certify_py proposal --base "$base" --head "$new" >/dev/null || { log "refused: not a valid roadmap proposal"; bad=1; }
   fi
   # Root import files: import lines only; Statements.lean: additions only.
   for f in $ROOT_FILES; do
@@ -662,12 +718,17 @@ diff_signature() {  # base head: "mode blob status path" of every changed path, 
     | awk -F'\t' '{ split($1, m, " "); print m[2], m[4], m[5], $2 }' | LC_ALL=C sort
 }
 
-# Merge categories (D15) of a path: papers literature proofs exploration statements other.
+# Merge categories (D15) of a path: papers literature proofs exploration statements directions
+# roadmap other. `roadmap` is never in INCOGNITA_AUTOMERGE: a proposal merges only through the
+# scripted approval of the loop (AGENTS.md section 4).
 path_category() {  # kind path status
   local kind=$1 path=$2 st=$3
   case "$path" in
     Exploration/*|Exploration.lean) echo exploration ;;
     literature/*) echo literature ;;
+    roadmaps/*/directions.md) echo directions ;;
+    roadmaps/*) echo roadmap ;;
+    papers/library.bib) if [ "$kind" = paper ]; then echo papers; else echo literature; fi ;;
     catalogue/definitions/*|Statements/*|Statements.lean) echo statements ;;
     catalogue/results/*) if [ "$st" = A ]; then echo proofs; else echo literature; fi ;;
     catalogue/*) echo literature ;;
@@ -688,11 +749,12 @@ path_category() {  # kind path status
     *) echo other ;;
   esac
 }
-# pr_kind <role>: paper | statements | generic
+# pr_kind <role>: paper | statements | roadmap | generic
 pr_kind() {
   case "$1" in
     write-paper|revise) echo paper ;;
     formalize-statements) echo statements ;;
+    propose-roadmap) echo roadmap ;;
     *) echo generic ;;
   esac
 }

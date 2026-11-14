@@ -10,16 +10,21 @@ State labels (exactly one per open pull request of this repository, none when it
   awaiting-author  a reviewer or referee asked for changes (or rejected) on the last commit, or the
                    pull request is a draft labelled incomplete (an agent continues it)
   ready-to-merge   build green and the needed reviews accept the last commit
+  veto-window      a roadmap proposal approved by review-roadmap, waiting for the end of its veto
+                   window or for the owner's approval (the loop then approves and merges it)
 The build is the check "Build and check" (workflow CI) and, for paper pull requests or when it ran,
 "Compile papers" (workflow Papers), as in scripts/lib.sh (CI_JQ).
 Agents' pull requests (branch agent/*, opened by the owner's account, first line "Role: `<role>`...")
 need trusted commit statuses, i.e. created by the owner's account (the loop), never by a workflow:
 papers (roles write-paper, revise) "Referee scope" and "Referee proofs" (verdict accept) and
-"Incognita review"; other pull requests "Incognita review" (verdict approve).
+"Incognita review"; roadmap proposals (role propose-roadmap) "Incognita review" (verdict approve
+of review-roadmap) and then "Incognita loop" (verdict approved: the scripted approval); other pull
+requests "Incognita review" (verdict approve).
 Pull requests from forks get the label `fork` and no state: the agents ignore them.
 The labels set by the loop (scripts/lib.sh, ensure_labels) are created here with the same colours
 and never removed: incomplete (a draft whose session stopped), rejected (a paper closed by the
-referees), needs-human (the agents gave up: the owner decides; no state label then).
+referees), needs-human (the agents gave up: the owner decides; no state label then), veto (the
+owner vetoes a roadmap proposal).
 
 Role labels: role:<role>, for the roles of v3 (agents/roles/), from the first line of the
 description of an agent's pull request.
@@ -39,17 +44,20 @@ STATES = {
     "awaiting-review": ("0E8A16", "Build green; the needed reviews of the last commit are not all there"),
     "awaiting-author": ("C5DEF5", "A reviewer asked for changes on the last commit"),
     "ready-to-merge": ("1D76DB", "Build green and the last commit accepted by the needed reviews"),
+    "veto-window": ("5319E7", "Roadmap proposal approved by review-roadmap: approved by the loop after the veto window"),
 }
 FORK = ("fork", "BFD4F2", "From a fork: ignored by the agents")
 LOOP_LABELS = {  # same as ensure_labels in scripts/lib.sh
     "incomplete": ("FBCA04", "A session stopped before the end: its work is kept, an agent continues it"),
     "rejected": ("B60205", "Paper rejected by the referees (reports kept); the owner may reopen it"),
     "needs-human": ("B60205", "The agents cannot go further: the owner decides"),
+    "veto": ("B60205", "The owner vetoes this roadmap proposal (or comments: veto)"),
 }
 ROLE_COLOR = "EDEDED"
 ROLE_LINE = re.compile(r"^Role: `([a-z-]+)`\. Target: `([^`]*)`\.")
 # The roles that open pull requests (ROLES in scripts/lib.sh, without the reviewers).
-ROLES = {"write-paper", "revise", "formalize-statements", "prove", "fix-pr", "bibliographer", "garden"}
+ROLES = {"write-paper", "revise", "formalize-statements", "prove", "fix-pr", "bibliographer", "garden",
+         "propose-roadmap"}
 PAPER_ROLES = {"write-paper", "revise"}
 BAD = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ERROR"}   # cancelled: rerun by the loop after 2 h
 GOOD = {"SUCCESS", "NEUTRAL", "SKIPPED"}
@@ -143,6 +151,13 @@ def state_of(pr, role, repo, me):
         if scope == "accept" and proofs == "accept" and verdict(sts, "Incognita review", {"referees"}) == "accept":
             return "ready-to-merge"
         return "awaiting-review"
+    if role == "propose-roadmap":
+        v = verdict(sts, "Incognita review", {"review-roadmap"})
+        if v in ("request_changes", "reject"):
+            return "awaiting-author"
+        if v != "approve":
+            return "awaiting-review"
+        return "ready-to-merge" if verdict(sts, "Incognita loop", {"loop"}) == "approved" else "veto-window"
     v = verdict(sts, "Incognita review", {"review-pr", "review-statements"})
     if v == "approve":
         return "ready-to-merge"

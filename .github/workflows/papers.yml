@@ -7,19 +7,27 @@ name: Papers
 # are uploaded as the artifact `papers-pdf`. templates/paper/blueprint-macros.sty, loaded by a
 # relative path, gives the leanblueprint macros (\lean, \leanok, \uses, \proves, \notready,
 # \mathlibok) a plain-LaTeX meaning; the leanblueprint web build (plasTeX) is not done here.
-# Notebooks (papers/*/notebook/) are never compiled.
+# Before compiling, `scripts/certify.py leanok` writes papers/*/certification.tex (never committed):
+# the green box "LEAN APPROVED" under each node whose frozen statement has a proof marker (checked
+# by the audit in the workflow CI), and the paper's certification line under its title
+# (AGENTS.md, section 9). Notebooks (papers/*/notebook/) are never compiled.
 
 on:
   pull_request:
     paths:
       - 'papers/**'
       - 'templates/paper/**'
+      - 'catalogue/results/**'
+      - 'scripts/certify.py'
       - '.github/workflows/papers.yml'
   push:
     branches: [main]
     paths:
       - 'papers/**'
       - 'templates/paper/**'
+      - 'catalogue/results/**'
+      - 'catalogue/garden.md'
+      - 'scripts/certify.py'
       - '.github/workflows/papers.yml'
   workflow_dispatch:
 
@@ -37,6 +45,11 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # certify.py reads the merge trailers (referees) and the garden log's commits
+
+      - name: Certification of the PDFs
+        run: python3 scripts/certify.py leanok
 
       - name: Install LaTeX
         run: |
