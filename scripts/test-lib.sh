@@ -81,7 +81,7 @@ cat > "$t/prs3.json" <<'EOF'
   "labels": [], "mergeable": "MERGEABLE", "author": {"login": "mallory"}, "baseRefName": "main", "statusCheckRollup": []}
 ]
 EOF
-ok "owner rows: a paper of the owner only" '[ "$(agent_rows "$t/prs3.json" | cut -f1,3,6 | tr "\t\n" ", ")" = "20,owner/hy,write-paper," ]'
+ok "owner rows: a paper of the owner only" '[ "$(agent_rows "$t/prs3.json" | cut -f1,3,6 | tr "\t" ",")" = "20,owner/hy,write-paper" ]'
 ok "open-prs.md" '[ "$(open_prs_md "$t/prs.json" | wc -l)" = 3 ]'
 
 # ---- the build of a head: "Build and check" (CI) and "Compile papers" (Papers), CI_JQ
