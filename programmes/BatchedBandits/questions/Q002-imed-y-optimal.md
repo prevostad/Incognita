@@ -121,8 +121,8 @@ either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t
     $x\Lambda^\star_a < K_a$.
   - That estimate is wrong as stated. Under IMED pacing, an arm whose rewards look good gets
     pulled *more*. So the event has to be computed as a large deviation of the whole trajectory of
-    the arm, across batches. For $x = 2$ on the example above, a two-stage version of that
-    computation makes the flip much more expensive than the naive estimate.
+    the arm, across batches. The proposer has not done that computation, so it is not known
+    whether the true flip cost is above or below the naive estimate.
   - Whether the trajectory rate always beats the cost of a batch, for every $x > 1$ and every
     instance, is exactly what decides the question. It is also what HY's caps and tests may have
     been designed to avoid. The owner may already know the answer. The proposer does not.
