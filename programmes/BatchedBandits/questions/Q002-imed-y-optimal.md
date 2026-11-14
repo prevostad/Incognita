@@ -19,7 +19,9 @@ here. The frozen statement translates them to the 0-based Lean rounds that the f
 pull request fixes.
 
 **The learner IMED-$y$.** IMED-$y$ is HY's IMED phase ([HY.md](../HY.md)) used for every round,
-that is HY with $s_\ell := +\infty$. It has no paced phase, no tests, no nets, no margins and no
+that is HY with $w_0 = 1$ and $s_\ell := +\infty$, up to tie rules: [HY.md](../HY.md) leaves open
+the order of the batch-1 round-robin and the choice among non-leader minimisers of the index,
+and IMED-$y$ fixes both below. It has no paced phase, no tests, no nets, no margins and no
 activation. Fix a linear order on the $K$ arms. Ties among maximisers of $\tilde m$ are broken by
 this order. Ties among minimisers of the index are broken in favour of the leader first, and then
 by this order.
@@ -99,9 +101,10 @@ $\liminf_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell \ge x^2$.
   - the $x_\ell \to 1$ result is about exponent $1$;
   - HY's upper bound is about HY. In batch $\ell+1$, HY first runs its IMED phase, the rounds
     $t_\ell < t \le s_\ell$, where $s_\ell = \lfloor t_\ell^{1+\vartheta_\ell}\rfloor$ is a round
-    index. That phase is exactly IMED-$y$, and it has no cap. On a grid with $x > 1$, every late
-    batch also has a paced phase: $t_{\ell+1} > s_\ell$ eventually, since
-    $L_{\ell+1}/L_\ell \to x > 1$ and $\vartheta_\ell \to 0$. The paced phase, the rounds
+    index. That phase is IMED-$y$ up to its tie rules (for $w_0 = 1$), and it has no cap. For HY's
+    default parameters, on a grid with $x > 1$, every late batch also has a paced phase:
+    $t_{\ell+1} > s_\ell$ eventually, since $L_{\ell+1}/L_\ell \to x > 1$ and the default
+    $\vartheta_\ell = 1/\log\log t_\ell \to 0$. The paced phase, the rounds
     $s_\ell < t \le t_{\ell+1}$, differs from IMED-$y$ in three ways:
     1. it tests against a reference level computed from well-sampled arms, not against the leader's
        mean;
@@ -117,7 +120,8 @@ $\liminf_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell \ge x^2$.
   $\ell+1$, that is $\asymp t_{\ell+1}$ pulls. Under HY it can also be pulled at every round of
   the IMED phase. In the paced phase it is pulled only while its cumulative count is below
   $K-1+U_{\ell+1}$. So it receives at most $s_\ell - t_\ell + K - 1 + U_{\ell+1}$ pulls in batch
-  $\ell+1$, and that bound is at most $t_{\ell+1}^{1/x + o(1)}$, polynomially fewer than $t_{\ell+1}$. Neither HY's
+  $\ell+1$. For HY's default parameters ($\vartheta_\ell \to 0$, $\beta = 2$), that bound is at
+  most $t_{\ell+1}^{1/x + o(1)}$, polynomially fewer than $t_{\ell+1}$. Neither HY's
   statement nor the lower bound says whether these events are rare enough for IMED-$y$.
 - **Where a "no" could come from (proposer's heuristics, unverified).** A suboptimal leader at
   $t_\ell$ costs the whole batch $\ell+1$, about $t_{\ell+1}$ pulls, and so does a near-tie under
