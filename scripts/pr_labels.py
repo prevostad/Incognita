@@ -104,12 +104,17 @@ def verdict(sts, context, roles):
 
 
 def role_of(pr, me):
-    if pr.get("isCrossRepository") or not pr.get("headRefName", "").startswith("agent/"):
+    branch = pr.get("headRefName", "")
+    if pr.get("isCrossRepository") or not branch.startswith(("agent/", "owner/")):
         return None
     if (pr.get("author") or {}).get("login") != me:
         return None
     m = ROLE_LINE.match((pr.get("body") or "").split("\n", 1)[0])
-    return m.group(1) if m and m.group(1) in ROLES else None
+    role = m.group(1) if m and m.group(1) in ROLES else None
+    # owner/*: a paper of the owner, handled like an agent's paper (CONTRIBUTING.md).
+    if branch.startswith("owner/") and role != "write-paper":
+        return None
+    return role
 
 
 def build_of(pr, role):

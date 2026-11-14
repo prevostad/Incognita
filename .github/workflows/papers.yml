@@ -3,7 +3,7 @@ name: Papers
 # Compiles every paper to PDF with latexmk (pdflatex, bibtex): papers/*/paper.tex, then the
 # blueprint extension papers/*/formalisation.tex when it exists, and the templates of
 # templates/paper/. Fails on a LaTeX error, an undefined reference or citation, or a duplicate
-# label; warns when a paper exceeds 12 pages or 25 nodes (AGENTS.md, section 5.2). The PDFs and logs
+# label; warns when a paper exceeds 100 pages (AGENTS.md, section 5.2). The PDFs and logs
 # are uploaded as the artifact `papers-pdf`. templates/paper/blueprint-macros.sty, loaded by a
 # relative path, gives the leanblueprint macros (\lean, \leanok, \uses, \proves, \notready,
 # \mathlibok) a plain-LaTeX meaning; the leanblueprint web build (plasTeX) is not done here.
@@ -96,11 +96,8 @@ jobs:
             pages=$(sed -n 's/^Output written on .* (\([0-9]*\) page.*/\1/p' "$log" 2>/dev/null | tail -n 1)
             nodes=$(grep -cE '^[^%]*\\begin\{(definition|lemma|proposition|theorem|corollary)\}' "$tex" || true)
             if [ "$base" = paper ]; then
-              if [ -n "$pages" ] && [ "$pages" -gt 12 ]; then
-                echo "::warning file=$tex::$name has $pages pages (limit 12: split the paper)"
-              fi
-              if [ "$nodes" -gt 25 ]; then
-                echo "::warning file=$tex::$name has $nodes nodes (limit 25: split the paper)"
+              if [ -n "$pages" ] && [ "$pages" -gt 100 ]; then
+                echo "::warning file=$tex::$name has $pages pages (limit 100: split the paper)"
               fi
             fi
             echo "$name: $result, ${pages:-?} pages, $nodes nodes"

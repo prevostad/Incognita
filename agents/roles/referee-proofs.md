@@ -6,7 +6,7 @@ final message is your report, and nothing else.
 ## Inputs
 
 - `.agents/task.md`: pull request number, head SHA, paper id, deadline. You check every node of
-  the paper (at most 25).
+  the paper.
 - The paper: `papers/<P>/paper.tex`, `refs.bib`. **Do not read `papers/<P>/notebook/`**, nor its
   part of `.agents/pr.diff`: you judge the paper alone.
 - The roadmap's pinned conventions and Definitions (`roadmaps/<Roadmap>/ROADMAP.md`); the `[Lean]`

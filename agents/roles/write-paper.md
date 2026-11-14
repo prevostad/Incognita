@@ -69,7 +69,7 @@ then proposes an extension of the roadmap.
   precise enough to be the main result of a next paper: quantifiers, class, criterion, why your
   method stops there, the roadmap item it extends; the scope referee rates them, and those it
   accepts become candidate directions of the roadmap); Attribution with the earliest source of each
-  technique and your queries. At most 12 pages and 25 nodes.
+  technique and your queries. At most 100 pages; shorter is better.
 - **For an F item**: `kind = "external"` for a published result (`source = "[KEY]"`; statements
   copied verbatim from `literature/notes/KEY.md`; proofs follow the source, gaps filled and marked);
   `kind = "internal"` for an owner's result stated in the roadmap (Main result copied verbatim from
@@ -89,7 +89,7 @@ then proposes an extension of the roadmap.
 ## Check before finishing
 
 1. Compile: `latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`. In
-   `papers/<P>/paper.log`: no error, no `undefined`, no `multiply defined`; at most 12 pages. Then
+   `papers/<P>/paper.log`: no error, no `undefined`, no `multiply defined`; at most 100 pages. Then
    `latexmk -C -cd papers/<P>/paper.tex`.
 2. Reread every proof as `referee-proofs` will: line by line, and the named checks: order of
    quantifiers and dependence of constants; conditioning on random times and batch ends; exchanges

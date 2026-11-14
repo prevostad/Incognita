@@ -170,7 +170,7 @@ write_report() {
       [ "$(gh pr view "$n" --json state --jq .state 2>/dev/null)" = OPEN ] && echo "- to merge by the owner: #$n ($why)"
     done
     ghr pr list --state open --limit 200 --json number,title,headRefName,isCrossRepository \
-      --jq '.[] | select(.isCrossRepository == false and (.headRefName | startswith("agent/") | not)) | "- human pull request open: #\(.number) \(.title)"' 2>/dev/null
+      --jq '.[] | select(.isCrossRepository == false and (.headRefName | startswith("agent/") | not)) | if (.headRefName | startswith("owner/")) then "- paper of the owner in review: #\(.number) \(.title)" else "- human pull request open: #\(.number) \(.title)" end' 2>/dev/null
     ev ask-owner | awk -F'\t' '{ print "- question (from " ($4 ~ /^[0-9]+$/ ? "#" : "") $4 ", " $3 "): " $5 }'
     proposals_md
     certify_py disputed-deps 2>/dev/null | awk '{ print "- " $1 " depends on " $2 ", which is " $3 ": its certification is capped (dependency check once " $2 " has a new version)" }'

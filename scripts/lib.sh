@@ -19,11 +19,15 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_MODEL_AUTHOR:=opus}"
 : "${INCOGNITA_MODEL_REVIEWER:=sonnet}"
 : "${INCOGNITA_EFFORT:=high}"
-: "${INCOGNITA_MAX_TURNS:=200}"
-: "${INCOGNITA_TIMEOUT_REVIEW:=1800}"       # seconds; reviews
-: "${INCOGNITA_TIMEOUT_WRITE:=5400}"        # seconds; writing roles
-: "${INCOGNITA_TIMEOUT_REFEREE_SCOPE:=3600}"   # the referees read a whole paper and its sources
-: "${INCOGNITA_TIMEOUT_REFEREE_PROOFS:=3600}"
+: "${INCOGNITA_MAX_TURNS:=1000}"
+# Time per task (seconds): long on purpose (owner, 2026-11-14), capped by the night's end; the
+# weekly cap is also checked during a session (INCOGNITA_CAP_WATCH). A per-role override is
+# INCOGNITA_TIMEOUT_<ROLE> (for example INCOGNITA_TIMEOUT_WRITE_PAPER).
+: "${INCOGNITA_TIMEOUT_REVIEW:=3600}"       # reviews
+: "${INCOGNITA_TIMEOUT_WRITE:=14400}"       # writing roles
+: "${INCOGNITA_TIMEOUT_REFEREE_SCOPE:=7200}"   # the referees read a whole paper (up to 100 pages) and its sources
+: "${INCOGNITA_TIMEOUT_REFEREE_PROOFS:=14400}"
+: "${INCOGNITA_CAP_WATCH:=600}"             # seconds between two readings of the weekly usage during a session (0: never)
 : "${INCOGNITA_AGENT_BIN:=/opt/incognita/bin}"   # Claude Code for the sessions: root-owned, outside the agent's home
 : "${INCOGNITA_BUNDLE_MAX:=50000000}"       # bytes: the largest output bundle of a session
 : "${INCOGNITA_MIN_REVIEW:=900}"            # a task is started only with at least this much time...
@@ -719,13 +723,17 @@ CI_JQ='
       elif any($v[]; . == "NONE") then "NONE"
       else ([$v[] | select(good | not)] | first) end;'
 
-# jq: one row per agent PR (same repository, branch agent/*, opened by OWNER, with a Role line):
+# jq: one row per agent PR (same repository, branch agent/*, opened by OWNER, with a Role line),
+# and per paper of the owner (branch owner/*, role write-paper: refereed and revised like an
+# agent's paper, CONTRIBUTING.md):
 # number H branch draft mergeable role target labels ci
 AGENT_ROWS_JQ=$CI_JQ'
-  .[] | select(.isCrossRepository == false and (.headRefName | startswith("agent/"))
+  .[] | select(.isCrossRepository == false
+               and ((.headRefName | startswith("agent/")) or (.headRefName | startswith("owner/")))
                and .author.login == $o and .baseRefName == "main")
   | ((.body // "") | split("\n")[0]
      | capture("^Role: `(?<role>[a-z-]+)`\\. Target: `(?<target>[^`]*)`\\.")) as $r
+  | select((.headRefName | startswith("agent/")) or $r.role == "write-paper")
   | [.number, .headRefOid, .headRefName, (if .isDraft then "draft" else "ready" end),
      (.mergeable // "UNKNOWN"), $r.role, (if $r.target == "" then "-" else $r.target end),
      ([.labels[].name] | join(",") | if . == "" then "-" else . end),
@@ -1013,6 +1021,22 @@ role_allows() {
       esac ;;
   esac
   return 1
+}
+
+# human_authors_kept <old> <new>: every paper of the owner in <old> (META.toml with a line
+# `human_authors = [...]`) keeps that line and the first `\author` line of its paper.tex in <new>
+# (AGENTS.md 5.1: agents never change who wrote a paper). Reasons on stderr.
+human_authors_kept() {
+  local old=$1 new=$2 d a b bad=0
+  for d in $(repo_git ls-tree --name-only "$old" papers/ 2>/dev/null | sed 's#^papers/##'); do
+    a=$(repo_git show "$old:papers/$d/META.toml" 2>/dev/null | grep -E '^[[:space:]]*human_authors[[:space:]]*=') || continue
+    b=$(repo_git show "$new:papers/$d/META.toml" 2>/dev/null | grep -E '^[[:space:]]*human_authors[[:space:]]*=' || true)
+    [ "$a" = "$b" ] || { log "refused: papers/$d/META.toml: human_authors changed"; bad=1; }
+    a=$(repo_git show "$old:papers/$d/paper.tex" 2>/dev/null | grep -m1 -E '^[[:space:]]*\\author' || true)
+    b=$(repo_git show "$new:papers/$d/paper.tex" 2>/dev/null | grep -m1 -E '^[[:space:]]*\\author' || true)
+    [ "$a" = "$b" ] || { log "refused: papers/$d/paper.tex: the \\author line of a paper of the owner changed"; bad=1; }
+  done
+  return $bad
 }
 
 # check_paths <role> <paper> <base> <new>: 0 if every change of base..new is allowed; reasons on

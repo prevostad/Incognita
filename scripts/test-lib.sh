@@ -67,6 +67,21 @@ ok "row fields" '[ "$(printf "%s\n" "$rows" | head -n1)" = "$(printf "7\taaa\tag
 ok "draft row" '[ "$(printf "%s\n" "$rows" | tail -n1 | cut -f4,8,9)" = "$(printf "draft\tincomplete\tIN_PROGRESS")" ]'
 busy=$(busy_pairs "$t/prs.json")
 ok "busy pairs ignore forks" '[ "$busy" = "$(printf "write-paper BatchedBandits\nprove P001-x")" ]'
+# Papers of the owner: branch owner/*, role write-paper only, opened by the owner's account.
+cat > "$t/prs3.json" <<'EOF'
+[
+ {"number": 20, "title": "HY", "body": "Role: `write-paper`. Target: `BatchedBandits`. Model: `owner`.",
+  "headRefName": "owner/hy", "headRefOid": "o1", "isCrossRepository": false, "isDraft": false,
+  "labels": [], "mergeable": "MERGEABLE", "author": {"login": "owner"}, "baseRefName": "main", "statusCheckRollup": []},
+ {"number": 21, "title": "Not a paper", "body": "Role: `prove`. Target: `P001-x`. Model: `owner`.",
+  "headRefName": "owner/prove", "headRefOid": "o2", "isCrossRepository": false, "isDraft": false,
+  "labels": [], "mergeable": "MERGEABLE", "author": {"login": "owner"}, "baseRefName": "main", "statusCheckRollup": []},
+ {"number": 22, "title": "Someone else", "body": "Role: `write-paper`. Target: `BatchedBandits`. Model: `x`.",
+  "headRefName": "owner/x", "headRefOid": "o3", "isCrossRepository": false, "isDraft": false,
+  "labels": [], "mergeable": "MERGEABLE", "author": {"login": "mallory"}, "baseRefName": "main", "statusCheckRollup": []}
+]
+EOF
+ok "owner rows: a paper of the owner only" '[ "$(agent_rows "$t/prs3.json" | cut -f1,3,6 | tr "\t\n" ", ")" = "20,owner/hy,write-paper," ]'
 ok "open-prs.md" '[ "$(open_prs_md "$t/prs.json" | wc -l)" = 3 ]'
 
 # ---- the build of a head: "Build and check" (CI) and "Compile papers" (Papers), CI_JQ
@@ -134,6 +149,23 @@ try "tokens refused" write-paper "" 1 'mkdir -p papers/P001-t; echo "sk-ant-oat0
 try "GitHub tokens refused" write-paper "" 1 'mkdir -p papers/P001-t; echo "token: gho_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" > papers/P001-t/paper.tex'
 try "private keys refused" write-paper "" 1 'mkdir -p papers/P001-t; printf -- "-----BEGIN OPENSSH PRIVATE KEY-----\nx\n" > papers/P001-t/paper.tex'
 try "revise changes its paper" revise P001-test 0 'mkdir -p papers/P001-test; echo v2 > papers/P001-test/paper.tex'
+# A paper of the owner keeps its human_authors and its \author line through a revision.
+git checkout -q -f "$base" && git clean -qfdx
+mkdir -p papers/P005-hy && printf 'roadmap = "BB"\nhuman_authors = ["Adrien Prevost"]\n' > papers/P005-hy/META.toml
+printf '\\title{HY}\n\\author{Adrien Prevost}\n' > papers/P005-hy/paper.tex
+git add -A && git commit -qm owner && hb=$(git rev-parse HEAD)
+printf 'roadmap = "BB"\nhuman_authors = ["Adrien Prevost"]\nauthors = ["m"]\n' > papers/P005-hy/META.toml
+printf '\\title{HY v2}\n\\author{Adrien Prevost}\n' > papers/P005-hy/paper.tex
+git add -A && git commit -qm rev1 && h1=$(git rev-parse HEAD)
+git checkout -q -f "$hb" && printf 'roadmap = "BB"\nhuman_authors = ["Someone"]\n' > papers/P005-hy/META.toml
+git add -A && git commit -qm rev2 && h2=$(git rev-parse HEAD)
+git checkout -q -f "$hb" && printf '\\title{HY}\n\\author{Incognita agents}\n' > papers/P005-hy/paper.tex
+git add -A && git commit -qm rev3 && h3=$(git rev-parse HEAD)
+ok "owner paper: a revision keeps its authors" 'human_authors_kept "$hb" "$h1" 2>/dev/null'
+ok "owner paper: a change of human_authors is refused" '! human_authors_kept "$hb" "$h2" 2>/dev/null'
+ok "owner paper: a change of the author line is refused" '! human_authors_kept "$hb" "$h3" 2>/dev/null'
+ok "agent paper: no author constraint" 'human_authors_kept "$base" "$h2" 2>/dev/null'
+git checkout -q -f "$base" && git clean -qfdx
 try "revise may not change another paper" revise P001-test 1 'mkdir -p papers/P002-other; echo a > papers/P002-other/x'
 try "formalize-statements adds statements and imports" formalize-statements P001-test 0 \
   'mkdir -p Statements/P001 papers/P001-test; echo t > Statements/P001/thm.lean; echo h > Statements/P001/thm.lock; echo "public import Statements.P001.thm" >> Statements.lean; echo b > papers/P001-test/blueprint.md'

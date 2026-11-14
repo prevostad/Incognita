@@ -79,8 +79,8 @@ justifies "not affected".
   proof is a routine exercise (a few lines of a standard argument), even if it is not a corollary of
   a specific entry of KNOWN.md or of the literature (**F**). For an F item, fidelity to its source
   replaces novelty and interest.
-- Mandatory sections present (AGENTS.md §5.2): a missing section is **G**; at most 12 pages and 25
-  nodes (beyond: **G**, split required); clarity: **P**.
+- Mandatory sections present (AGENTS.md §5.2): a missing section is **G**; at most 100 pages
+  (beyond: **G**, split required); clarity: **P**.
 
 ## 3. Open questions (rate every one)
 

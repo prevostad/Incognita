@@ -150,6 +150,7 @@ class Paper:
         self.directions = self.meta.get("directions", [])
         self.depends_on = self.meta.get("depends_on", [])
         self.authors = self.meta.get("authors", [])
+        self.human_authors = self.meta.get("human_authors", [])   # a paper of the owner (AGENTS.md 5.1)
         self.withdrawn = tree.exists("papers/%s/withdrawn.md" % d)
         self.errata = tree.read("papers/%s/errata.md" % d) or ""
         self.corrections = tree.read("papers/%s/statement-corrections.md" % d) or ""
@@ -533,12 +534,22 @@ def bib_text(tree):
     for p in sorted(papers(tree), key=lambda q: q.num):
         title = p.title.replace("\n", " ")
         authors = ", ".join(a for a in p.authors if isinstance(a, str)) or "unknown"
-        fields = [("author", "{Incognita agents}"), ("title", "{%s}" % title)]
+        humans = [h for h in p.human_authors if isinstance(h, str) and h.strip()] \
+            if isinstance(p.human_authors, list) else []
+        if humans:   # a paper of the owner: its human authors; the models only revised it
+            author = " and ".join(tex_escape(h.strip()) for h in humans)
+            note = "Version %d. Written by %s" % (p.version, tex_escape(", ".join(humans)))
+            if p.authors:
+                note += "; AI assistance: %s" % tex_escape(authors)
+        else:
+            author = "{Incognita agents}"
+            note = "Version %d. Written by %s" % (p.version, tex_escape(authors))
+        fields = [("author", author), ("title", "{%s}" % title)]
         if p.year:
             fields.append(("year", p.year))
         fields += [("howpublished", "Incognita library, paper \\texttt{%s}" % tex_escape(p.dir)),
                    ("version", str(p.version)),
-                   ("note", "Version %d. Written by %s" % (p.version, tex_escape(authors))),
+                   ("note", note),
                    ("url", "%s/tree/main/papers/%s" % (REPO_URL, p.dir))]
         out.append("@misc{INC-%s," % p.prefix)
         for k, v in fields:
@@ -583,9 +594,13 @@ def check_tree(tree, base=None):
         for k in ("roadmap", "kind", "directions", "authors", "version"):
             if k not in p.meta:
                 errors.append("%s: missing field %s" % (w, k))
-        extra = set(p.meta) - {"roadmap", "kind", "directions", "authors", "version", "depends_on", "source"}
+        extra = set(p.meta) - {"roadmap", "kind", "directions", "authors", "version", "depends_on", "source",
+                               "human_authors"}
         if extra:
             errors.append("%s: unknown fields %s" % (w, ", ".join(sorted(extra))))
+        if "human_authors" in p.meta and not (isinstance(p.human_authors, list) and p.human_authors
+                                              and all(isinstance(h, str) and h.strip() for h in p.human_authors)):
+            errors.append("%s: human_authors is a non-empty list of names" % w)
         if not isinstance(p.version, int) or p.version < 1:
             errors.append("%s: version must be an integer >= 1" % w)
         if p.kind not in ("internal", "external", "definitions"):
@@ -675,6 +690,8 @@ def check_tree(tree, base=None):
             if b.dir != p.dir:
                 errors.append("papers/%s: renamed from papers/%s" % (p.dir, b.dir))
                 continue
+            if b.meta.get("human_authors") != p.meta.get("human_authors"):
+                errors.append("%s: human_authors never changes (AGENTS.md 5.1)" % w)
             changed = b.tex != p.tex
             if changed and p.version != b.version + 1:
                 errors.append("%s: paper.tex changed, so version must be %d (now %s)" % (w, b.version + 1, p.version))

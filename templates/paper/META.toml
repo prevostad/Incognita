@@ -12,3 +12,5 @@ depends_on = []                 # results of library papers used, with the versi
                                 # paper.tex as \cite[...]{INC-P001}
 # source = "[KEY]"              # external papers only: the published work, a key of
                                 # literature/bibliography.json, statements in literature/notes/KEY.md
+# human_authors = ["<Name>"]    # papers of the owner only (CONTRIBUTING.md, section 8), on one
+                                # line: the authors of its library.bib entry; never changed by agents
