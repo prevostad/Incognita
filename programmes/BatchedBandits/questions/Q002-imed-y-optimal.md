@@ -165,10 +165,18 @@ failure of 1 or of 2.
 
 - **If the answer is "no".** The refutation is itself the result: a grid with $x_\ell \to x > 1$,
   an instance and an arm on which item 1 or item 2 fails. Formally, it is a proof of the negation
-  of the frozen statement. The natural next target is *capped IMED-$y$*: IMED-$y$ in which a
-  non-leader $c$ is not pulled in batch $\ell+1$ once $N_c(t-1) \ge K - 1 + \lceil L_\ell^2\rceil$.
-  This is HY's cap $U_{\ell+1}$ with $\beta = 2$, and it gives a minimal answer to "which part of
-  HY's paced phase is needed". Ask the same question for capped IMED-$y$.
+  of the frozen statement. The natural next target is *capped IMED-$y$*, defined as follows:
+  - at every round $t \in (t_\ell, t_{\ell+1}]$ of batch $\ell+1$, from the first round of the
+    batch, the eligible arms are the leader $\hat c_\ell$ and the non-leaders $c$ with
+    $N_c(t-1) < K - 1 + U_{\ell+1}$, where $U_{\ell+1} := \lceil L_\ell^2\rceil$;
+  - the learner pulls a minimiser of $I_c(t)$ among the eligible arms, with IMED-$y$'s tie rules;
+  - the leader is never capped, so the eligible set is never empty. When every non-leader is
+    capped, the leader is pulled.
+
+  The cap is HY's cumulative cap with $\beta = 2$. Unlike HY, it applies from the first round of
+  the batch, with no uncapped IMED phase before it. Capped IMED-$y$ keeps the cap and drops HY's
+  other parts: its tests, its floors and nets, and its margins. A "yes" for capped IMED-$y$ would
+  show that the cap alone suffices. Ask the same question for capped IMED-$y$.
 - **If "yes" is out of reach.** Here are three variants, each of them weaker than the original,
   which stays open:
   - (a) item 1 alone (consistency at batch ends of IMED-$y$);
