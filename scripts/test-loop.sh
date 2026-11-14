@@ -48,6 +48,7 @@ world() {
   mkdir -p roadmaps/BB
   printf '# Roadmap\n\n| | |\n|---|---|\n| Status | **approved** (2026-11-14) |\n' > roadmaps/BB/ROADMAP.md
   printf '%s\n' "$1" > roadmaps/BB/KNOWN.md
+  mkdir -p catalogue/results; echo '# Proof markers' > catalogue/results/README.md   # not material to garden
   if [ -n "${2:-}" ]; then
     mkdir -p "papers/$2"; printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D1"]\n' > "papers/$2/META.toml"
     echo x > "papers/$2/paper.tex"

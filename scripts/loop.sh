@@ -297,7 +297,7 @@ in_review() { grep -cxF "write-paper $1" "$BUSY"; }
 has_material() {  # something validated to garden
   local p
   for p in $(papers_on_main); do [ "$(meta_get "$p" kind)" != definitions ] && return 0; done
-  [ -n "$(ls_main catalogue/results)" ]
+  ls_main catalogue/results | grep -q '\.toml$'   # proof markers (not the README)
 }
 bib_needed() {  # external papers without source notes, or verified papers without an attribution audit
   local p src

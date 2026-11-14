@@ -319,7 +319,7 @@ add_situation() { situation="$situation- $*
 "; }
 [ -n "${INCOGNITA_NOTE:-}" ] && add_situation "$INCOGNITA_NOTE"
 case "$ci_state" in FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR) add_situation "The build failed on the head (check \"Build and check\" of the workflow CI, or \"Compile papers\" of the workflow Papers): see \`ci-log.txt\`." ;; esac
-if [ -n "$H" ] && ! repo_git merge-base --is-ancestor "$M" "$H"; then
+if [ -n "$H" ] && ! is_review_role "$role" && ! repo_git merge-base --is-ancestor "$M" "$H"; then
   add_situation "The branch is behind \`origin/main\`. If it conflicts, or for a Lean change, rebase it: \`git rebase origin/main\`."
 fi
 case ",$pr_labels," in *,incomplete,*) add_situation "This pull request is a draft labelled \`incomplete\`: an earlier session stopped before the end. Continue its work." ;; esac
