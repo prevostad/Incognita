@@ -64,10 +64,18 @@ the nodes it has not covered.
 
 Verdict, computed: `reject` if any F; `major` if any G or L; otherwise `accept` (P defects only:
 an accepted paper keeps no error). Your report, in this order (IDs `PF<round>.<n>`, L and P defects
-included):
+included). It starts with a **rubric**, one row per criterion: ✅ no defect (or P only), ⚠️ G or L
+defects to fix, ❌ an F defect; the summary is one sentence and names the defect IDs and the number
+of nodes checked.
 
 ```
 Verdict: accept | major | reject
+
+| Criterion | State | Summary |
+|---|---|---|
+| Correctness | ✅/⚠️/❌ | <is every statement true as stated: nodes checked, false steps> |
+| Completeness | ✅/⚠️/❌ | <unjustified steps, missing cases, hypotheses of cited results> |
+| Ready for Lean | ✅/⚠️/❌ | <statements precise (quantifiers, constants), exhaustive \uses, proofs split into checkable lemmas> |
 
 | ID | Class | Node | Step | Defect | Fix |
 |---|---|---|---|---|---|

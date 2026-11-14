@@ -104,10 +104,26 @@ is never a defect of the paper (rate it `no`).
 ## Verdict and report
 
 Verdict, computed: `reject` if any F; `major` if any G or L; otherwise `accept` (P defects only:
-an accepted paper keeps no error). Your report, in this order (IDs `SC<round>.<n>`):
+an accepted paper keeps no error). Your report, in this order (IDs `SC<round>.<n>`). It starts with
+a **rubric**, one row per criterion, for the reader who wants the state at a glance: ✅ no defect
+(or P only), ⚠️ G or L defects to fix, ❌ an F defect; the summary is one sentence and names the
+defect IDs. The **interest score** rates significance only, 1 to 5: 1 a correct but minor result,
+just above the routine bar of criterion 7; 2 a useful building block for the library; 3 a solid
+answer to a direction; 4 closes a direction, or would be accepted as it is by a good journal of
+the field; 5 a result that would interest the field broadly. Justify it in the summary. It never
+changes the verdict, and it is not a reward: do not inflate it.
 
 ```
 Verdict: accept | major | reject
+
+| Criterion | State | Summary |
+|---|---|---|
+| Novelty | ✅/⚠️/❌ | <is the main result new, against KNOWN.md, the literature and the library> |
+| Roadmap fit | ✅/⚠️/❌ | <items served, acceptance criteria> |
+| Interest | <n>/5 | <why this score> |
+| Bibliography | ✅/⚠️/❌ | <references, notes, keys> |
+| Attribution | ✅/⚠️/❌ | <earliest source of each technique> |
+| Presentation | ✅/⚠️/❌ | <mandatory sections, statements, clarity> |
 
 | ID | Class | Node | Step | Defect | Fix |
 |---|---|---|---|---|---|

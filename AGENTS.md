@@ -360,6 +360,12 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
   including the partial report's findings that still hold. After four stopped sessions on a pull
   request, or three sessions that end without a verdict and without a partial report, it goes to
   the owner (`needs-human`).
+- **Rubric.** Each referee report starts, after its verdict line, with a rubric: one row per
+  criterion (scope: novelty, roadmap fit, interest, bibliography, attribution, presentation;
+  proofs: correctness, completeness, ready for Lean), its state (✅ no defect or P only, ⚠️ G or L,
+  ❌ F) and a one-sentence summary naming the defect IDs. The scope referee also gives an
+  **interest score** from 1 to 5 (significance only; the scale is in its role file). The rubric is
+  a summary: the verdict is still computed from the defect table.
 - **Defect classes.** **F** fatal: the main statement is false, already known, a corollary of
   KNOWN.md or of the literature, out of the roadmap, or re-derives a private entry. **G** gap: an
   unjustified step in a labelled proof (or, for scope, a novelty claim left unjustified). **L**
