@@ -113,7 +113,7 @@ else the owner knows is in [KNOWN.md](KNOWN.md).
 Each item becomes a paper (AGENTS.md §5.1) whose novelty is not checked, only its fidelity to the
 source; then it is formalised. In order:
 
-- **F0. The setting** (paper `P000-setting`, kind `definitions`): the Definitions above, their basic
+- **F0. The setting** (the setting paper of this roadmap, kind `definitions`): the Definitions above, their basic
   relations, witnesses and exclusions. Its statements pull request is merged by the owner, who may
   instead port his private definitions (decision pending).
 - **F1. The one-batch lower bound**, Appendix A, item 1, case $x = 1$ (kind `internal`, source: this
@@ -121,7 +121,8 @@ source; then it is formalised. In order:
   $\liminf_\ell \mathbb E N_a(t_\ell)/L_\ell \ge 1/d_a$, on every grid. It rests on the
   fundamental inequality of Garivier–Ménard–Stoltz [GMS19, (6)] applied to batched learners
   (a cited node; check first what LMLExplore's `InstanceDependentLowerBound` and `LaiRobbins` already
-  provide). Proof route: Appendix B, "Lower bound".
+  provide). Proof route: Appendix B, "Lower bound". Served by the owner's paper P000 (pull request
+  #17, 2026-11-14): its one-batch lemma and the remark of its Theorem 4.1(i).
 - **F2. $\mathcal K_{\inf}$ on $[0,1]$** (kind `external`): dual formula, continuity, deviation
   inequalities for $n\,\mathcal K_{\inf}(\hat\nu_n, \mu)$ (Honda–Takemura 2010, 2015). Shared with
   StochasticBandits (its F10, owner decision of 2026-11-14): written once, by whichever roadmap
@@ -129,8 +130,10 @@ source; then it is formalised. In order:
 - **F3. Batched IMED with frozen statistics, optimal when $x_\ell \to 1$** (kind `internal`, the
   owner's **[Lean]** result above). Open only once a KNOWN entry gives the algorithm by its formula;
   until then, skip it.
-- **F4. The lower bound $x^2/K_a$ and the upper bound of HY** (Appendix A, items 1–3). **On hold**:
-  the owner may port his private formalisation instead.
+- **F4. The lower bound $x^2/K_a$ and the upper bound of HY** (Appendix A, items 1–3). Items 1–2:
+  the owner's paper P000 (pull request #17, submitted 2026-11-14), refereed like an agent's paper;
+  its formalisation may follow the owner's private Lean project. Item 3 (all rounds) is not in that
+  paper.
 - **F5. The [paper] results above**: here formalisation is a verification; a failure is recorded as
   an erratum (AGENTS.md §6.6, case b), never resolved by weakening silently.
 
