@@ -350,6 +350,10 @@ roadmap_approvals() {
       | if $w == null then ""
         elif ([.[] | select(.kind == "fix-pr" and .created_at > $w.created_at)] | length) > 0 then ""
         else ($w.body | capture("Window: (?<s>[0-9]{4}-[0-9]{2}-[0-9]{2}) to (?<e>[0-9]{4}-[0-9]{2}-[0-9]{2})") | "\(.s) \(.e)") // "" end' <<< "$tc")
+    # An approval of the owner counts only for the content he saw: not before the last fix round.
+    if [ "${words%% *}" = approve ] && [ -n "$(jq -r --arg d "${words#* }" '[.[] | select(.kind == "fix-pr" and .created_at > $d)] | first | .created_at // empty' <<< "$tc")" ]; then
+      words=""
+    fi
     if [ "${words%% *}" = approve ]; then
       text="by the owner's comment of ${words#* }, after review-roadmap approved pull request #$n; scripted by the loop on $today"
     elif [ "$4" = new ]; then

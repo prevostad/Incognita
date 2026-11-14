@@ -25,7 +25,10 @@ previous reports). `.agents/revision.diff` (listed in task.md) is the diff from 
 last report to this head; otherwise use `git diff <head named in that report> HEAD --
 papers/<P>/paper.tex` (if that commit is missing, compare with the nodes named in the report).
 Re-check only the changed nodes, the nodes that `\uses` them, and the sources of new techniques;
-rule on each previous G and L (resolved or not, and why).
+rule on each previous G and L (resolved or not, and why). A new version of an accepted paper (an
+erratum, or a dependency check: AGENTS.md §5.6) is judged the same way: what changed, the new
+`depends_on`, and, for a dependency check that changes no node, whether `dependency-checks.md`
+justifies "not affected".
 
 ## 1. Bibliography (at least half of your effort)
 

@@ -227,6 +227,12 @@ nopass "a veto of the owner stops it" "would push a scripted commit (approved)"
 comment 22 owner "approve, after all" "" "2026-01-02T09:00:00Z"
 pass "the owner's latest word wins" "would push a scripted commit (approved) to #22"
 world "Reviewed by owner: 2026-11-14"
+h=$(prx 26 propose-roadmap BB "$PROPOSAL")
+status "$h" "Incognita review" review-roadmap approve success
+comment 26 owner "approve" "" "2026-01-01T08:00:00Z"
+comment 26 owner "<!-- incognita:fix-pr:$h -->" "Fix round: pushed." "2026-01-02T08:00:00Z"
+nopass "an approval written before the last fix round does not count" "would push a scripted commit"
+world "Reviewed by owner: 2026-11-14"
 h=$(prx 23 propose-roadmap BB "${PROPOSAL//bandits/games}")
 status "$h" "Incognita review" review-roadmap approve success
 pass "a new domain waits for the owner" "would comment on #23 (owner-approval)"

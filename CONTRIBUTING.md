@@ -36,6 +36,10 @@ owner":
   records the dates in the status line;
 - **a new domain**: nothing happens until you comment `approve` (or merge it yourself).
 
+Your latest comment starting with `veto` or `approve` wins; a veto stands until you comment
+`approve` (or remove the label `veto`), and an `approve` written before the agent's last fix round
+does not count (approve again what you have read).
+
 A new roadmap comes with a KNOWN.md marked `Reviewed by owner: no`: no paper is written there until
 you complete it and set the date (section 2). The directions of an approved extension are open at
 once. To stop the proposals, set `INCOGNITA_PROPOSE_EVERY=0` and close the proposal pull requests;

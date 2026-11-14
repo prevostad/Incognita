@@ -47,8 +47,9 @@ export INCOGNITA_LOGGING=1   # loop.sh writes to our output, already logged
 exec 9>"$INCOGNITA_HOME/night.lock"
 flock -n 9 || { log "another scripts/night.sh is running (lock $INCOGNITA_HOME/night.lock)"; exit 1; }
 # From here on, whatever the way out, the token is removed at the end (not by a dry run, and not
-# above: another night may be running).
+# above: another night may be running). A signal during the startup checks exits through it too.
 is_dry || trap reset_token EXIT
+trap 'exit 143' TERM INT HUP
 
 LOOP_PID=""
 STOP_REASON=""
@@ -255,7 +256,7 @@ elif [ -n "$FAILED" ]; then
   write_report
   exit 1
 fi
-trap on_signal INT TERM
+trap on_signal INT TERM HUP
 audit_status > "$NIGHT_DIR/audit-start.txt" 2>/dev/null || true
 sync_agent_lake || log "warning: the agent's .lake could not be re-synced"
 
