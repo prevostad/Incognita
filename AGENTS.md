@@ -246,8 +246,11 @@ and how a paper's status is computed. Start from `templates/paper/paper.tex`, `r
 `META.toml`.
 
 `META.toml` holds only: `roadmap`, `kind`, `directions` (items D, F or C served), `authors` (the
-models that wrote or revised the paper), `version` (§5.6), `depends_on` (§5.6) and, for an external
-paper, `source`. Kinds:
+models that wrote or revised the paper), `version` (§5.6), `depends_on` (§5.6), for an external
+paper `source`, and, for a paper submitted by the owner, `human_authors` (the people who wrote it,
+in order; they are the authors of its `papers/library.bib` entry). **Never add, change or remove
+`human_authors`, nor the `\author` line of a paper that has it**: a revision adds its model to
+`authors` only. Kinds:
 
 - `internal`: a result written by an agent. This includes a paper for a known result of the
   roadmap that is not published (an owner's result stated in the roadmap): its Main result copies
@@ -260,10 +263,11 @@ paper, `source`. Kinds:
 
 ### 5.2 Writing rules
 
-- English. At most **12 pages and 25 nodes** (definition, lemma, proposition, theorem and corollary
-  environments, cited results included); beyond, split into a lemma paper and an application
-  paper. One main result, labelled `thm:main`. A negative result or a counterexample is a main
-  result.
+- English. At most **100 pages** (the owner's limit, 2026-11-14); no limit on the number of nodes
+  (definition, lemma, proposition, theorem and corollary environments, cited results included).
+  Shorter is better: a long proof is split into lemmas, and a paper with a reusable tool may be
+  split into a lemma paper and an application paper. One main result, labelled `thm:main`. A
+  negative result or a counterexample is a main result.
 - **The paper is the blueprint** (leanblueprint conventions):
   - every definition, lemma, proposition, theorem and corollary is an environment with a `\label`;
   - a statement that uses definitions starts with `\uses{def:…}`; every proof starts with
@@ -315,7 +319,7 @@ paper, `source`. Kinds:
   `python3 scripts/certify.py bib` (it writes `papers/library.bib`, the keys `INC-P<nnn>`), then
   `latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`. The final
   `papers/<P>/paper.log` must have no error, no undefined reference or citation (`undefined`) and
-  no duplicate label (`multiply defined`); the PDF at most 12 pages. Then remove the generated files
+  no duplicate label (`multiply defined`); the PDF at most 100 pages. Then remove the generated files
   with `latexmk -C -cd papers/<P>/paper.tex`, and `git add` your source files by name: never commit
   a PDF, a build file or `papers/library.bib` (generated, never committed). CI compiles every paper
   the same way and fails on the same problems. Before the last commit,
@@ -344,7 +348,9 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
 - Two referees review the same head, in this order: `referee-scope` (novelty, bibliography,
   roadmap fit, interest, attribution, and a rating of each open question: interest, novelty, fit,
   candidate or not), then, only if scope accepts, `referee-proofs` (every proof, node by node, all
-  nodes: a paper has at most 25).
+  nodes). A referee stopped before its verdict gives none; the next referee starts again from the
+  head, and after three sessions without a verdict the pull request goes to the owner
+  (`needs-human`). Write the report as you go, so that a long paper still gets a verdict in time.
 - **Defect classes.** **F** fatal: the main statement is false, already known, a corollary of
   KNOWN.md or of the literature, out of the roadmap, or re-derives a private entry. **G** gap: an
   unjustified step in a labelled proof (or, for scope, a novelty claim left unjustified). **L**

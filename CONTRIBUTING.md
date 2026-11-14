@@ -198,6 +198,21 @@ Taken on 2026-11-14:
   published results only: the owner's unpublished work is not put in KNOWN.md, and agents may find
   it on their own (the owner's choice). A KNOWN entry is not formalised by itself: what is
   formalised is the "Known results to formalise" items (F) and the accepted papers.
+- Papers have at most 100 pages, and no limit on the number of nodes.
+- Sessions are long (writing 4 h, referees 2 h and 4 h, reviews 1 h, always capped by the night's
+  end), and the weekly cap is checked during a session too.
+- The owner may submit his own papers (below).
+
+**Submitting a paper of the owner.** It is refereed, revised and merged like an agent's paper:
+a branch `owner/<slug>`, one new directory `papers/P<nnn>-<slug>/` (the next free number, above
+those on `main` and in open pull requests) with `paper.tex`, `refs.bib`, `META.toml` and
+`notebook/` only, following `templates/paper/` and AGENTS.md section 5 (the paper is the
+blueprint). `META.toml` has `human_authors = ["Adrien Prevost"]` on one line: the paper's entry of
+`papers/library.bib` is in the owner's name, which dates the result publicly. The pull request's
+description starts with the line ``Role: `write-paper`. Target: `<Roadmap>`. Model: `owner`.``
+The loop then runs both referees on it; a `major` is answered by the agents' `revise` (targeted
+edits: they never change `human_authors` nor the `\author` line); on acceptance the loop merges it
+and formalisation follows. The owner may also push revisions himself on the branch.
 
 Pending (as of 2026-11-14):
 
@@ -206,8 +221,6 @@ Pending (as of 2026-11-14):
 - P000 of BatchedBandits: definitions written by agents, or a port of the owner's private Lean
   definitions.
 - What of the KNOWN.md draft of BatchedBandits is published.
-- Papers written by the owner: the loop referees only pull requests from `agent/*` branches; a
-  paper of the owner would need a small addition to the loop (not done yet).
 
 ## Attribution
 

@@ -57,9 +57,11 @@ You **revise a paper** of the Incognita repository. Three situations (task.md sa
    committed) and `python3 scripts/certify.py check --base origin/main`.
 7. **Labels**: a changed node keeps its label; a new node gets a new label; a removed label is never
    reused. The referees re-check exactly the changed nodes and those that `\uses` them, so change
-   nothing else. Stay within 12 pages and 25 nodes; update `\uses`, Closest known, Sanity checks,
+   nothing else. Stay within 100 pages; update `\uses`, Closest known, Sanity checks,
    Weak points, Open questions and Attribution where the changes require it. Add your model to
-   `authors` in `META.toml`.
+   `authors` in `META.toml`. A paper of the owner (`human_authors` in `META.toml`) keeps its
+   `human_authors` and its `\author` line (the script refuses any change of them), and its text:
+   change only what a defect requires, as targeted edits, never a rewrite.
 8. **Notebook**: add a dated section: for each defect ID (or `E<k>`), "fixed" with the nodes changed,
    or "disputed" with the argument; new dead ends with the reason they fail.
 9. **Compile** as `write-paper` does

@@ -307,8 +307,9 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 | `INCOGNITA_USAGE_URL`, `INCOGNITA_TAUCETI_BIN`, `INCOGNITA_TAUCETI_CONF` | the endpoint of the Tau Ceti pacer, `tauceti` in PATH, LMLExplore's `tauceti.toml` | where the usage is read (tests point them at fakes) |
 | `INCOGNITA_PACE` | unset | `0:100` (always, the owner's rule; start-night.sh sets it): no pacing; `off`; else a Tau Ceti pace curve |
 | `INCOGNITA_MODEL_AUTHOR` / `_REVIEWER` | `opus` / `sonnet` | models; per role: `INCOGNITA_MODEL_<ROLE>` (e.g. `INCOGNITA_MODEL_REFEREE_PROOFS`) |
-| `INCOGNITA_EFFORT`, `INCOGNITA_MAX_TURNS` | `high`, `200` | for every session |
-| `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `1800` / `5400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>`; `INCOGNITA_TIMEOUT_REFEREE_SCOPE` and `_REFEREE_PROOFS` are `3600` |
+| `INCOGNITA_EFFORT`, `INCOGNITA_MAX_TURNS` | `high`, `1000` | for every session |
+| `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `3600` / `14400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` (for example `INCOGNITA_TIMEOUT_WRITE_PAPER`); `INCOGNITA_TIMEOUT_REFEREE_SCOPE` is `7200`, `_REFEREE_PROOFS` `14400`; always capped by the night's end |
+| `INCOGNITA_CAP_WATCH` | `600` s | during a session, the weekly usage is read this often; at the cap the session is stopped (its commits kept as an `incomplete` draft); `0`: never |
 | `INCOGNITA_MIN_REVIEW` / `_MIN_WRITE` | `900` / `2400` s | a task starts only with this much time left |
 | `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions` | merge categories; add `statements` later (D15); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
 | `INCOGNITA_VETO_NIGHTS` | `2` | nights of veto window before a proposal inside an existing domain is approved |

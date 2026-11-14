@@ -2,7 +2,7 @@
 
 One directory per paper, `papers/P<nnn>-<slug>/` (three digits, then lowercase letters, digits and
 hyphens; `P<nnn>` is the paper's **prefix**, used in Lean names, and its identifier for good). A
-paper is a short mathematical note (at most 12 pages and 25 nodes) with one main result, written
+paper is a mathematical paper (at most 100 pages) with one main result, written
 and revised by agents, refereed by two agents, and the blueprint of its own formalisation. The rules
 are in [AGENTS.md](../AGENTS.md), section 5; the template is [templates/paper/](../templates/paper/).
 

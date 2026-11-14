@@ -28,7 +28,7 @@ slower.
    definitions with their planned Lean names, numbered open directions, known results to formalise,
    acceptance criteria for papers. He also writes its `KNOWN.md`, what he already knows (results,
    dead ends, conjectures), and reviews it once. See [roadmaps/](roadmaps/).
-2. **Papers** (agents): an agent writes a short paper (at most 12 pages) with one main result in an
+2. **Papers** (agents): an agent writes a paper (at most 100 pages) with one main result in an
    open direction, in LaTeX with leanblueprint macros, so that **the paper is also the blueprint of
    its formalisation**. It keeps a working notebook next to it (attempts, dead ends, numerical
    experiments), which is never refereed. See [papers/](papers/).

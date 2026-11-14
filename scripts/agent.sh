@@ -86,7 +86,9 @@ else
   in=$INCOGNITA_EXCHANGE/in/$task; out=$INCOGNITA_EXCHANGE/out/$task
 fi
 tmp=$(mktemp -d)
+CAP_WATCH_PID=""
 cleanup() {
+  [ -n "$CAP_WATCH_PID" ] && kill "$CAP_WATCH_PID" 2>/dev/null
   stop_sandbox
   rm -rf "$tmp"
   if is_dry; then rm -rf "$in" "$out"
@@ -135,7 +137,12 @@ case "$role:$target" in
     [ "$(jq -r .author.login <<<"$info")" = "$OWNER" ] || finish skip "not-opened-by-the-loop"
     [ "$(jq -r .baseRefName <<<"$info")" = main ] || finish skip "base-not-main"
     branch=$(jq -r .headRefName <<<"$info")
-    case "$branch" in agent/*) ;; *) finish skip "not-an-agent-branch" ;; esac
+    # owner/*: a paper of the owner, refereed and revised like an agent's paper (CONTRIBUTING.md).
+    case "$branch:$role" in
+      agent/*) ;;
+      owner/*:referee-scope|owner/*:referee-proofs|owner/*:revise) ;;
+      *) finish skip "not-an-agent-branch" ;;
+    esac
     H=$(jq -r .headRefOid <<<"$info")
     if [ -n "${INCOGNITA_HEAD:-}" ] && [ "$INCOGNITA_HEAD" != "$H" ]; then finish skip "moved"; fi
     fetch_pr_head "$pr" "$H" || finish skip "head-moved-or-fetch-failed"
@@ -577,7 +584,25 @@ SANDBOX_UNIT="incognita-$task"
     < "$prompt" 2> >(head -c 2000000 > "$tmp/session.err"; cat > /dev/null; : > "$tmp/err.done")
   echo $? > "$tmp/rc"
 } | { head -c 8000000 > "$tmp/result.json"; cat > /dev/null; } &
-wait $!
+session_pid=$!
+# The weekly cap during the session (a task may last hours): a reading every INCOGNITA_CAP_WATCH
+# seconds; at the cap the unit is stopped, and the session ends as a stopped one (its commits are
+# kept as an `incomplete` draft); then the loop sees the cap and ends the night.
+if [ -n "$INCOGNITA_WEEKLY_CAP" ] && [ "${INCOGNITA_CAP_WATCH:-0}" -gt 0 ]; then
+  ( while sleep "$INCOGNITA_CAP_WATCH"; do
+      u=$(usage_now 0) || continue
+      read -r w _ <<< "$u"
+      if [ "$(cap_decision "$w" "$INCOGNITA_WEEKLY_CAP")" = stop ]; then
+        log "weekly usage $w % reached the cap ($INCOGNITA_WEEKLY_CAP %) during the session: stopping it"
+        : > "$tmp/cap-stop"
+        sudo -n systemctl stop "incognita-$task.service" >/dev/null 2>&1
+        exit 0
+      fi
+    done ) &
+  CAP_WATCH_PID=$!
+fi
+wait "$session_pid"
+[ -n "$CAP_WATCH_PID" ] && { kill "$CAP_WATCH_PID" 2>/dev/null; wait "$CAP_WATCH_PID" 2>/dev/null; CAP_WATCH_PID=""; }
 SANDBOX_UNIT=""
 for _ in $(seq 1 20); do [ -e "$tmp/err.done" ] && break; sleep 0.5; done
 rc=$(cat "$tmp/rc" 2>/dev/null || echo 1)
@@ -592,6 +617,7 @@ if jq -e 'type == "object"' "$tmp/result.json" >/dev/null 2>&1; then
 else
   is_error=true subtype=no-json
   [ "$elapsed" -ge $(( timeout_s - 30 )) ] && subtype=timeout
+  [ -e "$tmp/cap-stop" ] && subtype=weekly-cap
   : > "$tmp/result.txt"
   session_info="(exit $rc, ${elapsed}s)"
 fi
@@ -757,6 +783,9 @@ nb=$(repo_git rev-list --count "$new" "^$M" ${H:+"^$H"})
 cbase=$(repo_git merge-base "$M" "$new") || finish fail "no-merge-base"
 paths_ok() {
   check_paths "$eff_role" "$paper" "$cbase" "$new" || return 1
+  # The authors of a paper of the owner, on main and on the pull request's head (AGENTS.md 5.1).
+  human_authors_kept "$cbase" "$new" || return 1
+  if [ -n "${H:-}" ]; then human_authors_kept "$H" "$new" || return 1; fi
   # write-paper: the new directory has the number given in task.md.
   if [ -n "${paper_number:-}" ]; then
     local d
