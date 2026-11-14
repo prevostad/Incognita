@@ -665,7 +665,7 @@ pick_write_paper() {  # cap: fewer than this many papers in review in the roadma
 
 choose_task() {
   T_ROLE="" T_TARGET="" T_HEAD="" T_NOTE="" T_BUDGET=0
-  local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes fixer
+  local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes fixer reopened
   local fixes_list="" reviews_list=""
   # 1. main is red: one fix-main task.
   if [ "$MAIN_RED" = 1 ] && ! is_busy fix-pr main; then
@@ -705,17 +705,19 @@ choose_task() {
     if [ "$kind" = paper ]; then
       sc=$(verdict_in "$STS_CUR" "Referee scope" referee-scope)
       pv=$(verdict_in "$STS_CUR" "Referee proofs" referee-proofs)
+      reopened=0
       if [ "$sc" = reject ] || [ "$pv" = reject ]; then
         # Closed already for this head and reopened by the owner: one more revision instead (L10).
         if trusted_comments "$n" | jq -e --arg h "$H" 'any(.[]; .kind == "rejected" and .sha == $h)' >/dev/null 2>&1; then
-          sc=major
+          sc=major reopened=1
         else
           close_rejected "$n" "$H" "a referee rejected the paper"; continue
         fi
       fi
       # The proofs are refereed before a revision even when scope asked for changes, so that one
-      # revision round answers both reports (owner, 2026-11-14); only a scope `reject` skips them.
-      if { [ "$sc" = major ] || [ "$sc" = minor ]; } && [ "$pv" = none ]; then
+      # revision round answers both reports (owner, 2026-11-14); only a scope `reject` skips them
+      # (and a paper the owner reopened goes to its revision at once).
+      if [ "$reopened" = 0 ] && { [ "$sc" = major ] || [ "$sc" = minor ]; } && [ "$pv" = none ]; then
         :   # falls through to the reviews below: referee-proofs on this head
       elif [ "$sc" = major ] || [ "$sc" = minor ] || [ "$pv" = major ] || [ "$pv" = minor ]; then
         rounds=$(revise_rounds "$n") || continue
