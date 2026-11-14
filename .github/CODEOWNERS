@@ -7,12 +7,17 @@
 /CONTRIBUTING.md                 @prevostad
 **/AGENTS.md                     @prevostad
 **/CLAUDE.md                     @prevostad
+**/README.md                     @prevostad
+**/CONTRIBUTING.md               @prevostad
+/LICENSE                         @prevostad
 /roadmaps/                       @prevostad
 /papers/*/withdrawn.md           @prevostad
+/literature/notes/TEMPLATE.md    @prevostad
 /templates/                      @prevostad
 /agents/                         @prevostad
 /docs/                           @prevostad
 /scripts/                        @prevostad
+/tests/                          @prevostad
 /.github/                        @prevostad
 /lakefile.toml                   @prevostad
 /lean-toolchain                  @prevostad

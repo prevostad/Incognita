@@ -19,4 +19,4 @@ on a single batch, proof of Theorem 3, p. 135"), and earlier sources it credits 
 
 ## Where Incognita uses it
 
-Lean declarations, questions and write-ups that cite this work.
+Papers (`papers/<P>/`, by node), Lean declarations and catalogue entries that cite this work.

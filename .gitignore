@@ -28,7 +28,26 @@
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
-
+*.dvi
+*.xdv
+*.nav
+*.snm
+*.vrb
+*.idx
+*.ilg
+*.ind
+*.glo
+*.gls
+*.glg
+*.ist
+## Papers: PDFs are built by CI (workflow Papers, artifact papers-pdf), never committed; notebooks
+## keep their small text outputs only (AGENTS.md, section 5.3)
+/papers/**/*.pdf
+/templates/**/*.pdf
+## Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
 
 ## Agents
 /.agents/
