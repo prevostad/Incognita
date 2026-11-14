@@ -84,20 +84,28 @@ either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t
 - **Why it is not a corollary.** The catalogue (`catalogue/results.toml`) has no result yet. None
   of the programme's known results covers IMED-$y$:
   - the $x_\ell \to 1$ result is about exponent $1$;
-  - HY's upper bound is about HY. On a grid with $x > 1$, every late batch of HY is activated
-    ($t_{\ell+1} > t_\ell^{1+\vartheta_\ell}$ eventually, since $\vartheta_\ell \to 0$). After its
-    first $s_\ell$ rounds, HY then runs the paced phase, and the paced phase differs from IMED-$y$
-    in three ways:
+  - HY's upper bound is about HY. In batch $\ell+1$, HY first runs its IMED phase, the rounds
+    $t_\ell < t \le s_\ell$, where $s_\ell = \lfloor t_\ell^{1+\vartheta_\ell}\rfloor$ is a round
+    index. That phase is exactly IMED-$y$, and it has no cap. On a grid with $x > 1$, every late
+    batch also has a paced phase: $t_{\ell+1} > s_\ell$ eventually, since
+    $L_{\ell+1}/L_\ell \to x > 1$ and $\vartheta_\ell \to 0$. The paced phase, the rounds
+    $s_\ell < t \le t_{\ell+1}$, differs from IMED-$y$ in three ways:
     1. it tests against a reference level computed from well-sampled arms, not against the leader's
        mean;
-    2. it caps every non-leader at $K - 1 + U_{\ell+1} = O(L_\ell^\beta)$ pulls per batch;
-    3. it gives "ambiguous" arms a net of size $U_{\ell+1}$, and inflates the targets by
-       $1+\omega_\ell$.
+    2. it pulls a non-leader $c$ only while its *cumulative* count satisfies
+       $N_c(t-1) < n_{\ell,c}(t) \le K - 1 + U_{\ell+1}$, with $U_{\ell+1} = \lceil L_\ell^\beta\rceil$.
+       This cap bounds the total count, not the pulls per batch, and applies only in the paced
+       phase. The leader is never capped;
+    3. its targets $n_{\ell,c}(t)$ are also floors. An "ambiguous" arm is brought up to the net
+       $K-1+U_{\ell+1}$, and the targets of rejected arms are inflated by $1+\omega_\ell$.
 
-  In particular, IMED-$y$ has no cap. A suboptimal arm whose frozen $\tilde K_\ell$ is close to
-  $0$ can receive a constant fraction of batch $\ell+1$, that is $\asymp t_{\ell+1}$ pulls.
-  Under HY the same arm receives $O(L_\ell^\beta)$ pulls. Neither HY's statement nor the lower
-  bound says whether these events are rare enough.
+  So the difference lies in the length of the uncapped phase. Take a non-leader whose frozen
+  $\tilde K_\ell$ is close to $0$. Under IMED-$y$ it can receive a constant fraction of batch
+  $\ell+1$, that is $\asymp t_{\ell+1}$ pulls. Under HY it can also be pulled at every round of
+  the IMED phase. In the paced phase it is pulled only while its cumulative count is below
+  $K-1+U_{\ell+1}$. So it receives at most $s_\ell - t_\ell + K - 1 + U_{\ell+1}$ pulls in batch
+  $\ell+1$, which is $t_{\ell+1}^{1/x + o(1)}$, polynomially fewer than $t_{\ell+1}$. Neither HY's
+  statement nor the lower bound says whether these events are rare enough for IMED-$y$.
 - **Where a "no" could come from (proposer's heuristics, unverified).** A suboptimal leader at
   $t_\ell$ costs the whole batch $\ell+1$, about $t_{\ell+1}$ pulls, and so does a near-tie under
   IMED-$y$. For an arm $a$ with $n$ rewards, the probability that its empirical mean exceeds
