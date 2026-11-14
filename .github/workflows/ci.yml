@@ -66,11 +66,13 @@ jobs:
           if [ -n "$BASE_REF" ]; then python3 scripts/certify.py check --base "origin/$BASE_REF"
           else python3 scripts/certify.py check; fi
 
-      # The loop's own tests (fake gh, local repositories; no network, no Claude).
+      # The loop's own tests (fake gh, local repositories; no network, no Claude), and those of the
+      # launcher and the weekly cap (Paris time, fake usage answers, a fake claude setup-token).
       - name: Offline tests of the loop
         run: |
           bash scripts/test-lib.sh
           bash scripts/test-loop.sh
+          bash scripts/test-start.sh
 
       - name: Install elan
         run: |

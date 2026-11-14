@@ -211,11 +211,27 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    `bibliographer`; else sleep `INCOGNITA_IDLE_SLEEP` and look again. At most one proposal at a time;
    when `INCOGNITA_ROADMAPS_WAITING_MAX` approved roadmaps wait for the owner's review of their
    KNOWN.md, the task asks for an extension only.
-7. Quota: with `INCOGNITA_PACE=0:100` (the owner's rule) or `off`, no pacing; otherwise the Tau Ceti
-   pacer of v1. A rate-limited session makes the loop wait until the reset; a logged-out session stops
-   the night. All waits end at the deadline.
+7. Quota. **Weekly cap** (`INCOGNITA_WEEKLY_CAP`, set by `scripts/start-night.sh`): before every
+   task, the loop reads the usage of the owner's subscription, the figures of claude.ai (Settings,
+   Usage) (`usage_gate` in `scripts/lib.sh`; at most `INCOGNITA_USAGE_TTL` = 5 min old, always new
+   after a task). Weekly usage at the cap or above: no task starts any more and the night stops
+   (`loop.sh` exits 6; report, token removed). Within `INCOGNITA_CAP_MARGIN` (3) points of the cap:
+   only short tasks start (the reviews, both referees, `bibliographer`, `garden`; never
+   `write-paper`, `prove`, `revise`, `formalize-statements`, `fix-pr`, `propose-roadmap`), else the
+   loop idles. Five-hour window exhausted: wait until its reset. Usage unreadable: with a cap, wait
+   10 min and read again; without one, the task starts (logged). The usage is read from the endpoint
+   of the Tau Ceti pacer (`https://api.anthropic.com/api/oauth/usage`, fields `limits[]` of kind
+   `weekly_all` and `session`, else `seven_day` and `five_hour`, `utilization` in percent) with the
+   agents' token, read through `sudo` and given to `curl` on its standard input (never in an argument,
+   a file or the log). A token of `claude setup-token` has the scope `user:inference` only: if the
+   endpoint refuses it, the same figures are read through `tauceti status --json` (lean's own Claude
+   login, the one of the Tau Ceti worker; it must then be valid for the whole night: `claude auth
+   login`). A dry run reads the usage but never waits. Pacing: with `INCOGNITA_PACE=0:100` (the
+   owner's rule) or `off`, none; otherwise the Tau Ceti pacer of v1. A rate-limited session makes the
+   loop wait until the reset; a logged-out session stops the night. All waits end at the deadline.
 
-Exits of `scripts/agent.sh`: 0 done (whatever the outcome), 3 Claude logged out (the night stops),
+Exits of `scripts/loop.sh`: 0 deadline, 3 Claude logged out, 6 weekly cap reached, 1 fatal (night.sh
+restarts it). Exits of `scripts/agent.sh`: 0 done (whatever the outcome), 3 Claude logged out (the night stops),
 4 rate limited, 5 the infrastructure failed before the session (GitHub, git, the preparation: not
 counted against the target; the loop backs off). A session that ended normally without a commit
 is recorded as `skip no-commit`: it counts towards tonight's limit (`INCOGNITA_MAX_FAILS`), never
@@ -232,11 +248,15 @@ neither a `Revised in` nor a `Resolved by` line (formats: papers/README.md; pars
 `scripts/lib.sh`). Locks: `--new-locks` writes missing locks only; `--refresh-new-locks` (writing roles,
 in their PR) rewrites only the locks absent from `origin/main`.
 
-`scripts/night.sh` supervises one night: a lock (`flock`), startup checks (clone on main and clean,
-disk, `gh`, sudo, agent user and token, a one-line Claude session in the sandbox, the pacer, the Tau
-Ceti worker **not** running), the loop restarted if it dies (3 deaths in 10 min: 20 min pause), and at
+`scripts/night.sh` supervises one night (started by `scripts/start-night.sh`, see "Launching a
+night"): a lock (`flock`), startup checks (clone on main and clean, disk, `gh`, sudo, agent user and
+token, a one-line Claude session in the sandbox, the pacer, the Tau Ceti worker **not** running, the
+weekly cap a percentage, the weekly usage below it and readable when a cap is set), the loop
+restarted if it dies (3 deaths in 10 min: 20 min pause; not after exit 0, 3 or 6), and at
 the end the night report in `~/.incognita/logs/<night>-report.md`, also posted on the pinned issue
-"Night reports": (1) decisions for the owner (pull requests to merge, questions, roadmap proposals
+"Night reports". Its first lines: start and end, why the night stopped (deadline, weekly cap, Claude
+logged out, signal, failed startup check), and the weekly usage at the start and at the end (and
+how it was read), with the cap and the weekly reset. Then: (1) decisions for the owner (pull requests to merge, questions, roadmap proposals
 with their veto windows, papers depending on a disputed paper, parked targets), (2) papers accepted, (3) statements
 frozen, (4) results verified, (5) papers rejected, (6) roadmaps and directions (proposals approved
 or vetoed, candidate directions added, exhausted roadmaps, dependency checks pending), (7) the
@@ -249,15 +269,21 @@ target, `events.tsv` for the report), `state/lifetime/` (fix rounds per PR, fail
 `state/parked/` (targets parked after `INCOGNITA_PARK_AFTER` failures in all; delete the file to retry),
 `state/audit/<sha>.txt`, `state/first-night` and `state/last-propose-night` (periodic proposals),
 `state/candidates/<P>` (candidate directions to add for a merged paper: `<pr> <head> <P>`),
-`state/marks/` (veto windows posted, roadmaps found exhausted…), `logs/<night>.log`, `heartbeat`
-(one line a minute: time and activity).
+`state/marks/` (veto windows posted, roadmaps found exhausted…), `state/usage-last` (the latest
+reading of the usage: time, `ok` or `err`, figures or reason; never the token), `logs/<night>.log`,
+`heartbeat` (one line a minute: time and activity).
 
 ## Settings (environment variables)
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `INCOGNITA_DEADLINE` | (required by night.sh) | `HH:MM`, server time: no task starts if it cannot end before |
-| `INCOGNITA_PACE` | unset | `0:100` (always, the owner's rule): no pacing; `off`; else a Tau Ceti pace curve |
+| `INCOGNITA_DEADLINE` | (required by night.sh) | `HH:MM`, server time (UTC): no task starts if it cannot end before; start-night.sh sets it from the end in Paris time |
+| `INCOGNITA_DEADLINE_EPOCH` | unset | the exact end (seconds since 1970), wins over `INCOGNITA_DEADLINE`; set by start-night.sh |
+| `INCOGNITA_WEEKLY_CAP` | unset | weekly usage of the subscription (percent, as on claude.ai, Settings, Usage) at which no task starts and the night stops; empty: no cap; set by start-night.sh |
+| `INCOGNITA_CAP_MARGIN` | `3` | within this many points of the cap, only short tasks (reviews, referees, bibliographer, garden) |
+| `INCOGNITA_USAGE_TTL` | `300` s | how long a reading of the usage serves between two tasks (a new one after every task) |
+| `INCOGNITA_USAGE_URL`, `INCOGNITA_TAUCETI_BIN`, `INCOGNITA_TAUCETI_CONF` | the endpoint of the Tau Ceti pacer, `tauceti` in PATH, LMLExplore's `tauceti.toml` | where the usage is read (tests point them at fakes) |
+| `INCOGNITA_PACE` | unset | `0:100` (always, the owner's rule; start-night.sh sets it): no pacing; `off`; else a Tau Ceti pace curve |
 | `INCOGNITA_MODEL_AUTHOR` / `_REVIEWER` | `opus` / `sonnet` | models; per role: `INCOGNITA_MODEL_<ROLE>` (e.g. `INCOGNITA_MODEL_REFEREE_PROOFS`) |
 | `INCOGNITA_EFFORT`, `INCOGNITA_MAX_TURNS` | `high`, `200` | for every session |
 | `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `1800` / `5400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>`; `INCOGNITA_TIMEOUT_REFEREE_SCOPE` and `_REFEREE_PROOFS` are `3600` |
@@ -292,7 +318,10 @@ target, `events.tsv` for the report), `state/lifetime/` (fix rounds per PR, fail
    sandbox test. `--skip-lake` skips the 8 GB copy;
    `--check` only runs the sandbox test.
 3. The token: see "The token" below (a new one before every night).
-4. Tests: `bash scripts/test-lib.sh` and `bash scripts/test-loop.sh` (offline),
+4. Tests: `bash scripts/test-lib.sh`, `bash scripts/test-loop.sh` and `bash scripts/test-start.sh`
+   (offline; the last one: the end of a night in Paris time across the changes of hour, the cap,
+   the answers of the usage endpoint and of `tauceti status`, the decisions before a task, the env
+   file, the capture of the token from a fake `claude setup-token`; its env file is a throwaway path),
    `INCOGNITA_REPO=<scratch clone of main> bash scripts/server/test-sandbox.sh` (sandbox, no Claude:
    isolation, the toolchain read-only, the cleaning of the home, and the attack of a clean filter
    plus a symbolic link in the output directory; its token file is a throwaway copy).
@@ -301,14 +330,22 @@ target, `events.tsv` for the report), `state/lifetime/` (fix rounds per PR, fail
 
 The sessions authenticate with a long-lived token of the owner's subscription in
 `/etc/incognita/agent.env` (root only, mode 600; line `CLAUDE_CODE_OAUTH_TOKEN=sk-ant-…`), read by
-`systemd-run` (`EnvironmentFile`), never visible to the loop's user or to the sessions' files. The
+`systemd-run` (`EnvironmentFile`), never visible to the sessions' files; the loop reads it only
+through `sudo`, to read the weekly usage (`usage_fetch`: given to `curl` on its standard input). The
 owner does not want it kept on the server or in its snapshots, so:
 
-- **before every night**, he creates a new one: `claude setup-token` (anywhere: it prints
-  `sk-ant-oat01-…`), then `sudo nano /etc/incognita/agent.env` and replaces `REPLACE_ME`; never
-  print, commit or copy it elsewhere;
+- **before every night**, a new one: `scripts/start-night.sh` runs `claude setup-token` (the owner
+  follows the link and pastes the code, as with `claude auth login`), captures the token from its
+  output on a pseudo-terminal (`scripts/capture-token.py`: what may be a token is held back, every
+  token is shown as `sk-ant-oat01-[hidden]`, the command sees a terminal at least 200 columns wide
+  so that the token is never broken across lines; the token reaches start-night.sh on a file
+  descriptor), and writes it with `sudo install`/`sudo tee` (mode 600, root): it is never printed,
+  logged or written elsewhere. If the capture fails, nothing is launched. By hand (or with
+  `--keep-token`): `claude setup-token`, then `sudo nano /etc/incognita/agent.env` and replace
+  `REPLACE_ME`. Such a token has the scope `user:inference` only (seen in its login link);
 - `scripts/night.sh` refuses to start without it (startup check "a Claude token is in …", with
-  these instructions in the log and the report);
+  these instructions in the log and the report); `start-night.sh` removes a token it created when
+  the night does not start (refused, failed, Ctrl-C before the launch);
 - at the end of every night (normal end, failed startup check, Ctrl-C, TERM), `night.sh` rewrites
   the file with the placeholder `REPLACE_ME` (`sudo install -m 600 -o root`), and logs it. A dry run
   leaves the file alone. After a night that could not clean up (`kill -9`, reboot), and before any
@@ -318,13 +355,36 @@ The old tokens should also be revoked from the account's settings when the owner
 
 ## Launching a night
 
-In `tmux`, in `~/Incognita` on `main`, never at the same time as the Tau Ceti worker, after putting
-a new token in `/etc/incognita/agent.env`:
+One command, as `lean` in `~/Incognita` on `main` (an SSH session; tmux is not needed, the night
+gets its own), never at the same time as the Tau Ceti worker:
 
 ```
-INCOGNITA_PACE=0:100 INCOGNITA_DEADLINE=02:45 bash scripts/night.sh
+bash scripts/start-night.sh 02:45 88%     # until the next 02:45 in Paris; weekly cap 88 %
+bash scripts/start-night.sh 6h45 88%      # for 6 h 45 min (also 8h, 6h45m, 45m; at most 24 h)
 ```
 
-Dry run first (checks, then one pass that only prints): `INCOGNITA_DRY_RUN=1 INCOGNITA_DEADLINE=02:45
-bash scripts/night.sh`. To follow: `tail -f ~/.incognita/logs/<date>.log`, `cat ~/.incognita/heartbeat`.
-To stop early: Ctrl-C (the running session is stopped, the report written).
+The end is a time `HH:MM` in Paris (its next occurrence: Monday 02:45 when launched on Sunday
+evening; the changes of hour are handled, and a time that does not exist that night is refused) or a
+duration; the server runs in UTC, `night.sh` gets both `INCOGNITA_DEADLINE` (UTC) and the exact
+`INCOGNITA_DEADLINE_EPOCH`. The cap is the weekly figure of claude.ai (Settings, Usage): the night
+stops at the end time or at the cap, whichever comes first. Steps:
+
+1. it prints what it understood, e.g. `Fin prévue : lundi 16/11 à 02:45 (heure de Paris), dans 6 h
+   47 ; plafond hebdomadaire : 88 %`, and asks for confirmation (`--yes`: no question). It refuses at
+   once if a night runs (lock, or the tmux session `incognita` exists) or if the Tau Ceti worker runs;
+2. it creates the token (see "The token"; `--keep-token` reuses the one in the env file);
+3. it reads the weekly usage with it and prints it; at the cap or above, nothing starts. If the
+   endpoint refuses the token and `tauceti status` cannot read it either, it asks whether to launch
+   without a cap (`--yes`: no launch);
+4. it starts `scripts/night.sh` in the tmux session `incognita` (with `INCOGNITA_PACE=0:100`, the
+   deadline, `INCOGNITA_WEEKLY_CAP`, and the other `INCOGNITA_*` variables of its environment, e.g.
+   `INCOGNITA_PRIVATE_KNOWN`), follows the startup checks for up to 3 minutes, and says whether the
+   loop started (or which checks failed: the night then ended, report written, token removed).
+
+To follow: `tmux attach -t incognita` (detach: Ctrl-b then d), `tail -f ~/.incognita/logs/<date>.log`,
+`cat ~/.incognita/heartbeat`. To stop early: `bash scripts/start-night.sh --stop` (Ctrl-C in the
+session: the running session is stopped, the report written, the token removed). Dry run (startup
+checks, then one pass that only prints, in the foreground, no new token): `bash
+scripts/start-night.sh 02:45 88% --dry-run`. By hand, without the launcher: in `tmux`, after putting
+a new token in the env file, `INCOGNITA_PACE=0:100 INCOGNITA_DEADLINE=02:45 INCOGNITA_WEEKLY_CAP=88
+bash scripts/night.sh` (`INCOGNITA_DEADLINE` is then server time).

@@ -9,6 +9,9 @@ trap 'rm -rf "$t"' EXIT
 fails=0
 FAKE=$t/fake; export FAKE
 mkdir -p "$FAKE/bin"
+# The agents' env file: a throwaway path, never the real one (the loop reads the usage with its token);
+# never the real Tau Ceti pacer either (the fallback reader of the usage).
+export INCOGNITA_AGENT_ENV=$t/agent.env INCOGNITA_TAUCETI_BIN=/nonexistent/tauceti
 
 cat > "$FAKE/bin/gh" <<'GH'
 #!/usr/bin/env bash
@@ -361,6 +364,34 @@ on_main Statements/P001/a.lock x
 on_main Statements/P002/b.lock x
 mkdir -p "$t/home/state/audit"; printf 'P001 a open\nP002 b open\n' > "$t/home/state/audit/$(git -C "$t/w" rev-parse main).txt"
 pass "prove: the paper others depend on first" "== task: prove P002-b"
+
+# The weekly cap (INCOGNITA_WEEKLY_CAP), read before every task, a dry run included: a fake sudo
+# reads the throwaway env file, a fake curl answers the usage endpoint with $FAKE/weekly percent.
+mkdir -p "$FAKE/capbin"
+printf '#!/usr/bin/env bash\n[ "$1" = -n ] && shift\nexec "$@"\n' > "$FAKE/capbin/sudo"
+cat > "$FAKE/capbin/curl" <<'EOF'
+#!/usr/bin/env bash
+out=""; while [ $# -gt 0 ]; do case "$1" in -o) out=$2; shift 2 ;; *) shift ;; esac; done
+cat > /dev/null
+printf '{"seven_day": {"utilization": %s, "resets_at": "2026-11-16T02:00:00Z"}, "five_hour": {"utilization": 5, "resets_at": null}}' "$(cat "$FAKE/weekly")" > "$out"
+printf 200
+EOF
+chmod +x "$FAKE/capbin/sudo" "$FAKE/capbin/curl"
+printf 'CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-%s\n' "$(printf 'x%.0s' $(seq 40))" > "$INCOGNITA_AGENT_ENV"
+OLDPATH=$PATH
+export PATH=$FAKE/capbin:$PATH INCOGNITA_WEEKLY_CAP=88 INCOGNITA_USAGE_TTL=0
+world "Reviewed by owner: 2026-11-14"
+echo 50 > "$FAKE/weekly"
+pass "weekly usage far from the cap: any task" "== task: write-paper BB"
+echo 86 > "$FAKE/weekly"
+nopass "within 3 points of the cap: no long task" "== task: write-paper BB"
+pass "within 3 points of the cap: a short task instead" "== task: bibliographer -"
+h=$(pr 61 write-paper BB)
+pass "within 3 points of the cap: the referees still work" "== task: referee-scope 61"
+echo 88 > "$FAKE/weekly"
+pass "at the cap: the night stops" "weekly usage 88 % reached the cap 88 %"
+nopass "at the cap: no task starts" "== task:"
+export PATH=$OLDPATH; unset INCOGNITA_WEEKLY_CAP INCOGNITA_USAGE_TTL; rm -f "$INCOGNITA_AGENT_ENV"
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

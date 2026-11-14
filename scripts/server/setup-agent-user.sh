@@ -17,7 +17,8 @@
 #   4. /etc/incognita/agent.env (root, 600): CLAUDE_CODE_OAUTH_TOKEN=<token> — a placeholder is
 #      written if the file is missing. Before EVERY night, put a new long-lived token there (the
 #      owner's choice: scripts/night.sh puts REPLACE_ME back at the end of every night, so that no
-#      token stays on the server or in its snapshots; agents/README.md, "The token"):
+#      token stays on the server or in its snapshots; agents/README.md, "The token"). The launcher
+#      does it: bash scripts/start-night.sh 02:45 88% (claude setup-token, captured and masked). By hand:
 #        claude setup-token                      (as the owner, anywhere; prints sk-ant-oat01-...)
 #        sudo nano /etc/incognita/agent.env      (replace REPLACE_ME; never commit or print it)
 #   5. for the agent: elan and the Lean toolchain (~/.elan, read-only in the sessions), Claude Code
@@ -185,4 +186,4 @@ fi
 
 # 6. Test
 sandbox_test
-say "done. Next: the token in $ENV_FILE, then a dry run: INCOGNITA_DRY_RUN=1 INCOGNITA_DEADLINE=HH:MM bash scripts/night.sh"
+say "done. Next, in the loop's clone: a dry run, bash scripts/start-night.sh 02:45 88% --dry-run, then a night, bash scripts/start-night.sh 02:45 88%"

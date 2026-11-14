@@ -43,6 +43,13 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_PROPOSE_EVERY:=0}"           # nights between two periodic roadmap proposals (0: never, the default)
 : "${INCOGNITA_ROADMAPS_WAITING_MAX:=2}"    # approved roadmaps whose KNOWN.md waits for the owner
 : "${INCOGNITA_DRY_RUN:=0}"
+: "${INCOGNITA_WEEKLY_CAP:=}"               # weekly usage (percent, as on claude.ai) at which no task starts; empty: none
+INCOGNITA_WEEKLY_CAP=${INCOGNITA_WEEKLY_CAP%\%}
+: "${INCOGNITA_CAP_MARGIN:=3}"              # within this many points of the cap, only short tasks start
+: "${INCOGNITA_USAGE_TTL:=300}"             # seconds a reading of the usage serves between two tasks
+: "${INCOGNITA_USAGE_URL:=https://api.anthropic.com/api/oauth/usage}"
+: "${INCOGNITA_TAUCETI_CONF:=https://raw.githubusercontent.com/LeanMachineLearning/LMLExplore/main/tauceti.toml}"
+: "${INCOGNITA_TAUCETI_BIN:=}"              # the Tau Ceti CLI (default: tauceti in PATH or ~/.local/bin)
 : "${INCOGNITA_BOT_NAME:=Incognita agents}"
 : "${INCOGNITA_BOT_EMAIL:=incognita-agents@users.noreply.github.com}"
 
@@ -73,10 +80,13 @@ repo_git() { git -C "$INCOGNITA_REPO" -c core.hooksPath=/dev/null -c core.fsmoni
 set_activity() { mkdir -p "$INCOGNITA_HOME" && printf '%s\n' "$*" > "$INCOGNITA_HOME/activity" 2>/dev/null; }
 
 # ---------------------------------------------------------------- deadline
-# INCOGNITA_DEADLINE_EPOCH wins; else INCOGNITA_DEADLINE (HH:MM, local) is its next occurrence.
-# Without either there is no deadline (manual runs).
+# INCOGNITA_DEADLINE_EPOCH wins (scripts/start-night.sh sets it); else INCOGNITA_DEADLINE (HH:MM,
+# server time) is its next occurrence. Without either there is no deadline (manual runs).
 deadline_epoch() {
-  if [ -n "${INCOGNITA_DEADLINE_EPOCH:-}" ]; then echo "$INCOGNITA_DEADLINE_EPOCH"; return 0; fi
+  if [ -n "${INCOGNITA_DEADLINE_EPOCH:-}" ]; then
+    [[ "$INCOGNITA_DEADLINE_EPOCH" =~ ^[0-9]+$ ]] || { log "INCOGNITA_DEADLINE_EPOCH must be a number of seconds"; return 1; }
+    echo "$INCOGNITA_DEADLINE_EPOCH"; return 0
+  fi
   if [ -z "${INCOGNITA_DEADLINE:-}" ]; then echo 0; return 0; fi
   case "$INCOGNITA_DEADLINE" in
     [0-2][0-9]:[0-5][0-9]) ;;
@@ -97,6 +107,309 @@ sleep_bounded() {  # sleep $1 seconds, but never past the deadline
   [ "$r" -lt "$s" ] && s=$r
   [ "$s" -gt 0 ] && sleep "$s"
   return 0
+}
+
+# ---------------------------------------------------------------- the end of a night, in Paris time
+# scripts/start-night.sh takes the end as the owner thinks of it (Paris time, changes of hour
+# included); the server runs in UTC. All conversions go through `TZ=Europe/Paris date`.
+PARIS_TZ=Europe/Paris
+# end_epoch <spec> [now]: the epoch of the end of a night. <spec> is either a time HH:MM (or H:MM):
+# its next occurrence in Paris strictly after <now>; or a duration: 8h, 6h45, 6h45m, 45m, 90m (more
+# than 0, at most 24 h). Non-zero, with the reason on stderr, otherwise, and for a time that does not
+# exist that day in Paris (the spring change of hour: give a duration instead).
+end_epoch() {
+  local spec t h m d0 day e i
+  spec=$(printf '%s' "$1" | tr 'HM' 'hm'); t=${2:-$(now)}
+  if [[ "$spec" =~ ^([0-9]{1,2}):([0-9]{2})$ ]]; then
+    h=$(( 10#${BASH_REMATCH[1]} )); m=$(( 10#${BASH_REMATCH[2]} ))
+    { [ "$h" -le 23 ] && [ "$m" -le 59 ]; } || { log "not a time of day: $1"; return 1; }
+    d0=$(TZ=$PARIS_TZ date -d "@$t" +%F) && d0=$(date -u -d "$d0" +%s) || return 1
+    for i in 0 1 2; do
+      day=$(date -u -d "@$(( d0 + i * 86400 + 43200 ))" +%F) || return 1
+      # (Older versions of date refuse a time that does not exist; newer ones move it by an hour.)
+      e=$(TZ=$PARIS_TZ date -d "$day $(printf '%02d:%02d' "$h" "$m")" +%s 2>/dev/null) \
+        || { log "$1 does not exist on $day in Paris (change of hour): give a duration instead"; return 1; }
+      [ "$e" -gt "$t" ] || continue
+      if [ "$(TZ=$PARIS_TZ date -d "@$e" +%H:%M)" != "$(printf '%02d:%02d' "$h" "$m")" ]; then
+        log "$1 does not exist on $day in Paris (change of hour): give a duration instead"; return 1
+      fi
+      echo "$e"; return 0
+    done
+    log "no next occurrence of $1"; return 1
+  fi
+  if [[ "$spec" =~ ^([0-9]{1,2})h([0-9]{1,2})?m?$ ]]; then
+    h=$(( 10#${BASH_REMATCH[1]} )); m=$(( 10#${BASH_REMATCH[2]:-0} ))
+    [ "$m" -le 59 ] || { log "not a duration: $1 (minutes above 59)"; return 1; }
+  elif [[ "$spec" =~ ^([0-9]{1,4})m$ ]]; then
+    h=0; m=$(( 10#${BASH_REMATCH[1]} ))
+  else
+    log "neither a time HH:MM nor a duration (8h, 6h45, 6h45m, 45m): $1"; return 1
+  fi
+  m=$(( h * 60 + m ))
+  { [ "$m" -gt 0 ] && [ "$m" -le 1440 ]; } || { log "a night lasts more than 0 and at most 24 h: $1"; return 1; }
+  echo $(( t + m * 60 ))
+}
+# paris_time <epoch>: "lundi 16/11 à 02:45" (Paris time, French day names whatever the locale).
+paris_time() {
+  local days=(lundi mardi mercredi jeudi vendredi samedi dimanche) u dm hm
+  read -r u dm hm <<< "$(TZ=$PARIS_TZ date -d "@$1" '+%u %d/%m %H:%M')"
+  printf '%s %s à %s\n' "${days[$(( u - 1 ))]}" "$dm" "$hm"
+}
+# describe_end <epoch> [now]: "lundi 16/11 à 02:45 (heure de Paris), dans 6 h 47" (for the owner).
+describe_end() {
+  local e=$1 t=${2:-$(now)} left
+  left=$(( (e - t + 30) / 60 ))
+  if [ "$left" -lt 60 ]; then left="$left min"
+  elif [ $(( left % 60 )) = 0 ]; then left="$(( left / 60 )) h"
+  else left=$(printf '%d h %02d' $(( left / 60 )) $(( left % 60 ))); fi
+  printf '%s (heure de Paris), dans %s\n' "$(paris_time "$e")" "$left"
+}
+# parse_cap <88%|88>: the weekly cap, an integer from 1 to 100.
+parse_cap() {
+  local c=${1%\%}
+  [[ "$c" =~ ^[0-9]{1,3}$ ]] && [ $(( 10#$c )) -ge 1 ] && [ $(( 10#$c )) -le 100 ] \
+    || { log "the weekly cap is a percentage from 1 to 100 (e.g. 88%), not $1"; return 1; }
+  echo $(( 10#$c ))
+}
+
+# ---------------------------------------------------------------- the agents' token (agent.env)
+# The long-lived token of the owner's subscription (claude setup-token), in INCOGNITA_AGENT_ENV (root,
+# mode 600): written by scripts/start-night.sh, removed by scripts/night.sh at the end of every
+# night. It is read only by systemd-run (the sessions) and, through sudo, by usage_fetch (the weekly
+# cap). It never appears in an argument, a log or another file. AS_ROOT and AGENT_ENV_READ are the
+# command prefixes (tests run them as themselves).
+AS_ROOT=(sudo -n)
+AGENT_ENV_READ=(sudo -n cat --)
+TOKEN_RE='sk-ant-oat01-[A-Za-z0-9_-]+'
+# token_set: a token is in the env file.
+token_set() { "${AGENT_ENV_READ[@]}" "$INCOGNITA_AGENT_ENV" 2>/dev/null | grep -qE '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-'; }
+# root_install <dest> < content: the content becomes <dest>, mode 600 (owner root under sudo).
+root_install() {
+  local own=()
+  [ "${#AS_ROOT[@]}" -gt 0 ] && own=(-o root -g root)
+  "${AS_ROOT[@]}" install -m 600 "${own[@]}" /dev/null "$1" && "${AS_ROOT[@]}" tee "$1" >/dev/null
+}
+# write_agent_token < token: the env file gets this token (one line sk-ant-oat01-..., read on stdin).
+write_agent_token() {
+  local tok
+  IFS= read -r tok || [ -n "$tok" ]
+  [[ "$tok" =~ ^${TOKEN_RE}$ ]] || { log "not a Claude token (sk-ant-oat01-...): nothing written"; return 1; }
+  printf '%s\n' "# Long-lived Claude token of the owner for the agents (claude setup-token, by scripts/start-night.sh). Root only." \
+    "# scripts/night.sh puts REPLACE_ME back at the end of every night: a new token before each launch." \
+    "CLAUDE_CODE_OAUTH_TOKEN=$tok" | root_install "$INCOGNITA_AGENT_ENV"
+}
+# reset_token: the env file gets the placeholder again (the owner's choice: no token is kept).
+reset_token() {
+  if printf '%s\n' "# Long-lived Claude token of the owner for the agents (claude setup-token). Root only." \
+      "# scripts/night.sh puts REPLACE_ME back at the end of every night: a new token before each launch." \
+      "CLAUDE_CODE_OAUTH_TOKEN=REPLACE_ME" | root_install "$INCOGNITA_AGENT_ENV" && ! token_set; then
+    log "token: removed from $INCOGNITA_AGENT_ENV (placeholder REPLACE_ME); create a new one before the next night"
+  else
+    log "WARNING: could not reset $INCOGNITA_AGENT_ENV: remove the token by hand (sudo nano $INCOGNITA_AGENT_ENV)"
+    return 1
+  fi
+}
+# tauceti_running: the Tau Ceti worker of this user runs (never at the same time as a night).
+tauceti_running() { pgrep -u "$(id -u)" -f 'tauceti .*work' >/dev/null; }
+
+# ---------------------------------------------------------------- usage of the subscription (weekly cap)
+# The usage of the owner's subscription as claude.ai shows it (Settings, Usage), read from the endpoint
+# of the Tau Ceti pacer (tauceti_worker/quota.py: same URL and headers) with the agents' token. The
+# weekly figure is the unscoped weekly limit (`limits[]` of kind weekly_all, else
+# `seven_day.utilization`); the session figure is the five-hour window (kind session, else
+# `five_hour`); both in percent. A token of `claude setup-token` has the scope user:inference only:
+# if the endpoint refuses it, the same figures are read through the Tau Ceti pacer itself
+# (`tauceti status --json`, with lean's own Claude login: usage_tauceti).
+#
+# usage_fetch <out-file>: GET the endpoint; prints the HTTP status (000: no answer; none: no token in
+# the env file). The token goes to curl on its standard input, never in an argument or a file.
+usage_fetch() {
+  local out=$1 tok code
+  tok=$("${AGENT_ENV_READ[@]}" "$INCOGNITA_AGENT_ENV" 2>/dev/null \
+    | sed -n -E 's/^CLAUDE_CODE_OAUTH_TOKEN=(sk-ant-[A-Za-z0-9_-]+)[[:space:]]*$/\1/p' | tail -n 1)
+  if [ -z "$tok" ]; then echo none; return 1; fi
+  code=$(printf 'header = "Authorization: Bearer %s"\n' "$tok" \
+    | curl -sS --max-time 20 -K - -H 'anthropic-beta: oauth-2025-04-20' -H 'User-Agent: claude-code/2.1' \
+        -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$INCOGNITA_USAGE_URL" 2>/dev/null)
+  tok=""
+  [[ "$code" =~ ^[0-9]{3}$ ]] || code=000
+  echo "$code"
+  [ "$code" = 200 ]
+}
+# usage_parse < answer: "<weekly %> <weekly reset> <session %> <session reset>" (resets in epoch
+# seconds, `-` if none; an explicit null window is 0 %); non-zero without a weekly figure.
+usage_parse() {
+  python3 -I -c '
+import json, sys
+from datetime import datetime
+try:
+    p = json.load(sys.stdin)
+except ValueError:
+    sys.exit(1)
+if not isinstance(p, dict):
+    sys.exit(1)
+def record(kind, group, flat):
+    limits = p.get("limits")
+    for l in limits if isinstance(limits, list) else []:
+        if isinstance(l, dict) and not l.get("scope") and (l.get("kind") == kind or (not l.get("kind") and l.get("group") == group)):
+            return True, l, "percent"
+    if flat in p:
+        return True, p[flat], "utilization"
+    return False, None, None
+def figure(present, r, key):
+    if not present or (r is not None and not isinstance(r, dict)):
+        return None
+    if r is None:
+        return "0", "-"
+    u, t = r.get(key), r.get("resets_at")
+    if u is None:
+        u = 0
+    if isinstance(u, bool) or not isinstance(u, (int, float)) or u != u or u < 0:
+        return None
+    reset = "-"
+    if isinstance(t, str) and t:
+        try:
+            reset = str(int(datetime.fromisoformat(t.replace("Z", "+00:00")).timestamp()))
+        except ValueError:
+            pass
+    return "%g" % u, reset
+w = figure(*record("weekly_all", "weekly", "seven_day"))
+s = figure(*record("session", "session", "five_hour")) or ("-", "-")
+if w is None:
+    sys.exit(1)
+print(w[0], w[1], s[0], s[1])
+'
+}
+# usage_tauceti: the same four figures from `tauceti status --json` (windows `weekly` and `session`
+# of .quota.claude, read by the pacer with lean's own Claude login and cached by it up to 20 min);
+# non-zero if tauceti is missing or has no weekly figure (lean's login expired, for example).
+usage_tauceti() {
+  local bin=${INCOGNITA_TAUCETI_BIN:-$(command -v tauceti || echo "$HOME/.local/bin/tauceti")}
+  [ -x "$bin" ] || return 1
+  timeout -k 10 120 "$bin" --conf "$INCOGNITA_TAUCETI_CONF" status --json 2>/dev/null | python3 -I -c '
+import json, sys
+try:
+    q = json.load(sys.stdin)["quota"]["claude"]
+    w = {x["name"]: x for x in q["windows"] if isinstance(x, dict)}
+except (ValueError, KeyError, TypeError):
+    sys.exit(1)
+def num(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and x == x and x >= 0
+def figure(name):
+    x = w.get(name) or {}
+    if not num(x.get("used")) or x.get("status") in ("malformed", "absent", "unknown"):
+        return None
+    return "%g" % x["used"], str(int(x["resets_at"])) if num(x.get("resets_at")) else "-"
+week, session = figure("weekly"), figure("session") or ("-", "-")
+if week is None:
+    sys.exit(1)
+print(week[0], week[1], session[0], session[1])
+'
+}
+# usage_now [max-age]: "<weekly %> <weekly reset> <session %> <session reset> <source>" (usage_parse;
+# source `agent`: the agents' token, `lean`: the Tau Ceti pacer), from a reading at most max-age
+# seconds old (default 0: a new one; failures are cached too). Non-zero, with the reason on stdout
+# ("HTTP 403", "no token"...), when it cannot be read either way.
+usage_now() {
+  local age=${1:-0} f=$INCOGNITA_STATE/usage-last t kind rest tmp code line
+  if [ "$age" -gt 0 ] && read -r t kind rest < "$f" 2>/dev/null && [[ "$t" =~ ^[0-9]+$ ]] \
+      && [ $(( $(now) - t )) -le "$age" ]; then
+    echo "$rest"
+    [ "$kind" = ok ]; return
+  fi
+  tmp=$(mktemp) || return 1
+  code=$(usage_fetch "$tmp")
+  if [ "$code" = 200 ] && line=$(usage_parse < "$tmp"); then kind=ok line="$line agent"
+  elif [ "$code" = none ]; then kind=err line="no token in $INCOGNITA_AGENT_ENV"
+  else
+    if [ "$code" = 200 ]; then line="unreadable answer of the usage endpoint"; else line="HTTP $code"; fi
+    if rest=$(usage_tauceti); then kind=ok line="$rest lean"
+    else kind=err line="$line (and none through tauceti status)"; fi
+  fi
+  rm -f "$tmp"
+  { printf '%s %s %s\n' "$(now)" "$kind" "$line" > "$f"; } 2>/dev/null
+  echo "$line"
+  [ "$kind" = ok ]
+}
+# usage_persistent <reason>: a failure that waiting does not cure (the token refused, a missing token).
+usage_persistent() {
+  case "$1" in
+    "HTTP 000"*|"HTTP 408"*|"HTTP 429"*|"HTTP 5"*) return 1 ;;
+    "HTTP "*|"no token"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+# cap_decision <weekly %> [cap]: stop (the weekly usage reached the cap), short (within
+# INCOGNITA_CAP_MARGIN points of it: only short tasks), go. Without a cap: go.
+cap_decision() {
+  [ -n "${2:-}" ] || { echo go; return 0; }
+  awk -v w="$1" -v c="$2" -v m="$INCOGNITA_CAP_MARGIN" \
+    'BEGIN { if (w + 0 >= c + 0) print "stop"; else if (w + 0 >= c - m) print "short"; else print "go" }'
+}
+# short_role <role>: may start near the cap (reviews, referees, bibliographer, garden). The others
+# (write-paper, prove, revise, formalize-statements, fix-pr, propose-roadmap) are long writing tasks.
+short_role() { is_review_role "$1" || [ "$1" = bibliographer ] || [ "$1" = garden ]; }
+# usage_gate: before every task of the loop. 0: a task may start, with CAP_SHORT_ONLY=1 when the
+# weekly usage is within INCOGNITA_CAP_MARGIN points of INCOGNITA_WEEKLY_CAP (pick then takes short
+# roles only). 6: the weekly usage reached the cap (the night stops). 1: the deadline came while
+# waiting. Waits, never past the deadline: until the reset of the five-hour window when it is
+# exhausted; 10 min when the usage cannot be read and a cap is set (without a cap, the task starts
+# anyway). A dry run reads the usage (with the token, if there is one) but never waits.
+CAP_SHORT_ONLY=0
+USAGE_NOTE=""
+usage_note() { [ "$USAGE_NOTE" = "$1" ] || { USAGE_NOTE=$1; log "== $1"; }; }
+usage_gate() {
+  local u rc w wr s sr src secs
+  CAP_SHORT_ONLY=0
+  while [ "$(remaining)" -gt 0 ]; do
+    rc=0; u=$(usage_now "$INCOGNITA_USAGE_TTL") || rc=$?
+    if [ "$rc" != 0 ]; then
+      if [ -z "$INCOGNITA_WEEKLY_CAP" ]; then
+        usage_note "usage: cannot be read ($u); no weekly cap is set: tasks start anyway"
+        return 0
+      fi
+      usage_note "usage: cannot be read ($u): the weekly cap cannot be checked; looking again every 10 min"
+      is_dry && { log "dry run: would wait 10 min"; return 0; }
+      set_activity "usage unknown ($u): waiting"
+      record_event quota-wait - - "600s (usage unknown: $u)"
+      sleep_bounded 600
+      continue
+    fi
+    read -r w wr s sr src <<< "$u"
+    if [[ "$s" =~ ^[0-9.]+$ ]] && awk -v s="$s" 'BEGIN { exit !(s + 0 >= 100) }'; then
+      secs=600
+      [[ "$sr" =~ ^[0-9]+$ ]] && [ "$sr" -gt "$(now)" ] && secs=$(( sr - $(now) + 60 ))
+      is_dry && { log "dry run: the five-hour window is exhausted ($s %): would wait ${secs}s"; return 0; }
+      log "== quota: the five-hour window is exhausted ($s %); waiting ${secs}s for its reset"
+      set_activity "five-hour window exhausted: waiting"
+      record_event quota-wait - - "${secs}s (five-hour window exhausted)"
+      sleep_bounded "$secs"
+      rm -f "$INCOGNITA_STATE/usage-last"
+      continue
+    fi
+    case "$(cap_decision "$w" "$INCOGNITA_WEEKLY_CAP")" in
+      stop)
+        log "== weekly usage $w % reached the cap $INCOGNITA_WEEKLY_CAP %: no task starts any more, the night stops"
+        record_event weekly-cap - - "weekly usage $w % >= cap $INCOGNITA_WEEKLY_CAP %"
+        return 6 ;;
+      short)
+        CAP_SHORT_ONLY=1
+        usage_note "weekly usage $w %, within $INCOGNITA_CAP_MARGIN points of the cap $INCOGNITA_WEEKLY_CAP %: only reviews, referees, bibliographer and garden start" ;;
+      *) usage_note "weekly usage $w % (cap ${INCOGNITA_WEEKLY_CAP:-none}), five-hour window ${s} %, read with $(usage_source "$src")" ;;
+    esac
+    return 0
+  done
+  return 1
+}
+usage_source() { case "$1" in lean) echo "lean's Claude login (tauceti status)" ;; *) echo "the agents' token" ;; esac; }
+# usage_text <usage_now line or reason>: "39 %", "53 % (lean's Claude login...)" or "unknown (HTTP
+# 403)", for the night report.
+usage_text() {
+  local w wr s sr src
+  read -r w wr s sr src <<< "$1"
+  if ! [[ "$w" =~ ^[0-9.]+$ ]]; then echo "unknown (${1:-not read})"
+  elif [ "$src" = lean ]; then echo "$w % (read with $(usage_source lean))"
+  else echo "$w %"; fi
 }
 
 # ---------------------------------------------------------------- state (~/.incognita/state)

@@ -2,36 +2,24 @@
 # One night of Incognita: startup checks, then scripts/loop.sh until the deadline (restarted if it
 # dies), then the night report. See agents/README.md ("Launching a night").
 #
-# Usage (in tmux, in the loop's clone of main):
-#   INCOGNITA_PACE=0:100 INCOGNITA_DEADLINE=02:45 bash scripts/night.sh
+# Normally started by scripts/start-night.sh (the owner's one command: end time in Paris, weekly cap,
+# a new token, tmux). By hand (in tmux, in the loop's clone of main):
+#   INCOGNITA_PACE=0:100 INCOGNITA_DEADLINE=02:45 INCOGNITA_WEEKLY_CAP=88 bash scripts/night.sh
 #   INCOGNITA_DRY_RUN=1 INCOGNITA_DEADLINE=02:45 bash scripts/night.sh    checks + one dry pass
 #   bash scripts/night.sh --reset-token     only remove the Claude token from the agents' env file
 #
-# Token hygiene (the owner's choice, agents/README.md): the owner creates a new token with
-# `claude setup-token` before every launch and puts it in /etc/incognita/agent.env; at the end of
-# every night (normal end, a failed startup check, Ctrl-C or TERM) this script puts the placeholder
-# REPLACE_ME back, so that no token stays on the server or in its snapshots. A dry run leaves it.
+# Token hygiene (the owner's choice, agents/README.md): a new token before every launch in
+# /etc/incognita/agent.env (scripts/start-night.sh creates it with `claude setup-token`); at the end
+# of every night (normal end, a failed startup check, the weekly cap, Ctrl-C or TERM) this script puts
+# the placeholder REPLACE_ME back, so that no token stays on the server or in its snapshots. A dry run
+# leaves it.
 #
 # Exit: 0 night done (report written), 1 a startup check failed (report written), 2 usage.
 set -u -o pipefail
 # shellcheck source=scripts/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-# reset_token: the agents' env file gets the placeholder again (root, mode 600).
-reset_token() {
-  local f
-  f=$(mktemp) || return 1
-  printf '%s\n' "# Long-lived Claude token of the owner for the agents (claude setup-token). Root only." \
-    "# scripts/night.sh puts REPLACE_ME back at the end of every night: a new token before each launch." \
-    "CLAUDE_CODE_OAUTH_TOKEN=REPLACE_ME" > "$f"
-  if sudo -n install -m 600 -o root -g root "$f" "$INCOGNITA_AGENT_ENV" \
-      && ! sudo -n grep -qE '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-' "$INCOGNITA_AGENT_ENV"; then
-    log "token: removed from $INCOGNITA_AGENT_ENV (placeholder REPLACE_ME); create a new one before the next night"
-  else
-    log "WARNING: could not reset $INCOGNITA_AGENT_ENV: remove the token by hand (sudo nano $INCOGNITA_AGENT_ENV)"
-  fi
-  rm -f "$f"
-}
+# reset_token (scripts/lib.sh): the agents' env file gets the placeholder again (root, mode 600).
 if [ "${1:-}" = --reset-token ]; then reset_token; exit 0; fi
 
 [ -n "${INCOGNITA_DEADLINE:-}" ] || { echo "set INCOGNITA_DEADLINE=HH:MM (local time of the end)" >&2; exit 2; }
@@ -70,7 +58,8 @@ check() {  # description command...: run a check, remember the failures
 disk_ok() { [ "$(df -Pk "$1" | awk 'NR == 2 { print int($4 / 1048576) }')" -ge "${INCOGNITA_MIN_DISK_GB:-10}" ]; }
 on_main() { [ "$(repo_git rev-parse --abbrev-ref HEAD)" = main ]; }
 clean_tree() { [ -z "$(repo_git status --porcelain --untracked-files=no)" ]; }
-no_worker() { ! pgrep -u "$(id -u)" -f 'tauceti .*work' >/dev/null; }
+no_worker() { ! tauceti_running; }
+cap_valid() { [ -z "$INCOGNITA_WEEKLY_CAP" ] || parse_cap "$INCOGNITA_WEEKLY_CAP"; }
 pacer_ok() { case "${INCOGNITA_PACE:-}" in 0:100|off) return 0 ;; *) command -v tauceti ;; esac; }
 agent_ok() {
   id -u "$INCOGNITA_AGENT_USER" && sudo -n test -d "$INCOGNITA_AGENT_HOME/work/.git" \
@@ -78,7 +67,6 @@ agent_ok() {
     && sudo -n test -x "$INCOGNITA_AGENT_HOME/.elan/bin/lake" \
     && [ -d "$INCOGNITA_EXCHANGE/in" ] && [ -d "$INCOGNITA_EXCHANGE/out" ] && [ -d "$INCOGNITA_EXCHANGE/template" ]
 }
-token_set() { sudo -n grep -qE '^CLAUDE_CODE_OAUTH_TOKEN=sk-ant-' "$INCOGNITA_AGENT_ENV"; }
 claude_login() {  # one tiny session in the sandbox, as a task would run
   local out
   out=$(printf 'Reply with the single word OK.\n' | run_sandboxed "incognita-login-$(date +%s)" 300 yes - -- \
@@ -88,7 +76,7 @@ claude_login() {  # one tiny session in the sandbox, as a task would run
   [ "$(printf '%s' "$out" | jq -r '.is_error' 2>/dev/null)" = false ]
 }
 
-log "== night $INCOGNITA_NIGHT: deadline $(date -d "@$DEADLINE" '+%F %T'), pace ${INCOGNITA_PACE:-default}, repo $INCOGNITA_REPO"
+log "== night $INCOGNITA_NIGHT: deadline $(date -d "@$DEADLINE" '+%F %T %Z') ($(TZ=$PARIS_TZ date -d "@$DEADLINE" '+%F %H:%M') in Paris), pace ${INCOGNITA_PACE:-default}, weekly cap ${INCOGNITA_WEEKLY_CAP:-none}${INCOGNITA_WEEKLY_CAP:+ %}, repo $INCOGNITA_REPO"
 check "the loop's clone is on main" on_main
 check "the loop's clone has no local change" clean_tree
 repo_git worktree prune >/dev/null 2>&1
@@ -107,6 +95,25 @@ if ! token_set >/dev/null 2>&1; then
 fi
 check "the quota pacer is available (or INCOGNITA_PACE=0:100)" pacer_ok
 check "the Tau Ceti worker is not running (never both at once)" no_worker
+check "the weekly cap INCOGNITA_WEEKLY_CAP is empty or a percentage from 1 to 100" cap_valid
+# The weekly usage of the subscription at the start (night report), read with the token. With a cap,
+# a token the usage endpoint refuses, or a usage already at the cap, stops the night here.
+USAGE_START="not read (no token)"
+if token_set; then
+  if USAGE_START=$(usage_now 0); then
+    log "weekly usage at the start: $(usage_text "$USAGE_START") (cap ${INCOGNITA_WEEKLY_CAP:-none}${INCOGNITA_WEEKLY_CAP:+ %})"
+    if [ "$(cap_decision "${USAGE_START%% *}" "$INCOGNITA_WEEKLY_CAP")" = stop ]; then
+      log "FAILED: the weekly usage is below the cap"; FAILED="$FAILED
+- the weekly usage ($(usage_text "$USAGE_START")) is below the cap ($INCOGNITA_WEEKLY_CAP %)"
+    fi
+  else
+    log "the weekly usage cannot be read with the token: $USAGE_START"
+    if [ -n "$INCOGNITA_WEEKLY_CAP" ] && usage_persistent "$USAGE_START"; then
+      log "FAILED: the weekly usage can be read with the token (INCOGNITA_WEEKLY_CAP is set)"; FAILED="$FAILED
+- the weekly usage can be read with the token ($USAGE_START), as INCOGNITA_WEEKLY_CAP needs"
+    fi
+  fi
+fi
 owner_login >/dev/null 2>&1
 if [ -z "$FAILED" ] && [ "${INCOGNITA_CHECK_LOGIN:-1}" = 1 ]; then
   check "Claude answers in the sandbox (token valid, quota left)" claude_login
@@ -142,9 +149,16 @@ write_report() {
   merged=$(ghr pr list --state merged --limit 200 --search "merged:>=$(iso "$START")" \
     --json number,title,body,headRefOid,url 2>/dev/null || echo '[]')
   audit_status > "$NIGHT_DIR/audit-end.txt" 2>/dev/null || true
+  # The weekly usage at the end, read before the token is removed (the EXIT trap removes it after).
+  local usage_end="not read (no token)" wreset
+  if token_set; then usage_end=$(usage_now 0) || true; fi
+  wreset=$(printf '%s\n%s\n' "$usage_end" "$USAGE_START" | awk '$1 ~ /^[0-9.]+$/ && $2 ~ /^[0-9]+$/ { print $2; exit }')
   {
     printf '# Night report %s\n\n' "$INCOGNITA_NIGHT"
     printf '%s → %s (server time). Stopped: %s.\n\n' "$(date -d "@$START" '+%F %H:%M')" "$(date -d "@$end" '+%F %H:%M')" "$STOP_REASON"
+    printf 'Weekly usage of the subscription (claude.ai, Settings, Usage): %s at the start, %s at the end; cap %s%s.\n\n' \
+      "$(usage_text "$USAGE_START")" "$(usage_text "$usage_end")" "${INCOGNITA_WEEKLY_CAP:-none}${INCOGNITA_WEEKLY_CAP:+ % (INCOGNITA_WEEKLY_CAP)}" \
+      "${wreset:+; weekly reset $(date -u -d "@$wreset" '+%F %H:%M UTC')}"
     if [ -n "$FAILED" ]; then printf '**Startup checks failed; nothing was run:**%s\n\n' "$FAILED"; fi
 
     echo "## 1. Decisions waiting for the owner"
@@ -279,6 +293,7 @@ while [ "$(remaining)" -gt 0 ]; do
   case "$rc" in
     0) STOP_REASON="deadline"; break ;;
     3) STOP_REASON="Claude logged out: renew the token in $INCOGNITA_AGENT_ENV (claude setup-token)"; break ;;
+    6) STOP_REASON="weekly cap reached ($(ev weekly-cap | tail -n 1 | cut -f5))"; break ;;
   esac
   log "== loop.sh died (exit $rc): restarting"
   record_event loop-died - - "exit $rc"

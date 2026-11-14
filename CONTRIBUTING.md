@@ -145,14 +145,42 @@ with `needs-human`), `role:<role>` for agents' pull requests,
 all nights are skipped; the night report lists them, and deleting the file
 `~/.incognita/state/parked/<role>_<target>` on the server makes the loop retry.
 
-## 6. The Claude token, at every launch
+## 6. Launching a night (the owner's routine)
 
-The agents run with a long-lived token of the owner's subscription, which the owner does not want
-kept on the server or in its snapshots. Before every night: `claude setup-token` (anywhere; it
-prints `sk-ant-oat01-…`), then `sudo nano /etc/incognita/agent.env` and replace `REPLACE_ME` on the
-line `CLAUDE_CODE_OAUTH_TOKEN=`. `scripts/night.sh` refuses to start without it, and puts
-`REPLACE_ME` back at the end of every night (normal end, failed startup, Ctrl-C). After a night that
-was killed (`kill -9`, reboot), or before a snapshot, run `bash scripts/night.sh --reset-token`.
+On the server (`ssh tauceti`, never while the Tau Ceti worker runs), as `lean`:
+
+```
+cd ~/Incognita
+bash scripts/start-night.sh 02:45 88%      # until the next 02:45 in Paris, weekly cap 88 %
+```
+
+The end is a time in Paris (`02:45`: Monday 02:45 when launched on Sunday evening) or a duration
+(`8h`, `6h45`, `45m`); the cap is the weekly figure of claude.ai (Settings, Usage). The night stops
+at the end time or when the weekly usage reaches the cap, whichever comes first; within 3 points of
+the cap only reviews (and the bibliographer and garden) start. The script:
+
+1. prints what it understood (`Fin prévue : lundi 16/11 à 02:45 (heure de Paris), dans 6 h 47 ;
+   plafond hebdomadaire : 88 %`): answer `y`;
+2. runs `claude setup-token`: open the link, sign in with the subscription's account, paste the
+   code, exactly as for `claude auth login`. The new token is captured and masked: it is never shown,
+   and is written only to `/etc/incognita/agent.env` (root, mode 600);
+3. prints the current weekly usage, and refuses to start at the cap. A token of `claude setup-token`
+   may not be allowed to read the usage (its scope is `user:inference`): the script then reads it
+   through `tauceti status`, with lean's own Claude login (the one of the Tau Ceti worker, `claude
+   auth login`), which must stay valid all night (about 8 h); if neither works, it asks whether to
+   launch without a cap;
+4. starts the night in the tmux session `incognita` and tells whether the loop started.
+
+Then: `tmux attach -t incognita` to watch (Ctrl-b then d to leave it), `bash scripts/start-night.sh
+--stop` to stop early. Options: `--yes` (no question), `--keep-token` (keep the token already in
+the file), `--dry-run` (checks and one pass that only prints). The report is posted on the pinned
+issue "Night reports", with the weekly usage at the start and at the end.
+
+The token is never kept: `scripts/night.sh` puts `REPLACE_ME` back at the end of every night (normal
+end, weekly cap, failed startup, Ctrl-C), and the launcher removes the token it created when the
+night does not start. After a night that was killed (`kill -9`, reboot), or before a snapshot, run
+`bash scripts/night.sh --reset-token`. Revoke old tokens from the account's settings when you want
+them gone.
 
 ## 7. Branch protection and accounts
 

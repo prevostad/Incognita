@@ -6,8 +6,9 @@
 # Usage: scripts/loop.sh            in the loop's clone of main (on branch main, never edited by hand)
 #        INCOGNITA_DRY_RUN=1 scripts/loop.sh    one pass: print what would be done, change nothing
 #
-# Exit: 0 deadline reached (or dry run done), 3 Claude logged out, 1 fatal error. Never exits on its
-# own otherwise: no `set -e`; every call is checked.
+# Exit: 0 deadline reached (or dry run done), 3 Claude logged out, 6 the weekly usage reached
+# INCOGNITA_WEEKLY_CAP, 1 fatal error. Never exits on its own otherwise: no `set -e`; every call is
+# checked.
 set -u -o pipefail
 # shellcheck source=scripts/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -48,9 +49,10 @@ until owner_login >/dev/null; do
   [ "$(remaining)" -le 120 ] && exit 0
   sleep 120
 done
-log "== loop start (pid $$), owner $OWNER, deadline $([ "$DEADLINE" = 0 ] && echo none || date -d "@$DEADLINE" '+%F %T'), pace ${INCOGNITA_PACE:-default}, automerge ${INCOGNITA_AUTOMERGE:-none}"
+log "== loop start (pid $$), owner $OWNER, deadline $([ "$DEADLINE" = 0 ] && echo none || date -d "@$DEADLINE" '+%F %T'), pace ${INCOGNITA_PACE:-default}, weekly cap ${INCOGNITA_WEEKLY_CAP:-none}${INCOGNITA_WEEKLY_CAP:+ %}, automerge ${INCOGNITA_AUTOMERGE:-none}"
 
 # ---------------------------------------------------------------- quota
+# The weekly cap and the five-hour window: usage_gate (scripts/lib.sh), before every task.
 # INCOGNITA_PACE=0:100 (the owner's rule) or off: no pacing; rate-limit errors of a session make the
 # loop wait until the reset. Otherwise, v1's Tau Ceti pacer (`tauceti status --json`).
 tauceti_conf=${INCOGNITA_TAUCETI_CONF:-https://raw.githubusercontent.com/LeanMachineLearning/LMLExplore/main/tauceti.toml}
@@ -120,6 +122,8 @@ task_budget() {  # role: seconds a task of this role may take now (0 if it does 
 T_ROLE="" T_TARGET="" T_HEAD="" T_NOTE="" T_BUDGET=0
 pick() {  # role target head note: select this task if allowed and it fits before the deadline
   local b
+  # Near the weekly cap (usage_gate), only short tasks: reviews, referees, bibliographer, garden.
+  [ "$CAP_SHORT_ONLY" = 1 ] && ! short_role "$1" && return 1
   can_try "$1" "$2" || return 1
   b=$(task_budget "$1")
   [ "$b" -gt 0 ] || return 1
@@ -825,7 +829,7 @@ choose_task() {
 
 # ---------------------------------------------------------------- one pass
 MAIN_RED=0 AUDIT="" AUDIT_OK=0
-one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure failure, 3 logged out
+one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure failure, 3 logged out, 6 weekly cap
   STS=()
   NEEDS_REBASE=""
   set_activity "pass: reading GitHub"
@@ -858,6 +862,9 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure f
     k=$(( k + 1 ))
     [ "$rc" = 0 ] && did=1
   done < "$ROWS"
+  # The weekly cap and the five-hour window, read before every task (a dry run never waits).
+  rc=0; usage_gate || rc=$?
+  case "$rc" in 0) ;; 6) return 6 ;; *) return 0 ;; esac   # 1: the deadline came while waiting
   # One agent task.
   if ! choose_task; then
     [ "$did" = 1 ] && return 0
@@ -884,6 +891,7 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure f
   AGENT_PID=$!
   wait "$AGENT_PID" || rc=$?
   AGENT_PID=""
+  rm -f "$INCOGNITA_STATE/usage-last"   # the next task reads the usage again
   case "$rc" in
     0) ;;
     3) return 3 ;;
@@ -911,6 +919,7 @@ while :; do
   case "$rc" in
     0) backoff=60 ;;
     3) log "== Claude is logged out: the loop stops"; record_event stop - - "claude logged out"; exit 3 ;;
+    6) log "== the weekly cap is reached: the loop stops"; record_event stop - - "weekly cap"; exit 6 ;;
     10) log "== nothing to do: sleeping $(( INCOGNITA_IDLE_SLEEP / 60 )) min"; set_activity "idle"
         record_event idle - - "${INCOGNITA_IDLE_SLEEP}s"; sleep_bounded "$INCOGNITA_IDLE_SLEEP" ;;
     11|12) log "$([ "$rc" = 11 ] && echo "GitHub or git unknown" || echo "infrastructure failure"): retrying in ${backoff}s"; set_activity "backoff"
