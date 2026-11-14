@@ -37,7 +37,9 @@ name = "Statements"
 [[lean_lib]]
 name = "Exploration"
 
-# Human-owned audit: axioms of the library and frozen statements (scripts/Audit.lean).
+# Human-owned audit: axioms of the library, frozen statements and their locks, proof markers
+# (scripts/Audit.lean). It reads the libraries' build outputs, so it builds them first.
 [[lean_exe]]
 name = "audit"
 root = "scripts.Audit"
+needs = ["Incognita", "Statements"]
