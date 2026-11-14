@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Status | **draft**, awaiting approval by its owner |
+| Status | **approved** by its owner, 2026-11-14 |
 | Owner | Adrien Prevost (GitHub: prevostad) |
-| Written | 2026-11-13, with AI assistance (Claude); migrated from `programmes/TransferBandits/PROGRAMME.md` by Claude on 2026-11-14 |
-| KNOWN.md | [KNOWN.md](KNOWN.md) (papers are written once its first line reads `Reviewed by owner: <date>`) |
+| Written | 2026-11-13, with AI assistance (Claude); migrated from `programmes/TransferBandits/PROGRAMME.md` by Claude on 2026-11-14; direction D8 added on 2026-11-14 at the owner's request |
+| KNOWN.md | [KNOWN.md](KNOWN.md): reviewed by the owner on 2026-11-14 (published results only) |
 | Domain | `stochastic-bandits` (see roadmaps/README.md, "Domains") |
 | arXiv class | `math.ST` (secondary `stat.ML`) |
 
@@ -24,7 +24,8 @@ happens when the assumed bound on the drift is wrong?
   of an i.i.d. sequence from an unknown $\nu'_k$ with mean $\mu'_k$. The sizes $N'_k$ are chosen by
   an arbitrary, possibly data-dependent strategy, so they may be random.
 - **Drift.** Known constants $L_k$ with $\mu_k - \mu'_k < L_k$ (one-sided condition; the two-sided
-  condition $|\mu_k - \mu'_k| < L_k$ reduces to it, see below).
+  condition $|\mu_k - \mu'_k| < L_k$ reduces to it, see below). Direction D8 replaces it by a
+  condition $d(\nu_k,\nu'_k)<L_k$ between laws; a paper of D8 states its $d$.
 - **Consistency** is the notion of arXiv:2610.21582; a paper that uses another notion says so.
 - **Asymptotics** are in the horizon $T$, with the source sizes possibly depending on $T$
   (for example $\mathbb E N'_k / \log T \to$ a limit); each paper states its regime.
@@ -82,13 +83,34 @@ Nothing of this is formalised yet.
 - **D3. Intermediate severe regime.** Source sizes of the optimal arm of order $\log T$.
 - **D4. Several sources.** Optimal and robust aggregation of several sources with different drifts.
 - **D5. Unknown drift.** Adaptivity to $L_k$: what is the price of not knowing it, and is there a
-  learner that is never worse than KL-UCB and matches the known-$L$ bound when $L$ is right?
+  learner that is never worse than KL-UCB and matches the known-$L$ bound when $L$ is right? A
+  learner consistent for every $L$ gains nothing (KNOWN K7(b)): the question is about weaker
+  requirements, for example a learner consistent for one fixed $L$ that also adapts to a smaller
+  true drift.
 - **D6. Other models.** One-parameter exponential families, Gaussians with unknown variance.
 - **D7. Non-asymptotic bounds** with explicit dependence on the source sizes.
+- **D8. Drift measured between laws, not between means.** Replace the drift condition by
+  $d(\nu_k,\nu'_k) < L_k$ for a pseudo-distance (or a divergence) $d$ between laws on $[0,1]$
+  fixed by the paper, for example the Wasserstein distance $W_1$, the total variation, the
+  Kolmogorov distance, the Hellinger distance or $\mathrm{KL}(\nu'_k,\nu_k)$. The mean condition is
+  the case $d(\nu,\nu') := |m(\nu)-m(\nu')|$ (or its one-sided version). Questions. (a) The lower
+  bound: an alternative must now move the target law $\nu_a$ to some $Q$ with $m(Q)>\mu^\star$
+  **and** the source law $\nu'_a$ to some $Q'$ with $d(Q,Q')<L_a$, so the cost
+  $\mathbb E[N_a(T)]\,\mathrm{KL}(\nu_a,Q)+\mathbb E[N'_a]\,\mathrm{KL}(\nu'_a,Q')$ couples the two
+  divergences through $d$. Identify the resulting constant (an infimum over pairs $(Q,Q')$), say
+  when it splits into an online term and a source term as in the mean case (K2, K3), and compare it
+  with the mean case: for instance $|m(Q)-m(Q')|\le W_1(Q,Q')$, so a $W_1$ condition with bound $L$
+  restricts the pairs at least as much as the mean condition with the same $L$. (b) An algorithm
+  that attains it, for example a KL-UCB-Transfer (K8) whose index uses the empirical source law
+  through $d$, not only its mean, with its cost per round. (c) Which pseudo-distances give an
+  improvement over KL-UCB where the mean condition gives none, and what misspecification does
+  (as in K5). Answer: matching lower and upper bounds for one pseudo-distance, with a check that
+  $d(\nu,\nu')=|m(\nu)-m(\nu')|$ gives back K2–K4.
 
 ## What would be an important result
 
-A matching lower bound for random source sizes (D1), an adaptive learner (D5), or a formal
+A matching lower bound for random source sizes (D1), an adaptive learner (D5), the optimal
+constant and an optimal algorithm when the drift is measured between laws (D8), or a formal
 counterexample showing that a natural algorithm is not optimal in one of the regimes.
 
 ## Out of scope

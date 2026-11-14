@@ -2,19 +2,22 @@
 
 | | |
 |---|---|
-| Status | **draft**, awaiting approval by its owner |
+| Status | **approved** by its owner, 2026-11-14 |
 | Owner | Adrien Prevost (GitHub: prevostad) |
-| Written | 2026-11-14 by Claude (Anthropic, model Claude Opus 5.5) at the owner's request, from the published literature only; it absorbs the drafts RegretShape and StructuredBandits of 2026-11-13 (Appendix A) |
-| KNOWN.md | [KNOWN.md](KNOWN.md): **not yet reviewed** (a draft written by an agent from the published literature, with no result of the owner), so no paper may be written yet |
+| Written | 2026-11-14 by Claude (Anthropic, model Claude Opus 5.5) at the owner's request, from the published literature only; it absorbs the drafts RegretShape and StructuredBandits of 2026-11-13 (Appendix A); direction D19 added on 2026-11-14 at the owner's request |
+| KNOWN.md | [KNOWN.md](KNOWN.md): reviewed by the owner on 2026-11-14 (written by an agent from the published literature, with no result of the owner) |
 | Domain | `stochastic-bandits` (see roadmaps/README.md, "Domains") |
 | arXiv class | `math.ST` (secondary `stat.ML`) |
-| AI assistance | Claude wrote the draft; every reference was read in the parts recorded in [SOURCES.md](SOURCES.md) and `literature/index.md` (2026-11-14); the owner has not yet checked the mathematics |
+| AI assistance | Claude wrote the roadmap; every reference of KNOWN.md was read in the parts recorded in [SOURCES.md](SOURCES.md) and `literature/index.md` (2026-11-14); the sources of D19 were not read (see D19); the owner approved the roadmap without checking every statement |
 
 The drafts RegretShape and StructuredBandits were removed from the repository when this roadmap was
-added (2026-11-14); their items are mapped in Appendix A. Owner decisions pending: (1) where the
-objects shared with BatchedBandits live (laws on $[0,1]$; $\mathcal K_{\inf}$ on $[0,1]$, which is
-BatchedBandits F2 and is not repeated here); (2) whether the structured directions D13–D17 open now
-or later, as an extension; (3) F5 `external` with two sources or `internal` (see F5).
+added (2026-11-14); their items are mapped in Appendix A. Owner decisions (2026-11-14): (1) the
+objects shared with BatchedBandits are written by whichever roadmap needs them first, and the other
+one reuses them: laws on $[0,1]$ are defined by F0 here, and $\mathcal K_{\inf}$ on $[0,1]$ is
+BatchedBandits F2 or, if that paper is not accepted when F9 comes, F10 below; (2) the structured
+directions D13–D17 are open now; (3) F5 is `external` with two sources, as proposed in F5.
+**Priority (owner, 2026-11-14):** the exact constant of the minimax regret and whether a policy
+attains it (D19) come before simultaneous minimax and problem-dependent guarantees (D5, D6).
 
 ## Motivation
 
@@ -100,7 +103,7 @@ LMLExplore at revision `b4e0ab9` (Incognita's pin) on 2026-11-14.
 |---|---|---|
 | arms, instance | as in the Lean conventions; `[IsMarkovKernel ν]` | reuse (LML) |
 | unstructured class | `{ν | ∀ a, ν a ∈ D a}` for `D : α → Set (Measure ℝ)` | `Incognita.StochasticBandits.productClass` (reuse LMLExplore's name if `LaiRobbins` has one) |
-| models | laws on $[0,1]$; semi-bounded laws; $\mathcal L_{\varepsilon,B}$; kurtosis $\le\kappa$; Gaussian laws with unknown mean and variance | `unitLaws` (shared with BatchedBandits' `unitBandits`: owner decision), `semiBoundedLaws`, `momentLaws ε B`, `kurtosisLaws κ`, `gaussianLaws`, each defined by the first paper that needs it |
+| models | laws on $[0,1]$; semi-bounded laws; $\mathcal L_{\varepsilon,B}$; kurtosis $\le\kappa$; Gaussian laws with unknown mean and variance | `unitLaws` (defined by F0; BatchedBandits reuses it, or this roadmap reuses BatchedBandits' `unitBandits` if that one is merged first), `semiBoundedLaws`, `momentLaws ε B`, `kurtosisLaws κ`, `gaussianLaws`, each defined by the first paper that needs it |
 | $\mathcal K_{\inf}$ | `dInf D P μ`, valued in `ℝ≥0∞` | reuse `LMLExplore.Bandits.dInf` |
 | consistency | `IsConsistent alg E` | reuse `LMLExplore.Bandits.IsConsistent` |
 | horizon-dependent algorithm | `π : ℕ → Algorithm Unit α ℝ`, regret at `T` taken for `π T` | `Incognita.StochasticBandits.IsConsistentFamily` and family versions of the predicates below |
@@ -170,8 +173,12 @@ fidelity to the source; then it is formalised. In order:
   confidence sets satisfy the two assumptions stated in the source (K35). The source's argument is
   partly informal: the paper makes the class of optimistic algorithms explicit and marks every gap
   it fills.
-- **F9. IMED on $[0,1]$** [HT15, Theorem 3 and Corollary 4] restricted to laws on $[0,1]$ (K11).
-  **On hold** until BatchedBandits F2 ($\mathcal K_{\inf}$ on $[0,1]$) is accepted; it depends on it.
+- **F9. IMED on $[0,1]$** [HT15, Theorem 3 and Corollary 4] restricted to laws on $[0,1]$ (K11),
+  after $\mathcal K_{\inf}$ on $[0,1]$ (BatchedBandits F2, or F10 below); it depends on it.
+- **F10. $\mathcal K_{\inf}$ on $[0,1]$** (kind `external`), only if BatchedBandits F2 has not been
+  accepted when F9 comes: the content of BatchedBandits F2 (dual formula, continuity, deviation
+  inequalities for $n\,\mathcal K_{\inf}(\hat\nu_n,\mu)$; Honda–Takemura 2010, 2015), written once and
+  reused by both roadmaps.
 
 ## Open directions
 
@@ -224,6 +231,48 @@ sources of KNOWN.md (works citing them): KNOWN.md was written on 2026-11-14 and 
 
 ### B. Simultaneous criteria and anytime algorithms
 
+**Order (owner, 2026-11-14): D19 first.** Before asking for algorithms that are both minimax optimal
+and problem-dependent optimal (D5, D6), find the exact constant of the minimax regret and whether a
+policy attains it. Until D19 has settled the constant in a model, "minimax optimal" in D5 and D6
+means optimal up to a constant factor, and a paper of D5 or D6 says so.
+
+- **D19. The constant of the minimax regret, and a policy that attains it.** For a fixed model
+  $\mathcal D$ (Bernoulli laws, $\mathcal P[0,1]$, or Gaussian laws of variance 1 with means in a
+  bounded interval) and $K\ge2$, let $R^\star_{K,\mathcal D}(T) := \inf_\pi\sup_{\nu\in\mathcal D^\alpha}R_T(\pi,\nu)$,
+  the infimum over horizon-dependent policies (with external randomization). It is of order
+  $\sqrt{KT}$, but its constant is known only up to a factor larger than 28. Reported in the
+  literature (to be checked in the sources): lower bounds $\frac1{20}\sqrt{KT}$ [ACFS02] and
+  $\frac1{27}\sqrt{(K-1)T}$ for Gaussian rewards [LS, Theorem 15.2]; upper bounds $49\sqrt{KT}$ for
+  MOSS with rewards in $[0,1]$ and a known horizon [AB09] (`moss_regret_le` in LMLExplore, check its
+  constant) and $\sqrt{2KT}$ for rewards in $[0,1]$ [ZL19]. For two arms the question is old: Vogel
+  [Vog60] proved the order $\sqrt T$, Fabius and van Zwet [FvZ70] and Bather [Bat83] bounded the
+  constant, and Kolnogorov [Kol17, Kol20] studies the Gaussian two-armed bandit in the limit where the
+  gap is of order $1/\sqrt T$ and computes a value numerically; diffusion limits of bandit
+  experiments in this regime are studied in [Adu25] and [KZ21]. **None of these sources was read for
+  KNOWN.md**: the bibliographer reads them first and records what each one proves (with its exact
+  class of laws and normalization), and a paper of D19 starts from those notes. Question: (a) does
+  $R^\star_{K,\mathcal D}(T)/\sqrt T$ converge as $T\to\infty$ for fixed $K$, and to which constant
+  (a characterization, and how it depends on $\mathcal D$); (b) is the constant attained by an
+  explicit policy, horizon-dependent or anytime, defined by its formula with its cost per round;
+  (c) bounds on the constant for every $K$ that improve the known ones, and its order in $K$.
+  Answer: (a) a theorem identifying the limit in at least one model; (b) a policy with
+  $\sup_{\nu}R_T(\pi,\nu)\le(c^\star+\varepsilon)\sqrt T$ for every $\varepsilon>0$ and
+  $T\ge T_0(\varepsilon)$, or a proof that no policy of a stated simple class attains $c^\star$;
+  (c) explicit lower and upper bounds, non-asymptotic where possible.
+  Sources: [ACFS02] P. Auer, N. Cesa-Bianchi, Y. Freund, R. E. Schapire, *The nonstochastic
+  multiarmed bandit problem*, SIAM J. Comput. 32(1), 2002; [AB09] J.-Y. Audibert, S. Bubeck,
+  *Minimax policies for adversarial and stochastic bandits*, COLT 2009; [ZL19] J. Zimmert,
+  T. Lattimore, *Connections between mirror descent, Thompson sampling and the information ratio*,
+  NeurIPS 2019; [Vog60] W. Vogel, *An asymptotic minimax theorem for the two armed bandit problem*,
+  Ann. Math. Statist. 31, 1960; [FvZ70] J. Fabius, W. R. van Zwet, *Some remarks on the two-armed
+  bandit*, Ann. Math. Statist. 41(6), 1970; [Bat83] J. A. Bather, *The minimax risk for the two-armed
+  bandit problem*, in Mathematical Learning Models, Lecture Notes in Statistics 20, 1983; [Kol17]
+  A. V. Kolnogorov, *Batch data processing and Gaussian two-armed bandit*, arXiv:1704.03631;
+  [Kol20] A. V. Kolnogorov, *Gaussian two-armed bandit: limiting description*, Probl. Inf. Transm.
+  56(3), 2020; [Adu25] K. Adusumilli, *Risk and optimal policies in bandit experiments*,
+  arXiv:2112.06363; [KZ21] A. Kalvit, A. Zeevi, *A closer look at the worst-case behavior of
+  multi-armed bandit algorithms*, NeurIPS 2021. These references are not yet in
+  `literature/bibliography.json`: the bibliographer adds them, with verified metadata.
 - **D5. The price of anytime.** Let $\pi$ be anytime with
   $\sup_{\nu\in\mathcal P[0,1]^\alpha}R_T(\nu)\le C\sqrt{KT}$ for every $T$. Is there such $\pi$ with
   $\mathbb E N_a(T)\le\log T/\mathcal K_{\inf}(\nu_a,m^\star)+O(\log\log T)$ for every instance with
@@ -250,7 +299,7 @@ sources of KNOWN.md (works citing them): KNOWN.md was written on 2026-11-14 and 
   and laws with kurtosis at most $\kappa$ (no formula known, K19, K62): a dual or variational
   formula for $\mathcal K_{\inf}(P,\mu;\mathcal D)$, its continuity in $(P,\mu)$ where it holds, and a
   deviation inequality $\mathbb P(n\,\mathcal K_{\inf}(\hat P_n,m(P);\mathcal D)\ge x)\le f(n)e^{-x}$
-  with explicit $f$. The $[0,1]$ case is BatchedBandits F2. Answer: one class per paper, each
+  with explicit $f$. The $[0,1]$ case is BatchedBandits F2 (or F10). Answer: one class per paper, each
   result used by an item of C (named in the paper).
 - **D8. Exact first order where only constant factors are known.** (a) Kurtosis: for instances in
   $\mathcal H_\kappa^\alpha$ (kurtosis at most a known $\kappa$, positive variances), an algorithm
@@ -337,6 +386,7 @@ sources of KNOWN.md (works citing them): KNOWN.md was written on 2026-11-14 and 
 
 ## What would be an important result
 
+- The exact constant of the minimax regret in one model, or a policy that attains it (D19).
 - Matching lower and upper bounds that close a direction: the coefficient of $\log\log T$ (D1), the
   transition horizon (D3), an exact first-order constant where only constant factors are known (D8),
   an exact tail exponent (D11), a characterization (D13, D14).
@@ -361,8 +411,8 @@ guarantees; contextual bandits with changing contexts, and structured classes wi
 arms (finite linear, unimodal, Lipschitz-on-a-finite-metric or other structures on a finite arm set
 are in scope); reinforcement learning and Markov decision processes; pure exploration and best-arm
 identification, except as a tool for a regret result; non-stationary bandits; Bayesian regret and
-Gittins indices; the constant of the minimax regret $\sqrt{KT}$ (the owner studies it separately).
-They may become roadmaps of their own.
+Gittins indices. They may become roadmaps of their own. (The constant of the minimax regret, out of
+scope in the first draft, is direction D19 since 2026-11-14.)
 
 ## Acceptance criteria for papers
 
@@ -392,7 +442,7 @@ Besides AGENTS.md §5, the referees check that a paper of this roadmap:
    LMLExplore at the pinned revisions or in the library, and (iv) it passes criterion 7; a block
    that fails (ii) or (iii) is **F**;
 9. improves only constants or lower-order terms only when its direction asks for them (D1, D2, D3,
-   D8, D11, D12), and then states the previous best value and the new one;
+   D8, D11, D12, D19), and then states the previous best value and the new one;
 10. serving a direction, is not one of the "not important on their own" results above.
 
 ## Appendix A. Correspondence with the drafts RegretShape and StructuredBandits
