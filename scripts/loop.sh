@@ -73,11 +73,11 @@ merge_ready() {  # merge the open pull requests that are approved, green and aut
   local pr ci verdict
   for pr in $(gh pr list --state open --json number --jq '.[].number'); do
     ci=$(gh pr view "$pr" --json statusCheckRollup \
-      --jq '[.statusCheckRollup[] | select(.name == "Build and check") | .conclusion] | first')
+      --jq '[.statusCheckRollup[] | select(.name == "Build and check") | .conclusion] | first' || true)
     verdict=$(gh pr view "$pr" --json commits,comments --jq '
       ([.comments[] | select(.body | startswith("Verdict:"))] | sort_by(.createdAt) | last) as $v
       | if $v == null then "none" elif $v.createdAt < .commits[-1].committedDate then "stale"
-        else ($v.body | split("\n") | first) end')
+        else ($v.body | split("\n") | first) end' || true)
     if [ "$ci" = SUCCESS ] && [ "$verdict" = "Verdict: approve" ] && auto_mergeable "$pr"; then
       echo "== merging #$pr automatically"
       gh pr merge "$pr" --squash --delete-branch || echo "merge of #$pr failed" >&2
@@ -167,11 +167,14 @@ for i in $(seq 1 "$n"); do
   elif [ $((i % 10)) = 0 ] && [ -n "$(approved)" ]; then
     role=garden
   else
+    # A question still needs its reviewer while its "Reviewer verdict" cell names no verdict (it may
+    # be empty or hold the template's placeholder). Each search ends with "|| true": under
+    # "set -o pipefail" a search that finds nothing must not stop the loop (it did, on 14/11).
     q=$(for f in $(questions_in); do
-          grep -q '^| Status | proposed' "$f" && grep -q '^| Reviewer verdict | <' "$f" && echo "$f"
-        done | head -n 1)
-    open=$(least_worked_open)
-    low=$(programme_short_of_questions)
+          if grep -q '^| Status | proposed' "$f"               && ! grep -qiE '^\| Reviewer verdict \|.*(accept|reject)' "$f"; then echo "$f"; fi
+        done | head -n 1 || true)
+    open=$(least_worked_open || true)
+    low=$(programme_short_of_questions || true)
     if [ -n "$q" ]; then
       role=review-question target=$q
     elif grep -q '^novelty = "unchecked"' catalogue/results.toml 2>/dev/null; then
