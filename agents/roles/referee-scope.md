@@ -75,8 +75,10 @@ justifies "not affected".
   example): **G**.
 - Pinned conventions used, or every change declared and justified (an undeclared change: **G**).
 - Interest, against the roadmap's "What would be an important result": a known bound with worse
-  constants, or a lemma nothing uses, is out of scope for a direction (**F**). For an F item,
-  fidelity to its source replaces novelty and interest.
+  constants, or a lemma nothing uses, is out of scope for a direction (**F**). So is a result whose
+  proof is a routine exercise (a few lines of a standard argument), even if it is not a corollary of
+  a specific entry of KNOWN.md or of the literature (**F**). For an F item, fidelity to its source
+  replaces novelty and interest.
 - Mandatory sections present (AGENTS.md §5.2): a missing section is **G**; at most 12 pages and 25
   nodes (beyond: **G**, split required); clarity: **P**.
 
