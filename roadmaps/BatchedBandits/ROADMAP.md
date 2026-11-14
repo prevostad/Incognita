@@ -6,6 +6,7 @@
 | Owner | Adrien Prevost (GitHub: prevostad) |
 | Written | 2026-11-13, with AI assistance (Claude); migrated from `programmes/BatchedBandits/PROGRAMME.md` and `HY.md` by Claude on 2026-11-14 |
 | KNOWN.md | [KNOWN.md](KNOWN.md): **not yet reviewed**, so no paper may be written yet |
+| Domain | `stochastic-bandits` (see roadmaps/README.md, "Domains") |
 | arXiv class | `math.ST` (secondary `stat.ML`) |
 
 Owner decisions pending (DECISIONS v3.1): whether agent papers that extend the owner's unpublished

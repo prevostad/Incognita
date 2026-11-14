@@ -1,8 +1,9 @@
 # Roadmaps
 
 A roadmap says what agents may research in one area. It is owned by a human: written or adopted by
-the owner (possibly with AI help, said in its header), approved by the owner, never edited by agents.
-Approving a roadmap is the owner's main decision: it fixes what agents spend their time on.
+the owner (possibly with AI help, said in its header), or proposed by an agent (`propose-roadmap`)
+and approved under the owner's policy below; never edited by agents. Approving a roadmap is the
+owner's main decision: it fixes what agents spend their time on.
 
 | Roadmap | Status | Owner | KNOWN.md |
 |---|---|---|---|
@@ -14,10 +15,51 @@ Approving a roadmap is the owner's main decision: it fixes what agents spend the
 Papers are written in a roadmap only when its status is `approved` **and** its `KNOWN.md` starts
 with `Reviewed by owner: <date>`.
 
+| Path | Content | Written by |
+|---|---|---|
+| `<Roadmap>/ROADMAP.md` | the roadmap | the owner, or a proposal of `propose-roadmap` |
+| `<Roadmap>/KNOWN.md` | what the owner knows | the owner (a proposed roadmap starts with `Reviewed by owner: no`) |
+| `<Roadmap>/extensions/X<k>.md` | an extension: new directions | `propose-roadmap`, approved like a roadmap |
+| `<Roadmap>/directions.md` | candidate directions `C<n>`: accepted open questions of its papers | the loop (entries), `garden` (`Dropped` lines) |
+
+## Domains
+
+Each roadmap names its **domain** in its header (`| Domain | stochastic-bandits |`): the area of
+mathematics, coarser than a roadmap. The domains of the approved roadmaps are the **existing
+domains**; today, `stochastic-bandits`. A proposal inside an existing domain is approved after a veto
+window; a new domain needs the owner's explicit approval.
+
+## Proposals of agents and their approval
+
+When an approved roadmap has no free item left, and every 7 nights (`INCOGNITA_PROPOSE_EVERY`),
+`propose-roadmap` proposes either an **extension** (one file `<Roadmap>/extensions/X<k>.md`: header
+with the status, Motivation, New directions `D<n>` numbered after the roadmap's, Acceptance
+criteria and Out of scope additions, Searches) or a **new roadmap** (a directory with `ROADMAP.md`
+in the format below, status `proposed`, a `Domain` line, and `KNOWN.md` starting with
+`Reviewed by owner: no`). `review-roadmap` reviews it. Then (the owner's policy, AGENTS.md §4.2):
+
+- inside an existing domain: if `review-roadmap` approves and the owner does not veto during 2
+  nights (`INCOGNITA_VETO_NIGHTS`; a comment starting with `veto`, or the label `veto`), the loop
+  adds a scripted commit that sets `| Status | **approved** (…) |` with the dates of the review and
+  of the window, and merges the pull request. A comment starting with `approve` approves at once;
+- a new domain: only the owner's comment `approve` (or his own merge).
+
+The night report lists the proposals and their windows. No other roadmap pull request is merged by
+the loop. Papers are written in a new roadmap only once the owner has reviewed its KNOWN.md.
+
+## Candidate directions: `directions.md`
+
+When a paper is accepted, the open questions that the scope referee rated as candidates (interest,
+novelty, fit) are appended to `directions.md` of its roadmap by the loop, as entries `C1`, `C2`, …
+(question, source paper and version, rating). Writers take them like directions. Entries are never
+edited, renumbered or deleted; `garden` or the owner may add `Dropped (<date>, <role>, <model>):
+<reason>` under one. Their status (open, taken, done by P<nnn>, covered, dropped) is computed
+(`scripts/certify.py items <Roadmap>`).
+
 ## `ROADMAP.md`
 
-1. **Header**: status (`draft`, `approved`, `paused`, `closed`), owner, dates, arXiv class, AI
-   assistance used.
+1. **Header**: status (`draft`, `proposed`, `approved`, `paused`, `closed`), owner, dates, KNOWN.md,
+   domain, arXiv class, AI assistance used.
 2. **Motivation**: the question of the roadmap, in a few lines.
 3. **Pinned conventions**: objects, notation, information model, criterion. Decide conventions up
    front, or writers and formalisers will decide them badly.
@@ -52,6 +94,7 @@ until then. Entries may also be kept outside the repository and given to agents 
 
 ## Changing a roadmap
 
-Only through a pull request merged by the owner. Agents who think a direction is answered,
-ill-posed or should be reframed write an `Ask-owner:` line in their report; the owner answers on
-the pinned issue "Questions for the owner" and updates the roadmap himself.
+Only through a pull request merged by the owner, or an extension proposed by an agent and approved
+as above. Agents who think a direction is answered, ill-posed or should be reframed write an
+`Ask-owner:` line in their report; the owner answers on the pinned issue "Questions for the owner"
+and updates the roadmap himself.

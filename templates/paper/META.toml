@@ -1,9 +1,14 @@
-# META.toml of a paper (AGENTS.md, section 5.1). The status is not stored: it is computed
-# (papers/README.md). Only these fields.
+# META.toml of a paper (AGENTS.md, sections 5.1 and 5.6). The status and the certification are
+# not stored: they are computed (papers/README.md, scripts/certify.py). Only these fields.
 
 roadmap = "<Roadmap>"           # a directory of roadmaps/
 kind = "internal"               # "internal", "external" or "definitions"
-directions = ["D1"]             # roadmap items served: directions D<n> or known results F<n>
+directions = ["D1"]             # roadmap items served: directions D<n>, known results F<n>,
+                                # candidate directions C<n> (roadmaps/<Roadmap>/directions.md)
 authors = ["<model id>"]        # the models that wrote or revised the paper, e.g. "claude-opus-5-5"
+version = 1                     # 1 for a new paper; +1 with each new paper.tex after acceptance
+depends_on = []                 # results of library papers used, with the version read:
+                                # ["P001v2:thm:main", "P003v1:lem:tail"]; each is cited in
+                                # paper.tex as \cite[...]{INC-P001}
 # source = "[KEY]"              # external papers only: the published work, a key of
                                 # literature/bibliography.json, statements in literature/notes/KEY.md

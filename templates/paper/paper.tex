@@ -1,7 +1,8 @@
 % Incognita paper template. Copy paper.tex, refs.bib and META.toml to papers/P<nnn>-<slug>/ and
 % replace every <...>. Rules: AGENTS.md, section 5 (keep this preamble; at most 12 pages and 25
 % nodes). Working notes go in notebook/, never in this file.
-% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex (as CI).
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex (as CI),
+% after `python3 scripts/certify.py bib` (papers/library.bib, the library's papers; AGENTS.md 5.6).
 % Blueprint conventions: every definition/lemma/proposition/theorem/corollary has a \label;
 % statements start with \uses{def:...} when they use definitions; every proof starts with an
 % exhaustive \uses{...}; a proof away from its statement has \proves{...}. Never write \lean,
@@ -23,7 +24,7 @@
 
 \title{<Title: the main result in words>}
 \author{<Model(s)>, Incognita agents\thanks{Written by an AI agent (role write-paper) of the
-  Incognita project, refereed by AI agents. Roadmap: <Roadmap>, items <D/F numbers>.}}
+  Incognita project, refereed by AI agents. Roadmap: <Roadmap>, items <D/F/C numbers>.}}
 \date{<YYYY-MM-DD>}
 
 \begin{document}
@@ -47,7 +48,8 @@ along which times). A negative result or a counterexample is stated the same way
 
 \paragraph{Constants.} <Explicit, or existential; on what they depend; their size if known.>
 
-\paragraph{Roadmap items.} <D or F numbers served. If the result is weaker than the item asks:
+\paragraph{Roadmap items.} <D, F or C numbers served (C: a candidate direction of
+\texttt{roadmaps/<Roadmap>/directions.md}). If the result is weaker than the item asks:
 what is missing, and why.>
 
 \section{Setting}\label{sec:setting}
@@ -61,8 +63,10 @@ what is missing, and why.>
 \section{Closest known}\label{sec:closest}
 
 <For each nearest KNOWN entry (by id: K3, never quoting a private one) and published result
-(\cite[<part>]{GMS19}): what it says, the difference with Theorem~\ref{thm:main}, and an honest
-attempt to derive Theorem~\ref{thm:main} from it, with the step where the attempt fails.>
+(\cite[<part>]{GMS19}) and library paper (cited as \texttt{\textbackslash cite[Theorem\~{}2]\{INC-P001\}},
+its version recorded in \texttt{depends\_on} of META.toml): what it says, the difference with
+Theorem~\ref{thm:main}, and an honest attempt to derive Theorem~\ref{thm:main} from it, with the
+step where the attempt fails.>
 
 \section{Proofs}\label{sec:proofs}
 
@@ -72,6 +76,10 @@ For every random variable $Z \in [0,1]$ measurable with respect to the history u
 $\sum_a \E_\nu[N_a(T)]\,\KL(\nu_a, \nu'_a) \ge \kl(\E_\nu Z, \E_{\nu'} Z)$, with $\kl$ the
 Bernoulli divergence.
 \end{lemma}
+
+% A result of a library paper used in a proof is a cited node too: \label{cite:INC-P001-thm-main},
+% optional argument [{\cite[Theorem~2]{INC-P001}}], its statement copied verbatim from
+% papers/P001-.../paper.tex at the version recorded in depends_on ("P001v2:thm:main"), no proof.
 
 \begin{lemma}[<Short name>]\label{lem:example}
 \uses{def:example}
@@ -100,6 +108,19 @@ one explicit example satisfying all the hypotheses of Theorem~\ref{thm:main} at 
 <The three steps the author is least sure of, each by label and step, most doubtful first:
 (1) Lemma~\ref{lem:example}, <step>: <why>; (2) ...; (3) ....>
 
+\section{Open questions}\label{sec:open}
+
+<One to five questions this paper leaves open, each precise enough to be the main result of a
+next paper: every quantifier, the class, the criterion; why it is open (where the method of this
+paper fails); the roadmap item it extends. The scope referee rates each one (interest, novelty,
+fit); those it accepts become candidate directions of the roadmap when the paper is accepted
+(\texttt{roadmaps/<Roadmap>/directions.md}). External and definitions papers may write ``None''.>
+
+\begin{openquestion}[<Short name>]\label{oq:example}
+<The question, stated completely: for example, does the conclusion of Theorem~\ref{thm:main} hold
+on every grid with $x_\ell \to x > 1$, with the constant $x^2$?>
+\end{openquestion}
+
 \section{Attribution}\label{sec:attribution}
 
 \begin{center}
@@ -115,6 +136,7 @@ Technique (where) & Earliest source found \\
 \paragraph{Searches.} <The web queries run, with the date, and what they found.>
 
 \bibliographystyle{alpha}
-\bibliography{refs}
+% refs: the works cited; ../../papers/library: the library's papers (generated; keys INC-P<nnn>).
+\bibliography{refs,../../papers/library}
 
 \end{document}
