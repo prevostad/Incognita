@@ -300,10 +300,77 @@ EOF
   expect "replay: the kernel rejects the project"
 }
 
+# `--refresh-new-locks` (not a failure scenario): a statement added by the pull request and changed
+# in it gets its lock rewritten, an orphan lock of the pull request is removed, and a lock that is
+# on origin/main is never touched (the audit still fails on a changed frozen statement).
+refresh_new_locks() {
+  local bad=""
+  git update-ref refs/remotes/origin/main HEAD
+  write Statements/P999/Fresh.lean <<'EOF'
+module
+
+public import Incognita.Canary.Defs
+
+@[expose] public section
+
+namespace Incognita.Statements.P999
+
+theorem fresh : Incognita.Canary.double 1 = 2 := sorry
+
+end Incognita.Statements.P999
+EOF
+  add_import Statements Statements.P999.Fresh
+  audit --new-locks && grep -q '^wrote Statements/P999/fresh.lock$' "$out" || bad="--new-locks did not lock the new statement"
+  if [ -z "$bad" ]; then
+    sed -i 's/double 1 = 2/double 2 = 4/' Statements/P999/Fresh.lean
+    cp Statements/P999/fresh.lock "$work/fresh.before"
+    audit --new-locks
+    cmp -s Statements/P999/fresh.lock "$work/fresh.before" || bad="--new-locks rewrote a lock"
+  fi
+  if [ -z "$bad" ]; then
+    audit --check && bad="the audit passed with a stale lock"
+    grep -qF "locks: Statements/P999/fresh.lock does not match" "$out" || bad="${bad:-the stale lock was not reported}"
+  fi
+  if [ -z "$bad" ]; then
+    cp Statements/P999/fresh.lock Statements/P999/gone.lock
+    sed -i 's/c = .red := sorry/c = .green := sorry/' Statements/P999/Canary.lean
+    cp Statements/P999/colour_red.lock "$work/red.before"
+    audit --refresh-new-locks || bad="--refresh-new-locks failed"
+  fi
+  if [ -z "$bad" ]; then
+    grep -q '^rewrote Statements/P999/fresh.lock$' "$out" || bad="--refresh-new-locks did not rewrite the lock of the pull request"
+    grep -q '^removed Statements/P999/gone.lock' "$out" || bad="${bad:-the orphan lock of the pull request was not removed}"
+    [ ! -e Statements/P999/gone.lock ] || bad="${bad:-gone.lock still exists}"
+    cmp -s Statements/P999/colour_red.lock "$work/red.before" || bad="${bad:---refresh-new-locks touched a lock of origin/main}"
+  fi
+  if [ -z "$bad" ]; then
+    audit --check && bad="the audit passed with a changed frozen statement of origin/main"
+    grep -qF "locks: Statements/P999/colour_red.lock does not match" "$out" || bad="${bad:-the changed frozen statement was not reported}"
+    grep -qF "fresh.lock does not match" "$out" && bad="${bad:-the refreshed lock still does not match}"
+  fi
+  if [ -z "$bad" ]; then
+    sed -i 's/c = .green := sorry/c = .red := sorry/' Statements/P999/Canary.lean
+    audit --check || bad="the audit fails after --refresh-new-locks"
+  fi
+  if [ -z "$bad" ]; then
+    git update-ref -d refs/remotes/origin/main
+    audit --refresh-new-locks && bad="--refresh-new-locks ran without origin/main"
+  fi
+  if [ -z "$bad" ]; then
+    echo "ok   $current"
+  else
+    echo "FAIL $current: $bad"
+    tail -n 30 "$out"
+    failures=$((failures + 1))
+  fi
+  git update-ref -d refs/remotes/origin/main 2>/dev/null
+  reset
+}
+
 all=(sorry_proof changed_definition def_in_statements proof_in_statements removed_proof
   removed_refutation missing_lock orphan_lock edited_lock changed_statement custom_axiom
   wrong_type statement_uses_statements unknown_marker unsafe_library library_imports_statements
-  library_in_statements_namespace unchecked_declaration)
+  library_in_statements_namespace unchecked_declaration refresh_new_locks)
 
 failures=0
 current=""

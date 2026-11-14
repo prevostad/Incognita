@@ -14,6 +14,7 @@ so `lake exe audit` builds them first.
 ```
 lake exe audit [--check] [--no-replay]   check everything; the default, run by CI
 lake exe audit --new-locks               write the missing Statements/<P>/<name>.lock files
+lake exe audit --refresh-new-locks       (re)write the locks absent from origin/main
 lake exe audit --status                  one line "<P> <name> open|proved|refuted" per statement
 lake exe audit --dump <statement>        print the exact bytes hashed into the statement's lock
 lake exe audit --selftest                check the SHA-256 implementation on test vectors
@@ -52,6 +53,12 @@ on. It records the SHA-256 of a canonical S-expression serialisation (printed by
   information but no binder names, metadata erased, projections with their structure name,
   literals; atoms are length-prefixed (`9:Incognita`), naturals are written `#n`;
 * constants are sorted by name (`Name.cmp`), one per line, after the line `incognita-lock 1`.
+
+`--new-locks` never touches an existing lock. A pull request that adds a statement and then changes
+it (answering a review) regenerates the locks it added with `--refresh-new-locks`: every frozen
+statement whose lock file is not on `origin/main` (read with `git ls-tree`) gets its lock written
+or rewritten, and the lock files absent from `origin/main` that match no frozen statement are
+deleted. Locks on `origin/main` are never touched, so CI still fails on a changed frozen statement.
 
 ## `--check`
 
@@ -821,6 +828,48 @@ def newLocks (env : Environment) : IO UInt32 := do
       IO.println s!"wrote {f.lockPath}"
   return if failures == 0 then 0 else 1
 
+/-- The lock files of `origin/main` (`git ls-tree`), or `none` if git fails (no `origin/main`). -/
+def mainLocks : IO (Option (Std.HashSet String)) := do
+  let out ← IO.Process.output
+    { cmd := "git", args := #["ls-tree", "-r", "--name-only", "origin/main", "--", "Statements"] }
+  if out.exitCode != 0 then return none
+  let mut s : Std.HashSet String := {}
+  for l in out.stdout.splitOn "\n" do
+    if l.endsWith ".lock" then s := s.insert l
+  return some s
+
+/-- `--refresh-new-locks`: write or rewrite the lock of every frozen statement whose lock is not on
+`origin/main`, and delete the lock files absent from `origin/main` that match no frozen statement.
+Returns the exit code. -/
+def refreshNewLocks (env : Environment) (onMain : Std.HashSet String) : IO UInt32 := do
+  let a := analyse env
+  let mut failures := 0
+  let mut expected : Std.HashSet String := {}
+  for f in a.frozen do
+    expected := expected.insert f.lockPath
+    if onMain.contains f.lockPath then continue
+    match lockText env f.decl with
+    | .error e =>
+      IO.eprintln s!"cannot lock {f.decl}: {e}"
+      failures := failures + 1
+    | .ok t =>
+      let path : System.FilePath := f.lockPath
+      let old : Option String ←
+        if (← path.pathExists) then
+          some <$> IO.FS.readFile path
+        else
+          pure none
+      if old.map normalizeText == some (normalizeText t) then continue
+      if let some dir := path.parent then IO.FS.createDirAll dir
+      IO.FS.writeFile path t
+      let verb := if old.isSome then "rewrote" else "wrote"
+      IO.println s!"{verb} {f.lockPath}"
+  for (p, _) in ← readLocks do
+    if !expected.contains p && !onMain.contains p then
+      IO.FS.removeFile (System.FilePath.mk p)
+      IO.println s!"removed {p} (no frozen statement)"
+  return if failures == 0 then 0 else 1
+
 /-- Resolve the statement named on the command line. -/
 def resolveStatement (env : Environment) (arg : String) : Option Name :=
   let n := (arg.replace "/" ".").toName
@@ -886,8 +935,8 @@ open IncognitaAudit
 /-- Entry point of `lake exe audit`. -/
 def main (args : List String) : IO UInt32 := do
   try
-    let usage := "usage: lake exe audit [--check [--no-replay] | --new-locks | --status | " ++
-      "--dump <statement> | --selftest]"
+    let usage := "usage: lake exe audit [--check [--no-replay] | --new-locks | " ++
+      "--refresh-new-locks | --status | --dump <statement> | --selftest]"
     let replay := !args.contains "--no-replay"
     let args := args.filter (· != "--no-replay")
     if args == ["--selftest"] then
@@ -902,6 +951,7 @@ def main (args : List String) : IO UInt32 := do
     let mode ← match args with
       | [] | ["--check"] => pure "check"
       | ["--new-locks"] => pure "new-locks"
+      | ["--refresh-new-locks"] => pure "refresh-new-locks"
       | ["--status"] => pure "status"
       | ["--dump", _] => pure "dump"
       | ["--replay-only"] => pure "replay-only"
@@ -925,10 +975,14 @@ def main (args : List String) : IO UInt32 := do
         return 1
     let locks ← readLocks
     let markers ← readMarkers
+    let onMain ← if mode == "refresh-new-locks" then mainLocks else pure (some {})
+    let some onMain := onMain
+      | IO.eprintln "audit: --refresh-new-locks needs origin/main (git ls-tree failed)"; return 2
     let result ← unsafe withImportModules (modules.map fun m => { module := m }) {}
       (trustLevel := 1024) fun env => do
         match mode with
         | "new-locks" => return (← newLocks env, #[])
+        | "refresh-new-locks" => return (← refreshNewLocks env onMain, #[])
         | "status" =>
           status env
           return (0, #[])
