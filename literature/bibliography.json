@@ -381,6 +381,36 @@
     },
     "version": ""
   },
+  "CL24": {
+    "uri": "https://arxiv.org/abs/2405.02594",
+    "citation": {
+      "id": "CL24",
+      "type": "article",
+      "title": "Online bandits with (biased) offline data: adaptive learning under distribution mismatch",
+      "author": [
+        {
+          "family": "Cheung",
+          "given": "Wang Chi"
+        },
+        {
+          "family": "Lyu",
+          "given": "Lixing"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2024
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2405.02594"
+    },
+    "version": ""
+  },
   "CMP17": {
     "uri": "",
     "citation": {
@@ -1405,6 +1435,36 @@
     },
     "identifiers": {
       "arxiv": "2110.00158"
+    },
+    "version": ""
+  },
+  "KT26": {
+    "uri": "https://arxiv.org/abs/2602.20503",
+    "citation": {
+      "id": "KT26",
+      "type": "article",
+      "title": "Error-controlled borrowing from external data using Wasserstein ambiguity sets",
+      "author": [
+        {
+          "family": "Kimura",
+          "given": "Yui"
+        },
+        {
+          "family": "Tamano",
+          "given": "Shu"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2602.20503"
     },
     "version": ""
   },

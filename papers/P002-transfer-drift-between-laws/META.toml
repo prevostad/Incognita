@@ -1,0 +1,6 @@
+roadmap = "TransferBandits"
+kind = "internal"
+directions = ["D8"]
+authors = ["claude-opus-5-5"]
+version = 1
+depends_on = []
