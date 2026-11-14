@@ -106,7 +106,7 @@ write_report() {
     done
     ghr pr list --state open --limit 200 --json number,title,headRefName,isCrossRepository \
       --jq '.[] | select(.isCrossRepository == false and (.headRefName | startswith("agent/") | not)) | "- human pull request open: #\(.number) \(.title)"' 2>/dev/null
-    ev ask-owner | awk -F'\t' '{ print "- question (from #" $4 ", " $3 "): " $5 }'
+    ev ask-owner | awk -F'\t' '{ print "- question (from " ($4 ~ /^[0-9]+$/ ? "#" : "") $4 ", " $3 "): " $5 }'
     } | or_none
     echo
 
