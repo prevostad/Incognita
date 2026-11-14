@@ -1,4 +1,4 @@
-# Q002: Is plain batched IMED with exponent $x_\ell^2$ already optimal when $x > 1$?
+# Q002: Does plain batched IMED with exponent $x_\ell^2$ attain the upper bound $x^2$ when $x > 1$?
 
 | | |
 |---|---|
@@ -55,20 +55,23 @@ instance and every suboptimal arm $a$:
 2. (upper bound) $\limsup_{\ell} K_a\, \mathbb E\, N_a(t_\ell) / L_\ell \le x^2$?
 
 **The frozen statement is the conjunction of 1 and 2**, as stated, and it does not depend on any
-result that has not been ported. Optimality, $\lim_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell = x^2$,
-is then a corollary. Item 2 gives $\mathbb E N_a(t_\ell) = O(L_\ell)$, and the owner's **[Lean]**
-lower bound in its $\liminf$ form ([HY.md](../HY.md), item 1, for learners consistent at batch
-ends in any information model) gives $\liminf_\ell \ge x^2$. That corollary is proved here only
-once that lower bound is ported ([PROGRAMME.md](../PROGRAMME.md), "Known results to formalise",
-item 4, on hold).
+result that has not been ported. It does not claim optimality. Optimality,
+$\lim_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell = x^2$, would be a **conditional** corollary. Item 2
+gives $\mathbb E N_a(t_\ell) = O(L_\ell)$, and the owner's **[Lean]** lower bound in its
+$\liminf$ form would give $\liminf_\ell \ge x^2$. That $\liminf$ form is read from the one-line
+statement of [HY.md](../HY.md), item 1 ("the same with $\liminf$ if
+$\mathbb E N_a(t_\ell) = O(L_\ell)$", for learners consistent at batch ends in any information
+model). It has not been ported, is not in the catalogue, and has not been checked here. The
+corollary can be proved here only once that lower bound is ported
+([PROGRAMME.md](../PROGRAMME.md), "Known results to formalise", item 4, on hold).
 
 "No" is a possible answer, and a likely one if HY's paced phase is there for a reason. A "no"
 means that some grid with $x_\ell \to x > 1$, some instance and some suboptimal arm make IMED-$y$
 either inconsistent at batch ends, or give it $\limsup_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell > x^2$.
-A failure of the lower half alone cannot happen. Suppose IMED-$y$ satisfies 1 and 2 but has
-$\liminf_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell < x^2$. That contradicts the owner's lower bound,
-whose $\liminf$ form applies because 2 gives counts $O(L_\ell)$. So the only possible "no" is a
-failure of 1 or of 2.
+The lower half is not part of the frozen statement. Granting the owner's lower bound as stated in
+[HY.md](../HY.md), item 1 (not ported, not checked here), it cannot fail alone: if IMED-$y$
+satisfies 1 and 2, the $\liminf$ form applies because 2 gives counts $O(L_\ell)$, so
+$\liminf_\ell K_a\,\mathbb E N_a(t_\ell)/L_\ell \ge x^2$.
 
 ## Relation to known results
 
@@ -79,8 +82,9 @@ failure of 1 or of 2.
   the two. It is frozen IMED with the exponent $1$ replaced by the plug-in prediction $x_\ell^2$ of
   $L_{\ell+2}/L_\ell$. The question is open direction 1 (practical optimality for $x>1$) for that
   candidate. Both answers fall under the programme's "What would be an important result":
-  - "yes" gives an optimal algorithm that is also practical. It has no parameter and no
-    polylogarithmic nets, and its second-order terms are a natural target for direction 2;
+  - "yes" gives a practical algorithm that attains the upper bound $x^2$. It has no parameter
+    and no polylogarithmic nets, and its second-order terms are a natural target for direction 2.
+    It is optimal **if** the owner's lower bound holds in its $\liminf$ form (see above);
   - "no" is the formal refutation of a natural conjecture that the programme cites as an example
     ("a simple algorithm is optimal").
 - **Why exponent $1$ is not a candidate (remark).** By the **[Lean]** lower bound, a learner
@@ -195,8 +199,8 @@ failure of 1 or of 2.
     answer implies nothing about IMED-$y$.
 - **Stronger, if "yes".** Two strengthenings would follow:
   - the same for $x = 1$ ($y_\ell \to 1$; the **[Lean]** result is for $y_\ell \equiv 1$). This
-    would make IMED-$y$ a single optimal learner of $M_0$ for every convergent grid, which is the
-    role HY plays now;
+    would make IMED-$y$ a single learner of $M_0$ attaining the upper bound $x^2$ for every
+    convergent grid (optimal, given the owner's lower bound), which is the role HY plays now;
   - a non-asymptotic bound at batch ends with explicit remainders (direction 2).
 
 ## Proposer's check of the validation criteria
@@ -204,7 +208,8 @@ failure of 1 or of 2.
 1. **Information model, class and criterion.** The information model is $M_0$ (IMED-$y$ is a
    fixed learner of $M_0$). The class is: rewards in $[0,1]$, $m^\star<1$, grids with
    $x_\ell \to x \in (1,\infty)$. The criterion is counts at batch ends: consistency and the
-   upper bound $\limsup \le x^2$, with the $\lim$ as a corollary of the owner's lower bound.
+   upper bound $\limsup \le x^2$. The $\lim$ (optimality) is only a conditional corollary of the
+   owner's lower bound, not yet ported or checked here.
 2. **Known result and not a corollary.** It extends the **[Lean]** results above. It is not a
    corollary: the catalogue is empty, and HY's statement does not cover IMED-$y$ (see above). The
    proposer tried a short proof and a short refutation, and neither went through: the flip
