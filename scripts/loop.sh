@@ -7,7 +7,8 @@
 #        INCOGNITA_DRY_RUN=1 scripts/loop.sh    one pass: print what would be done, change nothing
 #
 # Exit: 0 deadline reached (or dry run done), 3 Claude logged out, 6 the weekly usage reached
-# INCOGNITA_WEEKLY_CAP, 1 fatal error. Never exits on its own otherwise: no `set -e`; every call is
+# INCOGNITA_WEEKLY_CAP, 7 the agent's ~/work could not be prepared even after a repair, 1 fatal
+# error. Never exits on its own otherwise: no `set -e`; every call is
 # checked.
 set -u -o pipefail
 # shellcheck source=scripts/lib.sh
@@ -896,6 +897,8 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure f
     0) ;;
     3) return 3 ;;
     4) log "rate limited: the next pass waits for the reset" ;;
+    # The agent's ~/work could not be prepared even after one repair: the night stops.
+    7) return 7 ;;
     # The infrastructure failed before the session (GitHub, git, the sandbox's preparation): not a
     # failure of the target; the loop backs off.
     5) log "agent.sh $T_ROLE $T_TARGET: infrastructure failure before the session"
@@ -920,6 +923,8 @@ while :; do
     0) backoff=60 ;;
     3) log "== Claude is logged out: the loop stops"; record_event stop - - "claude logged out"; exit 3 ;;
     6) log "== the weekly cap is reached: the loop stops"; record_event stop - - "weekly cap"; exit 6 ;;
+    7) log "== the agent's ~/work could not be prepared, even after a repair: the loop stops"
+       record_event stop - - "agent work broken"; exit 7 ;;
     10) log "== nothing to do: sleeping $(( INCOGNITA_IDLE_SLEEP / 60 )) min"; set_activity "idle"
         record_event idle - - "${INCOGNITA_IDLE_SLEEP}s"; sleep_bounded "$INCOGNITA_IDLE_SLEEP" ;;
     11|12) log "$([ "$rc" = 11 ] && echo "GitHub or git unknown" || echo "infrastructure failure"): retrying in ${backoff}s"; set_activity "backoff"

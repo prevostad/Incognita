@@ -50,8 +50,10 @@ INCOGNITA_WEEKLY_CAP=${INCOGNITA_WEEKLY_CAP%\%}
 : "${INCOGNITA_USAGE_URL:=https://api.anthropic.com/api/oauth/usage}"
 : "${INCOGNITA_TAUCETI_CONF:=https://raw.githubusercontent.com/LeanMachineLearning/LMLExplore/main/tauceti.toml}"
 : "${INCOGNITA_TAUCETI_BIN:=}"              # the Tau Ceti CLI (default: tauceti in PATH or ~/.local/bin)
-: "${INCOGNITA_BOT_NAME:=Incognita agents}"
-: "${INCOGNITA_BOT_EMAIL:=incognita-agents@users.noreply.github.com}"
+# The bot identity: author and committer of every commit the loop pushes (the squashed commits of
+# the sessions, the scripted commits of the loop); the model goes in a trailer.
+: "${INCOGNITA_BOT_NAME:=Incognita agents (prevostad)}"
+: "${INCOGNITA_BOT_EMAIL:=prevostad@users.noreply.github.com}"
 
 if [ -z "${INCOGNITA_GH_REPO:-}" ]; then
   INCOGNITA_GH_REPO=$(git -C "$INCOGNITA_REPO" remote get-url origin 2>/dev/null \
@@ -1089,14 +1091,15 @@ check_paths() {
 }
 
 # squash_onto <parent> <new> <message-file>: one commit with the tree of <new> on top of <parent>,
-# with the author (and committer) of <new>'s last commit; prints its sha. Only this commit is
-# pushed: what an intermediate commit added and a later one removed never reaches GitHub (S3).
+# authored and committed by the bot identity (INCOGNITA_BOT_NAME, INCOGNITA_BOT_EMAIL) at the
+# current time: nothing of the session's own identity or dates is kept (the caller puts the model
+# in a trailer of the message); prints its sha. Only this commit is pushed: what an intermediate
+# commit added and a later one removed never reaches GitHub (S3).
 squash_onto() {
-  local parent=$1 new=$2 msg=$3 an ae ad
-  an=$(repo_git log -1 --format=%an "$new") && ae=$(repo_git log -1 --format=%ae "$new") \
-    && ad=$(repo_git log -1 --format=%aI "$new") || return 1
-  GIT_AUTHOR_NAME=$an GIT_AUTHOR_EMAIL=$ae GIT_AUTHOR_DATE=$ad \
-  GIT_COMMITTER_NAME=$an GIT_COMMITTER_EMAIL=$ae GIT_COMMITTER_DATE=$ad \
+  local parent=$1 new=$2 msg=$3
+  repo_git rev-parse -q --verify "$new^{tree}" >/dev/null || return 1
+  GIT_AUTHOR_NAME=$INCOGNITA_BOT_NAME GIT_AUTHOR_EMAIL=$INCOGNITA_BOT_EMAIL \
+  GIT_COMMITTER_NAME=$INCOGNITA_BOT_NAME GIT_COMMITTER_EMAIL=$INCOGNITA_BOT_EMAIL \
     repo_git commit-tree "$new^{tree}" -p "$parent" -F "$msg"
 }
 # squash_parent <main> <new> [<pr-head>]: the parent of the squashed commit. A new pull request:
@@ -1221,6 +1224,12 @@ run_sandboxed() {
     -E "PATH=$AGENT_PATH" -E DISABLE_AUTOUPDATER=1 -E LANG=C.UTF-8 -E PYTHONNOUSERSITE=1
     -p "RuntimeMaxSec=$secs" -p "MemoryMax=$INCOGNITA_AGENT_MEMORY"
     -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict
+    # Nothing shared with other processes or kept for the next session outside the home: other
+    # users' processes are invisible in /proc; System V and POSIX IPC are private; no device but
+    # the pseudo-devices; /dev/shm and /run/lock (/var/lock), the last places writable outside the
+    # home besides /tmp and /var/tmp (PrivateTmp), are private and gone when the unit ends.
+    -p ProtectProc=invisible -p PrivateIPC=yes -p PrivateDevices=yes
+    -p TemporaryFileSystem=/dev/shm:mode=1777 -p TemporaryFileSystem=/run/lock:mode=1777
     -p "ReadWritePaths=$INCOGNITA_AGENT_HOME" -p "InaccessiblePaths=$HOME")
   # The toolchain cannot be changed by a session (a later one would run it).
   [ "$SANDBOX_ELAN_RW" = 1 ] || args+=(-p "ReadOnlyPaths=-$INCOGNITA_AGENT_HOME/.elan")
@@ -1272,13 +1281,80 @@ out_copy() {
 restore_agent_lake() {
   is_dry && return 0
   [ -d "$INCOGNITA_REPO/.lake/packages" ] || { log "the loop's clone has no .lake (bash scripts/build.sh Incognita)"; return 1; }
-  # rsync runs as root into the agent's home: refuse if the agent replaced a directory by a link.
-  # No agent process runs between tasks (each session is a systemd unit, killed when it ends).
+  # rsync runs as root into the agent's home: no process of the agent may run meanwhile, and it
+  # refuses if the agent replaced a directory by a link.
+  agent_idle || return 1
   if sudo -n test -L "$INCOGNITA_AGENT_HOME/work" || sudo -n test -L "$INCOGNITA_AGENT_HOME/work/.lake"; then
     log "refused: the agent's work or work/.lake is a symbolic link"; return 1
   fi
   sudo -n rsync -a --delete --chown="$INCOGNITA_AGENT_USER:$INCOGNITA_AGENT_USER" \
     "$INCOGNITA_REPO/.lake/" "$INCOGNITA_AGENT_HOME/work/.lake/"
+}
+
+# agent_idle: no process of the agent user runs. Leftover units incognita-* (sessions, preparations)
+# are stopped first; then any process of the agent user left is refused (logged, non-zero): one
+# could change ~/work while the loop restores it as root, or behind a preparation.
+AGENT_PGREP=(pgrep -u "$INCOGNITA_AGENT_USER")
+agent_idle() {
+  is_dry && return 0
+  local left
+  sudo -n systemctl stop 'incognita-*' >/dev/null 2>&1 || true
+  left=$("${AGENT_PGREP[@]}" -l 2>/dev/null | head -n 5 | tr '\n' ' ')
+  [ -z "$left" ] && return 0
+  log "refused: processes of $INCOGNITA_AGENT_USER still run after stopping the units incognita-*: $left"
+  return 1
+}
+
+# repair_agent_work: after a failed preparation, the agent's home is emptied as root (no process
+# of the agent runs): everything goes but ~/.elan and ~/work/.lake (when they are directories, not
+# links); the restore of .lake and the preparation that follow make the rest again (a new
+# repository from the bundle). Non-zero if it could not.
+repair_agent_work() {
+  is_dry && return 0
+  local h=$INCOGNITA_AGENT_HOME
+  agent_idle || return 1
+  sudo -n test -d "$h" && ! sudo -n test -L "$h" || { log "repair: $h is not a directory"; return 1; }
+  if sudo -n test -L "$h/.elan" || ! sudo -n test -d "$h/.elan"; then
+    log "repair: $h/.elan is missing or a link (sudo bash scripts/server/setup-agent-user.sh)"; return 1
+  fi
+  sudo -n find "$h" -mindepth 1 -maxdepth 1 ! -name .elan ! -name work -exec rm -rf -- {} + || return 1
+  if sudo -n test -L "$h/work" || { sudo -n test -e "$h/work" && ! sudo -n test -d "$h/work"; }; then
+    sudo -n rm -f -- "$h/work" || return 1
+  fi
+  if sudo -n test -d "$h/work"; then
+    sudo -n find "$h/work" -mindepth 1 -maxdepth 1 ! -name .lake -exec rm -rf -- {} + || return 1
+    if sudo -n test -L "$h/work/.lake" || { sudo -n test -e "$h/work/.lake" && ! sudo -n test -d "$h/work/.lake"; }; then
+      sudo -n rm -f -- "$h/work/.lake" || return 1
+    fi
+  fi
+  sudo -n install -d -o "$INCOGNITA_AGENT_USER" -g "$INCOGNITA_AGENT_USER" -m 755 "$h/work"
+}
+
+# prepare_agent_work <in-dir> <base> <ref-main> <ref-head> <log>: the agent's ~/work for one task:
+# no process of the agent left, .lake restored from the loop's, then `agent-side.sh prepare` in the
+# sandbox (its output in <log>). If that fails, ~/work is repaired once (repair_agent_work) and
+# everything is done again. Returns 0 ready, 5 refused (a process of the agent still runs: an
+# infrastructure failure, the loop backs off), 7 still failing after the repair (the night stops).
+prepare_agent_work() {
+  local in=$1 base=$2 rmain=$3 rhead=$4 lg=$5 try rc
+  for try in 1 2; do
+    rc=0
+    : > "$lg"
+    if ! agent_idle; then return 5
+    elif ! restore_agent_lake 2>>"$lg"; then rc=1
+    elif ! agent_idle; then return 5
+    elif ! run_sandboxed "incognita-$(basename "$in")-prep$try" 900 no - -- bash "$in/agent-side.sh" prepare "$in" \
+        "$base" "$GH_REPO" "$rmain" "$rhead" </dev/null >>"$lg" 2>&1; then rc=1
+    fi
+    [ "$rc" = 0 ] && return 0
+    [ "$try" = 2 ] && break
+    log "the preparation failed: $(tail -n 3 "$lg" | one_line 400)"
+    log "repairing the agent's home once (everything but ~/.elan and ~/work/.lake removed, then rebuilt)"
+    record_event repair - - "preparation failed: $(tail -n 1 "$lg" | one_line 200)"
+    repair_agent_work || { log "the repair failed"; break; }
+  done
+  log "the preparation failed after the repair: $(tail -n 3 "$lg" | one_line 400)"
+  return 7
 }
 # Re-sync the agent's .lake from the loop's clone when the toolchain or manifest changed (D11).
 lake_stamp() { repo_git show origin/main:lean-toolchain origin/main:lake-manifest.json 2>/dev/null | sha256sum | cut -c1-16; }

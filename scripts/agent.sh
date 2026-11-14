@@ -19,7 +19,8 @@
 # (seconds), INCOGNITA_NOTE (extra situation line for task.md), and the variables of scripts/lib.sh.
 # Exit: 0 task done (whatever the outcome; recorded in the state), 1 error, 2 usage,
 # 3 Claude is logged out (stop the night), 4 rate limited (reset time in state/rate-limit-until),
-# 5 the infrastructure failed before the session (not counted against the target).
+# 5 the infrastructure failed before the session (not counted against the target), 7 the agent's
+# ~/work could not be prepared even after one repair (stop the night).
 set -u -o pipefail
 umask 022
 # shellcheck source=scripts/lib.sh
@@ -546,14 +547,17 @@ repo_git update-ref "$ref_head" "${H:-$M}" || die "update-ref failed"
 repo_git bundle create -q "$in/in.bundle" "$ref_main" "$ref_head" || die "git bundle create failed"
 cp "$INCOGNITA_SCRIPTS/agent-side.sh" "$in/agent-side.sh" || die "cannot copy agent-side.sh"
 chmod -R a+rX,go-w "$in"
-# The agent's .lake from the loop's (trusted) one: nothing of an earlier session survives there.
-restore_agent_lake || die "cannot restore the agent's .lake from the loop's clone"
-
-if ! run_sandboxed "incognita-$task-prep" 900 no - -- bash "$in/agent-side.sh" prepare "$in" "$base" "$GH_REPO" \
-    "$ref_main" "$ref_head" </dev/null >"$tmp/prep.log" 2>&1; then
-  log "the preparation failed:"; tail -n 20 "$tmp/prep.log" >&2
-  die "prepare-failed"
-fi
+# The agent's ~/work: no process of the agent left, .lake from the loop's (trusted) one, then a new
+# repository from the bundle (agent-side.sh prepare); nothing of an earlier session survives. A
+# failed preparation repairs the agent's home once; if it still fails, the night stops (exit 7).
+rc=0; prepare_agent_work "$in" "$base" "$ref_main" "$ref_head" "$tmp/prep.log" || rc=$?
+case "$rc" in
+  0) ;;
+  5) die "a process of $INCOGNITA_AGENT_USER still runs: no preparation" ;;
+  *) log "the agent's ~/work could not be prepared, even after a repair:"; tail -n 20 "$tmp/prep.log" >&2
+     record_attempt "$role" "$target" skip agent-work-broken
+     exit 7 ;;
+esac
 # What is left of the announced time (task.md), after the preparation.
 timeout_s=$(( task_end - $(now) ))
 if [ "$timeout_s" -lt 300 ]; then
@@ -781,6 +785,8 @@ sq_parent=$(squash_parent "$M" "$new" "$H") || finish fail "no-squash-parent"
   echo "One commit for the session's commits (scripts/agent.sh):"
   repo_git log --reverse --format='- %s' "$sq_parent..$new" | head -n 100
 } | sanitize 20000 > "$tmp/squash-msg"
+# The author is the bot identity (squash_onto); the session in trailers.
+printf '\nIncognita-Model: %s\nIncognita-Agent-Role: %s\n' "$model" "$role" >> "$tmp/squash-msg"
 sq=$(squash_onto "$sq_parent" "$new" "$tmp/squash-msg") || finish fail "squash-failed"
 [ "$(repo_git rev-parse "$sq^{tree}")" = "$(repo_git rev-parse "$new^{tree}")" ] || finish fail "squash-tree-mismatch"
 

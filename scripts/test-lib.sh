@@ -470,7 +470,18 @@ new=$(git rev-parse HEAD)
 printf 'P001: a paper\n\nbody\n' > "$t/msg"
 sp=$(squash_parent "$wbase" "$new"); sq=$(squash_onto "$sp" "$new" "$t/msg")
 ok "squash: a new pull request is one commit on the merge base" '[ "$sp" = "$wbase" ] && [ "$(git rev-parse "$sq^")" = "$wbase" ] && [ "$(git rev-list --count "$wbase..$sq")" = 1 ]'
-ok "squash: same tree, author kept, the secret only in the dropped commits" '[ "$(git rev-parse "$sq^{tree}")" = "$(git rev-parse "$new^{tree}")" ] && [ "$(git log -1 --format=%an "$sq")" = t ] && ! git log -p "$wbase..$sq" | grep -q SECRET'
+ok "squash: same tree, the secret only in the dropped commits" '[ "$(git rev-parse "$sq^{tree}")" = "$(git rev-parse "$new^{tree}")" ] && ! git log -p "$wbase..$sq" | grep -q SECRET'
+ok "squash: author and committer are the bot identity, not the session's" '[ "$(git log -1 --format="%an <%ae>|%cn <%ce>" "$sq")" = "Incognita agents (prevostad) <prevostad@users.noreply.github.com>|Incognita agents (prevostad) <prevostad@users.noreply.github.com>" ]'
+printf 'P001: a paper
+
+body
+- one
+
+Incognita-Model: opus
+Incognita-Agent-Role: write-paper
+' > "$t/msg2"
+sq2=$(squash_onto "$sp" "$new" "$t/msg2")
+ok "squash: the model is a trailer of the message" '[ "$(git log -1 --format="%(trailers:key=Incognita-Model,valueonly)" "$sq2" | head -n 1)" = opus ]'
 h=$new; echo more >> papers/P001-sq/paper.tex; git commit -qam r1; echo again >> papers/P001-sq/paper.tex; git commit -qam r2; new=$(git rev-parse HEAD)
 ok "squash: a round on a pull request is one commit on its head" '[ "$(squash_parent "$wbase" "$new" "$h")" = "$h" ]'
 git checkout -q -f -B rebased "$wbase"; echo m > main-moved.txt; git add -A; git commit -qm "main moves"; m2=$(git rev-parse HEAD)

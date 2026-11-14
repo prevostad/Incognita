@@ -61,7 +61,9 @@ sandbox_test() {
     --uid="$AGENT" --gid="$AGENT" -p WorkingDirectory="$AGENT_HOME/work" \
     -E HOME="$AGENT_HOME" -E PATH="$AGENT_BIN:$AGENT_HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin" \
     -E DISABLE_AUTOUPDATER=1 -E PYTHONNOUSERSITE=1 -p RuntimeMaxSec=120 -p MemoryMax=6G -p NoNewPrivileges=yes \
-    -p PrivateTmp=yes -p ProtectSystem=strict -p ReadWritePaths="$AGENT_HOME" \
+    -p PrivateTmp=yes -p ProtectSystem=strict -p ProtectProc=invisible -p PrivateIPC=yes -p PrivateDevices=yes \
+    -p TemporaryFileSystem=/dev/shm:mode=1777 -p TemporaryFileSystem=/run/lock:mode=1777 \
+    -p ReadWritePaths="$AGENT_HOME" \
     -p ReadOnlyPaths="$AGENT_HOME/.elan" -p InaccessiblePaths="$LOOP_HOME" \
     bash -c '
       echo "id: $(id)"
@@ -75,6 +77,7 @@ sandbox_test() {
       if touch /usr/incognita-test 2>/dev/null; then echo "FAIL: /usr is writable"; else echo "ok: system read-only"; fi
       if touch "$HOME/.incognita-test" 2>/dev/null; then rm -f "$HOME/.incognita-test"; echo "ok: home writable"; else echo "FAIL: home not writable"; fi
       if sudo -n true 2>/dev/null; then echo "FAIL: sudo works"; else echo "ok: no sudo"; fi
+      if [ "$(ps -e --no-headers | wc -l)" -le 5 ]; then echo "ok: other processes invisible"; else echo "FAIL: $(ps -e --no-headers | wc -l) processes visible"; fi
       if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then echo "FAIL: token present without EnvironmentFile"; else echo "ok: no token in this test"; fi
     ' "$LOOP_HOME"
 }
@@ -166,9 +169,10 @@ if [ "$have" != "$want" ]; then
   install -o root -g root -m 755 "$src" "$AGENT_BIN/claude"
   [ -n "${th:-}" ] && rm -rf "$th"
 fi
-# The old install in the agent's home is not used any more (not on the sessions' PATH).
-rm -rf "$AGENT_HOME/.local/bin/claude" "$AGENT_HOME/.local/share/claude"
-if [ ! -d "$AGENT_HOME/work/.git" ]; then
+# The old install in the agent's home is not used any more (not on the sessions' PATH); the
+# preparation of every task removes ~/.local anyway.
+rm -rf "$AGENT_HOME/.local"
+if [ ! -e "$AGENT_HOME/work" ]; then   # (each task rebuilds the repository of ~/work from a bundle)
   say "cloning $REPO_URL (anonymous) into $AGENT_HOME/work"
   as_agent git clone -q "$REPO_URL" "$AGENT_HOME/work"
 fi

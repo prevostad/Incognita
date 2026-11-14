@@ -62,7 +62,8 @@ no_worker() { ! tauceti_running; }
 cap_valid() { [ -z "$INCOGNITA_WEEKLY_CAP" ] || parse_cap "$INCOGNITA_WEEKLY_CAP"; }
 pacer_ok() { case "${INCOGNITA_PACE:-}" in 0:100|off) return 0 ;; *) command -v tauceti ;; esac; }
 agent_ok() {
-  id -u "$INCOGNITA_AGENT_USER" && sudo -n test -d "$INCOGNITA_AGENT_HOME/work/.git" \
+  # ~/work: a directory (each task rebuilds its repository from the bundle, and repairs it once).
+  id -u "$INCOGNITA_AGENT_USER" && sudo -n test -d "$INCOGNITA_AGENT_HOME/work" && ! sudo -n test -L "$INCOGNITA_AGENT_HOME/work" \
     && [ -x "$AGENT_CLAUDE" ] && [ "$(stat -c %U "$AGENT_CLAUDE")" = root ] \
     && sudo -n test -x "$INCOGNITA_AGENT_HOME/.elan/bin/lake" \
     && [ -d "$INCOGNITA_EXCHANGE/in" ] && [ -d "$INCOGNITA_EXCHANGE/out" ] && [ -d "$INCOGNITA_EXCHANGE/template" ]
@@ -294,6 +295,7 @@ while [ "$(remaining)" -gt 0 ]; do
     0) STOP_REASON="deadline"; break ;;
     3) STOP_REASON="Claude logged out: renew the token in $INCOGNITA_AGENT_ENV (claude setup-token)"; break ;;
     6) STOP_REASON="weekly cap reached ($(ev weekly-cap | tail -n 1 | cut -f5))"; break ;;
+    7) STOP_REASON="the agent's ~/work could not be prepared, even after one automatic repair (see the log: the preparation's last lines); check the server (disk, sudo bash scripts/server/setup-agent-user.sh --check) before the next night"; break ;;
   esac
   log "== loop.sh died (exit $rc): restarting"
   record_event loop-died - - "exit $rc"

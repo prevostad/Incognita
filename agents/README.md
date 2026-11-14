@@ -47,29 +47,45 @@ and `scripts/agent.sh` refuses to start without it.
 1. **Inputs.** `scripts/agent.sh` fixes the head `H` of the PR (if any) when the task starts, writes the
    context files and a git bundle (main + `H`) in `/srv/incognita/in/<task>/`, and copies
    `scripts/agent-side.sh` there (so the agent cannot change it).
-2. **Preparation.** The loop restores the agent's `~/work/.lake` from its own (`rsync --delete`, as
-   root, after checking that no directory was replaced by a link): nothing a session changed or
-   planted there survives. Then, as `incognita-agent` in the sandbox (`agent-side.sh prepare`): the
-   home keeps nothing of an earlier session but `~/work`, `~/.elan` and the old Claude Code install
-   (`CLAUDE.md`, `~/.claude*`, `~/.config` with `~/.config/git`, the Python user site, shell files...
-   are removed; `.bashrc`, `.profile`, `.bash_logout` come from `/etc/skel`, `~/.claude*` from
-   `/srv/incognita/template`); the clone gets a fresh `.git/config` (fixed template), no hooks, no
-   attributes or alternates; it fetches the bundle (`origin/main`, `origin/pr-head`), checks out
-   the branch `incognita-task` (at `main`, or at `H` for PR tasks), removes untracked files except
-   `.lake`, where every `CLAUDE*.md`, `AGENTS*.md` and `.claude/` is removed (those tracked by a
-   dependency are hidden from git with `skip-worktree`, so that lake does not report local
-   changes), and copies the context files to `.agents/`. The session's timeout is what is left of
-   the time announced in task.md.
+2. **Preparation** (`prepare_agent_work` in `scripts/lib.sh`). First, no process of the agent may
+   run (`agent_idle`): leftover units are stopped (`systemctl stop 'incognita-*'`), and if
+   `pgrep -u incognita-agent` still finds one, the task is refused (exit 5, logged). The loop
+   restores the agent's `~/work/.lake` from its own (`rsync --delete`, as root, after checking that
+   no directory was replaced by a link): nothing a session changed or planted there survives. Then,
+   as `incognita-agent` in the sandbox (`agent-side.sh prepare`): the home keeps nothing of an
+   earlier session but `~/work/.lake` and `~/.elan` (`CLAUDE.md`, `~/.claude*`, `~/.config` with
+   `~/.config/git`, `~/.local` with the Python user site, shell files... are removed; `.bashrc`,
+   `.profile`, `.bash_logout` come from `/etc/skel`, `~/.claude*` from `/srv/incognita/template`).
+   The clone is **rebuilt from scratch**: everything in `~/work` but `.lake` is removed, the old
+   repository included (its configuration, index, hooks, replace refs, grafts, shallow file, a
+   common directory elsewhere, `.git` files in subdirectories...); then `git init` (no template),
+   a fixed configuration, no global or system configuration (`GIT_CONFIG_GLOBAL=/dev/null`…,
+   `GIT_NO_REPLACE_OBJECTS=1`, no hooks, attributes or file system monitor: no filter can run), a
+   fetch of the bundle (`origin/main`, `origin/pr-head`) and a checkout of the branch
+   `incognita-task` (at `main`, or at `H` for PR tasks): the working tree is exactly that commit
+   (checked: every index entry plain, no skip-worktree or assume-unchanged, nothing untracked). In
+   `.lake`, every `CLAUDE*.md`, `AGENTS*.md` and `.claude/` is removed (those tracked by a dependency
+   are hidden from the dependency's git with `skip-worktree`, set by the preparation on the index
+   the restore just brought back, so that lake does not report local changes), and the context
+   files are copied to `.agents/`. If the preparation fails, the agent's home is **repaired once**
+   (`repair_agent_work`: as root, with no process of the agent running, everything but `~/.elan`
+   and `~/work/.lake` is removed) and the whole preparation runs again; if it still fails,
+   `agent.sh` exits 7 and the night stops (the report says why). The session's timeout is what is
+   left of the time announced in task.md.
 3. **Session**: `sudo systemd-run --quiet --wait --pipe --collect --uid=incognita-agent …
    -p EnvironmentFile=/etc/incognita/agent.env -p RuntimeMaxSec=<timeout> -p MemoryMax=6G
-   -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict
+   -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict -p ProtectProc=invisible
+   -p PrivateIPC=yes -p PrivateDevices=yes -p TemporaryFileSystem=/dev/shm:mode=1777
+   -p TemporaryFileSystem=/run/lock:mode=1777
    -p ReadWritePaths=/home/incognita-agent -p ReadOnlyPaths=/home/incognita-agent/.elan
    -p InaccessiblePaths=/home/lean -E PATH=/opt/incognita/bin:~/.elan/bin:… -E PYTHONNOUSERSITE=1
    /opt/incognita/bin/claude -p --output-format json --model … --effort … --max-turns …
    --permission-mode acceptEdits --allowedTools …`, the prompt (role file + a pointer to
    `.agents/task.md`) on stdin. Claude Code is a root-owned copy outside the agent's home, and the
    toolchain is read-only: no session can change them for the next one (lake works with `~/.elan`
-   read-only; toolchains are installed only by the loop, `sync_agent_lake`). The JSON result is
+   read-only; toolchains are installed only by the loop, `sync_agent_lake`). A session sees no
+   process of another user, and nothing it leaves outside its home reaches the next session: `/tmp`,
+   `/var/tmp`, `/dev/shm`, `/run/lock` and IPC objects are private to the unit. The JSON result is
    read from the pipe (first 8 MB; stderr: first 2 MB).
 4. **Outputs**, as `incognita-agent` in the same sandbox with `/srv/incognita/out/<task>` writable
    (`agent-side.sh collect`): the clone's `.git/config` rewritten again, no global or system git
@@ -85,7 +101,9 @@ and `scripts/agent.sh` refuses to start without it.
    the whitelist on `git diff --raw -z --no-renames`, and pushes with its own token. Uncommitted
    work is dropped.
 5. **Publication.** The session's commits are **squashed into one commit** (`git commit-tree` with
-   the tree of the agent's head and its author): on the PR head `H` for a round on a pull request
+   the tree of the agent's head; author and committer the bot identity `Incognita agents
+   (prevostad) <prevostad@users.noreply.github.com>`, the model and the role in the trailers
+   `Incognita-Model` and `Incognita-Agent-Role`): on the PR head `H` for a round on a pull request
    (on its base when the round rebased the branch), on the merge base with `main` for a new pull
    request; what an intermediate commit added and a later one removed is never pushed. Writing
    roles: a new PR (branch `agent/<role>-<stamp>`, first line of the body
@@ -230,10 +248,14 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    owner's rule) or `off`, none; otherwise the Tau Ceti pacer of v1. A rate-limited session makes the
    loop wait until the reset; a logged-out session stops the night. All waits end at the deadline.
 
-Exits of `scripts/loop.sh`: 0 deadline, 3 Claude logged out, 6 weekly cap reached, 1 fatal (night.sh
-restarts it). Exits of `scripts/agent.sh`: 0 done (whatever the outcome), 3 Claude logged out (the night stops),
-4 rate limited, 5 the infrastructure failed before the session (GitHub, git, the preparation: not
-counted against the target; the loop backs off). A session that ended normally without a commit
+Exits of `scripts/loop.sh`: 0 deadline, 3 Claude logged out, 6 weekly cap reached, 7 the agent's
+`~/work` could not be prepared even after a repair, 1 fatal (night.sh restarts it). Exits of
+`scripts/agent.sh`: 0 done (whatever the outcome), 3 Claude logged out (the night stops),
+4 rate limited, 5 the infrastructure failed before the session (GitHub, git, a process of the agent
+still running: not counted against the target; the loop backs off), 7 the preparation failed again
+after one automatic repair of the agent's home (the night stops, with this reason in the report: check
+the server, e.g. its disk and `sudo bash scripts/server/setup-agent-user.sh --check`, before the next
+night). A session that ended normally without a commit
 is recorded as `skip no-commit`: it counts towards tonight's limit (`INCOGNITA_MAX_FAILS`), never
 towards parking; only a paper or a pull request is ever parked. The audit build of `main` is not
 started when less than an hour is left before the deadline.
@@ -252,7 +274,7 @@ in their PR) rewrites only the locks absent from `origin/main`.
 night"): a lock (`flock`), startup checks (clone on main and clean, disk, `gh`, sudo, agent user and
 token, a one-line Claude session in the sandbox, the pacer, the Tau Ceti worker **not** running, the
 weekly cap a percentage, the weekly usage below it and readable when a cap is set), the loop
-restarted if it dies (3 deaths in 10 min: 20 min pause; not after exit 0, 3 or 6), and at
+restarted if it dies (3 deaths in 10 min: 20 min pause; not after exit 0, 3, 6 or 7), and at
 the end the night report in `~/.incognita/logs/<night>-report.md`, also posted on the pinned issue
 "Night reports". Its first lines: start and end, why the night stopped (deadline, weekly cap, Claude
 logged out, signal, failed startup check), and the weekly usage at the start and at the end (and
@@ -305,6 +327,7 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 | `INCOGNITA_AGENT_MEMORY` | `6G` | `MemoryMax` of a session |
 | `INCOGNITA_AGENT_BIN` | `/opt/incognita/bin` | root-owned directory of the sessions' Claude Code |
 | `INCOGNITA_BUNDLE_MAX` | `50000000` | bytes: the largest output bundle of a session |
+| `INCOGNITA_BOT_NAME`, `INCOGNITA_BOT_EMAIL` | `Incognita agents (prevostad)`, `prevostad@users.noreply.github.com` | author and committer of every commit the loop pushes (squashed sessions, scripted commits) |
 | `INCOGNITA_REPO`, `INCOGNITA_HOME`, `INCOGNITA_AGENT_USER`, `INCOGNITA_EXCHANGE`, `INCOGNITA_AGENT_ENV` | `~/Incognita`, `~/.incognita`, `incognita-agent`, `/srv/incognita`, `/etc/incognita/agent.env` | paths |
 
 ## Setup (once, on the server)
@@ -322,9 +345,13 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
    (offline; the last one: the end of a night in Paris time across the changes of hour, the cap,
    the answers of the usage endpoint and of `tauceti status`, the decisions before a task, the env
    file, the capture of the token from a fake `claude setup-token`; its env file is a throwaway path),
-   `INCOGNITA_REPO=<scratch clone of main> bash scripts/server/test-sandbox.sh` (sandbox, no Claude:
-   isolation, the toolchain read-only, the cleaning of the home, and the attack of a clean filter
-   plus a symbolic link in the output directory; its token file is a throwaway copy).
+   `INCOGNITA_REPO=<scratch clone of main> bash scripts/server/test-sandbox.sh` (sandbox, no Claude
+   session, never during a night: isolation, the toolchain read-only, claude, lake, latexmk and
+   Python in the sandbox, the cleaning of the home, the attacks of persistence between sessions —
+   skip-worktree, replace refs, grafts, a common directory with a smudge filter, `~/.local`,
+   `/dev/shm`, `/run/lock`, IPC —, leftover processes, the repair of a broken `~/work`, and the
+   attack of a clean filter plus a symbolic link in the output directory; its token file is a
+   throwaway copy).
 
 ## The token (the owner's choice: never kept)
 
