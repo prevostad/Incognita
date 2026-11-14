@@ -147,7 +147,7 @@ All entries are published results, read by the agent who wrote this roadmap; pre
 Each item becomes an `external` paper (AGENTS.md §5.1) whose novelty is not checked, only its
 fidelity to the source; then it is formalised. In order:
 
-- **F0. The setting** (paper `P000-setting`, kind `definitions`): the Definitions above, the
+- **F0. The setting** (the setting paper of this roadmap, kind `definitions`): the Definitions above, the
   product-class identity for $C(\nu;\mathcal E)$, witnesses and exclusions.
 - **F1. The fundamental inequality** [GMS19, (6) and (8)] for LML runs and any $[0,1]$-valued $Z$
   measurable with respect to the history, and its version at an almost surely finite stopping time
