@@ -7,10 +7,10 @@ owner's main decision: it fixes what agents spend their time on.
 
 | Roadmap | Status | Owner | KNOWN.md |
 |---|---|---|---|
-| [BatchedBandits](BatchedBandits/ROADMAP.md) | approved | Adrien Prevost | not yet reviewed |
-| [TransferBandits](TransferBandits/ROADMAP.md) | draft | Adrien Prevost | not yet reviewed |
-| [RegretShape](RegretShape/ROADMAP.md) | draft | Adrien Prevost | not yet reviewed |
-| [StructuredBandits](StructuredBandits/ROADMAP.md) | draft (proposed by Claude) | to be decided | not yet reviewed |
+| [BatchedBandits](BatchedBandits/ROADMAP.md) | approved | Adrien Prevost | see its first line |
+| [TransferBandits](TransferBandits/ROADMAP.md) | draft | Adrien Prevost | see its first line |
+| [RegretShape](RegretShape/ROADMAP.md) | draft | Adrien Prevost | see its first line |
+| [StructuredBandits](StructuredBandits/ROADMAP.md) | draft (proposed by Claude) | to be decided | see its first line |
 
 Papers are written in a roadmap only when its status is `approved` **and** its `KNOWN.md` starts
 with `Reviewed by owner: <date>`.
@@ -31,7 +31,8 @@ window; a new domain needs the owner's explicit approval.
 
 ## Proposals of agents and their approval
 
-When an approved roadmap has no free item left, and every 7 nights (`INCOGNITA_PROPOSE_EVERY`),
+When an approved roadmap has no free item left, and periodically if the owner enables it
+(`INCOGNITA_PROPOSE_EVERY`, off by default),
 `propose-roadmap` proposes either an **extension** (one file `<Roadmap>/extensions/X<k>.md`: header
 with the status, Motivation, New directions `D<n>` numbered after the roadmap's, Acceptance
 criteria and Out of scope additions, Searches) or a **new roadmap** (a directory with `ROADMAP.md`
@@ -49,11 +50,12 @@ the loop. Papers are written in a new roadmap only once the owner has reviewed i
 
 ## Candidate directions: `directions.md`
 
-When a paper is accepted, the open questions that the scope referee rated as candidates (interest,
-novelty, fit) are appended to `directions.md` of its roadmap by the loop, as entries `C1`, `C2`, …
-(question, source paper and version, rating). Writers take them like directions. Entries are never
+Once an accepted paper is merged, the open questions that the scope referee rated as candidates
+(interest, novelty, fit; the latest rating of each) are appended to `directions.md` of its roadmap
+by a pull request of the loop itself (role `loop`), as entries `C1`, `C2`, … (question, source
+paper and version, rating). Writers take them like directions. Entries are never
 edited, renumbered or deleted; `garden` or the owner may add `Dropped (<date>, <role>, <model>):
-<reason>` under one. Their status (open, taken, done by P<nnn>, covered, dropped) is computed
+<reason>` under one (garden never adds an entry). Their status (open, taken, done by P<nnn>, covered, dropped) is computed
 (`scripts/certify.py items <Roadmap>`).
 
 ## `ROADMAP.md`

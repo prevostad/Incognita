@@ -5,7 +5,7 @@
 | Status | **approved** (by the owner, 2026-11-13, as the v1 programme; migrated to a roadmap on 2026-11-14 without change of content, except direction D9) |
 | Owner | Adrien Prevost (GitHub: prevostad) |
 | Written | 2026-11-13, with AI assistance (Claude); migrated from `programmes/BatchedBandits/PROGRAMME.md` and `HY.md` by Claude on 2026-11-14 |
-| KNOWN.md | [KNOWN.md](KNOWN.md): **not yet reviewed**, so no paper may be written yet |
+| KNOWN.md | [KNOWN.md](KNOWN.md) (papers are written once its first line reads `Reviewed by owner: <date>`) |
 | Domain | `stochastic-bandits` (see roadmaps/README.md, "Domains") |
 | arXiv class | `math.ST` (secondary `stat.ML`) |
 

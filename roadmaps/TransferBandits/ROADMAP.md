@@ -5,7 +5,7 @@
 | Status | **draft**, awaiting approval by its owner |
 | Owner | Adrien Prevost (GitHub: prevostad) |
 | Written | 2026-11-13, with AI assistance (Claude); migrated from `programmes/TransferBandits/PROGRAMME.md` by Claude on 2026-11-14 |
-| KNOWN.md | [KNOWN.md](KNOWN.md): not yet reviewed |
+| KNOWN.md | [KNOWN.md](KNOWN.md) (papers are written once its first line reads `Reviewed by owner: <date>`) |
 | Domain | `stochastic-bandits` (see roadmaps/README.md, "Domains") |
 | arXiv class | `math.ST` (secondary `stat.ML`) |
 

@@ -79,7 +79,8 @@ the owner.
 
 ## Gardening log: `garden.md`
 
-A table, one row per item examined, newest last; rows are never edited or deleted:
+A table, one row per item examined, newest last; rows are never edited or deleted (CI checks that
+the file only grows: `scripts/certify.py check --base`):
 
 ```
 | Date | Model | Item | Check | Outcome | Main |
@@ -91,7 +92,8 @@ A table, one row per item examined, newest last; rows are never edited or delete
 - `Item`: a paper prefix and a label (or the paper alone).
 - `Check`: `back-translation`, `double-formalisation`, `known-cases` (the **re-checks**, AGENTS.md
   §8), or `implication`, `contradiction`, `duplicate`, `same-object`, `directions`.
-- `Outcome`: for a re-check, `confirmed` or `failed` first, then the details; a failed re-check comes
+- `Outcome`: for a re-check, `confirmed` or `failed` first (alone, or followed by `:` and the
+  details, as above), then the details; a failed re-check comes
   with an erratum or a statement correction of the paper.
 - `Main`: the commit of `main` the pass started from (`origin/main` in task.md).
 

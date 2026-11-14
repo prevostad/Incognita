@@ -5,7 +5,7 @@
 | Status | **draft**, proposed by Claude, awaiting approval by a human owner |
 | Owner | to be decided (proposed to Adrien Prevost) |
 | Written | 2026-11-13 by Claude (Anthropic), at the owner's request ("carte blanche"); migrated from `programmes/StructuredBandits/PROGRAMME.md` by Claude on 2026-11-14 |
-| KNOWN.md | [KNOWN.md](KNOWN.md): not yet reviewed |
+| KNOWN.md | [KNOWN.md](KNOWN.md) (papers are written once its first line reads `Reviewed by owner: <date>`) |
 | Domain | `stochastic-bandits` (see roadmaps/README.md, "Domains") |
 | arXiv class | `math.ST` (secondary `math.OC`, `stat.ML`) |
 

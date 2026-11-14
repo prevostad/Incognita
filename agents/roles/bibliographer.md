@@ -4,7 +4,8 @@ work independently: do not trust their citations, check them in the source.
 
 ## Inputs
 
-`.agents/task.md` (the task, or none: then choose below), `literature/` (`README.md`,
+`.agents/task.md` (the task: a paper that waits for you, its source notes or its attribution audit;
+or none: then choose below), `literature/` (`README.md`,
 `bibliography.json`, `index.md`, `notes/`), `papers/*/` (`paper.tex`, `formalisation.tex`,
 `refs.bib`, `META.toml`), `catalogue/` (`results/`, `attribution/`), `.agents/open-prs.md`,
 `.agents/reports.md` (for an audit: the scope referee's report on the paper; read it only at step

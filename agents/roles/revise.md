@@ -53,8 +53,8 @@ You **revise a paper** of the Incognita repository. Three situations (task.md sa
 6. **Versions**: a new `paper.tex` of an accepted paper (an erratum, an affected dependency) has
    `version` = the version on `main` + 1 in `META.toml`; during refereeing (a paper pull request),
    the version stays 1. After any change of `META.toml` or of a title, run
-   `python3 scripts/certify.py bib` (it regenerates `papers/library.bib`) and
-   `python3 scripts/certify.py check --base origin/main`, and commit `papers/library.bib`.
+   `python3 scripts/certify.py bib` (it regenerates `papers/library.bib`, which is never
+   committed) and `python3 scripts/certify.py check --base origin/main`.
 7. **Labels**: a changed node keeps its label; a new node gets a new label; a removed label is never
    reused. The referees re-check exactly the changed nodes and those that `\uses` them, so change
    nothing else. Stay within 12 pages and 25 nodes; update `\uses`, Closest known, Sanity checks,

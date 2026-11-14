@@ -36,13 +36,14 @@ example the errata entries to resolve), and the list of context files the script
 | `open-prs.md` | the open pull requests with their role and target: those targets are busy, never work on them |
 | `pr.diff` | the diff of the pull request (from its merge base with `main` to the head named in task.md) |
 | `pr.txt` | its title and description |
-| `reports.md` | previous trusted reports on the pull request (referee reports, reviews, fix rounds), oldest first; for `write-paper` and `referee-scope`, also the referee reports of the roadmap's rejected papers |
-| `revision.diff` | for a reviewer who already reported on this pull request: the diff from the head of its last report to the current head |
+| `reports.md` | previous trusted reports on the pull request (referee reports, reviews, fix rounds), oldest first; for `write-paper` and `referee-scope`, also the referee reports of the roadmap's rejected papers; for `bibliographer` on a paper, the scope referees' reports on the pull request that added it |
+| `revision.diff` | for a reviewer who already reported on this pull request: the diff from the head of its last report to the current head (for a paper, its directory only) |
 | `papers.md` | for `write-paper`: the papers of the roadmap and the items they serve, on `main`, in open pull requests, and rejected |
 | `items.md` | for `write-paper` and `propose-roadmap`: the items of the roadmap (D, F, C) on `main`, open, closed, covered or dropped (`scripts/certify.py items`) |
 | `roadmaps.md` | for `propose-roadmap`: every roadmap with its status, domain, KNOWN.md state, extensions and free items, and the domains of the approved roadmaps |
 | `known-private.md` | the roadmap's private KNOWN entries, when the owner gives them (never quote them) |
 | `ci-log.txt` | the end of the failing CI logs (workflows CI and Papers) |
+| `owner-answers.md` | the owner's answers on the pinned issue "Questions for the owner", after the questions they answer: never ask again what is answered there |
 
 Only the files listed in task.md exist. The working tree is a clone of the repository, at `main` or
 at the pull request's head. `.agents/` is never committed.
@@ -62,7 +63,9 @@ experiments in `.agents/scratch/`, never collected), and their final message is 
 first line is the verdict.
 
 **Writing roles** commit early and often: a session is stopped at its deadline, and committed work
-is kept as a draft pull request labelled `incomplete`. They end by writing `.agents/summary.md`
+is kept as a draft pull request labelled `incomplete`. The script publishes the sum of a session's
+commits as **one commit** (on the pull request's head, or on `main` for a new pull request): what a
+commit adds and a later one removes is never published, but the sum is checked and published. They end by writing `.agents/summary.md`
 (never committed), which becomes the pull request's description. Write it early and update it at the
 end. Sections, in this order:
 
@@ -94,14 +97,14 @@ modified only.
 
 | Role | May change |
 |---|---|
-| `write-paper` | one new directory `papers/<P>/` (number from task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `papers/library.bib` (regenerated, §5.6); `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
-| `revise` | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md` (lines `Revised in …`, §6.6, and entries after a dependency check) and `dependency-checks.md` (§5.6); `papers/library.bib` (regenerated); `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
+| `write-paper` | one new directory `papers/<P>/` (number from task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
+| `revise` | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md` (lines `Revised in …`, §6.6, and entries after a dependency check) and `dependency-checks.md` (§5.6); `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
 | `formalize-statements` | `Statements/P<nnn>/*.lean` and `*.lock` (additions only), `Statements.lean` (added imports only); `Incognita/` (no deletion), `Incognita.lean`; `catalogue/definitions/` (no deletion); its paper's `blueprint.md`, `errata.md`, `statement-corrections.md`; `Exploration/`, `Exploration.lean` |
 | `prove` | `Incognita/` (no deletion), `Incognita.lean`; `catalogue/results/P<nnn>-<name>.toml` (additions only); its paper's `blueprint.md`, `formalisation.tex`, `errata.md`, `statement-corrections.md`; `Exploration/`, `Exploration.lean` |
 | `bibliographer` | `literature/` and `catalogue/attribution/` (no deletion); `refs.bib` of any paper (metadata fields only) |
-| `garden` | `Incognita/` (no deletion; lemmas and theorems only), `Incognita.lean`; `catalogue/relations.toml`, `catalogue/garden.md`; `Dropped` lines in an existing `roadmaps/<R>/directions.md`; entries of `papers/*/errata.md` and `papers/*/statement-corrections.md` after a failed re-check (§8); `Exploration/`, `Exploration.lean` |
+| `garden` | `Incognita/` (no deletion; lemmas and theorems only), `Incognita.lean`; `catalogue/relations.toml`, `catalogue/garden.md` (rows appended only); `Dropped` lines under existing entries of a `roadmaps/<R>/directions.md` (never a new entry); entries of `papers/*/errata.md` and `papers/*/statement-corrections.md` after a failed re-check (§8); `Exploration/`, `Exploration.lean` |
 | `propose-roadmap` | either one new roadmap, `roadmaps/<Name>/ROADMAP.md` and `KNOWN.md` (status `proposed`, first line of KNOWN.md `Reviewed by owner: no`), or one new extension `roadmaps/<Roadmap>/extensions/X<k>.md` of an approved roadmap (status `proposed`); `literature/` (no deletion) |
-| `fix-pr` | the paths of the role that opened the pull request; on `main`: `Incognita/` (no deletion), `Incognita.lean`, `Statements.lean` (added imports only), `papers/library.bib` (regenerated), `Exploration/`, `Exploration.lean` |
+| `fix-pr` | the paths of the role that opened the pull request; on `main`: `Incognita/` (no deletion), `Incognita.lean`, `Statements.lean` (added imports only), `Exploration/`, `Exploration.lean` |
 | reviewers | nothing |
 
 The root files `Incognita.lean`, `Statements.lean`, `Exploration.lean` change only by import lines.
@@ -115,11 +118,15 @@ an erratum (§6.6, case b).
 `propose-roadmap` and the `Dropped` lines of `garden`; the entries of `directions.md` and the status
 `approved` of a proposal are written by the loop itself, §4), `literature/notes/TEMPLATE.md`,
 `papers/<P>/withdrawn.md`, `papers/<P>/human-audits.md`. **Generated, never committed**:
-`papers/<P>/certification.tex` and `catalogue/certification.md` (`scripts/certify.py`, §9).
+`papers/library.bib` (§5.6), `papers/<P>/certification.tex` and `catalogue/certification.md`
+(`scripts/certify.py`, §9).
 
 Never: a path component starting with a dot, a symlink, a submodule, a file over 1 MB, something
-that looks like a Claude token, a change under `Statements/` other than an addition. The script
-refuses a pull request that breaks these.
+that looks like a secret (a Claude or GitHub token, a private key), a change under `Statements/`
+other than an addition. The script refuses a pull request that breaks these. Append-only files
+(CI, `scripts/certify.py check`): `roadmaps/*/directions.md` (entries), `catalogue/garden.md`
+(rows), and the entries of `papers/*/errata.md` and `statement-corrections.md` (only the lines
+`Revised in …` and `Resolved by …` are added under an existing entry).
 
 ## 3. Order of work
 
@@ -128,9 +135,9 @@ busy targets (`open-prs.md`), targets attempted twice tonight, `needs-human` and
 and pull requests from forks, then takes the first available of:
 
 1. (no agent) at most one merge, then mechanical rebases of agent pull requests that conflict
-   with `main`. Before the merge of an accepted paper, a scripted commit of the loop adds its
-   accepted open questions to `directions.md` (§4, §5.5); a roadmap proposal is merged only after
-   the scripted commit that approves it (§4);
+   with `main`. After the merge of an accepted paper, a pull request of the loop itself (role
+   `loop`) adds its accepted open questions to `directions.md` (§4.1, §5.5); a roadmap proposal is
+   merged only after the scripted commit that approves it (§4);
 2. `fix-pr` on `main` when the CI of `main` is red (then no review and no merge until it is fixed);
 3. repairs, oldest pull request first: `revise` for a paper pull request, `fix-pr` for any other,
    when its head has a trusted `major` (papers) or `request_changes` (others), a failed build
@@ -141,22 +148,26 @@ and pull requests from forks, then takes the first available of:
    needed role: paper pull requests get `referee-scope`, then `referee-proofs` once scope accepted
    that head; statements pull requests get `review-statements`; roadmap proposals get
    `review-roadmap`; all others get `review-pr`;
-5. every 6 agent tasks, one `garden` or `bibliographer` task, alternately (§8);
+5. every 6 agent tasks, one `garden` (once a proof marker exists) or `bibliographer` task,
+   alternately (§8);
 6. `prove` for frozen statements still open (not superseded by a correction): first the papers
    that the most library papers depend on, then the oldest (§5.6);
 7. `formalize-statements` for an accepted paper without frozen statements, or with entries waiting
-   for corrected statements (an erratum revised in a new version, a statement correction; §6.6);
+   for corrected statements (an erratum revised in a new version, a statement correction; §6.6):
+   at most one statements pull request open per roadmap, the roadmap's `definitions` paper first,
+   then a paper only once that paper and every paper it depends on have frozen statements;
 8. `revise` for a disputed paper (an errata entry neither revised nor resolved): a new version;
    then `revise` for a dependency check: a paper that depends on a library paper revised since it
    cited it (§5.6);
-9. `bibliographer` when an external paper lacks its source note, or a verified internal paper has
-   no attribution audit;
+9. `bibliographer` on a paper that waits for it: an external paper without its source note, or a
+   verified internal paper without its attribution audit;
 10. `propose-roadmap` for an approved roadmap (KNOWN.md reviewed) with no free item left (§4);
 11. `write-paper`, in an approved roadmap whose `KNOWN.md` is reviewed and which has a free item,
-    while the roadmap has fewer than 3 papers in open pull requests and fewer than 2 accepted papers
-    not yet verified; the roadmap's known results to formalise (items F0, F1, …) come first, in
-    order;
-12. `propose-roadmap` every 7 nights, if none is open (§4);
+    while the roadmap has fewer than 3 papers in open pull requests (1 while its `definitions` paper
+    is not on `main`) and fewer than 2 accepted papers not yet verified; the roadmap's known results
+    to formalise (items F0, F1, …) come first, in order;
+12. `propose-roadmap` periodically, only if the owner enables it (`INCOGNITA_PROPOSE_EVERY`; off by
+    default), if none is open (§4);
 13. fallback: `write-paper` up to 6 papers in open pull requests per roadmap (the limit on accepted
     papers not yet verified still holds), then `garden`, then `bibliographer`; otherwise the loop
     waits and looks again.
@@ -186,9 +197,11 @@ Formalising what is accepted always comes before writing more.
 
 ### 4.1 Candidate directions (`directions.md`)
 
-The open questions of an accepted paper that the scope referee rated as candidates (§5.4) become
-entries `C1`, `C2`, … of `roadmaps/<Roadmap>/directions.md`: the loop appends them, by a scripted
-commit, just before it merges the paper. Each entry gives the question as stated in the paper, its
+The open questions of an accepted paper that the scope referee rated as candidates (§5.4; the
+latest rating of each question in its reports) become entries `C1`, `C2`, … of
+`roadmaps/<Roadmap>/directions.md`: once the paper is merged, the loop appends them by a pull
+request of its own (role `loop`, one scripted commit on top of `main`, merged after CI; never
+reviewed or repaired by an agent). Each entry gives the question as stated in the paper, its
 source (paper, version, label `oq:…`) and the referee's rating (interest, novelty, fit).
 **Append-only**: entries are never edited, renumbered or deleted; `garden` (or the owner) adds a
 line `Dropped (<date>, <role>, <model>): <reason>` under a candidate that a paper answers or that
@@ -200,8 +213,8 @@ hold for D, F and C items (`scripts/certify.py items`).
 
 ### 4.2 Roadmaps proposed by agents
 
-When an approved roadmap (KNOWN.md reviewed) has no free item left, and in any case every 7 nights,
-the loop runs `propose-roadmap`. It proposes, in one pull request, either an **extension** of an
+When an approved roadmap (KNOWN.md reviewed) has no free item left, and periodically if the owner
+enables it (`INCOGNITA_PROPOSE_EVERY`, off by default), the loop runs `propose-roadmap`. It proposes, in one pull request, either an **extension** of an
 approved roadmap (`roadmaps/<Roadmap>/extensions/X<k>.md`: new directions numbered after the
 existing ones) or a **new roadmap** (`roadmaps/<Name>/ROADMAP.md` with a `Domain` line, and a
 `KNOWN.md` whose first line is `Reviewed by owner: no`), always with the status `proposed`.
@@ -211,8 +224,9 @@ existing ones) or a **new roadmap** (`roadmaps/<Name>/ROADMAP.md` with a `Domain
 - **inside an existing domain** (an extension, or a new roadmap whose domain is that of an approved
   roadmap): approved automatically if `review-roadmap` approves and the owner has not vetoed it
   during **2 nights**. The loop announces the veto window in a comment and in the night report;
-  the owner vetoes by a comment starting with `veto` (or the label `veto`), or approves at once by
-  a comment starting with `approve`. Once the window has passed, the loop adds a scripted commit
+  the owner vetoes by a comment starting with `veto` (or the label `veto`; a veto also stops a
+  proposal already approved but not yet merged), or approves at once by a comment starting with
+  `approve` (it counts only after the latest `review-roadmap` report and the last fix round). Once the window has passed, the loop adds a scripted commit
   that sets the status to `approved`, recording the dates, and merges the pull request;
 - **a new domain**: only the owner's explicit approval (a comment starting with `approve`, or his
   own merge).
@@ -298,14 +312,15 @@ paper, `source`. Kinds:
   `enumitem`, no TikZ, no Unicode characters except accented letters in names; braces around macro
   subscripts (`x_{\ell}`); `\texorpdfstring` for mathematics in headings.
 - **Compile before finishing**, as CI does:
+  `python3 scripts/certify.py bib` (it writes `papers/library.bib`, the keys `INC-P<nnn>`), then
   `latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`. The final
   `papers/<P>/paper.log` must have no error, no undefined reference or citation (`undefined`) and
   no duplicate label (`multiply defined`); the PDF at most 12 pages. Then remove the generated files
   with `latexmk -C -cd papers/<P>/paper.tex`, and `git add` your source files by name: never commit
-  a PDF or a build file. CI compiles every paper the same way and fails on the same problems. Before
-  compiling, `python3 scripts/certify.py bib` regenerates `papers/library.bib`; before the last
-  commit, `python3 scripts/certify.py check` checks META.toml, `depends_on`, the citations of
-  library papers, the open questions and `library.bib`, as CI does.
+  a PDF, a build file or `papers/library.bib` (generated, never committed). CI compiles every paper
+  the same way and fails on the same problems. Before the last commit,
+  `python3 scripts/certify.py check` checks META.toml (`roadmap`, an existing roadmap), `depends_on`,
+  the citations of library papers and the open questions, as CI does.
 
 ### 5.3 The notebook
 
@@ -355,8 +370,11 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
 - On a revision, referees re-check only the nodes that changed and the nodes that `\uses` them
   (transitively; `.agents/revision.diff` shows what changed since their last report), and rule on
   each previous G and L: resolved or not.
-- A direction whose paper was rejected counts as covered: no new paper on it unless the owner
-  reopens it.
+- A direction (D) or candidate direction (C) whose paper was rejected counts as covered: no new
+  paper on it unless the owner reopens it. A known result to formalise (F) and the items of a
+  `definitions` paper stay open after a rejection: the next writer reads the rejected paper's
+  reports (`reports.md`) and answers them. When the owner reopens a rejected pull request (and
+  removes the label), its rounds start again.
 - A reviewer who needs a decision of the owner (for example a paper that reframes a direction)
   adds lines `Ask-owner: <question>` at the end of the report; the script copies them to the
   pinned issue "Questions for the owner".
@@ -382,9 +400,9 @@ and `formalisation.tex` (extra lemmas, §6.6 case c). The owner may veto any pap
   must come with the next version, and a version changes only with `paper.tex`.
 - **Bibliography of the library.** `papers/library.bib` has one entry per paper, key `INC-P<nnn>`,
   with its title and its version (field `version`). It is generated by
-  `python3 scripts/certify.py bib` (never edited by hand) and committed by the pull request that
-  adds a paper or changes its version; CI checks that it is up to date. Papers load it with
-  `\bibliography{refs,../../papers/library}` (the template does).
+  `python3 scripts/certify.py bib` before compiling (by you, and by CI), never edited by hand and
+  never committed (`.gitignore`). Papers load it with `\bibliography{refs,../../papers/library}`
+  (the template does).
 - **Citations.** A paper cites a library paper as `\cite[Theorem~2]{INC-P001}`, and records each
   result it uses, with the exact version it read, in `depends_on = ["P001v2:thm:main", …]`
   (labels `def:`, `lem:`, `prop:`, `thm:`, `cor:`). Every `INC-` key cited is in `depends_on` and

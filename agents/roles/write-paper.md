@@ -79,9 +79,9 @@ then proposes an extension of the roadmap.
   relations the roadmap asks for).
 - `META.toml`: `authors` is your model id (from task.md), `version = 1`, `depends_on` the library
   results you use (empty list if none), `directions` the items served (D, F or C).
-- `papers/library.bib` is generated: run `python3 scripts/certify.py bib` (it adds your paper) and
-  `python3 scripts/certify.py check` (META.toml, citations of library papers, open questions); fix
-  what it reports. Commit `papers/library.bib` with the paper.
+- `papers/library.bib` is generated, never committed: run `python3 scripts/certify.py bib` before
+  compiling (it writes the keys `INC-P<nnn>`), and `python3 scripts/certify.py check` (META.toml,
+  citations of library papers, open questions) before the last commit; fix what it reports.
 - `literature/`: every reference you cite is in `bibliography.json` and `index.md` (metadata
   `unchecked` unless you compared it with the publisher's or arXiv's page; only the parts you read
   marked as read).
@@ -98,9 +98,9 @@ then proposes an extension of the roadmap.
    what you find; the three steps you still doubt go in Weak points.
 3. Reread as `referee-scope` will: is the nearest known result in Closest known, is every technique
    attributed, does any KNOWN entry imply the result?
-4. `git status`, then `git add` by name: `paper.tex`, `refs.bib`, `META.toml`, `notebook/`,
-   `papers/library.bib`, and your files under `Exploration/` and `literature/`. Never a PDF, a build
-   file or a `certification.tex`.
+4. `git status`, then `git add` by name: `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, and
+   your files under `Exploration/` and `literature/`. Never a PDF, a build file,
+   `papers/library.bib` or a `certification.tex`.
 
 Commit early (message `P<nnn>: <what>`), and write `.agents/summary.md` early (AGENTS.md §1):
 Results (the main result in mathematics, with `thm:main`), Frozen statements (None), Sources read,

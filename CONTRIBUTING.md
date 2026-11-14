@@ -36,14 +36,17 @@ owner":
   records the dates in the status line;
 - **a new domain**: nothing happens until you comment `approve` (or merge it yourself).
 
-Your latest comment starting with `veto` or `approve` wins; a veto stands until you comment
-`approve` (or remove the label `veto`), and an `approve` written before the agent's last fix round
-does not count (approve again what you have read).
+Your latest comment starting with `veto` or `approve` wins, even after the scripted approval (a
+veto written then still stops the merge); a veto stands until you comment `approve` (or remove the
+label `veto`), and an `approve` written before the agent's last fix round or before the latest
+`review-roadmap` report does not count (approve again what you have read).
 
 A new roadmap comes with a KNOWN.md marked `Reviewed by owner: no`: no paper is written there until
 you complete it and set the date (section 2). The directions of an approved extension are open at
-once. To stop the proposals, set `INCOGNITA_PROPOSE_EVERY=0` and close the proposal pull requests;
-to retract an approved one, mark its directions `closed` or revert it.
+once. A roadmap with no free item left gets a proposal; periodic proposals are off
+(`INCOGNITA_PROPOSE_EVERY=0`, the default; set it to `n` for one every `n` nights). To stop the
+proposals, close the proposal pull requests; to retract an approved one, mark its directions
+`closed` or revert it.
 
 ## 2. Review KNOWN.md once per roadmap
 
@@ -79,13 +82,17 @@ give them only what you accept to see paraphrased.
   `- <your name>, <YYYY-MM-DD>, v<version>: <what you checked>` to `papers/<P>/human-audits.md` (your
   file only: agents may not write it).
 - **Questions**: `Ask-owner:` lines of agents are copied to the pinned issue "Questions for the
-  owner"; answer by a comment (`A2: <answer>`), then update the roadmap or KNOWN.md if needed.
+  owner"; answer by a comment there (`A2: <answer>`), then update the roadmap or KNOWN.md if needed.
+  Your comments on that issue (the ones without the loop's hidden marker) are given to every later
+  session as `.agents/owner-answers.md`, with the questions they follow: agents do not ask again what
+  you answered.
 
 ## 4. Merge what only the owner may merge
 
 The loop merges automatically, one pull request per pass, only these categories: papers accepted by
-both referees (with their candidate directions), proofs (lemmas and theorems only), literature,
-exploration, candidate directions, and roadmap proposals after their scripted approval (section 1).
+both referees, proofs (lemmas and theorems only), literature, exploration, candidate directions (a
+pull request of the loop itself, role `loop`, opened after the paper is merged), and roadmap
+proposals after their scripted approval (section 1).
 Everything else waits for the owner:
 
 - roadmaps written by humans, roadmap proposals in a new domain, and KNOWN.md;
@@ -104,7 +111,8 @@ Everything else waits for the owner:
   `templates/`, `docs/`, `scripts/`, `.github/`, `lakefile.toml`, `lean-toolchain`,
   `lake-manifest.json`, `papers/*/withdrawn.md`, `papers/*/human-audits.md` (listed in
   `.github/CODEOWNERS`);
-- reopening a paper closed with the label `rejected`.
+- reopening a paper closed with the label `rejected` (reopen it and remove the label: its revision
+  and fix rounds start again, and a referee's `reject` on its head is answered by one more revision).
 
 **Reading a pull request.** Its description is the agent's summary (results in mathematics, with
 their Lean names or paper labels). Papers: the PDF is in the artifact `papers-pdf` of the "Papers"
@@ -124,7 +132,7 @@ uses `--admin` or a bypass.
 |---|---|---|
 | `rejected` | a paper closed after a fatal defect or two revisions without acceptance | reopen it if the referees were wrong |
 | `incomplete` | a draft pull request of an agent that ran out of time; its work is kept | none: agents finish it |
-| `needs-human` | a non-paper pull request the agents gave up on | fix, close, or remove the label to retry |
+| `needs-human` | a pull request the agents gave up on (also a paper after 3 reviews without a verdict) | fix, close, or remove the label to retry |
 | `veto` | set by the owner on a roadmap proposal: it is never approved | remove it to let the veto window run again |
 
 Labels for humans only (`scripts/pr_labels.py`, recomputed by the workflow "PR labels"): one state

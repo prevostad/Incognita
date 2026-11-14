@@ -15,8 +15,8 @@ pull request (AGENTS.md §2; task.md names it); on `main`, within the line `fix-
 
 1. **Conflict with `main`**: `git rebase origin/main`. Resolve each conflict in favour of `main` for
    whatever the pull request did not mean to change; for the root files `Incognita.lean`,
-   `Statements.lean`, `Exploration.lean`, take the sorted union of the import lines; regenerate
-   `papers/library.bib` with `python3 scripts/certify.py bib` (never merge it by hand).
+   `Statements.lean`, `Exploration.lean`, take the sorted union of the import lines
+   (`papers/library.bib` is generated and never committed: never add it).
    `git rebase --continue`; if the conflict cannot be resolved, `git rebase --abort` and say so.
 2. **Failed build**: find the first error in `ci-log.txt`, fix it, and rerun the CI command that
    failed.

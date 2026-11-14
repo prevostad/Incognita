@@ -10,17 +10,17 @@ settings, the setup and the launch.
 
 | Role | Call (`scripts/agent.sh …`) | Writes | Model | Timeout |
 |---|---|---|---|---|
-| `write-paper` | `write-paper <Roadmap>` | a new `papers/P<nnn>-<slug>/` (number given in task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `papers/library.bib` (regenerated); `literature/` | author | 90 min |
-| `referee-scope` | `referee-scope <PR>` | report (comment) + status `Referee scope` | reviewer | 30 min |
-| `referee-proofs` | `referee-proofs <PR>` | report (comment) + status `Referee proofs` | reviewer | 30 min |
-| `revise` | `revise <PR>` (revision or repair of a paper PR) or `revise <Paper>` (disputed, or a dependency check) | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md`, `dependency-checks.md`; `papers/library.bib`; `literature/` | author | 90 min |
+| `write-paper` | `write-paper <Roadmap>` | a new `papers/P<nnn>-<slug>/` (number given in task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `literature/` | author | 90 min |
+| `referee-scope` | `referee-scope <PR>` | report (comment) + status `Referee scope` | reviewer | 60 min |
+| `referee-proofs` | `referee-proofs <PR>` | report (comment) + status `Referee proofs` | reviewer | 60 min |
+| `revise` | `revise <PR>` (revision or repair of a paper PR) or `revise <Paper>` (disputed, or a dependency check) | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md`, `dependency-checks.md`; `literature/` | author | 90 min |
 | `formalize-statements` | `formalize-statements <Paper>` | `Statements/P<nnn>/` (`.lean`, `.lock`; additions), `Statements.lean` (imports), `Incognita/`, `catalogue/definitions/`, the paper's `blueprint.md`, `errata.md`, `statement-corrections.md` | author | 90 min |
 | `review-statements` | `review-statements <PR>` | report + status `Incognita review` | reviewer | 30 min |
 | `prove` | `prove <Paper>` | `Incognita/`, `catalogue/results/P<nnn>-<name>.toml` (additions), the paper's `blueprint.md`, `formalisation.tex`, `errata.md`, `statement-corrections.md` | author | 90 min |
 | `review-pr` | `review-pr <PR>` | report + status `Incognita review` | reviewer | 30 min |
 | `fix-pr` | `fix-pr <PR>` or `fix-pr main` | the PR's branch, within the paths of the role that opened it; on main: `Incognita/`, `Incognita.lean`, `Statements.lean` (imports) | author | 90 min |
-| `bibliographer` | `bibliographer` | `literature/`, `catalogue/attribution/`, papers' `refs.bib` | author | 90 min |
-| `garden` | `garden` | `Incognita/` (theorems), `catalogue/relations.toml`, `catalogue/garden.md`; `Dropped` lines in `roadmaps/*/directions.md`; entries of `papers/*/errata.md`, `statement-corrections.md` after a failed re-check | author | 90 min |
+| `bibliographer` | `bibliographer <Paper>` (a paper that waits for its source notes or its attribution audit) or `bibliographer -` | `literature/`, `catalogue/attribution/`, papers' `refs.bib` | author | 90 min |
+| `garden` | `garden` | `Incognita/` (theorems), `catalogue/relations.toml`, `catalogue/garden.md` (rows appended); `Dropped` lines under existing entries of `roadmaps/*/directions.md`; entries of `papers/*/errata.md`, `statement-corrections.md` after a failed re-check | author | 90 min |
 | `propose-roadmap` | `propose-roadmap <Roadmap>` (no free item left) or `propose-roadmap -` (periodic) | one new `roadmaps/<Name>/ROADMAP.md` + `KNOWN.md`, or one new `roadmaps/<Roadmap>/extensions/X<k>.md` (status `proposed`); `literature/` | author | 90 min |
 | `review-roadmap` | `review-roadmap <PR>` | report + status `Incognita review` | reviewer | 30 min |
 
@@ -32,8 +32,9 @@ but the bibliographer may also change `Exploration/` and `Exploration.lean`; not
 `lake-manifest.json`, `templates/`, `agents/`, `docs/`, `scripts/`, `tests/`, `roadmaps/` (except a
 proposal of `propose-roadmap`, checked whole by `scripts/certify.py proposal`, and `Dropped` lines of
 `garden`), `literature/notes/TEMPLATE.md`, `papers/*/withdrawn.md`, `papers/*/human-audits.md`, the
-generated `papers/*/certification.tex` and `catalogue/certification.md`, symbolic links, submodules,
-files over 1 MB, or a frozen statement (anything but an addition under `Statements/`).
+generated `papers/library.bib`, `papers/*/certification.tex` and `catalogue/certification.md`,
+symbolic links, submodules, files over 1 MB, a secret (Claude or GitHub token, private key), or a
+frozen statement (anything but an addition under `Statements/`).
 
 ## How a task runs (isolation, DECISIONS D11–D13)
 
@@ -46,24 +47,47 @@ and `scripts/agent.sh` refuses to start without it.
 1. **Inputs.** `scripts/agent.sh` fixes the head `H` of the PR (if any) when the task starts, writes the
    context files and a git bundle (main + `H`) in `/srv/incognita/in/<task>/`, and copies
    `scripts/agent-side.sh` there (so the agent cannot change it).
-2. **Preparation**, as `incognita-agent` in the sandbox (`agent-side.sh prepare`): the agent's clone
-   `~incognita-agent/work` gets a fresh `.git/config` and no hooks, fetches the bundle (`origin/main`,
-   `origin/pr-head`), checks out the branch `incognita-task` (at `main`, or at `H` for PR tasks),
-   removes untracked files except `.lake`, copies the context files to `.agents/`, and resets
-   `~/.claude*` from `/srv/incognita/template`.
+2. **Preparation.** The loop restores the agent's `~/work/.lake` from its own (`rsync --delete`, as
+   root, after checking that no directory was replaced by a link): nothing a session changed or
+   planted there survives. Then, as `incognita-agent` in the sandbox (`agent-side.sh prepare`): the
+   home keeps nothing of an earlier session but `~/work`, `~/.elan` and the old Claude Code install
+   (`CLAUDE.md`, `~/.claude*`, `~/.config` with `~/.config/git`, the Python user site, shell files...
+   are removed; `.bashrc`, `.profile`, `.bash_logout` come from `/etc/skel`, `~/.claude*` from
+   `/srv/incognita/template`); the clone gets a fresh `.git/config` (fixed template), no hooks, no
+   attributes or alternates; it fetches the bundle (`origin/main`, `origin/pr-head`), checks out
+   the branch `incognita-task` (at `main`, or at `H` for PR tasks), removes untracked files except
+   `.lake`, where every `CLAUDE*.md`, `AGENTS*.md` and `.claude/` is removed (those tracked by a
+   dependency are hidden from git with `skip-worktree`, so that lake does not report local
+   changes), and copies the context files to `.agents/`. The session's timeout is what is left of
+   the time announced in task.md.
 3. **Session**: `sudo systemd-run --quiet --wait --pipe --collect --uid=incognita-agent …
    -p EnvironmentFile=/etc/incognita/agent.env -p RuntimeMaxSec=<timeout> -p MemoryMax=6G
    -p NoNewPrivileges=yes -p PrivateTmp=yes -p ProtectSystem=strict
-   -p ReadWritePaths=/home/incognita-agent -p InaccessiblePaths=/home/lean claude -p --output-format json
-   --model … --effort … --max-turns … --permission-mode acceptEdits --allowedTools …`, the prompt
-   (role file + a pointer to `.agents/task.md`) on stdin. The JSON result is read from the pipe
-   (first 8 MB).
+   -p ReadWritePaths=/home/incognita-agent -p ReadOnlyPaths=/home/incognita-agent/.elan
+   -p InaccessiblePaths=/home/lean -E PATH=/opt/incognita/bin:~/.elan/bin:… -E PYTHONNOUSERSITE=1
+   /opt/incognita/bin/claude -p --output-format json --model … --effort … --max-turns …
+   --permission-mode acceptEdits --allowedTools …`, the prompt (role file + a pointer to
+   `.agents/task.md`) on stdin. Claude Code is a root-owned copy outside the agent's home, and the
+   toolchain is read-only: no session can change them for the next one (lake works with `~/.elan`
+   read-only; toolchains are installed only by the loop, `sync_agent_lake`). The JSON result is
+   read from the pipe (first 8 MB; stderr: first 2 MB).
 4. **Outputs**, as `incognita-agent` in the same sandbox with `/srv/incognita/out/<task>` writable
-   (`agent-side.sh collect`): a git bundle of the new commits (not in `main` nor in `H`), and the first
-   200 000 bytes of `.agents/summary.md`. The loop never runs git or lake in the agent's clone; it
-   fetches the bundle into its own clone (`transfer.fsckObjects`), checks the whitelist on
-   `git diff --raw -z --no-renames`, and pushes with its own token. Uncommitted work is dropped.
-5. **Publication.** Writing roles: a new PR (branch `agent/<role>-<stamp>`, first line of the body
+   (`agent-side.sh collect`): the clone's `.git/config` rewritten again, no global or system git
+   configuration (`GIT_CONFIG_GLOBAL=/dev/null`…), no hooks, attributes or file system monitor,
+   and only plumbing that runs no filter (`rev-parse`, `rev-list`, `bundle`; never `git status`):
+   a git bundle of the new commits (not in `main` nor in `H`), and the first 200 000 bytes of
+   `.agents/summary.md` (a regular file). The loop never runs git or lake in the agent's clone and
+   **never opens a file of the output directory as itself**: it reads each one as the agent user
+   (`sudo -u incognita-agent head -c`, after `test -f` and `! test -L`: a regular file, not a link
+   nor a FIFO; `out_read` in `scripts/lib.sh`), copies the bundle the same way (at most
+   `INCOGNITA_BUNDLE_MAX` bytes), fetches it into its own clone (`transfer.fsckObjects`), checks
+   the whitelist on `git diff --raw -z --no-renames`, and pushes with its own token. Uncommitted
+   work is dropped.
+5. **Publication.** The session's commits are **squashed into one commit** (`git commit-tree` with
+   the tree of the agent's head and its author): on the PR head `H` for a round on a pull request
+   (on its base when the round rebased the branch), on the merge base with `main` for a new pull
+   request; what an intermediate commit added and a later one removed is never pushed. Writing
+   roles: a new PR (branch `agent/<role>-<stamp>`, first line of the body
    ``Role: `<role>`. Target: `<target>`. Model: `<model>`.``, then the summary), or a push to the PR
    branch with `--force-with-lease` against `H` (`fix-pr`, `revise`) and a comment. A writing session
    that fails (timeout, `error_max_turns`…) with commits gives a **draft PR labelled `incomplete`**,
@@ -74,9 +98,11 @@ and `scripts/agent.sh` refuses to start without it.
    referees accept the same head). Lines `Ask-owner: …` of a report or of a writer's summary (even
    without a commit) go to the pinned issue "Questions for the owner".
 6. **Sanitising.** Every agent text posted to GitHub: control and bidi characters removed, anything
-   like a Claude token (`sk-ant-…`) redacted, `<!--` escaped, `@` followed by a zero-width space,
-   closing keywords (`fixes #3`) neutralised, truncated at 60 000 characters. A diff containing a
-   token is refused.
+   like a secret redacted (a Claude token `sk-ant-…`, a GitHub token `gh[pousr]_…` or
+   `github_pat_…`, a private key block), `<!--` escaped, `@` followed by a zero-width space,
+   closing keywords (`fixes #3`) neutralised, truncated at 60 000 characters. A diff containing
+   such a secret is refused. A comment whose POST failed is posted again only if no identical one
+   exists (a timeout may have posted it).
 
 Context files in `.agents/` (listed in `task.md`; AGENTS.md §1 describes them to the agents):
 `task.md` (role, target, PR and head, paper and its Lean prefix, or for `write-paper` the number of the
@@ -84,8 +110,11 @@ new paper, roadmap and KNOWN.md paths, deadline, situation — e.g. the errata e
 output rules), `open-prs.md` (one line per open PR with its Role/Target line: busy targets), and
 depending on the task `pr.diff` (`git diff $(merge-base main H) H`), `pr.txt` (title and body),
 `reports.md` (earlier trusted reports on the PR; for `write-paper` and `referee-scope`, also the
-referee reports of the roadmap's rejected papers), `revision.diff` (for a reviewer: diff since its
-last report), `ci-log.txt` (end of the failed logs of the workflows CI and Papers), `papers.md`
+referee reports of the roadmap's rejected papers; for `bibliographer <Paper>`, the scope reports on
+the pull request that added the paper), `revision.diff` (for a reviewer: diff since its last
+report; for a paper, its directory only), `owner-answers.md` (the owner's comments on the issue
+"Questions for the owner", without the loop's marker, after the questions they follow), `ci-log.txt`
+(end of the failed logs of the workflows CI and Papers), `papers.md`
 (write-paper: papers and directions of the roadmap on main, in open PRs, rejected),
 `known-private.md` (the owner's private KNOWN entries of the roadmap, from
 `$INCOGNITA_PRIVATE_KNOWN/<Roadmap>.md`, only if that variable is set), `items.md` (write-paper,
@@ -103,7 +132,10 @@ reads the first line starting with `Verdict: `. A paper is rejected (PR closed w
 `rejected`) on a `reject` (a roadmap proposal too), or on a `major` after `INCOGNITA_REVISION_ROUNDS` (2) revision rounds (only
 `revise` rounds answering a referee's `major` count; repairs of a paper PR are fix rounds, comment
 kind `revise-fix`), or after `INCOGNITA_FIX_LIMIT` (3) fix rounds; a non-paper PR gets `needs-human`
-on a `reject`, after `INCOGNITA_FIX_LIMIT` fix rounds, or after 3 reviews without a verdict.
+on a `reject` or after `INCOGNITA_FIX_LIMIT` fix rounds, and any PR (papers included) after
+`INCOGNITA_REVIEW_FAIL_LIMIT` (3) reviews without a verdict. When the owner reopens a rejected PR
+(and removes the label), its rounds are counted again from the reopening, and a referee's `reject`
+on its head is answered by one more revision.
 
 ## The loop (`scripts/loop.sh`, SPEC §3, D5, D13–D15)
 
@@ -124,50 +156,70 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    theorems only, no `def`/`structure`/`instance`/…; `exploration`; `directions`; `statements` is off
    for the first nights); the whitelist of the role checked again; for `.lean`/`.lock` changes,
    `main` an ancestor of `H`. Anything else waits for the owner (listed in the night report).
-   **Scripted commits** (DECISIONS D13, "scripted edits after a verdict"): before merging an
-   accepted paper, the loop appends the open questions the scope referee rated as candidates to
-   `roadmaps/<R>/directions.md` (`scripts/certify.py add-candidates`), in a commit of its own on top
-   of the reviewed head (rebased on `main` first, one paper at a time), copies the trusted statuses
-   to the new head with the status `Incognita loop` (`role=loop verdict=directions`), and merges at a
-   later pass once CI is green; at merge time the scripted commit is checked apart
-   (`certify.py verify-scripted`) and the whitelist applies to the agent's commits only.
+   A pull request that waits for the owner is still kept rebased (the check "Lean changes on top of
+   `main`" comes first).
+   **Candidate directions** (AGENTS.md §4.1): an accepted paper is merged as reviewed; then a job
+   (`state/candidates/<P>`) makes the loop open a pull request of its own (role `loop`, branch
+   `agent/loop-directions-<stamp>`, body ``Role: `loop`. Target: `<P>`.``): one scripted commit on
+   top of `main` appending the open questions the scope referee rated as candidates (all its
+   reports on the paper's pull request, the latest rating of each question winning;
+   `scripts/certify.py add-candidates`) to `roadmaps/<R>/directions.md`, with the status
+   `Incognita loop` (`role=loop verdict=directions`). It is never reviewed, repaired nor rebased by
+   an agent: it merges (category `directions`) once CI is green and `certify.py verify-scripted`
+   accepts it whole; a conflicting one is closed and made again on the new `main`; one whose CI
+   fails waits for the owner (`needs-human`).
 4. **Roadmap proposals** (AGENTS.md §4.2): for a proposal that `review-roadmap` approved, the loop
    posts a veto window (`veto-window` comment: `Window: <night> to <night + INCOGNITA_VETO_NIGHTS>`)
    inside an existing domain, or asks the owner (`owner-approval`) for a new domain. A comment of the
    owner (without the loop's marker) starting with `veto`, or the label `veto`, stops it; one
-   starting with `approve` approves it at once (the latest wins). Once approved, a scripted commit
+   starting with `approve` approves it at once (the latest wins; an `approve` counts only after the
+   latest `review-roadmap` report and the last fix round). Once approved, a scripted commit
    (`certify.py approve-roadmap`, status `Incognita loop` with `verdict=approved`) sets the status
-   line to `approved` with the dates, and the merge follows (category `roadmap`, only this way).
+   line to `approved` with the dates, and the merge follows (category `roadmap`, only this way),
+   unless the owner's latest word is then a `veto` (read again at merge time).
 5. **Mechanical rebase** (no Claude) of conflicting agents' PRs and of ready Lean PRs behind main;
-   conflicts on root import files are resolved by the sorted union of their import lines, and on
-   `papers/library.bib` by regenerating it; any other conflict goes to `fix-pr`. Statuses are copied
-   to the new head only if every changed path has the same blob.
+   conflicts on root import files are resolved by the sorted union of their import lines; any other
+   conflict goes to `fix-pr`. Statuses are copied to the new head only if the pull request changes
+   the same thing (`diff_signature`): every changed path has the same blob, except the root import
+   files (the same import lines added and removed) and `literature/` (the same lines added and
+   removed), which other pull requests change too.
 6. **One agent task**, the first available after the filters (target not busy in an open PR, fewer
    than `INCOGNITA_MAX_FAILS` failures tonight for this role and target, not parked, enough time
    before the deadline), in the order of AGENTS.md §3: `fix-pr main` if main is red; repairs and
    revisions — `revise` for paper PRs (referees' `major`, failed build, failed rebase, incomplete
    draft), `fix-pr` for the others (changes requested, failed build, failed rebase, incomplete draft);
    reviews (`referee-scope`, then `referee-proofs`; `review-statements`; `review-pr`); every
-   `INCOGNITA_ROTATION_EVERY` tasks a `garden` or `bibliographer` task; `prove` (frozen statements
-   still open and not superseded; the papers with the most dependants first, then the oldest:
-   `certify.py dependants`); `formalize-statements` (accepted papers without locks, or with errata
-   entries revised but not resolved, or unresolved statement corrections); `revise` of disputed
-   papers (errata entries neither revised nor resolved), then `revise` for dependency checks
-   (`certify.py depchecks`: a dependency has a newer version than the one cited); `bibliographer` when
-   an external paper lacks its source note or a verified internal paper has no
-   `catalogue/attribution/<P>.md`; `propose-roadmap <R>` for an approved roadmap whose KNOWN.md is
+   `INCOGNITA_ROTATION_EVERY` tasks a `garden` (only once a proof marker `catalogue/results/*.toml`
+   exists) or `bibliographer` task; `prove` (frozen statements still open and not superseded; the
+   papers with the most dependants first, then the oldest: `certify.py dependants`);
+   `formalize-statements` (accepted papers without locks, or with errata entries revised but not
+   resolved, or unresolved statement corrections; at most one statements PR open per roadmap; the
+   roadmap's `definitions` paper first, then a paper only once that paper and all its dependencies
+   have locks on `main`); `revise` of disputed papers (errata entries neither revised nor
+   resolved), then `revise` for dependency checks (`certify.py depchecks`: a dependency has a newer
+   version than the one cited); `bibliographer <P>` for a paper that waits for it (an external paper
+   without its source note, a verified internal paper without `catalogue/attribution/<P>.md`);
+   `propose-roadmap <R>` for an approved roadmap whose KNOWN.md is
    reviewed and that has no free item (`certify.py items --free`, or a writer's summary line
    `No open item in <R>.` since its items last changed); `write-paper` in approved roadmaps whose
    `KNOWN.md` starts with `Reviewed by owner: <date>` and that have a free item, with fewer than
-   `INCOGNITA_PAPERS_IN_REVIEW` papers in review and fewer than `INCOGNITA_ACCEPTED_UNVERIFIED_MAX`
-   accepted papers not verified; `propose-roadmap -` every `INCOGNITA_PROPOSE_EVERY` nights (counted
-   from the first night); fallback: `write-paper` up to `INCOGNITA_PAPERS_MAX`, `garden`,
+   `INCOGNITA_PAPERS_IN_REVIEW` papers in review (1 while the roadmap's `definitions` paper is not
+   on `main`) and fewer than `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` accepted papers not verified;
+   `propose-roadmap -` every `INCOGNITA_PROPOSE_EVERY` nights if the owner sets it (0, the default:
+   never; counted from the first night); fallback: `write-paper` up to `INCOGNITA_PAPERS_MAX`, `garden`,
    `bibliographer`; else sleep `INCOGNITA_IDLE_SLEEP` and look again. At most one proposal at a time;
    when `INCOGNITA_ROADMAPS_WAITING_MAX` approved roadmaps wait for the owner's review of their
    KNOWN.md, the task asks for an extension only.
 7. Quota: with `INCOGNITA_PACE=0:100` (the owner's rule) or `off`, no pacing; otherwise the Tau Ceti
    pacer of v1. A rate-limited session makes the loop wait until the reset; a logged-out session stops
    the night. All waits end at the deadline.
+
+Exits of `scripts/agent.sh`: 0 done (whatever the outcome), 3 Claude logged out (the night stops),
+4 rate limited, 5 the infrastructure failed before the session (GitHub, git, the preparation: not
+counted against the target; the loop backs off). A session that ended normally without a commit
+is recorded as `skip no-commit`: it counts towards tonight's limit (`INCOGNITA_MAX_FAILS`), never
+towards parking; only a paper or a pull request is ever parked. The audit build of `main` is not
+started when less than an hour is left before the deadline.
 
 **Interface with the audit (assumption to keep in sync with `scripts/Audit.lean`):** `lake exe audit
 --check` exits 0/1 (CI), and `lake exe audit --status` prints one line per frozen statement,
@@ -184,7 +236,7 @@ disk, `gh`, sudo, agent user and token, a one-line Claude session in the sandbox
 Ceti worker **not** running), the loop restarted if it dies (3 deaths in 10 min: 20 min pause), and at
 the end the night report in `~/.incognita/logs/<night>-report.md`, also posted on the pinned issue
 "Night reports": (1) decisions for the owner (pull requests to merge, questions, roadmap proposals
-with their veto windows, papers depending on a disputed paper), (2) papers accepted, (3) statements
+with their veto windows, papers depending on a disputed paper, parked targets), (2) papers accepted, (3) statements
 frozen, (4) results verified, (5) papers rejected, (6) roadmaps and directions (proposals approved
 or vetoed, candidate directions added, exhausted roadmaps, dependency checks pending), (7) the
 certification of the library (`scripts/certify.py report`, from the audit of main), (8) statistics.
@@ -195,9 +247,9 @@ State, outside the repository, in `~/.incognita/`: `state/nights/<night>/` (atte
 target, `events.tsv` for the report), `state/lifetime/` (fix rounds per PR, failures per target),
 `state/parked/` (targets parked after `INCOGNITA_PARK_AFTER` failures in all; delete the file to retry),
 `state/audit/<sha>.txt`, `state/first-night` and `state/last-propose-night` (periodic proposals),
-`state/finalizing-<kind>` (the last scripted commit), `state/marks/` (veto windows posted, roadmaps
-found exhausted, papers without candidates…), `logs/<night>.log`, `heartbeat` (one line a minute:
-time and activity).
+`state/candidates/<P>` (candidate directions to add for a merged paper: `<pr> <head> <P>`),
+`state/marks/` (veto windows posted, roadmaps found exhausted…), `logs/<night>.log`, `heartbeat`
+(one line a minute: time and activity).
 
 ## Settings (environment variables)
 
@@ -207,23 +259,25 @@ time and activity).
 | `INCOGNITA_PACE` | unset | `0:100` (always, the owner's rule): no pacing; `off`; else a Tau Ceti pace curve |
 | `INCOGNITA_MODEL_AUTHOR` / `_REVIEWER` | `opus` / `sonnet` | models; per role: `INCOGNITA_MODEL_<ROLE>` (e.g. `INCOGNITA_MODEL_REFEREE_PROOFS`) |
 | `INCOGNITA_EFFORT`, `INCOGNITA_MAX_TURNS` | `high`, `200` | for every session |
-| `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `1800` / `5400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` |
+| `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `1800` / `5400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>`; `INCOGNITA_TIMEOUT_REFEREE_SCOPE` and `_REFEREE_PROOFS` are `3600` |
 | `INCOGNITA_MIN_REVIEW` / `_MIN_WRITE` | `900` / `2400` s | a task starts only with this much time left |
 | `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions` | merge categories; add `statements` later (D15); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
 | `INCOGNITA_VETO_NIGHTS` | `2` | nights of veto window before a proposal inside an existing domain is approved |
-| `INCOGNITA_PROPOSE_EVERY` | `7` | nights between two periodic roadmap proposals; `0`: never (proposals of exhausted roadmaps still happen) |
+| `INCOGNITA_PROPOSE_EVERY` | `0` | nights between two periodic roadmap proposals; `0` (the default for the first nights): never (proposals of exhausted roadmaps still happen) |
 | `INCOGNITA_ROADMAPS_WAITING_MAX` | `2` | approved roadmaps whose KNOWN.md the owner has not reviewed, beyond which only extensions are proposed |
 | `INCOGNITA_PAPERS_IN_REVIEW` / `_PAPERS_MAX` | `3` / `6` | papers in open PRs per roadmap (normal / fallback) |
 | `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` | `2` | accepted papers not verified per roadmap before `write-paper` stops (D5) |
-| `INCOGNITA_MAX_FAILS` | `2` | failed attempts per role and target per night |
+| `INCOGNITA_MAX_FAILS` | `2` | failed attempts (and sessions without a commit) per role and target per night |
 | `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `3`, `2` | then `needs-human` (or `rejected` for a paper) |
-| `INCOGNITA_PARK_AFTER` | `4` | failures of a role on a target, all nights, before it is parked |
+| `INCOGNITA_PARK_AFTER` | `4` | failures of a role on a paper or a pull request, all nights, before it is parked (listed in the night report); a roadmap or `-` is never parked |
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |
 | `INCOGNITA_DRY_RUN` | `0` | `1`: one pass, prints the task, changes nothing |
 | `INCOGNITA_PRIVATE_KNOWN` | unset | a directory outside the repository with `<Roadmap>.md` files of private KNOWN entries, given to the sessions of that roadmap as `.agents/known-private.md` |
 | `INCOGNITA_CHECK_LOGIN` | `1` | night.sh tries one tiny session at startup |
 | `INCOGNITA_AGENT_MEMORY` | `6G` | `MemoryMax` of a session |
+| `INCOGNITA_AGENT_BIN` | `/opt/incognita/bin` | root-owned directory of the sessions' Claude Code |
+| `INCOGNITA_BUNDLE_MAX` | `50000000` | bytes: the largest output bundle of a session |
 | `INCOGNITA_REPO`, `INCOGNITA_HOME`, `INCOGNITA_AGENT_USER`, `INCOGNITA_EXCHANGE`, `INCOGNITA_AGENT_ENV` | `~/Incognita`, `~/.incognita`, `incognita-agent`, `/srv/incognita`, `/etc/incognita/agent.env` | paths |
 
 ## Setup (once, on the server)
@@ -232,12 +286,15 @@ time and activity).
    (`bash scripts/build.sh Incognita`); `gh` logged in; `lean` has sudo without password.
 2. `sudo bash scripts/server/setup-agent-user.sh` (idempotent): system packages (LaTeX, Python with
    numpy/scipy/matplotlib), the user `incognita-agent`, `/srv/incognita/{in,out,template}`, the token
-   file, elan and the toolchain, Claude Code (native installer, same version as `lean`'s), an
-   anonymous clone, a full copy of `.lake`, and a sandbox test. `--skip-lake` skips the 8 GB copy;
+   file, elan and the toolchain, Claude Code in `/opt/incognita/bin` (root-owned; the binary of
+   `lean`'s native install, same version), an anonymous clone, a full copy of `.lake`, and a
+   sandbox test. `--skip-lake` skips the 8 GB copy;
    `--check` only runs the sandbox test.
 3. The token: see "The token" below (a new one before every night).
 4. Tests: `bash scripts/test-lib.sh` and `bash scripts/test-loop.sh` (offline),
-   `INCOGNITA_REPO=<scratch clone of main> bash scripts/server/test-sandbox.sh` (sandbox, no Claude).
+   `INCOGNITA_REPO=<scratch clone of main> bash scripts/server/test-sandbox.sh` (sandbox, no Claude:
+   isolation, the toolchain read-only, the cleaning of the home, and the attack of a clean filter
+   plus a symbolic link in the output directory; its token file is a throwaway copy).
 
 ## The token (the owner's choice: never kept)
 
