@@ -20,7 +20,9 @@ pull request fixes.
 
 **The learner IMED-$y$.** IMED-$y$ is HY's IMED phase ([HY.md](../HY.md)) used for every round,
 that is HY with $s_\ell := +\infty$. It has no paced phase, no tests, no nets, no margins and no
-activation. Fix a linear order on the $K$ arms. Ties are always broken by this order.
+activation. Fix a linear order on the $K$ arms. Ties among maximisers of $\tilde m$ are broken by
+this order. Ties among minimisers of the index are broken in favour of the leader first, and then
+by this order.
 
 - **Batch 1.** At round $t \le t_1$, pull the arm of rank $((t-1) \bmod K) + 1$. Since
   $B_1 \ge K$, every arm has $N_c(t_1) \ge 1$.
