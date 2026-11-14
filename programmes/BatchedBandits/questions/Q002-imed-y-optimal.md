@@ -185,12 +185,14 @@ failure of 1 or of 2.
   The cap is HY's cumulative cap with $\beta = 2$. Unlike HY, it applies from the first round of
   the batch, with no uncapped IMED phase before it. Capped IMED-$y$ keeps the cap and drops HY's
   other parts: its tests, its floors and nets, and its margins. A "yes" for capped IMED-$y$ would
-  show that the cap alone suffices. Ask the same question for capped IMED-$y$.
-- **If "yes" is out of reach.** Here are three variants, each of them weaker than the original,
-  which stays open:
-  - (a) item 1 alone (consistency at batch ends of IMED-$y$);
-  - (b) items 1–2 for Bernoulli rewards with $K = 2$;
-  - (c) items 1–2 with $y_\ell := (1+\omega_\ell)x_\ell^2$ for HY's default margins $\omega_\ell$.
+  show that the cap alone suffices. Ask the same question for capped IMED-$y$. Capped IMED-$y$ is
+  a different learner, not a weakening: its answer implies nothing about IMED-$y$.
+- **If "yes" is out of reach.** Here are three variants. In each case the original stays open.
+  - (a) item 1 alone (consistency at batch ends of IMED-$y$). This is a weakening.
+  - (b) items 1–2 for Bernoulli rewards with $K = 2$. This is a weakening (a special case).
+  - (c) items 1–2 for the learner with exponent $y_\ell := (1+\omega_\ell)x_\ell^2$, for HY's
+    default margins $\omega_\ell$. This is **not** a weakening: it is a different learner, and its
+    answer implies nothing about IMED-$y$.
 - **Stronger, if "yes".** Two strengthenings would follow:
   - the same for $x = 1$ ($y_\ell \to 1$; the **[Lean]** result is for $y_\ell \equiv 1$). This
     would make IMED-$y$ a single optimal learner of $M_0$ for every convergent grid, which is the
