@@ -2,7 +2,8 @@ name: Site
 
 # The public page of the accepted papers (GitHub Pages, https://prevostad.github.io/Incognita/):
 # every paper on main, compiled with its certification (scripts/certify.py leanok: the line under the
-# title and the green "LEAN APPROVED" boxes), and scripts/site.py for the page: the three stages of
+# title and the green "LEAN APPROVED" boxes) in its two builds (the paper, and its blueprint with
+# every dependency printed), and scripts/site.py for the page: the three stages of
 # verification (refereeing, Lean, gardening) and the interest score of the scope referee. Rebuilt at
 # every change of the papers or of their verification on main, and every day (an interest score lives
 # in a pull request comment). Nothing is committed.
@@ -52,8 +53,11 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends latexmk texlive-latex-base \
-            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended lmodern
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-science \
+            texlive-pictures lmodern
 
+      # Two PDFs per paper (AGENTS.md 5.2): the reader build (<P>.pdf) and the blueprint build, with
+      # every dependency printed (<P>-blueprint.pdf).
       - name: Compile the papers
         run: |
           set -uo pipefail
@@ -65,6 +69,12 @@ jobs:
               cp "$dir/paper.pdf" "pdfs/$(basename "$dir").pdf"
             else
               echo "::warning file=$dir/paper.tex::does not compile: no PDF on the site"
+            fi
+            if latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint \
+                -usepretex='\def\IncognitaBlueprint{}' -cd "$dir/paper.tex" > /dev/null 2>&1; then
+              cp "$dir/paper-blueprint.pdf" "pdfs/$(basename "$dir")-blueprint.pdf"
+            else
+              echo "::warning file=$dir/paper.tex::the blueprint build does not compile: no blueprint PDF on the site"
             fi
           done
 

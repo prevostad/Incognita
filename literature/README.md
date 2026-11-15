@@ -19,9 +19,10 @@ part in the source. Rules: [AGENTS.md](../AGENTS.md), section 7.
 
 ## Notes are the fixed reference for statements
 
-- A **cited result** in a paper is a node whose statement is copied **verbatim** from
-  `notes/<KEY>.md`. If the note lacks it, the writer reads the source and adds it to the note in the
-  same pull request.
+- A **cited result** in a paper is a node that restates, in the paper's notation and after a line
+  giving the renaming, the statement copied **verbatim** in `notes/<KEY>.md`; the scope referee
+  checks that the two are equivalent (AGENTS.md §5.2). If the note lacks it, the writer reads the
+  source and adds it to the note in the same pull request.
 - An **external paper** (`kind = "external"`, a published result to formalise) is formalised from
   the note of its source, which must exist before its statements pull request and come from another
   session. The bibliographer writes missing notes, and the scope referee checks external papers
@@ -34,7 +35,8 @@ part in the source. Rules: [AGENTS.md](../AGENTS.md), section 7.
 In papers, `\cite[<part>]{KEY}` (for example `\cite[Theorem~4.3]{GMS19}`); in Lean docstrings,
 Markdown and the catalogue, `[KEY, Theorem 4.3]`, `[KEY, (6)]` or `[KEY, proof of Theorem 3]`, as in
 LMLExplore. A citation points to an entry whose cited part is marked as read in `index.md`;
-otherwise it is followed by "(to be checked)". A new entry is added with metadata `unchecked`.
+otherwise it is followed by "(to be checked)", except in a paper's `paper.tex`, where it is
+weakened to "see also" or dropped (AGENTS.md §5.2). A new entry is added with metadata `unchecked`.
 
 Papers of the Incognita library are not entries of `bibliography.json`: they are cited by their key
 `INC-P<nnn>` (`\cite[Theorem~2]{INC-P001}`, in Lean docstrings `[INC-P001, Theorem 2]`), from

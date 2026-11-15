@@ -137,6 +137,7 @@ cat > papers/P001-one/paper.tex <<'EOF'
 \section{Open questions}
 \begin{openquestion}\label{oq:a} Q? \end{openquestion}
 EOF
+printf '# Dossier of P001-one\n\n## Closest known\n- K1: another class.\n' > papers/P001-one/DOSSIER.md
 printf '# Candidate directions of R\n\n## C1 (d, from P001v1 oq:a)\n- Title: -\n- Statement: Q?\n- Source: s\n- Rating: r\n' > roadmaps/RB/directions.md
 printf '# R\n\n| | |\n|---|---|\n| Status | **approved** (d) |\n' > roadmaps/RB/ROADMAP.md
 mkdir -p catalogue
@@ -166,6 +167,11 @@ lcase "\\leanok written in a paper" fail "printf '%s\n' '\\leanok' >> papers/P00
 lcase "a new paper.tex without a new version" fail "echo x >> papers/P001-one/paper.tex"
 lcase "a new paper.tex with a new version" pass "echo x >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; python3 '$root/scripts/certify.py' bib >/dev/null"
 lcase "a citation of a library paper not in depends_on" fail "printf '%s\n' 'See \\cite{INC-P001}.' >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; python3 '$root/scripts/certify.py' bib >/dev/null"
+# What never appears in a new or changed paper.tex (AGENTS.md 5.2), and its DOSSIER.md.
+lcase "a KNOWN id in the text of a changed paper" fail "printf '%s\n' 'As in K12.' >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml"
+lcase "a KNOWN id in mathematics or in a comment" pass "printf '%s\n' 'With \$K_1\$.' '% see K12' >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml"
+lcase "(to be checked) in a changed paper" fail "printf '%s\n' 'See \\cite{X} (to be checked).' >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml"
+lcase "a changed paper without DOSSIER.md" fail "echo x >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; rm papers/P001-one/DOSSIER.md"
 lcase "a candidate direction edited" fail "sed -i 's/Statement: Q?/Statement: R?/' roadmaps/RB/directions.md"
 lcase "a candidate direction dropped" pass "echo 'Dropped (d, garden, m): known.' >> roadmaps/RB/directions.md"
 cd "$root" || exit 2

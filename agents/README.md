@@ -10,10 +10,10 @@ settings, the setup and the launch.
 
 | Role | Call (`scripts/agent.sh …`) | Writes | Model | Timeout |
 |---|---|---|---|---|
-| `write-paper` | `write-paper <Roadmap>` | a new `papers/P<nnn>-<slug>/` (number given in task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `literature/` | author | 90 min |
-| `referee-scope` | `referee-scope <PR>` | report (comment) + status `Referee scope` | reviewer | 60 min |
-| `referee-proofs` | `referee-proofs <PR>` | report (comment) + status `Referee proofs` | reviewer | 60 min |
-| `revise` | `revise <PR>` (revision or repair of a paper PR) or `revise <Paper>` (disputed, or a dependency check) | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md`, `dependency-checks.md`; `literature/` | author | 90 min |
+| `write-paper` | `write-paper <Roadmap>` | a new `papers/P<nnn>-<slug>/` (number given in task.md): `paper.tex`, `DOSSIER.md`, `refs.bib`, `META.toml`, `notebook/`; `literature/` | author | 90 min |
+| `referee-scope` | `referee-scope <PR>` (reads the reader build) | report (comment) + status `Referee scope` | reviewer | 60 min |
+| `referee-proofs` | `referee-proofs <PR>` (reads the blueprint build) | report (comment) + status `Referee proofs` | reviewer | 60 min |
+| `revise` | `revise <PR>` (revision or repair of a paper PR, an owner's presentation revision included) or `revise <Paper>` (disputed, or a dependency check) | its paper's `paper.tex`, `DOSSIER.md`, `refs.bib`, `META.toml`, `notebook/`, `errata.md`, `dependency-checks.md`; `literature/` | author | 90 min |
 | `formalize-statements` | `formalize-statements <Paper>` | `Statements/P<nnn>/` (`.lean`, `.lock`; additions), `Statements.lean` (imports), `Incognita/`, `catalogue/definitions/`, the paper's `blueprint.md`, `errata.md`, `statement-corrections.md` | author | 90 min |
 | `review-statements` | `review-statements <PR>` | report + status `Incognita review` | reviewer | 30 min |
 | `prove` | `prove <Paper>` | `Incognita/`, `catalogue/results/P<nnn>-<name>.toml` (additions), the paper's `blueprint.md`, `formalisation.tex`, `errata.md`, `statement-corrections.md` | author | 90 min |
@@ -165,7 +165,9 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
 
 1. fetch `main`; list the open PRs (`--limit 200`; a failed `gh` call is "unknown": back off, never
    "empty"); agents' PRs = same repository, branch `agent/*`, opened by the loop's account (`OWNER =
-   gh api user`), with a Role line. Fork PRs are ignored everywhere.
+   gh api user`), with a Role line; papers of the owner (branch `owner/*`, role `write-paper` for a
+   new paper or `revise` for a presentation revision of an accepted one, AGENTS.md §5.6) are
+   refereed, revised and merged like agents' paper PRs. Fork PRs are ignored everywhere.
 2. `main` is red only if the push CI of its head failed after one automatic rerun: then no reviews and
    no merges, except a `fix-pr main` task and its PR.
 3. **Merge** at most one PR per pass, via `PUT /pulls/N/merge` with `sha=H` and a commit message
@@ -338,8 +340,9 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 
 1. The loop's clone: `git clone https://github.com/prevostad/Incognita ~/Incognita`, built once
    (`bash scripts/build.sh Incognita`); `gh` logged in; `lean` has sudo without password.
-2. `sudo bash scripts/server/setup-agent-user.sh` (idempotent): system packages (LaTeX, Python with
-   numpy/scipy/matplotlib), the user `incognita-agent`, `/srv/incognita/{in,out,template}`, the token
+2. `sudo bash scripts/server/setup-agent-user.sh` (idempotent): system packages (LaTeX with TikZ,
+   `pdftotext`, Python with numpy/scipy/matplotlib), the user `incognita-agent`,
+   `/srv/incognita/{in,out,template}`, the token
    file, elan and the toolchain, Claude Code in `/opt/incognita/bin` (root-owned; the binary of
    `lean`'s native install, same version), an anonymous clone, a full copy of `.lake`, and a
    sandbox test. `--skip-lake` skips the 8 GB copy;

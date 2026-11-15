@@ -66,13 +66,15 @@ lean_tools="Bash(lake build:*),Bash(lake env lean:*),Bash(lake lint:*),Bash(lake
 # LaTeX and Python (numerical experiments) run arbitrary code: acceptable ONLY because every session
 # runs as incognita-agent under systemd-run (scripts/lib.sh, run_sandboxed). Never give these tools
 # to a session that is not isolated.
-exec_tools="Bash(latexmk:*),Bash(pdflatex:*),Bash(bibtex:*),Bash(python3:*)"
+exec_tools="Bash(latexmk:*),Bash(pdflatex:*),Bash(bibtex:*),Bash(pdftotext:*),Bash(python3:*)"
 write_tools="$read_tools,Edit,Write,$lean_tools,$exec_tools,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git mv:*),Bash(mkdir:*)"
 rebase_tools="Bash(git rebase origin/main),Bash(git rebase --continue),Bash(git rebase --abort),Bash(git merge-base:*)"
 # Reviewers may write files in their sandbox: only .agents/report.md is ever read back (their report
 # so far, when a session stops before its verdict); nothing of theirs is committed.
 case "$role" in
-  referee-scope) tools="$read_tools,Write" ;;
+  # The scope referee compiles the reader build and reads its text (pdftotext); its files are never
+  # collected.
+  referee-scope) tools="$read_tools,$exec_tools,Write" ;;
   # Numerical experiments in .agents/scratch/ (a reviewer's files are never collected).
   referee-proofs) tools="$read_tools,$exec_tools,Write,Bash(mkdir:*)" ;;
   review-statements|review-pr) tools="$read_tools,$lean_tools,Write" ;;
@@ -142,7 +144,8 @@ case "$role:$target" in
     [ "$(jq -r .author.login <<<"$info")" = "$OWNER" ] || finish skip "not-opened-by-the-loop"
     [ "$(jq -r .baseRefName <<<"$info")" = main ] || finish skip "base-not-main"
     branch=$(jq -r .headRefName <<<"$info")
-    # owner/*: a paper of the owner, refereed and revised like an agent's paper (CONTRIBUTING.md).
+    # owner/*: a paper of the owner (role write-paper) or a presentation revision of an accepted paper
+    # (role revise, AGENTS.md 5.6), refereed and revised like an agent's paper (CONTRIBUTING.md).
     case "$branch:$role" in
       agent/*) ;;
       owner/*:referee-scope|owner/*:referee-proofs|owner/*:revise) ;;
@@ -452,6 +455,19 @@ if [ "$role" = revise ] && [ -n "$pr" ]; then
     add_situation "Repair of a paper pull request (failed build, conflict with \`main\`, or an incomplete draft), not a revision round: no referee asked for changes on this head."
   fi
 fi
+# A presentation revision of an accepted paper (AGENTS.md 5.6): a pull request of the owner (branch
+# owner/*, role revise) that rewrites a paper on main as its next version, every node unchanged.
+if [ -n "$pr" ] && [ "$pr_role" = revise ] && [ "${branch#owner/}" != "$branch" ] && [ -n "$paper" ] \
+    && [ -n "$(ls_main "papers/$paper")" ]; then
+  mv_=$(show_main "papers/$paper/META.toml" | sed -n -E 's/^version[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -n 1)
+  mv_=${mv_:-1}
+  add_situation "This pull request is a **presentation revision** of the accepted paper \`$paper\` (AGENTS.md section 5.6): its version $mv_ on \`main\` rewritten for presentation as version $(( mv_ + 1 )). The mathematical content of every node must be unchanged (the same labels, hypotheses and conclusions; no node removed; new nodes only for restated cited results or lemmas that were inline steps). The version on \`main\`: \`git show origin/main:papers/$paper/paper.tex\`."
+  case "$role" in
+    referee-scope) add_situation "As scope referee: judge the presentation with the fourteen criteria on the reader build, and check against the version on \`main\` that nothing else changed in scope (main results, claims, comparison with prior work, attribution, open questions and their labels); novelty and interest are not judged again." ;;
+    referee-proofs) add_situation "As proof referee: check node by node, against the version on \`main\`, that every statement's mathematical content is unchanged, that no node was removed, and that every proof is still complete (your role file, step 7)." ;;
+    revise) add_situation "Answer the reports by changes of presentation only: never change the mathematics of a node." ;;
+  esac
+fi
 [ "$role" = fix-pr ] && [ -n "$pr" ] && add_situation "Fix round $(( fixes + 1 )); the pull request was opened by the role \`$pr_role\` (target \`$pr_target\`): keep its purpose, and its paths (AGENTS.md §2, line \`$eff_role\`)."
 [ "$eff_role" = fix-main ] && [ -z "$pr" ] && add_situation "The build of \`main\` is red (see \`ci-log.txt\`): repair it with the smallest change; a new pull request \"fix main\" is opened."
 if [ "$role" = revise ] && [ -z "$pr" ]; then
@@ -462,7 +478,7 @@ if [ "$role" = revise ] && [ -z "$pr" ]; then
   [ -n "$dc" ] && add_situation "Dependency check (AGENTS.md section 5.6): library papers this paper depends on have a new version since it cited them: $dc. For each, compare the nodes this paper uses (\`depends_on\` in META.toml) with the new version. Not affected: add a line to \`papers/$paper/dependency-checks.md\` and update \`depends_on\` to the new version (paper.tex unchanged, same version). Affected: add an entry \`E<k>\` to \`papers/$paper/errata.md\` and write the next version (\`version = $(( ${cur_version:-1} + 1 ))\`), with the line \`Revised in …\` under it."
 fi
 if [ "$role" = write-paper ] || [ "$role" = revise ]; then
-  add_situation "Before compiling, \`python3 scripts/certify.py bib\` writes \`papers/library.bib\` (generated, never committed: the keys \`INC-P<nnn>\` of the library); before the last commit, \`python3 scripts/certify.py check\`$( [ "$role" = revise ] && echo " --base origin/main")."
+  add_situation "Before compiling, \`python3 scripts/certify.py bib\` writes \`papers/library.bib\` (generated, never committed: the keys \`INC-P<nnn>\` of the library); compile both builds, the reader's and the blueprint (AGENTS.md section 5.2); before the last commit, \`python3 scripts/certify.py check --base origin/main\` (it also checks what never appears in a new or changed \`paper.tex\`, and its \`DOSSIER.md\`)."
 fi
 if [ "$role" = write-paper ]; then
   add_situation "A new paper has \`version = 1\` and lists in \`depends_on\` the results of library papers it uses (each cited as \`\\cite[...]{INC-P<nnn>}\`)."

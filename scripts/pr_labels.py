@@ -15,7 +15,9 @@ State labels (exactly one per open pull request of this repository, none when it
 The build is the check "Build and check" (workflow CI) and, for paper pull requests or when it ran,
 "Compile papers" (workflow Papers), as in scripts/lib.sh (CI_JQ).
 Agents' pull requests (branch agent/*, opened by the owner's account, first line "Role: `<role>`...")
-need trusted commit statuses, i.e. created by the owner's account (the loop), never by a workflow:
+and the owner's paper pull requests (branch owner/*, role write-paper or revise: a new paper or a
+presentation revision) need trusted commit statuses, i.e. created by the owner's account (the loop),
+never by a workflow:
 papers (roles write-paper, revise) "Referee scope" and "Referee proofs" (verdict accept) and
 "Incognita review"; roadmap proposals (role propose-roadmap) "Incognita review" (verdict approve
 of review-roadmap) and then "Incognita loop" (verdict approved: the scripted approval); other pull
@@ -111,8 +113,9 @@ def role_of(pr, me):
         return None
     m = ROLE_LINE.match((pr.get("body") or "").split("\n", 1)[0])
     role = m.group(1) if m and m.group(1) in ROLES else None
-    # owner/*: a paper of the owner, handled like an agent's paper (CONTRIBUTING.md).
-    if branch.startswith("owner/") and role != "write-paper":
+    # owner/*: a paper of the owner (write-paper) or a presentation revision of an accepted paper
+    # (revise, AGENTS.md 5.6), handled like an agent's paper (CONTRIBUTING.md).
+    if branch.startswith("owner/") and role not in PAPER_ROLES:
         return None
     return role
 

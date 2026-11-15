@@ -41,8 +41,9 @@
 *.glg
 *.ist
 ## Papers: PDFs are built by CI (workflow Papers, artifact papers-pdf), never committed; notebooks
-## keep their small text outputs only (AGENTS.md, section 5.3)
+## keep their small text outputs, and the PDF figures of the paper (AGENTS.md, section 5.3)
 /papers/**/*.pdf
+!/papers/*/notebook/**/*.pdf
 /templates/**/*.pdf
 ## Python
 __pycache__/

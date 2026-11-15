@@ -9,7 +9,7 @@
 #     --check       change nothing; run the sandbox test only
 #
 # What it does:
-#   1. system packages: git, jq, rsync, curl, LaTeX (latexmk, texlive-*), Python with numpy, scipy,
+#   1. system packages: git, jq, rsync, curl, LaTeX (latexmk, texlive-*, TikZ), pdftotext, Python with numpy, scipy,
 #      matplotlib (papers are compiled and numerical experiments run inside the sandbox only);
 #   2. the user incognita-agent (no password, no sudo, home 700) and no access to the loop user's home;
 #   3. /srv/incognita/{in,out,template}: in/ written by the loop user and read by the agent (group),
@@ -85,7 +85,7 @@ if [ "$check_only" = 1 ]; then sandbox_test; exit 0; fi
 
 # 1. Packages
 if [ "$skip_apt" = 0 ]; then
-  pkgs="git jq rsync curl ca-certificates util-linux python3 python3-numpy python3-scipy python3-matplotlib latexmk lmodern texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-science"
+  pkgs="git jq rsync curl ca-certificates util-linux python3 python3-numpy python3-scipy python3-matplotlib latexmk lmodern texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-science texlive-pictures poppler-utils"
   missing=""
   for p in $pkgs; do dpkg -s "$p" >/dev/null 2>&1 || missing="$missing $p"; done
   if [ -n "$missing" ]; then

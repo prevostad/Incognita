@@ -32,12 +32,15 @@ slower.
    dead ends, conjectures), and reviews it once. See [roadmaps/](roadmaps/).
 2. **Papers** (agents): an agent writes a paper (at most 100 pages) with one main result in an
    open direction, in LaTeX with leanblueprint macros, so that **the paper is also the blueprint of
-   its formalisation**. It keeps a working notebook next to it (attempts, dead ends, numerical
-   experiments), which is never refereed. See [papers/](papers/).
+   its formalisation**: one source compiles to the paper, written for an expert referee of the
+   field ([docs/writing.md](docs/writing.md)), and to its blueprint, which prints every
+   dependency. What only the referees need goes to a `DOSSIER.md` next to it, and a working
+   notebook (attempts, dead ends, numerical experiments) is never refereed. See [papers/](papers/).
 3. **Refereeing** (agents): a scope referee checks novelty and the bibliography, technique by
-   technique, against the literature and KNOWN.md; then a proof referee checks every proof, node by
-   node. Defects are classed fatal, gap, local or presentation; the paper is accepted when both
-   referees accept the same version, after at most four revisions.
+   technique, against the literature and KNOWN.md, and the presentation of the PDF against fourteen
+   criteria; then a proof referee checks every proof, node by node. Defects are classed fatal, gap,
+   local, readability or presentation; the paper is accepted when both referees accept the same
+   version, after at most four revisions.
 4. **Formalisation** (agents), following Rémy Degenne's `formalize-paper` method: the statements
    of an accepted paper are frozen in `Statements/` with `sorry` and locked (`lake exe audit`); then
    they are proved in the library `Incognita/`, lemma by lemma, following the paper's dependency
@@ -66,7 +69,7 @@ for version 1).
 | Path | Content | Owner |
 |---|---|---|
 | `roadmaps/<Name>/` | `ROADMAP.md` and `KNOWN.md` of each research area, its extensions, its candidate directions | the owner; agents propose, the loop appends candidates |
-| `papers/<P>/` | one paper: `paper.tex`, `refs.bib`, `META.toml`, notebook, formalisation notes, errata | agents |
+| `papers/<P>/` | one paper: `paper.tex`, its `DOSSIER.md` for the referees, `refs.bib`, `META.toml`, notebook, formalisation notes, errata | agents |
 | `Statements/` | frozen Lean statements of accepted papers (`sorry` by design), one locked file each | agents, additions only |
 | `Incognita/` | the library: definitions and proofs, no `sorry` | agents, under review |
 | `Exploration/` | Lean drafts, `sorry` allowed, never imported by the library | agents |
@@ -74,14 +77,16 @@ for version 1).
 | `literature/` | bibliography, what was read in each source, source notes | agents |
 | `templates/` | the paper template and its LaTeX macros | the owner |
 | `agents/` | role prompts | the owner |
-| `docs/` | design documents | the owner |
+| `docs/` | design documents, the writing rules of papers (`docs/writing.md`) | the owner |
 | `scripts/`, `tests/`, `.github/`, `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | build, audit, CI and its canaries, the agent loop | the owner |
 
 ## Building
 
 ```bash
 scripts/build.sh Incognita
-latexmk -pdf -cd papers/<P>/paper.tex
+python3 scripts/certify.py bib
+latexmk -pdf -cd papers/<P>/paper.tex                    # the paper
+latexmk -pdf -jobname=paper-blueprint -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex   # its blueprint
 ```
 
 The first command fetches Mathlib's and Tau Ceti's prebuilt files, then runs `lake build`;

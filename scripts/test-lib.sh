@@ -73,11 +73,15 @@ ok "row fields" '[ "$(printf "%s\n" "$rows" | head -n1)" = "$(printf "7\taaa\tag
 ok "draft row" '[ "$(printf "%s\n" "$rows" | tail -n1 | cut -f4,8,9)" = "$(printf "draft\tincomplete\tIN_PROGRESS")" ]'
 busy=$(busy_pairs "$t/prs.json")
 ok "busy pairs ignore forks" '[ "$busy" = "$(printf "write-paper BatchedBandits\nprove P001-x")" ]'
-# Papers of the owner: branch owner/*, role write-paper only, opened by the owner's account.
+# Papers of the owner: branch owner/*, role write-paper (a new paper) or revise (a presentation
+# revision of an accepted paper, AGENTS.md 5.6) only, opened by the owner's account.
 cat > "$t/prs3.json" <<'EOF'
 [
  {"number": 20, "title": "HY", "body": "Role: `write-paper`. Target: `BatchedBandits`. Model: `owner`.",
   "headRefName": "owner/hy", "headRefOid": "o1", "isCrossRepository": false, "isDraft": false,
+  "labels": [], "mergeable": "MERGEABLE", "author": {"login": "owner"}, "baseRefName": "main", "statusCheckRollup": []},
+ {"number": 23, "title": "P002 v2", "body": "Role: `revise`. Target: `P002-drift`. Model: `claude-opus-5-5`.",
+  "headRefName": "owner/p002-v2", "headRefOid": "o4", "isCrossRepository": false, "isDraft": false,
   "labels": [], "mergeable": "MERGEABLE", "author": {"login": "owner"}, "baseRefName": "main", "statusCheckRollup": []},
  {"number": 21, "title": "Not a paper", "body": "Role: `prove`. Target: `P001-x`. Model: `owner`.",
   "headRefName": "owner/prove", "headRefOid": "o2", "isCrossRepository": false, "isDraft": false,
@@ -87,7 +91,9 @@ cat > "$t/prs3.json" <<'EOF'
   "labels": [], "mergeable": "MERGEABLE", "author": {"login": "mallory"}, "baseRefName": "main", "statusCheckRollup": []}
 ]
 EOF
-ok "owner rows: a paper of the owner only" '[ "$(agent_rows "$t/prs3.json" | cut -f1,3,6 | tr "\t" ",")" = "20,owner/hy,write-paper" ]'
+ok "owner rows: a paper of the owner and a presentation revision only" '[ "$(agent_rows "$t/prs3.json" | cut -f1,3,6,7 | tr "\t\n" ", ")" = "20,owner/hy,write-paper,BatchedBandits 23,owner/p002-v2,revise,P002-drift " ]'
+ok "owner rows: a presentation revision makes its paper busy for revise" 'busy_pairs "$t/prs3.json" | grep -qx "revise P002-drift"'
+ok "owner rows: a presentation revision needs Compile papers" '[ "$(agent_rows "$t/prs3.json" | awk -F"\t" "\$1 == 23 { print \$9 }")" = NONE ]'
 ok "open-prs.md" '[ "$(open_prs_md "$t/prs.json" | wc -l)" = 3 ]'
 
 # ---- the build of a head: "Build and check" (CI) and "Compile papers" (Papers), CI_JQ
@@ -188,7 +194,8 @@ try "fix-main may fix the library" fix-main "" 0 'echo z >> Incognita/Basic.lean
 
 # ---- the table of AGENTS.md §2, line by line (role_allows)
 # write-paper: one new directory with paper.tex, refs.bib, META.toml, notebook/; literature; drafts
-try "write-paper: refs.bib, META.toml" write-paper "" 0 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/P001-t/refs.bib; echo c > papers/P001-t/META.toml'
+try "write-paper: refs.bib, META.toml, DOSSIER.md" write-paper "" 0 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/P001-t/refs.bib; echo c > papers/P001-t/META.toml; echo d > papers/P001-t/DOSSIER.md'
+try "write-paper: a figure of the paper in notebook/" write-paper "" 0 'mkdir -p papers/P001-t/notebook; echo a > papers/P001-t/paper.tex; echo f > papers/P001-t/notebook/fig.pdf'
 try "write-paper may not write blueprint.md" write-paper "" 1 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/P001-t/blueprint.md'
 try "write-paper may not write errata.md" write-paper "" 1 'mkdir -p papers/P001-t; echo a > papers/P001-t/paper.tex; echo b > papers/P001-t/errata.md'
 try "write-paper: no file in a subdirectory but notebook/" write-paper "" 1 'mkdir -p papers/P001-t/fig; echo a > papers/P001-t/paper.tex; echo b > papers/P001-t/fig/x.tex'
@@ -199,6 +206,9 @@ try "write-paper: bad paper id" write-paper "" 1 'mkdir -p papers/P01-t; echo a 
 # revise: its paper's sources, notebook and errata.md (Revised in lines); literature; drafts
 try "revise: notebook, errata.md, refs.bib, META.toml, literature, exploration" revise P001-test 0 \
   'mkdir -p papers/P001-test/notebook literature Exploration; echo n > papers/P001-test/notebook/N.md; echo e > papers/P001-test/errata.md; echo r > papers/P001-test/refs.bib; echo m > papers/P001-test/META.toml; echo l > literature/x.md; echo x > Exploration/X.lean'
+try "revise: DOSSIER.md (a presentation revision: paper.tex, DOSSIER.md, refs.bib, META.toml, notebook/)" revise P001-test 0 \
+  'mkdir -p papers/P001-test/notebook; echo p > papers/P001-test/paper.tex; echo d > papers/P001-test/DOSSIER.md; echo r > papers/P001-test/refs.bib; echo m > papers/P001-test/META.toml; echo n > papers/P001-test/notebook/N.md'
+try "revise may not write the DOSSIER.md of another paper" revise P001-test 1 'mkdir -p papers/P002-other; echo d > papers/P002-other/DOSSIER.md'
 try "revise may not write blueprint.md" revise P001-test 1 'mkdir -p papers/P001-test; echo b > papers/P001-test/blueprint.md'
 try "revise may not write statement-corrections.md" revise P001-test 1 'mkdir -p papers/P001-test; echo b > papers/P001-test/statement-corrections.md'
 try "revise may not touch the library" revise P001-test 1 'echo l > Incognita/L.lean'
@@ -351,6 +361,7 @@ mkpaper() {  # dir version depends_on cite-line [directions]
   mkdir -p "papers/$1"
   printf 'roadmap = "BB"\nkind = "internal"\ndirections = [%s]\nauthors = ["m"]\nversion = %s\ndepends_on = %s\n' \
     "${5:-\"D1\"}" "$2" "$3" > "papers/$1/META.toml"
+  printf '# Dossier of %s\n\n## Closest known\n- K1: not the same class.\n' "$1" > "papers/$1/DOSSIER.md"
   cat > "papers/$1/paper.tex" <<EOF
 \title{Paper $1\thanks{Written by agents.}}
 \date{2026-11-20}
@@ -358,6 +369,7 @@ mkpaper() {  # dir version depends_on cite-line [directions]
 $4
 \section{Open questions}
 \begin{openquestion}[Rate]\label{oq:rate}
+\extends{D1}
 Is the rate optimal on every grid?
 \end{openquestion}
 \begin{openquestion}\label{oq:other}
@@ -369,7 +381,9 @@ mkdir -p roadmaps/BB
 printf '# R\n\n| | |\n|---|---|\n| Status | **approved** (d) |\n| Domain | `bandits` |\n\n- **F0. Setting.** x\n- **D1. One.** x\n- **D2. Two.** **On hold**.\n' > roadmaps/BB/ROADMAP.md
 printf 'Reviewed by owner: 2026-11-14\n' > roadmaps/BB/KNOWN.md
 mkpaper P001-first 1 '[]' ''
-mkpaper P002-second 1 '["P001v1:thm:main"]' 'By \cite[Theorem~1]{INC-P001}.' '"D2"'
+# (P002 keeps a KNOWN id in its text, as the papers written before the rules of 2026-11-15: it is
+# checked only when a pull request changes its paper.tex.)
+mkpaper P002-second 1 '["P001v1:thm:main"]' 'By \cite[Theorem~1]{INC-P001}. Compare with K7.' '"D2"'
 C bib >/dev/null
 ok "certify: a consistent library passes" 'C check >/dev/null'
 ok "certify: library.bib has the key and the version" 'grep -q "@misc{INC-P002," papers/library.bib && grep -q "version      = {1}" papers/library.bib && grep -q "title        = {{Paper P001-first}}" papers/library.bib'
@@ -395,6 +409,28 @@ echo 'More.' >> papers/P001-first/paper.tex
 ok "certify: a new paper.tex needs a new version" '! C check --base "$base" >/dev/null'
 sed -i 's/^version = 1/version = 2/' papers/P001-first/META.toml; C bib >/dev/null
 ok "certify: version 2 with the new paper.tex passes" 'C check --base "$base" >/dev/null'
+# What never appears in a new or changed paper.tex (AGENTS.md 5.2): KNOWN ids in the prose, "(to be
+# checked)"; and its DOSSIER.md.
+ok "certify: a paper unchanged since the base is not checked again (P002 keeps its KNOWN id)" 'C check --base "$base" >/dev/null && grep -q K7 papers/P002-second/paper.tex'
+cp papers/P001-first/paper.tex "$t/p1.tex"
+printf '%s\n' 'As in K12, the rate is $\log T$.' >> papers/P001-first/paper.tex
+n=$(wc -l < papers/P001-first/paper.tex | tr -d ' ')
+ok "certify: a KNOWN id in the text of a changed paper fails, naming the line" '[[ "$(C check --base "$base" 2>&1)" == *"paper.tex:$n: a KNOWN id (K12)"* ]]'
+cp "$t/p1.tex" papers/P001-first/paper.tex
+printf '%s\n' '% K12 is the closest entry.' 'With $K_2 = 1$, \(K3\) and \extends{K4} in a remark.' '\begin{align} K5 \end{align}' >> papers/P001-first/paper.tex
+ok "certify: KNOWN ids in comments, mathematics and \\extends are not seen" 'C check --base "$base" >/dev/null'
+cp "$t/p1.tex" papers/P001-first/paper.tex
+printf '%s\n' 'See \cite{GMS19} (to be checked).' >> papers/P001-first/paper.tex
+n=$(wc -l < papers/P001-first/paper.tex | tr -d ' ')
+ok "certify: \"(to be checked)\" in a changed paper fails" '[[ "$(C check --base "$base" 2>&1)" == *"paper.tex:$n: \"(to be checked)\""* ]]'
+cp "$t/p1.tex" papers/P001-first/paper.tex
+rm papers/P001-first/DOSSIER.md
+ok "certify: a changed paper.tex needs a DOSSIER.md" '[[ "$(C check --base "$base" 2>&1)" == *"papers/P001-first: no DOSSIER.md"* ]]'
+git checkout -q -- papers/P001-first/DOSSIER.md
+sed -i 's/^\\extends{D1}$/\\extends{K1}/' papers/P001-first/paper.tex
+ok "certify: \\extends names roadmap items" '[[ "$(C check 2>&1)" == *"\\extends{K1} in oq:rate"* ]]'
+cp "$t/p1.tex" papers/P001-first/paper.tex
+ok "certify: back to a passing version 2" 'C check --base "$base" >/dev/null'
 ok "certify: the dependants of a revised paper need a check" '[ "$(C depchecks)" = "P002-second P001v1->v2" ]'
 ok "certify: formalisation priority (dependants)" '[ "$(C dependants | tr "\n" " ")" = "P001-first 1 P002-second 0 " ]'
 git add -A; git commit -qm "P001 v2"
@@ -419,6 +455,9 @@ printf -- '- A. Owner, 2026-11-25, v1: read thm:main.\n' > papers/P001-first/hum
 ok "certify: audited by a human (of an older version)" 'C report | grep -F "[P001]" | grep -q "audited by a human: A. Owner, 2026-11-25, v1 (current: v2)"'
 C leanok >/dev/null
 ok "certify: the PDF gets the verified node" 'grep -qF "\\incognitaverified{thm:main}{Incognita.P001.main}" papers/P001-first/certification.tex'
+ok "certify: the certification line in plain words, badges only when there are some" 'grep -qF "{Incognita library, P001 version 2. Accepted by the owner; Lean-verified (its frozen statement proved); re-verified 2 times by gardening. Used by 1 Lean-verified paper (P002). Audited by a human: A. Owner, 2026-11-25, version 1 (now version 2).}" papers/P001-first/certification.tex && grep -qF "{Incognita library, P002 version 1. Refereed and accepted by two AI referees; Lean-verified (its frozen statement proved).}" papers/P002-second/certification.tex'
+C leanok --base "$base" >/dev/null
+ok "certify: in a pull request, a changed paper is submitted" 'grep -qF "{Incognita library, P001 version 2. Submitted: under refereeing by AI agents, not accepted yet.}" papers/P001-first/certification.tex && grep -qF "P002 version 1. Refereed and accepted" papers/P002-second/certification.tex'
 mkpaper P003-third 1 '["P002v1:thm:main"]' 'From \cite{INC-P002}.'
 mkdir -p Statements/P003; : > Statements/P003/main.lock
 printf 'paper = "P003-third"\nlabel = "thm:main"\nstatus = "proved"\n' > catalogue/results/P003-main.toml
@@ -440,6 +479,7 @@ Verdict: accept
 EOF
 ok "certify: accepted open questions become candidate directions" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789 --date 2026-11-26)" = 1 ]'
 ok "certify: the entry" 'grep -q "^## C1 (2026-11-26, from P002v1 oq:rate)" roadmaps/BB/directions.md && grep -q "^- Rating: interest high; novelty open; fit D1 (referee-scope, pull request #7, head abcdef012345)" roadmaps/BB/directions.md'
+ok "certify: the items of \\extends go to their own line, not into the statement" 'grep -qx -- "- Statement: Is the rate optimal on every grid?" roadmaps/BB/directions.md && grep -qx -- "- Extends: D1" roadmaps/BB/directions.md'
 ok "certify: candidates are added once" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789)" = 0 ] && C check >/dev/null'
 ok "certify: a candidate is an item" 'C items BB --free | grep -qx "C1 open"'
 git add -A; git commit -qm "directions"; base=$(git rev-parse HEAD)

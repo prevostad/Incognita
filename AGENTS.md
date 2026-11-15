@@ -50,7 +50,7 @@ at the pull request's head. `.agents/` is never committed.
 
 **Tools.** Read, Edit, Write, Glob, Grep, WebSearch, WebFetch; `lake build`, `lake env lean`,
 `lake lint`, `lake exe mk_all`, `lake exe audit`, `scripts/check-build.sh`, `scripts/build.sh`;
-`latexmk`, `pdflatex` and `bibtex`; `python3` with numpy, scipy and matplotlib (numerical
+`latexmk`, `pdflatex`, `bibtex` and `pdftotext`; `python3` with numpy, scipy and matplotlib (numerical
 experiments); `ls`, `grep`, `wc`, `mkdir`; local git `add`, `commit`, `rm`, `mv`, `status`, `diff`,
 `log`, `show`; for `fix-pr` and `revise` only, `git rebase origin/main`, `git rebase --continue`,
 `git rebase --abort`. You have no `git push`, no `gh` and no shell network command: the script
@@ -58,9 +58,9 @@ pushes your commits and opens or updates the pull request. Python never download
 is for reading only: never post, sign up or submit anything.
 
 **Reviewers** (`referee-scope`, `referee-proofs`, `review-statements`, `review-pr`, `review-roadmap`) are read-only:
-they change no file of the repository and make no commit (`referee-proofs` may write numerical
-experiments in `.agents/scratch/`, never collected), and their final message is their report. Its
-first line is the verdict.
+they change no file of the repository and make no commit (the referees compile the paper, and
+`referee-proofs` may write numerical experiments in `.agents/scratch/`: none of this is
+collected), and their final message is their report. Its first line is the verdict.
 
 **Writing roles** commit early and often: a session is stopped at its deadline, and committed work
 is kept as a draft pull request labelled `incomplete`. The script publishes the sum of a session's
@@ -97,8 +97,8 @@ modified only.
 
 | Role | May change |
 |---|---|
-| `write-paper` | one new directory `papers/<P>/` (number from task.md): `paper.tex`, `refs.bib`, `META.toml`, `notebook/`; `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
-| `revise` | its paper's `paper.tex`, `refs.bib`, `META.toml`, `notebook/`, `errata.md` (lines `Revised in …`, §6.6, and entries after a dependency check) and `dependency-checks.md` (§5.6); `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
+| `write-paper` | one new directory `papers/<P>/` (number from task.md): `paper.tex`, `DOSSIER.md`, `refs.bib`, `META.toml`, `notebook/`; `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
+| `revise` | its paper's `paper.tex`, `DOSSIER.md`, `refs.bib`, `META.toml`, `notebook/`, `errata.md` (lines `Revised in …`, §6.6, and entries after a dependency check) and `dependency-checks.md` (§5.6); `literature/` (no deletion); `Exploration/`, `Exploration.lean` |
 | `formalize-statements` | `Statements/P<nnn>/*.lean` and `*.lock` (additions only), `Statements.lean` (added imports only); `Incognita/` (no deletion), `Incognita.lean`; `catalogue/definitions/` (no deletion); its paper's `blueprint.md`, `errata.md`, `statement-corrections.md`; `Exploration/`, `Exploration.lean` |
 | `prove` | `Incognita/` (no deletion), `Incognita.lean`; `catalogue/results/P<nnn>-<name>.toml` (additions only); its paper's `blueprint.md`, `formalisation.tex`, `errata.md`, `statement-corrections.md`; `Exploration/`, `Exploration.lean` |
 | `bibliographer` | `literature/` and `catalogue/attribution/` (no deletion); `refs.bib` of any paper (metadata fields only) |
@@ -108,8 +108,9 @@ modified only.
 | reviewers | nothing |
 
 The root files `Incognita.lean`, `Statements.lean`, `Exploration.lean` change only by import lines.
-Nothing under `papers/` is ever deleted. An accepted `paper.tex` changes only by a new version after
-an erratum (§6.6, case b).
+Nothing under `papers/` is ever deleted. An accepted `paper.tex` (and its `DOSSIER.md`) changes only
+by a new version: after an erratum (§6.6, case b), an affected dependency, or a presentation
+revision (§5.6).
 
 **The owner only** (refused for every role): `README.md`, `AGENTS.md`, `CLAUDE.md` and
 `CONTRIBUTING.md` anywhere (so every `README.md` of `catalogue/`, `literature/`, `papers/`…),
@@ -145,7 +146,8 @@ and pull requests from forks, then takes the first available of:
    labelled `incomplete`. For a paper, only an answer to a referee's `major` is a revision round;
    the other repairs are fix rounds;
 4. reviews of agent pull requests with a green build and no trusted verdict on their head for the
-   needed role: paper pull requests get `referee-scope`, then `referee-proofs` once scope accepted
+   needed role: paper pull requests (the owner's too: branches `owner/*`, a new paper or a
+   presentation revision, §5.6) get `referee-scope`, then `referee-proofs` once scope accepted
    that head; statements pull requests get `review-statements`; roadmap proposals get
    `review-roadmap`; all others get `review-pr`;
 5. every 6 agent tasks, one `garden` (once a proof marker exists) or `bibliographer` task,
@@ -185,13 +187,15 @@ Formalising what is accepted always comes before writing more.
   of an extension that is not `approved`, and a dropped candidate are not open for papers.
 - The roadmap's pinned conventions and Definitions are used as written. A paper that changes one
   says which, and why, in its Setting.
+- A roadmap's acceptance criteria written for the former sections of a paper ("names, in Closest
+  known, …") refer to the matching sections of `DOSSIER.md` (§5.2).
 - `KNOWN.md` lists what the owner knows: entries K1, K2, … with a statement (algorithms given by
   their formula), a status (`[Lean]`, `[paper]`, `[sketch]`, `[belief]`), a reason, and possibly the
   flag `private`. Read every entry before writing or refereeing a paper. Entries may also come in
   a private file listed in task.md: they count the same.
 - **`private` entries**: never re-derive, propose, formalise or quote them. Refer to them by id only
-  (`K12`), in papers, reports and summaries alike. A paper that re-derives a private entry is
-  rejected.
+  (`K12`), in a paper's `DOSSIER.md`, reports and summaries alike; no KNOWN id ever appears in
+  `paper.tex` (§5.2). A paper that re-derives a private entry is rejected.
 - Roadmaps and `KNOWN.md` are never edited by agents (a proposal adds new files, §4.2). If you
   think a direction is answered, ill-posed, or should be reframed, write an `Ask-owner:` line.
 
@@ -242,8 +246,8 @@ directions of an approved extension are open at once (the roadmap's KNOWN.md is 
 `papers/<P>/`, where `<P>` is `P<nnn>-<slug>` (three digits, then lowercase letters, digits and
 hyphens, for example `P001-one-batch-lower-bound`); `P<nnn>` alone is the paper's **prefix**, used
 in Lean names. The number is given in task.md. [papers/README.md](papers/README.md) lists the files
-and how a paper's status is computed. Start from `templates/paper/paper.tex`, `refs.bib` and
-`META.toml`.
+and how a paper's status is computed. Start from `templates/paper/paper.tex`, `DOSSIER.md`,
+`refs.bib` and `META.toml`.
 
 `META.toml` holds only: `roadmap`, `kind`, `directions` (items D, F or C served), `authors` (the
 models that wrote or revised the paper), `version` (§5.6), `depends_on` (§5.6), for an external
@@ -253,78 +257,155 @@ in order; they are the authors of its `papers/library.bib` entry). **Never add, 
 `authors` only. Kinds:
 
 - `internal`: a result written by an agent. This includes a paper for a known result of the
-  roadmap that is not published (an owner's result stated in the roadmap): its Main result copies
-  the roadmap's statement verbatim and cites the roadmap item.
+  roadmap that is not published (an owner's result stated in the roadmap): `thm:main` states it in
+  the paper's notation, and `DOSSIER.md` quotes the roadmap's statement verbatim with its
+  correspondence to `thm:main` (§5.2).
 - `external`: a published result to formalise, `source = "[KEY]"`. The paper is the blueprint of
-  the published proof: statements copied verbatim from `literature/notes/KEY.md`, proofs following
-  the source, every gap the source leaves filled and marked as such.
+  the published proof: statements equivalent to those of `literature/notes/KEY.md` (verbatim, or
+  in the paper's notation after a line giving the renaming), proofs following the source, every gap
+  the source leaves filled and marked as such.
 - `definitions`: a setting paper (for example `P000-setting`): definitions with their basic
   properties, witnesses and exclusions.
 
 ### 5.2 Writing rules
 
+A paper has **one reader**: an expert referee of JMLR or COLT who has never heard of Incognita.
+[docs/writing.md](docs/writing.md) holds the writing rules: what each section holds, the fourteen
+presentation criteria W1–W14 that the scope referee applies, the owner's rules for proofs and the
+failure modes of AI-written mathematics. Read it before writing, revising or refereeing a paper.
+One source gives two builds, and a dossier sits next to it:
+
+- the **reader build** of `paper.tex` (the default; `P<nnn>.pdf` on the site) prints none of the
+  blueprint metadata; the **blueprint build** (`P<nnn>-blueprint.pdf`) prints every `\uses`,
+  `\proves` and `\extends` (`templates/paper/blueprint-macros.sty`). The green "LEAN APPROVED"
+  boxes are in both. The two builds differ only by this metadata: no proof text is hidden;
+- `papers/<P>/DOSSIER.md` (from `templates/paper/DOSSIER.md`) holds what the referees and the
+  owner need and the reader does not (below). It is refereed and versioned with the paper, and
+  never compiled into the PDF.
+
+General rules:
+
 - English. At most **100 pages** (the owner's limit, 2026-11-14); no limit on the number of nodes
-  (definition, lemma, proposition, theorem and corollary environments, cited results included).
-  Shorter is better: a long proof is split into lemmas, and a paper with a reusable tool may be
-  split into a lemma paper and an application paper. One main result, labelled `thm:main`. A
-  negative result or a counterexample is a main result.
+  (definition, assumption, lemma, proposition, theorem and corollary environments, cited results
+  included). Shorter is better: a paper with a reusable tool may be split into a lemma paper and an
+  application paper. One main result, labelled `thm:main`. A negative result or a counterexample
+  is a main result.
+- No evaluative definitions: "optimal" is never a definition. State upper bounds with explicit
+  constants and lower bounds with explicit classes of learners; "optimal" is a corollary pairing
+  the two in one class.
 - **The paper is the blueprint** (leanblueprint conventions):
-  - every definition, lemma, proposition, theorem and corollary is an environment with a `\label`;
-  - a statement that uses definitions starts with `\uses{def:…}`; every proof starts with
-    `\uses{…}` listing **every** node it uses (definitions included); a proof placed away from its
-    statement also has `\proves{<label>}`;
-  - labels have the prefixes `def:`, `lem:`, `prop:`, `thm:`, `cor:`, `cite:` (and `sec:` for
-    sections); once submitted, a label is never renamed or reused;
-  - a **cited result** is a node: a `lemma` or `theorem` labelled `cite:<KEY>-<part>`, with optional
-    argument `[{\cite[<part>]{<KEY>}}]`, whose statement is copied verbatim from
-    `literature/notes/<KEY>.md`, and no proof. If the note lacks the statement, read the source and
-    add it to the note in the same pull request. A result of a **library paper** is a cited node
-    too: `cite:INC-P<nnn>-<label>`, its statement copied verbatim from that paper at the version
-    recorded in `depends_on` (§5.6); Facts at the level of a textbook that Mathlib or
-    LML provide (Markov's inequality, Fubini, the chain rule for KL) may be used by name without a
-    node;
-  - a proof longer than one page is split into lemmas;
+  - every definition, assumption, lemma, proposition, theorem and corollary is an environment with
+    a `\label`, one node per concept; parallel results may be one node with items (Lean then has
+    one theorem per item);
+  - a statement that uses definitions or assumptions starts with `\uses{…}`; every proof starts
+    with `\uses{…}` listing **every** node it uses (definitions and assumptions included); a proof
+    placed away from its statement also has `\proves{<label>}`. They print only in the blueprint
+    build, and stay mandatory and exhaustive;
+  - a **standing assumption** of a section is an `assumption` node that the statements of the
+    section `\uses`, instead of repeating it;
+  - nodes have labels with the prefixes `def:`, `ass:`, `lem:`, `prop:`, `thm:`, `cor:`, `cite:`;
+    other labels use `sec:`, `oq:`, `eq:`, `fig:`, `tab:`, `alg:`. Once submitted, a label is
+    never renamed or reused;
+  - a **cited result** is a node: a `lemma` or `theorem` labelled `cite:<KEY>-<part>`, with
+    optional argument `[{\cite[<part>]{<KEY>}}]`, and no proof. It states the result **in the
+    paper's notation**, after one line giving the correspondence with the source's notation
+    ("[GMS19] write $\underline{\nu}$ for …"). The verbatim statement stays in
+    `literature/notes/<KEY>.md` (if the note lacks it, read the source and add it to the note in
+    the same pull request); the scope referee checks that the restatement is equivalent, never
+    stronger. A consequence of a cited result that the source does not print is a lemma of the
+    paper, proved from the cited node. A result of a **library paper** is a cited node too:
+    `cite:INC-P<nnn>-<label>`, equivalent to that paper's node at the version recorded in
+    `depends_on` (§5.6), with the renaming line if the notations differ. Facts at the level of a
+    textbook that Mathlib or LML provide (Markov's inequality, Fubini, the chain rule for KL) may
+    be used by name without a node;
+  - a proof longer than about a page is split into lemmas, by meaning rather than by length: the
+    hierarchy follows mathematical importance, and the granular lemmas go to the appendices;
   - no `\lean{…}` in `paper.tex`: the Lean names of its nodes are recorded in `blueprint.md` by
     `formalize-statements`; **never write `\leanok` or `\mathlibok`**: they come from the audit
     (inserted when the paper is built, never committed by an agent) and print the green
     "LEAN APPROVED" box.
-- **Mandatory sections**, in the order of the template:
-  1. **Main result** (page 1): the complete statement with every quantifier, the class of
-     instances, the class of learners or the algorithm, the criterion; the nature of the
-     constants (explicit, or existential, and on what they depend); the roadmap items served, and
-     what is missing if the result is weaker than the direction asks.
-  2. **Setting**: the roadmap's conventions used, the definitions as nodes.
-  3. **Closest known**: the nearest KNOWN entries (by id) and published results; for each, the
-     difference, and an honest attempt to derive the main result from them, with where it fails.
-  4. **Proofs**.
-  5. **Sanity checks**: degenerate cases (for example $x = 1$, $K = 2$, Bernoulli rewards,
-     $N = 0$, ties, infinite divergences), consistency with every `[Lean]` entry of KNOWN.md and with
-     the roadmap's known results, and one explicit example satisfying all hypotheses at once.
-  6. **Weak points**: the three steps you are least sure of, each by label and step.
-  7. **Open questions**: one to five questions the paper leaves open, each an environment
-     `openquestion` labelled `oq:<name>`, precise enough to be the main result of a next paper
-     (quantifiers, class, criterion), with why the paper's method stops there and the roadmap item
-     it extends. An internal paper has at least one; an external or definitions paper may write
-     "None". They are not nodes. The scope referee rates them; the accepted ones become candidate
-     directions of the roadmap (§4.1).
-  8. **Attribution**: for each technique of the proofs, the earliest source you found
-     (`[KEY, part]`) or "source not known", and the web queries you ran.
-- No evaluative definitions: "optimal" is never a definition. State upper bounds with explicit
-  constants and lower bounds with explicit classes of learners; "optimal" is a corollary pairing
-  the two in one class.
-- LaTeX: only the packages of the template; macros by `\newcommand` in the preamble; no `\def`, no
-  `enumitem`, no TikZ, no Unicode characters except accented letters in names; braces around macro
-  subscripts (`x_{\ell}`); `\texorpdfstring` for mathematics in headings.
-- **Compile before finishing**, as CI does:
-  `python3 scripts/certify.py bib` (it writes `papers/library.bib`, the keys `INC-P<nnn>`), then
-  `latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`. The final
-  `papers/<P>/paper.log` must have no error, no undefined reference or citation (`undefined`) and
-  no duplicate label (`multiply defined`); the PDF at most 100 pages. Then remove the generated files
-  with `latexmk -C -cd papers/<P>/paper.tex`, and `git add` your source files by name: never commit
-  a PDF, a build file or `papers/library.bib` (generated, never committed). CI compiles every paper
-  the same way and fails on the same problems. Before the last commit,
-  `python3 scripts/certify.py check` checks META.toml (`roadmap`, an existing roadmap), `depends_on`,
-  the citations of library papers and the open questions, as CI does.
+- **Sections**, in this order (the template has a slot for each; docs/writing.md §2 says what each
+  holds):
+  1. **Introduction** (`sec:intro`, 1–3 pages): the problem and why it matters; the main result in
+     informal words with its constant, on page 1 or 2; what is new against the closest published
+     result; the contributions, each pointing to a numbered result; related work as a comparison
+     in prose (a table when three or more prior bounds are compared), with, for each closest
+     result, one sentence on why it does not give the main result; the techniques, credited where
+     they come from; the organisation of the paper.
+  2. **Setting** (`sec:setting`): the model, the definitions and the assumptions as nodes, a
+     notation paragraph; the roadmap's conventions used, any change declared with its reason.
+  3. **Main results** (`sec:main`): `thm:main` with every quantifier, within the first 5 pages,
+     every symbol in it defined before it; then remarks in words: the nature of the constants
+     (explicit, or existential, and on what they depend), the **scope** (what is not proved, in
+     plain words, without item ids), an interpretation and the comparison. Other main results (a
+     lower bound, structure results) come here too.
+  4. **Proof overview** (`sec:overview`), mandatory when the paper exceeds 10 pages: the
+     decomposition, the key propositions or lemmas (stated as nodes or by reference), the proof of
+     the main theorem from them, where the difficulty lies, and a map of the appendices.
+  5. **Examples and special cases** (`sec:examples`): one explicit instance satisfying all the
+     hypotheses at once, the degenerate cases, worked numbers, figures if useful.
+  6. **Open questions** (`sec:open`): one to five questions the paper leaves open, each an
+     environment `openquestion` labelled `oq:<name>`, precise enough to be the main result of a
+     next paper (quantifiers, class, criterion), with why the paper's method stops there; the
+     roadmap items it extends go in `\extends{D8}` (printed only in the blueprint build, read by
+     `scripts/certify.py`), never in the text. An internal paper has at least one; an external or
+     definitions paper may write "None". They are not nodes. The scope referee rates them; the
+     accepted ones become candidate directions of the roadmap (§4.1).
+  7. `\appendix`, then: **Results from the literature** (`sec:cited`: the `cite:` nodes); the
+     **proofs**, in the order of the main text, each appendix opening with its plan; **Sources of
+     the techniques** (`sec:attribution`): for each technique of the proofs, where it is used and
+     the earliest source found (`\cite[<part>]{<KEY>}`, or "source not known"), without the web
+     queries; **Notation** (`sec:notation`) when the paper has more than about 30 symbols.
+
+  The main text (sections 1–6) is about 15 pages at most when the paper is longer than 25 pages.
+- **`DOSSIER.md`**, in the sections of the template:
+  - **Roadmap correspondence**: the items served (`directions` of META.toml) and how; for an
+    owner's result, the roadmap's statement verbatim and its correspondence with `thm:main`; what
+    the items ask that the paper does not give; the roadmap's acceptance criteria, one by one;
+  - **Closest known**: the nearest KNOWN entries (by id; private ones by id only), published
+    results and library papers; for each, the difference, and an honest attempt to derive the main
+    result from it, with where it fails;
+  - **Sanity checks**: the degenerate cases (for example $x = 1$, $K = 2$, Bernoulli rewards,
+    $N = 0$, ties, infinite divergences), consistency with every `[Lean]` entry of KNOWN.md and
+    with the roadmap's known results, and where the paper's explicit example is;
+  - **Weak points**: the three steps you are least sure of, each by label and step;
+  - **Searches**: the web queries you ran, with their dates and what they found;
+  - **Reading notes**, if any: what was read of each cited source;
+  - for a new version, **Changes**: what changed since the previous version, node by node.
+- **Never in `paper.tex`** (outside comments): KNOWN ids (`K12`); roadmap item ids (`D8`, `F4`,
+  `C3`), except inside `\extends{…}`; "(to be checked)"; admissions of reading ("we read only its
+  abstract"); "this paper serves direction …"; web queries; weak points; process words ("Incognita
+  agents" stays only in the author line and its footnote). A citation in the paper rests on a part
+  that was read (recorded in `literature/index.md`), or it is weakened to "see also", or dropped;
+  classics may be cited for standard facts (Hoeffding, Lai–Robbins, Burnetas–Katehakis,
+  Lattimore–Szepesvári). CI refuses a changed `paper.tex` with a KNOWN id or "(to be checked)" in
+  its text, or without a `DOSSIER.md` (`scripts/certify.py check --base`).
+- LaTeX: the packages of the template (`booktabs`, `algorithm` and `algpseudocode` included) and,
+  when needed, `graphicx` (a figure made by a committed script of `notebook/`: a PDF of at most
+  200 kB, also in `notebook/`), `enumitem`, `tikz` (libraries `arrows.meta` and `positioning`) and
+  `tcolorbox`; no other package. Macros by `\newcommand` in the preamble; no `\def`, no Unicode
+  characters except accented letters in names; braces around macro subscripts (`x_{\ell}`);
+  `\texorpdfstring` for mathematics in headings.
+- **Compile before finishing**, both builds, as CI does: `python3 scripts/certify.py bib` (it
+  writes `papers/library.bib`, the keys `INC-P<nnn>`), then
+
+  ```
+  latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex
+  latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint \
+    -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex
+  ```
+
+  The final `papers/<P>/paper.log` and `paper-blueprint.log` must have no error, no undefined
+  reference or citation (`undefined`) and no duplicate label (`multiply defined`); the PDF at most
+  100 pages. Read the reader build as its reader will: `pdftotext papers/<P>/paper.pdf -` (no
+  `Uses:` line may appear). Then remove the generated files with `latexmk -C -cd
+  papers/<P>/paper.tex` and `latexmk -C -jobname=paper-blueprint -cd papers/<P>/paper.tex`, and
+  `git add` your source files by name: never commit a PDF (except a figure of `notebook/`), a build
+  file or `papers/library.bib` (generated, never committed). CI compiles every paper the same way
+  and fails on the same problems. Before the last commit, `python3 scripts/certify.py check --base
+  origin/main` checks META.toml (`roadmap`, an existing roadmap), `depends_on`, the citations of
+  library papers, the open questions and, for a new or changed `paper.tex`, what never appears in
+  it and its `DOSSIER.md`, as CI does.
 
 ### 5.3 The notebook
 
@@ -336,20 +417,26 @@ that the next agent starts from what was learned:
   proof ideas, pointers to Lean drafts in `Exploration/<prefix>/`, the numerical experiments run and
   what they showed, and, after a referee report, the answer to each defect;
 - small numerical experiments: `python3` scripts and their outputs (text or CSV under 100 kB each;
-  a PNG figure under 200 kB only when it shows what text cannot).
+  a PNG figure under 200 kB only when it shows what text cannot);
+- the figures of the paper, if any: a PDF of at most 200 kB each, made by a committed script of
+  the notebook.
 
 The notebook stays in the repository after acceptance, marked "not refereed", and is never part of
-the PDF: nothing in `paper.tex` refers to it. **Referees judge only `paper.tex`** (with `refs.bib`,
-KNOWN.md, the roadmap and `literature/notes/`) and never rely on the notebook. Read the notebook
-before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
+the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a figure made there.
+**Referees judge only `paper.tex` and `DOSSIER.md`** (with `refs.bib`, KNOWN.md, the roadmap and
+`literature/notes/`) and never rely on the notebook. Read the notebook before working on a paper
+(`revise`, `fix-pr`, `formalize-statements`, `prove`).
 
 ### 5.4 Refereeing
 
 - Two referees review the same head, in this order: `referee-scope` (novelty, bibliography,
-  roadmap fit, interest, attribution, and a rating of each open question: interest, novelty, fit,
-  candidate or not), then `referee-proofs` (every proof, node by node, all nodes) when scope
-  accepts or asks for changes (`major`): a revision then answers both reports at once. Only a scope
-  `reject` skips the proofs.
+  roadmap fit, interest, attribution, presentation, and a rating of each open question: interest,
+  novelty, fit, candidate or not), then `referee-proofs` (every proof, node by node, all nodes)
+  when scope accepts or asks for changes (`major`): a revision then answers both reports at once.
+  Only a scope `reject` skips the proofs. Both read `paper.tex` and `DOSSIER.md`; `referee-scope`
+  judges the presentation on the **reader build** (the text of its PDF, with the criteria W1–W14
+  of [docs/writing.md](docs/writing.md)), `referee-proofs` checks the proofs on the **blueprint
+  build**.
 - **Every review can be resumed.** Every reviewer (referees, `review-pr`, `review-statements`,
   `review-roadmap`) writes its report as it goes in `.agents/report.md` (not in the repository):
   after each node, section or check, what was checked and what was found. A session stopped before
@@ -361,36 +448,44 @@ before working on a paper (`revise`, `fix-pr`, `formalize-statements`, `prove`).
   request, or three sessions that end without a verdict and without a partial report, it goes to
   the owner (`needs-human`).
 - **Rubric.** Each referee report starts, after its verdict line, with a rubric: one row per
-  criterion (scope: novelty, roadmap fit, interest, bibliography, attribution, presentation;
-  proofs: correctness, completeness, ready for Lean), its state (✅ no defect or P only, ⚠️ G or L,
-  ❌ F) and a one-sentence summary naming the defect IDs. The scope referee also gives an
+  criterion (scope: novelty, roadmap fit, interest, bibliography, attribution, presentation, the
+  last one summarising the criteria W1–W14; proofs: correctness, completeness, ready for Lean), its
+  state (✅ no defect or P only, ⚠️ G, L or R, ❌ F) and a one-sentence summary naming the defect
+  IDs. The scope referee also gives an
   **interest score** from 1 to 10: the significance of the result for the research community, as an expert of the field would judge it, not for the owner or the roadmap (the scale is in its role file). The rubric is
   a summary: the verdict is still computed from the defect table.
 - **Defect classes.** **F** fatal: the main statement is false, already known, a corollary of
   KNOWN.md or of the literature, out of the roadmap, or re-derives a private entry. **G** gap: an
   unjustified step in a labelled proof (or, for scope, a novelty claim left unjustified). **L**
-  local error: wrong but fixable without changing any statement. **P** presentation.
-- **Verdict, computed:** `reject` if any F; `major` if any G or L; otherwise `accept` (P defects
-  only: an accepted paper keeps no error). The report's first line is `Verdict: accept`,
-  `Verdict: major` or `Verdict: reject` (the script reads `minor` as `major`); the defect table
-  follows:
+  local error: wrong but fixable without changing any statement. **R** readability: a
+  presentation defect that prevents an expert from understanding or checking what is proved, or
+  hides or distorts what is claimed (the criteria W1–W14 of docs/writing.md say which failures
+  usually are). Test: could an expert of the field fix it without anyone re-checking after him? If
+  yes, it is **P** presentation.
+- **Verdict, computed:** `reject` if any F; `major` if any G, L or R; otherwise `accept` (P defects
+  only: an accepted paper keeps no error). One limit for R: a revision round spent on R defects is
+  enough. If, after a revision, the only defects left are R defects raised in an earlier round and
+  addressed in part, the referee rates them P (and lists what remains). The report's first line is
+  `Verdict: accept`, `Verdict: major` or `Verdict: reject` (the script reads `minor` as `major`);
+  the defect table follows:
 
   ```
   | ID | Class | Node | Step | Defect | Fix |
   |---|---|---|---|---|---|
-  | SC1.1 | G | sec:closest | relation to K4 | ... | ... |
+  | SC1.1 | G | DOSSIER.md | relation to K4 | ... | ... |
+  | SC1.2 | R | sec:intro | comparison with the closest bound | ... | ... |
   ```
 
   IDs are `SC<round>.<n>` (scope) or `PF<round>.<n>` (proofs); the round is 1 + the number of the
   referee's previous reports on this paper.
 - A paper is accepted when both referees accept the same head and its build is green (checks
   "Build and check" and "Compile papers"); the loop then merges it. On `major` the author revises
-  (`revise`), fixing every G and L defect, and the P defects in passing; after 4 revision rounds
+  (`revise`), fixing every G, L and R defect, and the P defects in passing; after 4 revision rounds
   without acceptance the pull request is closed with the label `rejected` (reports kept; only the
   owner reopens it). P defects alone never block acceptance.
 - On a revision, referees re-check only the nodes that changed and the nodes that `\uses` them
-  (transitively; `.agents/revision.diff` shows what changed since their last report), and rule on
-  each previous G and L: resolved or not.
+  (transitively; `.agents/revision.diff` shows what changed since their last report), the parts of
+  the reader build that changed, and rule on each previous G, L and R: resolved or not.
 - A direction (D) or candidate direction (C) whose paper was rejected counts as covered: no new
   paper on it unless the owner reopens it. A known result to formalise (F) and the items of a
   `definitions` paper stay open after a rejection: the next writer reads the rejected paper's
@@ -408,17 +503,38 @@ owner during the first nights) → statements frozen → `prove` (proof pull req
 `review-pr`) → verified when every frozen statement of the paper is proved → re-verified by
 gardening (§8). Its certification (§9) follows these steps.
 
-**An accepted `paper.tex` is never edited**, except by a new version after an erratum (§6.6,
-case b). What formalisation adds lives next to it: `blueprint.md` (Lean names, modelling decisions)
-and `formalisation.tex` (extra lemmas, §6.6 case c). The owner may veto any paper after the fact
-(`withdrawn.md`).
+**An accepted `paper.tex` is never edited**, except by a new version (§5.6): after an erratum
+(§6.6, case b), an affected dependency, or a presentation revision submitted by the owner; its
+`DOSSIER.md` changes only with it. What formalisation adds lives next to it: `blueprint.md` (Lean
+names, modelling decisions) and `formalisation.tex` (extra lemmas, §6.6 case c). The owner may veto
+any paper after the fact (`withdrawn.md`).
 
 ### 5.6 The library: identifiers, versions, citations, dependencies
 
 - **Identifiers.** A paper is `P<nnn>` for good; its **version** is `version` in META.toml: 1 when
   submitted (refereeing rounds do not change it), and +1 with each new `paper.tex` after acceptance
-  (an erratum, an affected dependency). CI checks it: a changed `paper.tex` of a paper on `main`
-  must come with the next version, and a version changes only with `paper.tex`.
+  (an erratum, an affected dependency, a presentation revision). CI checks it: a changed
+  `paper.tex` of a paper on `main` must come with the next version, and a version changes only with
+  `paper.tex`.
+- **Presentation revision** of an accepted paper (the owner's decision, 2026-11-15: P000 and P002
+  first). A new version whose `paper.tex` is rewritten for presentation, submitted by the owner on
+  a branch `owner/<slug>` whose pull request's first line is ``Role: `revise`. Target:
+  `P<nnn>-<slug>`. Model: `<model>`.``; it changes only the paper's `paper.tex`, `DOSSIER.md`,
+  `refs.bib`, `META.toml` (`version` + 1; `authors` gains the reviser's model if absent) and
+  `notebook/`.
+  - **The mathematical content of every node is unchanged**: the same labels, the same hypotheses
+    and conclusions (notation may change consistently, a statement may be reworded, never
+    strengthened or weakened); no node is removed; nodes are added only for restated cited
+    results or for lemmas that were inline steps. Proofs may be reorganised and expanded for
+    readability, not changed in substance. Open questions keep their labels (their candidate
+    directions are added once per label).
+  - `human_authors` and the `\author` line of an owner's paper never change.
+  - It is refereed like a paper pull request: `referee-scope` judges the presentation and checks
+    that nothing else changed (main results, claims, comparison, attribution, open questions);
+    `referee-proofs` checks, node by node against the version on `main`, that every statement is
+    unchanged and every proof still complete. Revisions are by `revise`; the loop merges it when
+    both referees accept and its build is green. Its dependants then get a dependency check, which
+    finds them not affected (no statement changed).
 - **Bibliography of the library.** `papers/library.bib` has one entry per paper, key `INC-P<nnn>`,
   with its title and its version (field `version`). It is generated by
   `python3 scripts/certify.py bib` before compiling (by you, and by CI), never edited by hand and
@@ -426,8 +542,8 @@ and `formalisation.tex` (extra lemmas, §6.6 case c). The owner may veto any pap
   (the template does).
 - **Citations.** A paper cites a library paper as `\cite[Theorem~2]{INC-P001}`, and records each
   result it uses, with the exact version it read, in `depends_on = ["P001v2:thm:main", …]`
-  (labels `def:`, `lem:`, `prop:`, `thm:`, `cor:`). Every `INC-` key cited is in `depends_on` and
-  conversely (CI). Lean docstrings cite `[INC-P001, Theorem 2]`.
+  (labels `def:`, `ass:`, `lem:`, `prop:`, `thm:`, `cor:`). Every `INC-` key cited is in
+  `depends_on` and conversely (CI). Lean docstrings cite `[INC-P001, Theorem 2]`.
 - **Conditional results.** A paper is **conditional** while one of its dependencies is not
   Lean-verified; its certification level is capped by its dependencies' (§9).
 - **Formalisation priority.** `prove` takes first the papers that the most library papers depend on.
@@ -605,14 +721,16 @@ Lean does not check citations, and models invent plausible references. So:
   entry of `literature/bibliography.json`, whose cited part is marked as read in
   `literature/index.md`; a paper's `refs.bib` uses the same keys. If you need a reference that is
   not there, add it with metadata `unchecked`, mark as read only what you read in the source, and
-  write "(to be checked)" after an unread citation. Never fill a field from memory.
+  write "(to be checked)" after an unread citation, except in `paper.tex`, where an unread
+  citation is weakened to "see also" or dropped (§5.2). Never fill a field from memory.
 - **Credit techniques, not only results.** For each idea of a proof, the earliest source you can
   find (follow references in both directions). A new statement proved with an old technique is new;
-  its technique is still credited.
-- **Record your searches**: the queries you ran and what they found go in the paper's Attribution
-  section or in your report.
-- Statements of results are copied exactly in `literature/notes/` and in cited nodes; for the rest,
-  quote at most a short phrase and summarise in your own words.
+  its technique is still credited (in the paper, the appendix "Sources of the techniques").
+- **Record your searches**: the queries you ran and what they found go in the paper's
+  `DOSSIER.md` (Searches) or in your report.
+- Statements of results are copied exactly in `literature/notes/`; a cited node restates them in
+  the paper's notation, equivalently (§5.2); for the rest, quote at most a short phrase and
+  summarise in your own words.
 - Novelty is never claimed by the author: the bibliographer's attribution audit
   (`catalogue/attribution/`) decides `new`, `rediscovery of [KEY]` or `known: [KEY]`.
 
@@ -661,8 +779,10 @@ trailers of the loop's merge commits), the gardening log and the human audits. L
   N** (the Lean-verified papers that depend on it) and **audited by a human** (who, when, which
   version: `papers/<P>/human-audits.md`, the owner's file, lines `- <who>, <YYYY-MM-DD>, v<k>:
   <what was checked>`).
-- The PDF of a paper (workflow Papers) shows the green box "LEAN APPROVED" under each node whose
-  frozen statement is proved, and its certification line under the title; both come from
+- Both PDFs of a paper (workflow Papers, the reader and the blueprint builds) show the green box
+  "LEAN APPROVED" under each node whose frozen statement is proved, and under the title its
+  certification in plain words (for example "Incognita library, P002 version 2. Refereed and
+  accepted by two AI referees; not yet formalised in Lean."); both come from
   `papers/<P>/certification.tex`, generated by CI, never written by agents.
 - `catalogue/certification.md` (generated: CI's summary, the night report) lists every paper with
   its level, re-checks, badges and dependencies.
@@ -672,9 +792,9 @@ trailers of the loop's merge commits), the gardening log and the human audits. L
 | Role | Model | Does |
 |---|---|---|
 | `write-paper` | author | writes a paper for an open item of an approved roadmap |
-| `referee-scope` | reviewer | novelty and bibliography (technique by technique), KNOWN.md, roadmap fit, interest, attribution |
-| `referee-proofs` | reviewer | checks every node and proof line by line |
-| `revise` | author | answers referee reports or an erratum: new version of the paper |
+| `referee-scope` | reviewer | novelty and bibliography (technique by technique), KNOWN.md, roadmap fit, interest, attribution, presentation (reader build) |
+| `referee-proofs` | reviewer | checks every node and proof line by line (blueprint build) |
+| `revise` | author | answers referee reports, an erratum or a dependency check, and revises a presentation revision: new version of the paper |
 | `formalize-statements` | author | phase 1: definitions, frozen statements, witnesses, `blueprint.md` |
 | `review-statements` | reviewer | fidelity of phase 1: back-translation, definitions, witnesses |
 | `prove` | author | phase 2: proofs of frozen statements, one coherent area per pull request; `formalisation.tex`; errata |
