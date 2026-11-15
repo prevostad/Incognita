@@ -491,12 +491,16 @@ record_event() {
 }
 
 # ---------------------------------------------------------------- GitHub
-# gh with three tries; prints stdout; non-zero = unknown.
+# gh with three tries; prints stdout; non-zero = unknown. The status of gh is read right after the
+# command substitution: after `if cmd; then ...; fi` with the test false, $? is 0, which made a
+# failed call look successful (2026-11-14: a refused merge was logged as merged, and its branch
+# deleted).
 ghr() {
   local i out rc=1
   for i in 1 2 3; do
-    if out=$(gh "$@"); then printf '%s\n' "$out"; return 0; fi
+    out=$(gh "$@") && { printf '%s\n' "$out"; return 0; }
     rc=$?
+    [ "$rc" -ne 0 ] || rc=1
     [ "$i" -lt 3 ] && sleep $(( i * 5 ))
   done
   log "gh failed ($rc): gh $*"

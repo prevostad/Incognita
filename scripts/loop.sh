@@ -198,6 +198,8 @@ directions_pr() {
   [[ "$p" =~ ^P[0-9]{3}-[A-Za-z0-9-]+$ ]] || return 2
   trusted_comments "$n" | jq -r '[.[] | select(.kind == "referee-scope") | .body] | join("\n\n")' > "$rep" || return 2
   [ -s "$rep" ] || return 3
+  # The paper may have been merged in this very pass: origin/main must include it.
+  sync_main >/dev/null || return 2
   repo_git worktree remove --force "$wt" >/dev/null 2>&1; rm -rf "$wt"; repo_git worktree prune
   repo_git worktree add -q --detach "$wt" origin/main || return 2
   local g=(git -C "$wt" -c core.hooksPath=/dev/null -c core.fsmonitor=false
@@ -215,6 +217,9 @@ directions_pr() {
   br="agent/loop-directions-$(date +%Y%m%d-%H%M%S)"
   repo_git push -q origin "$newh:refs/heads/$br" || return 2
   set_status "$newh" "Incognita loop" success "role=loop verdict=directions pr=$n paper=${p:0:4}"
+  # The ruleset of main requires "Incognita review": no agent reviews this pull request (it is
+  # checked by certify.py verify-scripted at merge time), so the loop sets it, as role loop.
+  set_status "$newh" "Incognita review" success "role=loop verdict=directions pr=$n paper=${p:0:4}"
   { printf 'Role: `loop`. Target: `%s`. Model: `-`.\n\n' "$p"
     printf 'Scripted by the loop (no agent): the open questions of `%s` that the scope referee rated as candidates ' "$p"
     printf '(its reports on pull request #%s, reviewed head `%s`) become %s candidate directions of the roadmap ' "$n" "${h:0:12}" "${k:-?}"
