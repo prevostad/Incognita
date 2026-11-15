@@ -4,16 +4,20 @@
     certify.py [--repo DIR] report [--audit FILE] [--out FILE]
         Certification of every paper on the tree (catalogue/certification.md format): level 0-3,
         conditional, re-check passes, badges "used by N" and "audited by a human".
-    certify.py [--repo DIR] leanok
+    certify.py [--repo DIR] leanok [--audit FILE] [--base REF]
         papers/<P>/certification.tex for each paper (never committed): the labels whose frozen
-        statement is proved (green "LEAN APPROVED" box) and the certification line of the PDF.
+        statement is proved (green "LEAN APPROVED" box) and the certification line of the PDF, in
+        plain words. --base (a pull request): a paper whose paper.tex differs from REF is "submitted".
     certify.py [--repo DIR] bib [--check]
         papers/library.bib (keys INC-P<nnn>, with the version): generated, never committed
         (.gitignore); written before compiling a paper. --check: fail if out of date.
     certify.py [--repo DIR] check [--base REF]
         META.toml fields (roadmap: an existing roadmap), depends_on, citations of library papers,
-        open questions, directions.md; with --base, the version rules and the append-only rules
-        against REF (directions.md, catalogue/garden.md, errata and statement corrections).
+        open questions (\\extends), directions.md; with --base, the version rules and the
+        append-only rules against REF (directions.md, catalogue/garden.md, errata and statement
+        corrections), and, for each new or changed paper.tex, no KNOWN id (K12) in its prose
+        (outside comments, mathematics and \\extends: a heuristic), no "(to be checked)", and a
+        DOSSIER.md (AGENTS.md 5.2; errors name the line).
     certify.py [--repo DIR] items ROADMAP [--free]
         Items of a roadmap (D, F, C): "<id> open|closed|covered|dropped <detail>".
     certify.py [--repo DIR] items-hash ROADMAP
@@ -53,7 +57,17 @@ REPO_URL = "https://github.com/prevostad/Incognita"
 RECHECK_TYPES = ("back-translation", "double-formalisation", "known-cases")
 LEVEL_NAMES = {0: "submitted", 1: "accepted", 2: "Lean-verified", 3: "re-verified"}
 PAPER_DIR = re.compile(r"^P(\d{3})-[a-z0-9][a-z0-9-]*$")
-DEP_RE = re.compile(r"^P(\d{3})v(\d+):((?:def|lem|prop|thm|cor):[A-Za-z0-9_.:-]+)$")
+DEP_RE = re.compile(r"^P(\d{3})v(\d+):((?:def|ass|lem|prop|thm|cor):[A-Za-z0-9_.:-]+)$")
+EXTENDS_ITEM = re.compile(r"^[DFC]\d+(\([a-z0-9]+\))?$")
+KNOWN_ID = re.compile(r"\bK[0-9]{1,3}\b")
+TO_BE_CHECKED = re.compile(r"\(\s*to be checked\s*\)", re.I)
+# Mathematics, blanked before the checks of the prose of a paper (AGENTS.md 5.2).
+MATH_ENVS = r"(?:equation|align|alignat|gather|multline|flalign|eqnarray|displaymath|math)\*?"
+# Commands whose braced argument is a key, a label or a path, not prose.
+KEY_COMMANDS = ("extends", "label", "ref", "eqref", "cref", "Cref", "autoref", "pageref", "nameref",
+                "uses", "proves", "cite", "citep", "citet", "citealp", "nocite", "url", "href",
+                "hyperref", "hyperlink", "hypertarget", "includegraphics", "input", "include",
+                "bibliography", "bibliographystyle", "usepackage", "documentclass")
 ITEM_RE = re.compile(r"^\s*- \*\*([DF]\d+)\.")
 CLOSED_RE = re.compile(r"(?i)\b(pending owner decision|on hold)\b|(?<![\w-])closed(?![\w-])")
 ENTRY_RE = re.compile(r"^## (E|SC|C)(\d+)\b")
@@ -135,6 +149,63 @@ def strip_comments(tex):
     return "\n".join(re.sub(r"(?<!\\)%.*", "", line) for line in tex.splitlines())
 
 
+def blank(s):
+    """s with every character but the line breaks replaced by a space (line numbers are kept)."""
+    return re.sub(r"[^\n]", " ", s)
+
+
+def braced_args(text, name):
+    """[(start, end)] of the contents of the braced arguments of \\name{...} (optional arguments
+    [..] and a star skipped)."""
+    out = []
+    for m in re.finditer(r"\\%s\*?(?:\s*\[[^\]]*\])*\s*\{" % re.escape(name), text):
+        content, end = braced(text, m.end() - 1)
+        out.append((m.end(), end - 1))
+    return out
+
+
+def extends_of(text):
+    """The items of the \\extends{...} of a text: ["D8", "C3"]."""
+    items = []
+    for a, b in braced_args(text, "extends"):
+        items += [x.strip() for x in text[a:b].split(",") if x.strip()]
+    return items
+
+
+def prose(tex):
+    """paper.tex with only its prose left, line by line: comments, mathematics and the arguments of
+    the commands that hold keys, labels or paths (\\extends, \\cite, \\label...) are blanked. For the
+    checks of what never appears in a paper's text (AGENTS.md 5.2); a heuristic."""
+    t = strip_comments(tex)
+    for pat, flags in ((r"\\begin\{(%s)\}.*?\\end\{\1\}" % MATH_ENVS, re.S), (r"\$\$.*?\$\$", re.S),
+                       (r"\\\[.*?\\\]", re.S), (r"\\\(.*?\\\)", re.S),
+                       (r"(?<!\\)\$(?:\\.|[^$\\])*\$", re.S)):
+        t = re.sub(pat, lambda m: blank(m.group(0)), t, flags=flags)
+    for name in KEY_COMMANDS:
+        spans = braced_args(t, name)
+        for a, b in reversed(spans):
+            t = t[:a] + blank(t[a:b]) + t[b:]
+    return t
+
+
+def process_words(tex, where):
+    """Errors for what never appears in the text of paper.tex (AGENTS.md 5.2): KNOWN ids (K12) in
+    the prose, outside mathematics, comments and \\extends; "(to be checked)" outside comments. Each
+    error names the line."""
+    errs = []
+    lines = tex.splitlines()
+    for i, line in enumerate(prose(tex).splitlines()):
+        m = KNOWN_ID.search(line)
+        if m:
+            errs.append("%s:%d: a KNOWN id (%s) in the text of the paper: KNOWN ids go to DOSSIER.md "
+                        "(AGENTS.md 5.2): %s" % (where, i + 1, m.group(0), lines[i].strip()[:120]))
+    for i, line in enumerate(strip_comments(tex).splitlines()):
+        if TO_BE_CHECKED.search(line):
+            errs.append("%s:%d: \"(to be checked)\" in the paper: cite only what was read, or weaken the "
+                        "citation to \"see also\" or drop it (AGENTS.md 5.2): %s" % (where, i + 1, lines[i].strip()[:120]))
+    return errs
+
+
 class Paper:
     def __init__(self, tree, d):
         self.dir = d
@@ -189,15 +260,21 @@ class Paper:
         return out
 
     def open_questions(self):
-        """[(label, title, statement)] of the openquestion environments."""
+        """[(label, title, statement, extends)] of the openquestion environments; extends: the
+        roadmap items of its \\extends{...} (printed only in the blueprint build), removed from the
+        statement."""
         out = []
         t = strip_comments(self.tex)
         for m in re.finditer(r"\\begin\{openquestion\}(\[[^\]]*\])?(.*?)\\end\{openquestion\}", t, re.S):
             title = (m.group(1) or "[]")[1:-1].strip()
             body = m.group(2)
             lab = re.search(r"\\label\{(oq:[^}]*)\}", body)
-            text = re.sub(r"\\label\{[^}]*\}", "", body).strip()
-            out.append((lab.group(1) if lab else None, title, " ".join(text.split())))
+            ext = extends_of(body)
+            text = re.sub(r"\\label\{[^}]*\}", "", body)
+            for a, b in reversed(braced_args(text, "extends")):
+                start = text.rfind("\\extends", 0, a)
+                text = text[:start] + text[b + 1:]
+            out.append((lab.group(1) if lab else None, title, " ".join(text.split()), ext))
         return out
 
 
@@ -501,9 +578,56 @@ def tex_escape(s):
     return re.sub(r"([#$%&_{}])", r"\\\1", s).replace("~", r"\textasciitilde{}")
 
 
+def plain_certification(c, certs, submitted=False):
+    """The certification line of the PDF, in plain words (AGENTS.md 9): "Incognita library, P002
+    version 2. Refereed and accepted by two AI referees; not yet formalised in Lean." Badges only
+    when there are some. submitted: the paper.tex of a pull request, not accepted yet."""
+    p = c.paper
+    head = "Incognita library, %s version %d." % (p.prefix, p.version)
+    if submitted:
+        return head + " Submitted: under refereeing by AI agents, not accepted yet."
+    if c.status == "withdrawn":
+        return head + " Withdrawn by the owner: do not rely on it."
+    if c.status == "disputed":
+        return head + " Disputed (%s): it is being corrected; do not rely on it." % "; ".join(c.disputed_why)
+    review = {"both referees": "Refereed and accepted by two AI referees",
+              "the owner": "Accepted by the owner"}.get(c.referees, "Accepted")
+    n = len(c.frozen)
+    k = sum(1 for s in c.frozen.values() if s == "proved")
+    if c.verified:
+        lean = "Lean-verified (%s)" % ("its frozen statement proved" if n == 1
+                                       else "all %d frozen statements proved" % n)
+    elif n:
+        lean = "being formalised in Lean (%d of %d frozen statements proved)" % (k, n)
+    else:
+        lean = "not yet formalised in Lean"
+    parts = [review, lean]
+    if c.rechecks:
+        r = len(c.rechecks)
+        parts.append("re-verified %s by gardening" % ("once" if r == 1 else "%d times" % r))
+    text = "%s %s." % (head, "; ".join(parts))
+    if c.conditional:
+        deps = []
+        for dp in sorted({d[0] for d in c.conditional}):
+            cd = certs.get(dp)
+            why = ("not in the library" if cd is None else cd.status if cd.status in ("disputed", "withdrawn")
+                   else "not yet Lean-verified")
+            deps.append("%s (%s)" % (dp, why))
+        text += " Conditional on %s." % ", ".join(deps)
+    if c.used_by:
+        text += " Used by %d Lean-verified %s (%s)." % (len(c.used_by), "paper" if len(c.used_by) == 1 else "papers",
+                                                       ", ".join(c.used_by))
+    for who, date, v in c.human:
+        text += " Audited by a human: %s, %s, version %d%s." % (
+            who, date, v, "" if v == p.version else " (now version %d)" % p.version)
+    return text
+
+
 def cmd_leanok(args, tree):
     ps, certs = certify(tree, args.audit)
     mk = markers(tree)
+    # With --base (a pull request): a paper whose paper.tex is new or changed is under refereeing.
+    bidx = by_prefix(papers(Tree(tree.repo, args.base))) if args.base else None
     for p in ps:
         c = certs[p.prefix]
         out = ["% Generated by scripts/certify.py leanok for the PDF; never committed (.gitignore).",
@@ -516,12 +640,12 @@ def cmd_leanok(args, tree):
             proof = m.get("proof", "Incognita.%s.%s" % (pp, name))
             if isinstance(label, str) and re.match(r"^[A-Za-z0-9_.:-]+$", label):
                 out.append("\\incognitaverified{%s}{%s}" % (label, proof))
-        line = "Incognita library, %s, version %d. Certification: level %s. Re-checks: %d. Badges: %s." % (
-            p.prefix, p.version, level_text(c), len(c.rechecks), badges(c))
+        submitted = bidx is not None and (p.prefix not in bidx or bidx[p.prefix].tex != p.tex)
+        line = plain_certification(c, certs, submitted)
         out.append("\\incognitacertification{%s}" % tex_escape(line))
         with open(os.path.join(tree.repo, "papers", p.dir, "certification.tex"), "w", encoding="utf-8") as f:
             f.write("\n".join(out) + "\n")
-        print("papers/%s/certification.tex: %s" % (p.dir, level_text(c)))
+        print("papers/%s/certification.tex: %s" % (p.dir, line))
 
 
 # ---------------------------------------------------------------- library.bib
@@ -624,7 +748,7 @@ def check_tree(tree, base=None):
         for dep in p.depends_on:
             m = DEP_RE.match(dep) if isinstance(dep, str) else None
             if not m:
-                errors.append("%s: depends_on entry %r is not P<nnn>v<k>:<label> (label def:, lem:, prop:, thm: or cor:)" % (w, dep))
+                errors.append("%s: depends_on entry %r is not P<nnn>v<k>:<label> (label def:, ass:, lem:, prop:, thm: or cor:)" % (w, dep))
                 continue
             dp, k, label = "P" + m.group(1), int(m.group(2)), m.group(3)
             deps.add(dp)
@@ -648,9 +772,14 @@ def check_tree(tree, base=None):
         oqs = p.open_questions()
         if p.kind == "internal" and p.tex and not oqs:
             errors.append("papers/%s/paper.tex: an internal paper states at least one open question (openquestion environment)" % p.dir)
-        for lab, _t, _s in oqs:
+        for lab, _t, _s, ext in oqs:
             if not lab:
                 errors.append("papers/%s/paper.tex: an open question without \\label{oq:...}" % p.dir)
+            for x in ext:
+                if not EXTENDS_ITEM.match(x):
+                    errors.append("papers/%s/paper.tex: \\extends{%s} in %s: the items are roadmap items D<n>, F<n> "
+                                  "or C<n> (a part may follow: D8(c))" % (p.dir, ", ".join(ext), lab or "an open question"))
+                    break
         if re.search(r"\\(leanok|mathlibok)\b", t):
             errors.append("papers/%s/paper.tex: \\leanok and \\mathlibok come from the audit, never from the paper" % p.dir)
     for n, ds in nums.items():
@@ -683,6 +812,10 @@ def check_tree(tree, base=None):
         for p in ps:
             w = "papers/%s/META.toml" % p.dir
             b = bidx.get(p.prefix)
+            # A new or changed paper.tex: what never appears in it, and its DOSSIER.md (AGENTS.md
+            # 5.2). Papers that the pull request does not change are not checked again.
+            if p.tex and (b is None or b.tex != p.tex):
+                errors += reader_rules(tree, p)
             if b is None:
                 if p.version != 1:
                     errors.append("%s: a new paper has version 1" % w)
@@ -714,6 +847,16 @@ def check_tree(tree, base=None):
                 if old is not None:
                     errors += entries_append_only(old, tree.read("papers/%s/%s" % (d, f)), "papers/%s/%s" % (d, f))
     return errors
+
+
+def reader_rules(tree, p):
+    """The rules a new or changed paper.tex must follow (AGENTS.md 5.2): no KNOWN id and no "(to be
+    checked)" in its text, and a DOSSIER.md next to it."""
+    errs = process_words(p.tex, "papers/%s/paper.tex" % p.dir)
+    if (tree.read("papers/%s/DOSSIER.md" % p.dir) or "").strip() == "":
+        errs.append("papers/%s: no DOSSIER.md (the roadmap correspondence, closest known, sanity checks, "
+                    "weak points and searches; from templates/paper/DOSSIER.md, AGENTS.md 5.2)" % p.dir)
+    return errs
 
 
 def trim(lines):
@@ -985,7 +1128,7 @@ def cmd_add_candidates(args, tree):
     n = len(have)
     added = []
     today = args.date or datetime.date.today().isoformat()
-    for label, title, statement in p.open_questions():
+    for label, title, statement, ext in p.open_questions():
         if not label or label not in ratings or not ratings[label][3]:
             continue
         src = "%sv%d %s" % (p.prefix, p.version, label)
@@ -995,15 +1138,16 @@ def cmd_add_candidates(args, tree):
             continue
         n += 1
         interest, novelty, fit, _ = ratings[label]
-        added.append("\n".join([
-            "",
-            "## C%d (%s, from %s)" % (n, today, src),
-            "- Title: %s" % (title or "-"),
-            "- Statement: %s" % statement,
-            "- Source: papers/%s, version %d, label %s" % (p.dir, p.version, label),
-            "- Rating: interest %s; novelty %s; fit %s (referee-scope, pull request #%s, head %s)" % (
-                interest, novelty, fit, args.pr, args.head[:12]),
-        ]))
+        entry = ["",
+                 "## C%d (%s, from %s)" % (n, today, src),
+                 "- Title: %s" % (title or "-"),
+                 "- Statement: %s" % statement]
+        if ext:   # the roadmap items it extends (\extends{...} of the question)
+            entry.append("- Extends: %s" % ", ".join(ext))
+        entry += ["- Source: papers/%s, version %d, label %s" % (p.dir, p.version, label),
+                  "- Rating: interest %s; novelty %s; fit %s (referee-scope, pull request #%s, head %s)" % (
+                      interest, novelty, fit, args.pr, args.head[:12])]
+        added.append("\n".join(entry))
     if added:
         text = text.rstrip("\n") + "\n" + "\n".join(added) + "\n"
         with open(os.path.join(tree.repo, path), "w", encoding="utf-8", newline="\n") as f:
@@ -1162,7 +1306,7 @@ def main(argv):
     ap.add_argument("--ref", default=None, help="read the tree at this git ref instead of the working tree")
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("report"); s.add_argument("--audit"); s.add_argument("--out")
-    s = sub.add_parser("leanok"); s.add_argument("--audit")
+    s = sub.add_parser("leanok"); s.add_argument("--audit"); s.add_argument("--base")
     s = sub.add_parser("bib"); s.add_argument("--check", action="store_true")
     s = sub.add_parser("check"); s.add_argument("--base")
     s = sub.add_parser("items"); s.add_argument("roadmap"); s.add_argument("--free", action="store_true")

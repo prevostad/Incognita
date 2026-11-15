@@ -95,6 +95,11 @@ addpr() {  # number role target sha draft: push the head and add the PR to the f
     "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
   echo "$sha"
 }
+owner_pr() {  # <pr> <branch>: the pull request is the owner's (branch owner/*, model owner)
+  jq --argjson n "$1" --arg b "$2" \
+    'map(if .number == $n then (.headRefName = $b | .body |= sub("Model: `m`"; "Model: `owner`")) else . end)' \
+    "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
+}
 check() {  # <pr> <check name> <conclusion>: set the conclusion of a check of a PR
   jq --argjson n "$1" --arg c "$2" --arg v "$3" \
     'map(if .number == $n then .statusCheckRollup |= ([.[] | select(.name != $c)] + [{name: $c, status: "COMPLETED", conclusion: $v}]) else . end)' \
@@ -232,6 +237,33 @@ world "Reviewed by owner: 2026-11-14" P001-old definitions
 on_main Statements/P001/main_thm.lock "x"
 on_main papers/P001-old/statement-corrections.md "$(printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.main_thm\nResolved by Incognita.Statements.P001.main_thm_v2')"
 nopass "a resolved correction needs nothing" "== task: formalize-statements P001-old"
+
+# A presentation revision of an accepted paper by the owner (branch owner/*, role revise, AGENTS.md
+# 5.6): refereed, revised and merged like a paper pull request; its paper is busy meanwhile.
+PRESENTATION='echo v2 > papers/P002-x/paper.tex; printf "roadmap = \"BB\"\nkind = \"internal\"\ndirections = [\"D1\"]\nversion = 2\n" > papers/P002-x/META.toml; echo d > papers/P002-x/DOSSIER.md; mkdir -p papers/P002-x/notebook; echo n > papers/P002-x/notebook/NOTEBOOK.md'
+world "Reviewed by owner: 2026-11-14" P002-x
+h=$(prx 71 revise P002-x "$PRESENTATION")
+owner_pr 71 owner/p002-v2
+pass "a presentation revision of the owner goes to referee-scope" "== task: referee-scope 71"
+pass "task.md says it is a presentation revision" 'a **presentation revision** of the accepted paper `P002-x`'
+status "$h" "Referee scope" referee-scope major failure
+pass "the proofs are refereed before its revision" "== task: referee-proofs 71"
+status "$h" "Referee proofs" referee-proofs accept success
+pass "a major on a presentation revision: revise on its branch" "== task: revise 71"
+world "Reviewed by owner: 2026-11-14" P002-x
+h=$(prx 72 revise P002-x "$PRESENTATION")
+owner_pr 72 owner/p002-v2
+for c in "Referee scope:referee-scope" "Referee proofs:referee-proofs" "Incognita review:referees"; do status "$h" "${c%%:*}" "${c#*:}" accept success; done
+pass "an accepted presentation revision is merged (paths of revise, DOSSIER.md included)" "would merge #72 (paper"
+world "Reviewed by owner: 2026-11-14" P002-x
+on_main papers/P002-x/errata.md "$(printf '## E1 (d)\n- Node: thm:main')"
+h=$(prx 73 revise P002-x "$PRESENTATION")
+owner_pr 73 owner/p002-v2
+check 73 "Build and check" IN_PROGRESS
+nopass "a presentation revision in review makes its paper busy for revise" "== task: revise P002-x"
+h=$(prx 74 prove P002-x 'mkdir -p Incognita; echo l > Incognita/L.lean')
+owner_pr 74 owner/prove
+nopass "an owner/ branch with another role is ignored" "== task: review-pr 74"
 
 # Roadmap proposals (AGENTS.md section 4): review, veto window, scripted approval, merge.
 world "Reviewed by owner: 2026-11-14"

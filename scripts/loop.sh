@@ -373,6 +373,9 @@ try_merge() {
     paper=$(repo_git diff --name-only --no-renames "$mb" "$ah" -- papers | sed -n -E 's#^papers/(P[^/]+)/.*#\1#p' | head -n 1)
     case "$role" in
       formalize-statements|prove) paper=$(paper_of_num "$(paper_num "$target")" || echo "$target") ;;
+      # A new version of an accepted paper (an erratum, a dependency check, or a presentation
+      # revision of the owner, AGENTS.md 5.6): the paper named by the target, as in agent.sh.
+      revise) if [[ "$target" =~ ^P[0-9]+-[A-Za-z0-9-]+$ ]]; then paper=$target; fi ;;
       loop) paper=$target ;;
     esac
     if [ "$kind" != scripted ] && ! check_paths "$eff" "$paper" "$mb" "$ah" 2>"$work/paths.log"; then

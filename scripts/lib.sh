@@ -729,8 +729,9 @@ CI_JQ='
       else ([$v[] | select(good | not)] | first) end;'
 
 # jq: one row per agent PR (same repository, branch agent/*, opened by OWNER, with a Role line),
-# and per paper of the owner (branch owner/*, role write-paper: refereed and revised like an
-# agent's paper, CONTRIBUTING.md):
+# and per paper pull request of the owner (branch owner/*: role write-paper, a new paper, or role
+# revise, a presentation revision of an accepted paper, target P<nnn>-<slug>, AGENTS.md 5.6;
+# refereed, revised and merged like an agent's paper, CONTRIBUTING.md):
 # number H branch draft mergeable role target labels ci
 AGENT_ROWS_JQ=$CI_JQ'
   .[] | select(.isCrossRepository == false
@@ -738,7 +739,7 @@ AGENT_ROWS_JQ=$CI_JQ'
                and .author.login == $o and .baseRefName == "main")
   | ((.body // "") | split("\n")[0]
      | capture("^Role: `(?<role>[a-z-]+)`\\. Target: `(?<target>[^`]*)`\\.")) as $r
-  | select((.headRefName | startswith("agent/")) or $r.role == "write-paper")
+  | select((.headRefName | startswith("agent/")) or $r.role == "write-paper" or $r.role == "revise")
   | [.number, .headRefOid, .headRefName, (if .isDraft then "draft" else "ready" end),
      (.mergeable // "UNKNOWN"), $r.role, (if $r.target == "" then "-" else $r.target end),
      ([.labels[].name] | join(",") | if . == "" then "-" else . end),
@@ -978,10 +979,12 @@ role_allows() {
   case "$path" in papers/*) [ "$st" = D ] && return 1 ;; esac
   case "$role" in
     write-paper)
-      paper_file "$path" "" 'paper\.tex|refs\.bib|META\.toml|notebook/.+' && return 0
+      paper_file "$path" "" 'paper\.tex|DOSSIER\.md|refs\.bib|META\.toml|notebook/.+' && return 0
       case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
     revise)
-      [ -n "$paper" ] && paper_file "$path" "$paper" 'paper\.tex|refs\.bib|META\.toml|notebook/.+|errata\.md|dependency-checks\.md' && return 0
+      # Its paper only: a revision round, an erratum, a dependency check, or a presentation revision
+      # of an accepted paper on an owner/ branch (AGENTS.md 5.6).
+      [ -n "$paper" ] && paper_file "$path" "$paper" 'paper\.tex|DOSSIER\.md|refs\.bib|META\.toml|notebook/.+|errata\.md|dependency-checks\.md' && return 0
       case "$path" in literature/*) [ "$st" != D ] && return 0 ;; esac ;;
     propose-roadmap)
       # One new roadmap (ROADMAP.md and KNOWN.md of a new directory) or one new extension of an
