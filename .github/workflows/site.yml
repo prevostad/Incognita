@@ -1,0 +1,89 @@
+name: Site
+
+# The public page of the accepted papers (GitHub Pages, https://prevostad.github.io/Incognita/):
+# every paper on main, compiled with its certification (scripts/certify.py leanok: the line under the
+# title and the green "LEAN APPROVED" boxes), and scripts/site.py for the page: the three stages of
+# verification (refereeing, Lean, gardening) and the interest score of the scope referee. Rebuilt at
+# every change of the papers or of their verification on main, and every day (an interest score lives
+# in a pull request comment). Nothing is committed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'papers/**'
+      - 'catalogue/**'
+      - 'Statements/**'
+      - 'templates/paper/**'
+      - 'scripts/certify.py'
+      - 'scripts/site.py'
+      - '.github/workflows/site.yml'
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: read
+  issues: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build the site
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # certify.py reads the merge trailers and the garden log
+
+      - name: Certification and bibliography
+        run: |
+          python3 scripts/certify.py leanok
+          python3 scripts/certify.py bib
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends latexmk texlive-latex-base \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended lmodern
+
+      - name: Compile the papers
+        run: |
+          set -uo pipefail
+          mkdir -p pdfs
+          for dir in papers/*/; do
+            dir=${dir%/}
+            [ -f "$dir/paper.tex" ] || continue
+            if latexmk -pdf -interaction=nonstopmode -halt-on-error -cd "$dir/paper.tex" > /dev/null 2>&1; then
+              cp "$dir/paper.pdf" "pdfs/$(basename "$dir").pdf"
+            else
+              echo "::warning file=$dir/paper.tex::does not compile: no PDF on the site"
+            fi
+          done
+
+      - name: Page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/site.py --out site --pdfs pdfs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -9,6 +9,8 @@ and [Mathlib](https://github.com/leanprover-community/mathlib4).
 > LML or Tau Ceti. It only uses LMLExplore as a Lean dependency, and borrows its build scripts from
 > [lml-paper-template](https://github.com/LeanMachineLearning/lml-paper-template) (Apache 2.0).
 
+**Accepted papers, with their verification and interest: https://prevostad.github.io/Incognita/**
+
 **Status: version 3, being set up.** The rules, one approved roadmap (BatchedBandits, whose
 KNOWN.md the owner has not reviewed yet, so no paper is written yet), three draft roadmaps and the
 agent scripts are written.
