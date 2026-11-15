@@ -296,7 +296,9 @@
       "issue": "2",
       "page": "122-142"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1006/aama.1996.0007"
+    },
     "version": ""
   },
   "CGMMS13": {
@@ -378,6 +380,37 @@
     },
     "identifiers": {
       "arxiv": "1504.05823"
+    },
+    "version": ""
+  },
+  "CK11": {
+    "uri": "https://doi.org/10.1017/CBO9780511921889",
+    "citation": {
+      "id": "CK11",
+      "type": "book",
+      "title": "Information Theory: Coding Theorems for Discrete Memoryless Systems",
+      "author": [
+        {
+          "family": "Csiszár",
+          "given": "Imre"
+        },
+        {
+          "family": "Körner",
+          "given": "János"
+        }
+      ],
+      "publisher": "Cambridge University Press",
+      "edition": "2",
+      "issued": {
+        "date-parts": [
+          [
+            2011
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1017/CBO9780511921889"
     },
     "version": ""
   },
@@ -1553,23 +1586,23 @@
     "citation": {
       "id": "LFCK26",
       "type": "article",
-      "title": "Sample-mean anchored Thompson sampling for offline-to-online learning with distribution shift",
+      "title": "Sample-Mean Anchored Thompson Sampling for Offline-to-Online Learning with Distribution Shift",
       "author": [
         {
           "family": "Li",
-          "given": ""
+          "given": "Bochao"
         },
         {
           "family": "Fu",
-          "given": ""
+          "given": "Yao"
         },
         {
           "family": "Chen",
-          "given": ""
+          "given": "Wei"
         },
         {
           "family": "Kong",
-          "given": ""
+          "given": "Fang"
         }
       ],
       "container-title": "arXiv preprint",
@@ -1674,6 +1707,41 @@
     },
     "version": ""
   },
+  "MCP14": {
+    "uri": "https://arxiv.org/abs/1405.4758",
+    "citation": {
+      "id": "MCP14",
+      "type": "article",
+      "title": "Lipschitz Bandits: Regret Lower Bounds and Optimal Algorithms",
+      "author": [
+        {
+          "family": "Magureanu",
+          "given": "Stefan"
+        },
+        {
+          "family": "Combes",
+          "given": "Richard"
+        },
+        {
+          "family": "Proutiere",
+          "given": "Alexandre"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "note": "COLT 2014 (arXiv comment)",
+      "issued": {
+        "date-parts": [
+          [
+            2014
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1405.4758"
+    },
+    "version": ""
+  },
   "MG17": {
     "uri": "",
     "citation": {
@@ -1701,6 +1769,35 @@
     },
     "identifiers": {
       "arxiv": "1702.07211"
+    },
+    "version": ""
+  },
+  "O88": {
+    "uri": "https://doi.org/10.1093/biomet/75.2.237",
+    "citation": {
+      "id": "O88",
+      "type": "article-journal",
+      "title": "Empirical likelihood ratio confidence intervals for a single functional",
+      "author": [
+        {
+          "family": "Owen",
+          "given": "Art B."
+        }
+      ],
+      "container-title": "Biometrika",
+      "volume": "75",
+      "issue": "2",
+      "page": "237-249",
+      "issued": {
+        "date-parts": [
+          [
+            1988
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1093/biomet/75.2.237"
     },
     "version": ""
   },
@@ -1946,6 +2043,80 @@
       "volume": "14"
     },
     "identifiers": {},
+    "version": ""
+  },
+  "SJ12": {
+    "uri": "https://proceedings.mlr.press/v22/shivaswamy12.html",
+    "citation": {
+      "id": "SJ12",
+      "type": "paper-conference",
+      "title": "Multi-armed Bandit Problems with History",
+      "author": [
+        {
+          "family": "Shivaswamy",
+          "given": "Pannagadatta"
+        },
+        {
+          "family": "Joachims",
+          "given": "Thorsten"
+        }
+      ],
+      "container-title": "Proceedings of the Fifteenth International Conference on Artificial Intelligence and Statistics (AISTATS)",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "22",
+      "page": "1046-1054",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Lawrence",
+          "given": "Neil D."
+        },
+        {
+          "family": "Girolami",
+          "given": "Mark"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2012
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "SS07": {
+    "uri": "https://doi.org/10.1007/978-0-387-34675-5",
+    "citation": {
+      "id": "SS07",
+      "type": "book",
+      "title": "Stochastic Orders",
+      "author": [
+        {
+          "family": "Shaked",
+          "given": "Moshe"
+        },
+        {
+          "family": "Shanthikumar",
+          "given": "J. George"
+        }
+      ],
+      "collection-title": "Springer Series in Statistics",
+      "publisher": "Springer",
+      "publisher-place": "New York",
+      "issued": {
+        "date-parts": [
+          [
+            2007
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1007/978-0-387-34675-5"
+    },
     "version": ""
   }
 }

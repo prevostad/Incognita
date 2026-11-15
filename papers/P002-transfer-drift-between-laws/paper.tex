@@ -95,20 +95,25 @@ arm $a$ with $\mu_a<\mu^\star$:
 
 \paragraph{Constants.} The bounds are first order. The proof gives an explicit non-asymptotic
 bound for the term of the optimal arm, of order $C_1C_2\log\log T$ with $C_1,C_2$ depending on
-$|S|$, on the margin $L_{i^\star}-d(\nu_{i^\star},\nu'_{i^\star})$ and on $\nu_{i^\star},\nu'_{i^\star}$
-(Lemma~\ref{lem:optimal-arm}); the term of the suboptimal arm comes from a lower-semicontinuity
+$|S|$, on the margin $L_{i^\star}-d(\nu_{i^\star},\nu'_{i^\star})$ and on $\nu_{i^\star},\nu'_{i^\star}$,
+and, for $C_2$, on the parameter $\varepsilon$ of the proof (through
+$\theta=\min(\varepsilon,\eta/2)$, Definition~\ref{def:proof-notation} and
+Lemma~\ref{lem:optimal-arm}); the term of the suboptimal arm comes from a lower-semicontinuity
 argument and has no explicit rate (Lemma~\ref{lem:sub-constant}).
 
-\begin{proposition}[Lower bound; specialisation of {\cite[Theorem~3]{PMM25}}]\label{prop:lower}
+\begin{proposition}[Lower bound; a variant of {\cite[Theorem~3]{PMM25}}]\label{prop:lower}
 \uses{def:laws, def:ipm, def:model, def:class, def:constant}
 Let $\pi\in\Cons(N')$, $(\nu,\nu')\in\Theta$, and let $a$ be an arm with $\mu_a<\mu^\star$ and
 $\bar c_a:=\limsup_{T}N'_a(T)/\log T<\infty$. Then
 $\liminf_{T\to\infty}\E N_a(T)/\log T\ge D_a(\bar c_a)$.
 \end{proposition}
 
-This bound is not new: it is the specialisation of \cite[Theorem~3]{PMM25} (stated there for an
-arbitrary pseudo-distance and deterministic sizes) to a finite support, with the closed
-constraint set of Definition~\ref{def:constant}. We prove it (Section~\ref{sec:proof-lower}) because
+This bound is not new: it is a variant of \cite[Theorem~3]{PMM25} (stated there for an
+arbitrary pseudo-distance and deterministic sizes), with the same proof \cite[Appendix~A]{PMM25}.
+It is not literally a specialisation: the class $\Cons(N')$ asks for consistency for one sequence
+of sizes only, on the instances with the strict constraint $d<L$, so it contains more learners
+than the class of \cite[Definition~2]{PMM25}, and the statement is slightly stronger in the class;
+the support is finite, and the constraint set of Definition~\ref{def:constant} is closed. We prove it (Section~\ref{sec:proof-lower}) because
 the identification with $D_a$ (Lemma~\ref{lem:D}) is needed to pair it with
 Theorem~\ref{thm:main}.
 
@@ -133,57 +138,75 @@ constants of K2--K4, for laws carried by $S$ with $1\in S$ and deterministic siz
 (Proposition~\ref{prop:order}, Section~\ref{sec:sanity}). Missing: the nonparametric model
 $\mathcal P([0,1])$ (the method of types is used; Open question~\ref{oq:nonparametric}), random
 source sizes, an explicit second-order term, and misspecification beyond the remark that
-Theorem~\ref{thm:main} needs the drift condition on one optimal arm only
-(Open question~\ref{oq:misspecification}).
+Theorem~\ref{thm:main} needs the drift condition on one optimal arm only, the analogue of the
+well-specified case of K5 (Section~\ref{sec:closest}; Open question~\ref{oq:misspecification}).
 
 \subsection{When does the law help?}\label{sec:structure}
 
-Fix $(\nu,\nu')\in\Theta$ and an arm $a$ with $\mu_a<\mu^\star<\xmax$, write $\nu=\nu_a$,
-$\nu'=\nu'_a$, $L=L_a$, and let $\Ko$, $\Kop$, $\Qs$, $\Qps$ be as in Definition~\ref{def:constant}:
-$\Qs$ is the KL projection of $\nu$ on $\{m(q)\ge\mu^\star\}$ and $\Qps$ that of $\nu'$ on
-$\{m(q')\ge\mu^\star-L\}$. A superscript ($D^{\TV}$, $D^{\Wone}$, $D^{\dmean}$, \dots) names the
-pseudo-distance of Definition~\ref{def:ipm}. The mean property (M) is
-$|m(q)-m(q')|\le d(q,q')$; the four examples have it (Lemma~\ref{lem:ipm-order}).
+In this subsection the constant is compared across pseudo-distances, so no drift condition
+$d(\nu_a,\nu'_a)<L_a$ for a fixed $d$ is assumed: each statement gives its hypotheses on the
+instance. $\Ko$, $\Kop$, $\Qs$, $\Qps$ are as in Definition~\ref{def:constant}: $\Qs$ is the KL
+projection of $\nu_a$ on $\{m(q)\ge\mu^\star\}$ and $\Qps$ that of $\nu'_a$ on
+$\{m(q')\ge\mu^\star-L_a\}$. A superscript ($D^{\TV}_a$, $D^{\Wone}_a$, $D^{\dmean}_a$, \dots) names the
+pseudo-distance of Definition~\ref{def:ipm} used in $\Pairs_a$, $J_a$ and $D_a$. The mean
+property (M) is $|m(q)-m(q')|\le d(q,q')$; the four examples have it (Lemma~\ref{lem:ipm-order}).
+The hypothesis $m(\nu'_a)\le\mu^\star+L_a$ below holds whenever $d(\nu_a,\nu'_a)<L_a$ for some $d$
+with (M) (then $m(\nu'_a)<\mu_a+L_a<\mu^\star+L_a$), so on $\Theta$ whenever the $d$ defining
+$\Theta$ has (M), and in all the examples of Section~\ref{sec:sanity}.
 
 \begin{proposition}[Ordering]\label{prop:order}
 \uses{def:ipm, def:constant}
-$D^{\dmean}_a(c)=(1-c\Kop)_+/\Ko$ for every $c\ge0$. For every $d$ with (M),
-$D^d_a\le D^{\dmean}_a$. Moreover $D^{\TV}_a\le D^{\KSd}_a\le D^{\Wone}_a\le D^{\dmean}_a$.
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, and let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$. If $m(\nu'_a)\le\mu^\star+L_a$, then $D^{\dmean}_a(c)=(1-c\Kop)_+/\Ko$ for
+every $c\ge0$. For every $d$ with (M), $D^d_a\le D^{\dmean}_a$. Moreover
+$D^{\TV}_a\le D^{\KSd}_a\le D^{\Wone}_a\le D^{\dmean}_a$.
 \end{proposition}
+
+The hypothesis $m(\nu'_a)\le\mu^\star+L_a$ of the first claim cannot be dropped: if
+$m(\nu'_a)>\mu^\star+L_a$, then $\Kop=0$ while $D^{\dmean}_a(c)<1/\Ko$ for every $c>0$, by
+Proposition~\ref{prop:criteria}(b) with the mean gap.
 
 \begin{proposition}[Criteria]\label{prop:criteria}
 \uses{def:ipm, def:constant}
-Let $c>0$. (a) If $d$ has (M) and $c\Kop<1$, then $D^d_a(c)<D^{\dmean}_a(c)$ if and only if
-$d(\Qs,\Qps)>L$. (b) For every $d$, $D^d_a(c)<1/\Ko$ (the source helps at all) if and only if
-$d(\Qs,\nu')>L$; for the mean gap this reads $m(\nu')<\mu^\star-L$, the condition of K2.
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$, and let $c>0$. (a) If $d$ has (M), $m(\nu'_a)\le\mu^\star+L_a$ and
+$c\Kop<1$, then $D^d_a(c)<D^{\dmean}_a(c)$ if and only if $d(\Qs,\Qps)>L_a$. (b) For every $d$,
+$D^d_a(c)<1/\Ko$ (the source helps at all) if and only if $d(\Qs,\nu'_a)>L_a$; for the mean gap
+this reads $|m(\nu'_a)-\mu^\star|>L_a$, that is $m(\nu'_a)<\mu^\star-L_a$, the condition of K2,
+when $m(\nu'_a)\le\mu^\star+L_a$.
 \end{proposition}
 
 \begin{proposition}[Threshold of $o(\log T)$]\label{prop:threshold}
 \uses{def:ipm, def:constant}
-For $c\ge0$, $D^d_a(c)=0$ if and only if $c\,G^d\ge1$, where
-$G^d:=\min\{\KL(\nu',q'):q'\in\Simp,\ m(q')+\omega_d(q')\ge\mu^\star\}$ and
-$\omega_d(q'):=\max\{m(q)-m(q'):q\in\Simp,\ d(q,q')\le L\}$. For the mean gap and for $W_1$,
-$\omega_d(q')=\min(L,\xmax-m(q'))$ and $G^d=\Kop$. For total variation,
-$\omega_{\TV}(q')=\max\{\sum_{y}\alpha(y)(\xmax-y):0\le\alpha\le q',\ \sum_y\alpha(y)\le L\}$.
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, and let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$. For $c\ge0$, $D^d_a(c)=0$ if and only if $c\,G^d\ge1$, where
+$G^d:=\min\{\KL(\nu'_a,q'):q'\in\Simp,\ m(q')+\omega_d(q')\ge\mu^\star\}$ and
+$\omega_d(q'):=\max\{m(q)-m(q'):q\in\Simp,\ d(q,q')\le L_a\}$. For the mean gap and for $W_1$,
+$\omega_d(q')=\min(L_a,\xmax-m(q'))$ and $G^d=\Kop$. For total variation,
+$\omega_{\TV}(q')=\max\{\sum_{y}\alpha(y)(\xmax-y):0\le\alpha\le q',\ \sum_y\alpha(y)\le L_a\}$.
 \end{proposition}
 
 \begin{proposition}[Bernoulli laws: no gain]\label{prop:bernoulli}
 \uses{def:ipm, def:constant}
-If $\{0,1\}\subset S$ and $\nu,\nu'$ are carried by $\{0,1\}$, then $D^d_a=D^{\dmean}_a$ for every
-$d$ with (M).
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, and let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$ and $m(\nu'_a)\le\mu^\star+L_a$. If $\{0,1\}\subset S$ and
+$\nu_a,\nu'_a$ are carried by $\{0,1\}$, then $D^d_a=D^{\dmean}_a$ for every $d$ with (M).
 \end{proposition}
 
 \begin{proposition}[$W_1$: no gain without drift]\label{prop:w1}
 \uses{def:ipm, def:constant}
-If $\nu'=\nu$, then $D^{\Wone}_a(c)=D^{\dmean}_a(c)$ for every $c\ge0$.
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, and let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$. If $\nu'_a=\nu_a$, then $D^{\Wone}_a(c)=D^{\dmean}_a(c)$ for every $c\ge0$.
 \end{proposition}
 
 \begin{proposition}[Total variation: strict gain]\label{prop:tv}
 \uses{def:ipm, def:constant}
-If $\Kop>0$, then $\TV(\Qs,\Qps)\ge L/(\xmax-\xmin)$, with equality only if $\Qs-\Qps$ is carried
-by $\{\xmin,\xmax\}$. Hence $D^{\TV}_a(c)<D^{\dmean}_a(c)$ for every $c\in(0,1/\Kop)$ as soon as
-$\xmax-\xmin<1$ or $\Qs(y)\ne\Qps(y)$ for some $y\in S$ with $\xmin<y<\xmax$; this holds in
-particular when $\nu'=\nu$ and $\nu$ charges two points of $(\xmin,\xmax)$.
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, and let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$. If $\Kop>0$, then $\TV(\Qs,\Qps)\ge L_a/(\xmax-\xmin)$, with equality
+only if $\Qs-\Qps$ is carried by $\{\xmin,\xmax\}$. Hence $D^{\TV}_a(c)<D^{\dmean}_a(c)$ for every
+$c\in(0,1/\Kop)$ as soon as $\xmax-\xmin<1$ or $\Qs(y)\ne\Qps(y)$ for some $y\in S$ with
+$\xmin<y<\xmax$; this holds in particular when $\nu'_a=\nu_a$ and $\nu_a$ charges two points of
+$(\xmin,\xmax)$.
 \end{proposition}
 
 So the mean model loses exactly the information of the source law that the projections use:
@@ -251,7 +274,7 @@ $(\nu,\nu')\in\Theta$, every arm $k$ with $\mu_k<\mu^\star$ and every $\alpha>0$
 $\E N_k(T)=o(T^\alpha)$ when the source sizes are $N'(T)$.
 \end{definition}
 
-The class $\mathcal C_L$ of \cite[Section~3.2]{PMRM26} asks for consistency on every pair of laws
+The class $\mathcal C_L$ of \cite[Section~4.2]{PMRM26} asks for consistency on every pair of laws
 on $[0,1]$ with mean drift at most $L_k$ and for every source strategy. When $d$ has (M), every
 instance of $\Theta$ is such a pair, and deterministic sizes are a source strategy, so
 $\mathcal C_L\subset\Cons(N')$: Proposition~\ref{prop:lower} applies to every learner of
@@ -284,8 +307,14 @@ with $\max\emptyset:=-\infty$ and $N'_k\KL(\hat\nu'_k,q'):=0$ when $N'_k=0$; the
 $A_{t+1}\in\arg\max_kU_k(t)$, ties broken uniformly at random with $U_t$.
 \end{definition}
 
-The maximum is attained when the set is nonempty (Lemma~\ref{lem:index}). For the mean gap and
-$1\in S$, the index is that of KL-UCB-Transfer (K8) with $\mathcal K_{\inf}$ computed on $S$.
+The maximum is attained when the set is nonempty (Lemma~\ref{lem:index}). With the one-sided
+mean condition $m(q)-m(q')\le L_k$ in place of $d(q,q')\le L_k$, and $1\in S$, the index is that of
+KL-UCB-Transfer (K8, \cite[Section~5.2]{PMRM26}) with $\mathcal K_{\inf}$ computed on $S$: for a
+fixed $m(q)=\mu$, the best $q'$ is the KL projection of $\hat\nu'_k$ on $\{m(q')\ge\mu-L_k\}$. With
+the two-sided mean gap of Definition~\ref{def:ipm}, the feasible set is smaller, so the index can
+be smaller than that of K8; the two coincide when $m(\hat\nu'_k)\le U^{\rm K8}_k(t)+L_k$, where
+$U^{\rm K8}_k(t)$ is the K8 index (replace $q'$, at a maximiser of K8, by that projection at level
+$U^{\rm K8}_k(t)-L_k$: its mean is $\max(U^{\rm K8}_k(t)-L_k,m(\hat\nu'_k))$).
 
 \section{Closest known}\label{sec:closest}
 
@@ -296,9 +325,11 @@ for every consistent algorithm and deterministic sizes, that
 \liminf_T\inf\big\{\E N_k(T)\KL(\nu_k,\tilde\nu_k)+N'_k\KL(\nu'_k,\tilde\nu'_k)\big\}/\log T\ge1,
 \]
 the infimum running over pairs with mean of $\tilde\nu_k$ larger than $\mu_1$ and
-$d_k(\tilde\nu_k,\tilde\nu'_k)\le L_k$. Proposition~\ref{prop:lower} is its specialisation to
-$\Simp$; we do not claim it. Its upper bound (Theorem~6 there) is for Gaussian laws and the mean
-gap only. We found no discussion there of total variation, Kolmogorov or Wasserstein distances,
+$d_k(\tilde\nu_k,\tilde\nu'_k)\le L_k$. Proposition~\ref{prop:lower} is a variant of it on
+$\Simp$ (see the remark after it); we do not claim it. Its Section~5.2 introduces the
+source-penalised index KL-UCB-Transfer \cite[(4)]{PMM25}, for Gaussian laws and the mean gap: the
+first form of the index of Definition~\ref{def:algo}. Its upper bound (Theorem~6 there) is for
+Gaussian laws and the mean gap only. We found no discussion there of total variation, Kolmogorov or Wasserstein distances,
 nor of the structure of the constant. Attempt to derive Theorem~\ref{thm:main}: the Gaussian
 upper bound does not apply to laws on $S$, and for the mean gap it gives the mean constant only.
 
@@ -315,14 +346,45 @@ exactly when $d(\Qs,\Qps)>L_a$ or $d(\Qs,\nu'_a)>L_a$ (Proposition~\ref{prop:cri
 the source only through its mean, and the lower bound shows that no algorithm doing so can be
 optimal there. Example~\ref{ex:no-drift} is such a case, with $d=\TV$.
 
-\paragraph{KL-UCB on a finite support \cite{CGMMS13}.} Without a source ($N'=0$),
+\paragraph{The drift on one optimal arm only: KNOWN K5.} Theorem~\ref{thm:main} asks for
+$d(\nu_{i^\star},\nu'_{i^\star})<L_{i^\star}$ on one optimal arm and for nothing on the other arms.
+For the mean gap this is the well-specified regime of K5 (\cite[Section~7]{PMRM26}, to be checked:
+$\mu^\dagger=\mu_1<\mu'_1+L_1$, with no condition on the other arms), which K5 states in the
+one-sided form $\mu_1<\mu'_1+L_1$. This part of Theorem~\ref{thm:main} is the analogue of K5's
+well-specified case for a distance $d$ between laws, in the two-sided form; it is not new for the
+mean gap.
+
+\paragraph{KL-UCB on a known finite support \cite{BK96,CGMMS13}.} Without a source ($N'=0$),
 Theorem~\ref{thm:main} is the first-order bound of KL-UCB with the divergence computed on the known
-support $S$. \cite[Theorem~2]{CGMMS13} (arXiv v4 numbering) proves, with explicit second-order
+support $S$. The model of laws on a known finite support is that of Burnetas and Katehakis
+\cite{BK96} (we read only its abstract, which says that its assumptions are verified for
+nonparametric discrete laws with finite support). It is the earliest source we found for the index
+``maximum of the mean over the laws on the known support in a KL ball of the empirical law'' and
+for its asymptotic optimality on that model, so that, for $N'=0$, the index of
+Definition~\ref{def:algo} and Theorem~\ref{thm:main}(i) at first order are theirs (to be checked:
+the section of \cite{BK96} on discrete laws was not read). \cite[Theorem~2]{CGMMS13} (arXiv v4 numbering) proves, with explicit second-order
 terms, the bound $\log T/\mathcal K_{\inf}(\nu_a,\mu^\star)$ for empirical KL-UCB on finitely
 supported laws of $[0,1]$ (support not known, $\mu^\star<1$, $\mathcal K_{\inf}$ over finitely
 supported laws of $[0,1]$); its constant equals ours when $1\in S$ (for a competitor $q$, apply
 Lemma~\ref{lem:projection} on $S\cup\mathrm{supp}\,q$: the projection adds mass only at $1$), and
 is larger otherwise. The novelty is the source term.
+
+\paragraph{Historical data without drift \cite{SJ12}.} Shivaswamy and Joachims study bandits in
+which observations of the arms are available before the game, from the same laws; from their
+abstract (the only part we read), a logarithmic amount of historic data can reduce the regret from
+logarithmic to constant. This is the phenomenon of Proposition~\ref{prop:threshold} with no drift.
+What the drift adds is the threshold $G^d$, which depends on $d$ and on $L_a$
+(Proposition~\ref{prop:threshold}), and the constant $D_a(c)$ below it.
+
+\paragraph{Structured bandits \cite{MCP14,CMP17}.} The index of Definition~\ref{def:algo}
+maximises a mean under one KL budget shared by several samples tied by a constraint. So does the
+index of OSLB and CKL-UCB for Lipschitz bandits \cite[Section~4.1]{MCP14}, a supremum of $q$ under
+$\sum_{k'}t_{k'}(n)I^+(\hat\theta_{k'}(n),\lambda^{q,k}_{k'})\le f(n)$, the sum running over all
+the arms. The results on structured bandits (\cite{MCP14}, and OSSB \cite[Section~5]{CMP17}) do
+not cover forced source samples: there every sample comes from an arm of the game, pulled by the
+learner, and the lower bound is an allocation problem over these arms. Here the source samples
+come from laws $\nu'_k$ that are not arms of the game, their number $N'_k(T)$ is imposed and not
+chosen, and the structure ties each target law to its own source law only.
 
 \paragraph{Biased offline data \cite{CL24}.} Cheung and Lyu study online bandits with offline
 data whose bias is bounded through the means only, $V(a)\ge|\mu^{(\rm off)}(a)-\mu^{(\rm on)}(a)|$
@@ -356,8 +418,8 @@ Write $(q-q')f:=\sum_yf(y)(q(y)-q'(y))$.
 (a) For each $f$, $(q,q')\mapsto|(q-q')f|$ is symmetric, vanishes on the diagonal and satisfies
 the triangle inequality; a supremum keeps these properties.
 (b) $(1-t)q+tr-((1-t)q'+tr)=(1-t)(q-q')$, so each $|(\cdot)f|$ is multiplied by $(1-t)$. Each
-$(q,q')\mapsto|(q-q')f|$ is convex, and so is their supremum. The particular case is $q'=r'=q$,
-with the roles of $t$ and $1-t$ exchanged.
+$(q,q')\mapsto|(q-q')f|$ is convex, and so is their supremum. The particular case is the identity
+with $(q,q',r,t)$ replaced by $(r,q,q,1-t)$: $d(tr+(1-t)q,\,tq+(1-t)q)=t\,d(r,q)$.
 (c) For $f$ with values in $[0,1]$,
 $(q-q')f\le\sum_{y:q(y)>q'(y)}(q(y)-q'(y))=\TV(q,q')$, with equality for
 $f=\ind_{\{q>q'\}}$; and $-(q-q')f=(q-q')(1-f)\le\TV(q,q')$ since $1-f$ has values in $[0,1]$.
@@ -505,7 +567,7 @@ $m(Q)\ge m(P)$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:laws}
+\uses{def:laws, lem:ipm-order}
 Fix $s$. Summing the hypothesis over $y\le s<y'$,
 $F_Q(s)(1-F_P(s))=\sum_{y\le s<y'}Q(y)P(y')\le\sum_{y\le s<y'}P(y)Q(y')=F_P(s)(1-F_Q(s))$, that
 is $F_Q(s)\le F_P(s)$. Then $m(Q)-m(P)=\sum_{i<M}(y_{i+1}-y_i)(F_P(y_i)-F_Q(y_i))\ge0$ by
@@ -665,7 +727,10 @@ the counts at the final round are $N'_k(T)$ for $(k,\mathrm s)$ and $N_k(T)$ for
 The same holds for $(\tilde\nu,\tilde\nu')$, with the same strategy.
 
 \emph{Step 2 (change of measure).} Apply Lemma~\ref{cite:GMS19-6} to these two $2K$-armed
-instances, which differ only at $(a,\mathrm s)$ and $(a,\mathrm t)$, with $Z:=1-N_a(T)/T$. With
+instances, which differ only at $(a,\mathrm s)$ and $(a,\mathrm t)$, with $Z:=1-N_a(T)/T$. The
+$2K$-armed game has horizon $T+\sum_kN'_k(T)$ (not $T$), and $Z$ is measurable with respect to its
+history up to that horizon, which is what Lemma~\ref{cite:GMS19-6} asks for that game; the counts
+there are $N'_k(T)$ at $(k,\mathrm s)$ and $N_k(T)$ at $(k,\mathrm t)$. With
 $\kl(p,q)$ evaluated at $p:=1-\E N_a(T)/T$, $q:=1-\tilde\E N_a(T)/T$ and
 Lemma~\ref{cite:GMS19-11}:
 \[
@@ -689,15 +754,17 @@ $\mu^\star=\xmax$, $D_a(\bar c_a)=0$ and there is nothing to prove.
 \subsection{Concentration}
 
 \begin{lemma}[Deviation under a $d$-constraint]\label{lem:deviation}
-\uses{def:laws, def:ipm}
+\uses{def:laws, def:ipm, lem:ipm, lem:lsc}
 Let $p\in\Simp$, $\varepsilon,\rho\in(0,1]$, $\theta:=\min(\varepsilon,\rho)$, and
-$K_\rho(r):=\min\{\KL(r,q):q\in\Simp,\ m(q)\ge m(p)-\varepsilon,\ d(q,p)\le\rho\}$. Let
+$K_\rho(r):=\min\{\KL(r,q):q\in\Simp,\ m(q)\ge m(p)-\varepsilon,\ d(q,p)\le\rho\}$ (a minimum:
+the set contains $p$ and is compact, as $m$ and $d$ are continuous, Lemma~\ref{lem:ipm}(d), and
+$\KL(r,\cdot)$ is lower semicontinuous, Lemma~\ref{lem:lsc}). Let
 $\hat p_n$ be the empirical law of $n\ge1$ i.i.d.\ draws from $p$. For every $u\ge0$,
 $\PP(nK_\rho(\hat p_n)>u)\le(n+1)^{|S|}\exp(-u-n\theta\kappa_p(\theta))$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:laws, def:ipm, lem:ipm, lem:types}
+\uses{def:laws, def:ipm, lem:ipm, lem:lsc, lem:types}
 \emph{Infeasible types are far from $p$.} Let $r\in\mathcal T_n$ with $nK_\rho(r)>u\ge0$. Then
 $K_\rho(r)>0$, so $r$ is not feasible ($q=r$ would give $0$): either $m(r)<m(p)-\varepsilon$, and
 then $\TV(r,p)\ge|m(r)-m(p)|>\varepsilon\ge\theta$ (Lemma~\ref{lem:ipm}(c)), or
@@ -740,11 +807,13 @@ probability $0$). The supremum is finite because $\kappa_{p'}(\eta/2)>0$ (Lemma~
 \end{proof}
 
 \begin{lemma}[The exploration rate]\label{lem:delta}
-For every $T\ge3$, $\sum_{t=1}^{T-1}e^{-\delta_t}\le1+\log\log T$, and for every $z\ge0$,
+\uses{def:algo}
+For $\delta_t$ as in Definition~\ref{def:algo} and every $T\ge3$, $\sum_{t=1}^{T-1}e^{-\delta_t}\le1+\log\log T$, and for every $z\ge0$,
 $|\{t\ge1:\delta_t\le z\}|\le e^z$.
 \end{lemma}
 
 \begin{proof}
+\uses{def:algo}
 For $t\le3$, $e^{-\delta_t}=1/(3\log3)\le0.31$. For $t\ge4$, $e^{-\delta_t}=1/(t\log t)\le
 \int_{t-1}^{t}\frac{du}{u\log u}$. Hence
 $\sum_{t=1}^{T-1}e^{-\delta_t}\le0.93+\int_3^T\frac{du}{u\log u}=0.93+\log\log T-\log\log3\le1+\log\log T$,
@@ -753,35 +822,44 @@ since $\log\log3>0.09$. Finally $\delta_t\ge\log t$, so $\delta_t\le z$ implies 
 
 \subsection{Proof of Theorem~\ref{thm:main}}
 
-Fix an arm $a$ with $\mu_a<\mu^\star$, and write $\Delta_a:=\mu^\star-\mu_a$,
-$\eta:=\min\{1,L_{i^\star}-d(\nu_{i^\star},\nu'_{i^\star})\}>0$. For $\varepsilon\in(0,1]$ with
-$\varepsilon<\Delta_a$, let $\theta:=\min(\varepsilon,\eta/2)$ and
+\begin{definition}[Notation of the proof]\label{def:proof-notation}
+\uses{def:laws, def:ipm, def:model, def:algo}
+Let $S\subset[0,1]$ be finite with $|S|\ge2$, $d=d_{\mathcal F}$ an integral probability metric on
+$\Simp$, $K\ge2$, $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, $i^\star$ an arm with
+$\mu_{i^\star}=\mu^\star$ and $d(\nu_{i^\star},\nu'_{i^\star})<L_{i^\star}$, deterministic source
+sizes $N'(T)\in\mathbb N^K$, and let the learner be \Alg{}. Let $a$ be an arm with
+$\mu_a<\mu^\star$, $\Delta_a:=\mu^\star-\mu_a$ and
+$\eta:=\min\{1,L_{i^\star}-d(\nu_{i^\star},\nu'_{i^\star})\}>0$. An admissible $\varepsilon$ is an
+$\varepsilon\in(0,1]$ with $\varepsilon<\Delta_a$; for it, $\theta:=\min(\varepsilon,\eta/2)$ and
 \[
 A_T:=\sum_{t=K}^{T-1}\ind\big(U_{i^\star}(t)<\mu^\star-\varepsilon\big),\qquad
 B_T:=\sum_{t=K}^{T-1}\ind\big(A_{t+1}=a,\ U_a(t)\ge\mu^\star-\varepsilon\big).
 \]
+\end{definition}
 
 \begin{lemma}[Decomposition]\label{lem:decomposition}
-\uses{def:model, def:algo}
-For every $T\ge K$, $N_a(T)\le1+A_T+B_T$.
+\uses{def:model, def:algo, def:proof-notation}
+In the setting of Definition~\ref{def:proof-notation}, for every admissible $\varepsilon$ and every
+$T\ge K$, $N_a(T)\le1+A_T+B_T$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:model, def:algo}
+\uses{def:model, def:algo, def:proof-notation}
 Arm $a$ is pulled once in the first $K$ rounds, so $N_a(T)=1+\sum_{t=K}^{T-1}\ind(A_{t+1}=a)$. If
 $A_{t+1}=a$ then $U_a(t)\ge U_{i^\star}(t)$, so $U_{i^\star}(t)<\mu^\star-\varepsilon$ or
 $U_a(t)\ge\mu^\star-\varepsilon$.
 \end{proof}
 
 \begin{lemma}[The optimal arm]\label{lem:optimal-arm}
-\uses{def:laws, def:ipm, def:model, def:algo}
-Let $C_1$ be the constant of Lemma~\ref{lem:source} for $p'=\nu'_{i^\star}$ and this $\eta$, and
+\uses{def:laws, def:ipm, def:model, def:algo, def:proof-notation, lem:source, lem:types}
+In the setting of Definition~\ref{def:proof-notation}, let $\varepsilon$ be admissible, let $C_1$ be
+the constant of Lemma~\ref{lem:source} for $p'=\nu'_{i^\star}$ and this $\eta$, and
 $C_2:=\sum_{s\ge1}(s+1)^{|S|}\exp(-s\theta\kappa_{\nu_{i^\star}}(\theta))<\infty$. For every
 $T\ge3$ and every sequence of source sizes, $\E A_T\le C_1\big(1+C_2(1+\log\log T)\big)$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:laws, def:ipm, def:model, def:algo, lem:ipm, lem:lsc, lem:source, lem:deviation, lem:delta}
+\uses{def:laws, def:ipm, def:model, def:algo, def:proof-notation, lem:ipm, lem:lsc, lem:source, lem:deviation, lem:delta}
 Write $p:=\nu_{i^\star}$, $p':=\nu'_{i^\star}$, and let $\bar q'$, $Z$ be those of
 Lemma~\ref{lem:source} for the source sample of arm $i^\star$: they are functions of that sample.
 
@@ -810,18 +888,22 @@ $\E e^Z\le C_1$ (Lemma~\ref{lem:source}, which holds for every $N'_{i^\star}$).
 \end{proof}
 
 \begin{lemma}[Reduction for the suboptimal arm]\label{lem:sub-reduction}
-\uses{def:laws, def:ipm, def:model, def:constant, def:algo}
-Let
+\uses{def:laws, def:ipm, def:model, def:constant, def:algo, def:proof-notation}
+In the setting of Definition~\ref{def:proof-notation}, let $\varepsilon$ be admissible and
 $\Phi_s:=\min_{(q,q')\in\Pairs_a(\mu^\star-\varepsilon)}\big[s\KL(\hat\nu_{a,s},q)+N'_a\KL(\hat\nu'_a,q')\big]$
 for $s\ge1$. Then
 $B_T\le\sum_{s=1}^{T}\ind(\Phi_s\le\delta_T)\le B^0_T:=\sum_{s=1}^{T}\ind\big(s\,\Ks(\hat\nu_{a,s},\mu^\star-\varepsilon)\le\delta_T\big)$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:laws, def:ipm, def:model, def:constant, def:algo, lem:index, lem:J}
+\uses{def:laws, def:ipm, def:model, def:constant, def:algo, def:proof-notation, lem:index, lem:ipm, lem:lsc}
+The minimum defining $\Phi_s$ exists: $\Pairs_a(\mu^\star-\varepsilon)$ is closed in the compact
+$\Simp^2$ ($m$ and $d$ are continuous, Lemma~\ref{lem:ipm}(d)) and contains
+$(\delta_{\xmax},\delta_{\xmax})$, since $\mu^\star-\varepsilon<\mu^\star\le\xmax$, and the objective is
+lower semicontinuous with values in $[0,\infty]$ (Lemma~\ref{lem:lsc}(a)).
 If $A_{t+1}=a$, $U_a(t)\ge\mu^\star-\varepsilon$ and $N_a(t)=s$, the maximum defining $U_a(t)$ is
 attained (Lemma~\ref{lem:index}) at a pair in $\Pairs_a(\mu^\star-\varepsilon)$ whose objective is at
-most $\delta_t\le\delta_T$; so $\Phi_s\le\delta_T$ (the minimum exists by Lemma~\ref{lem:J}(a)).
+most $\delta_t\le\delta_T$; so $\Phi_s\le\delta_T$.
 Since $N_a$ increases at each pull of $a$, for each $s$ at most one $t$ has $A_{t+1}=a$ and
 $N_a(t)=s$, so
 $B_T\le\sum_s\ind(\Phi_s\le\delta_T)\sum_t\ind(A_{t+1}=a,N_a(t)=s)\le\sum_{s=1}^{T}\ind(\Phi_s\le\delta_T)$.
@@ -830,15 +912,16 @@ and the constraint on $d$.
 \end{proof}
 
 \begin{lemma}[The KL-UCB term]\label{lem:sub-kl}
-\uses{def:laws, def:model}
-Let $k_\varepsilon:=\Ks(\nu_a,\mu^\star-\varepsilon)$. Then $k_\varepsilon\in(0,\infty)$, and for every
+\uses{def:laws, def:model, def:proof-notation, lem:types}
+In the setting of Definition~\ref{def:proof-notation}, let $\varepsilon$ be admissible and
+$k_\varepsilon:=\Ks(\nu_a,\mu^\star-\varepsilon)$. Then $k_\varepsilon\in(0,\infty)$, and for every
 $\xi\in(0,k_\varepsilon)$ there is $r_\xi>0$ such that, for every $T\ge3$,
 $\E B^0_T\le\delta_T/(k_\varepsilon-\xi)+C_3$ with
 $C_3:=\sum_{s\ge1}(s+1)^{|S|}e^{-s\kappa_{\nu_a}(r_\xi)}<\infty$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:laws, def:model, lem:projection, lem:lsc, lem:types}
+\uses{def:laws, def:model, def:proof-notation, lem:projection, lem:lsc, lem:types}
 $\mu_a<\mu^\star-\varepsilon<\xmax$, so $k_\varepsilon\in(0,\infty)$ by Lemma~\ref{lem:projection}. The
 function $r\mapsto\Ks(r,\mu^\star-\varepsilon)$ is lower semicontinuous (Lemma~\ref{lem:lsc}(b) with
 $h(r,q):=\KL(r,q)$ plus the indicator, $0$ or $\infty$, of the closed set $\{m(q)\ge\mu^\star-\varepsilon\}$),
@@ -850,14 +933,15 @@ other indices $s$ contribute at most $\delta_T/(k_\varepsilon-\xi)$.
 \end{proof}
 
 \begin{lemma}[The constant term]\label{lem:sub-constant}
-\uses{def:laws, def:ipm, def:model, def:constant, def:algo}
-Assume $\mu^\star<\xmax$ and $N'_a(T)/\log T\to c_a\in(0,\infty)$, and let $D:=D_a(c_a)$ and
-$\gamma>0$. There is $r_0>0$ such that, for every $\varepsilon\in(0,1]$ with
-$\varepsilon<\min(r_0,\Delta_a)$, $\E B_T\le(D+\gamma)\log T+o(\log T)$.
+\uses{def:laws, def:ipm, def:model, def:constant, def:algo, def:proof-notation}
+In the setting of Definition~\ref{def:proof-notation}, assume $\mu^\star<\xmax$ and
+$N'_a(T)/\log T\to c_a\in(0,\infty)$, and let $D:=D_a(c_a)$ and $\gamma>0$. There is $r_0>0$ such
+that, for every admissible $\varepsilon$ with $\varepsilon<r_0$, the quantity $B_T$ of this
+$\varepsilon$ satisfies $\E B_T\le(D+\gamma)\log T+o(\log T)$.
 \end{lemma}
 
 \begin{proof}
-\uses{def:laws, def:ipm, def:model, def:constant, def:algo, lem:lsc, lem:D, lem:types, lem:sub-reduction, lem:sub-kl}
+\uses{def:laws, def:ipm, def:model, def:constant, def:algo, def:proof-notation, lem:lsc, lem:D, lem:types, lem:sub-reduction, lem:sub-kl}
 \emph{A lower semicontinuous function.} On $\Simp\times\Simp\times[0,\infty)\times\mathbb R$ let
 \[
 \psi(r,r',\beta,\mu):=\min_{(q,q')\in\Pairs_a(\mu)}\big[(D+\gamma)\KL(r,q)+\beta\KL(r',q')\big].
@@ -891,7 +975,7 @@ because $N'_a(T)\to\infty$ ($c_a>0$), and $\E B^0_T=O(\log T)$ by Lemma~\ref{lem
 
 \begin{proof}[Proof of Theorem~\ref{thm:main}]
 \proves{thm:main}
-\uses{def:laws, def:ipm, def:model, def:constant, def:algo, lem:decomposition, lem:optimal-arm, lem:sub-reduction, lem:sub-kl, lem:sub-constant, lem:lsc, lem:D}
+\uses{def:laws, def:ipm, def:model, def:constant, def:algo, def:proof-notation, lem:decomposition, lem:optimal-arm, lem:sub-reduction, lem:sub-kl, lem:sub-constant, lem:lsc, lem:D}
 \emph{(i).} By Lemmas~\ref{lem:decomposition}, \ref{lem:optimal-arm}, \ref{lem:sub-reduction} and
 \ref{lem:sub-kl}, for every admissible $\varepsilon$ and $\xi$,
 \[
@@ -924,15 +1008,18 @@ The regret is $R_T=\sum_a(\mu^\star-\mu_a)\E N_a(T)$.
 
 \subsection{Proofs of the structure results}
 
-In this subsection $(\nu,\nu')\in\Theta$, $a$ is an arm with $\mu_a<\mu^\star<\xmax$,
-$\nu:=\nu_a$, $\nu':=\nu'_a$, $L:=L_a$, and $J^d$, $D^d$ are $J_a$, $D_a$ for the pseudo-distance
-$d$. As $\mu^\star-L<\mu^\star<\xmax$, $\Qs$ and $\Qps$ are well defined
+In this subsection, as in the statements, $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$
+(no drift condition), $a$ is an arm with $\mu_a<\mu^\star<\xmax$, $\nu:=\nu_a$, $\nu':=\nu'_a$,
+$L:=L_a$, and $J^d$, $D^d$ are $J_a$, $D_a$ for the pseudo-distance $d$; the hypothesis
+$m(\nu')\le\mu^\star+L$ is used only where it is stated. As $\mu^\star-L<\mu^\star<\xmax$, $\Qs$ and $\Qps$ are well defined
 (Lemma~\ref{lem:projection}): $m(\Qs)=\mu^\star$, and $m(\Qps)=\mu^\star-L$ if $\Kop>0$, while
 $\Qps=\nu'$ if $\Kop=0$.
 
 \begin{lemma}[Criterion at a point]\label{lem:criterion-point}
-\uses{def:constant}
-Let $c\ge0$, $x_0>0$, and assume $J^d(x_0,c)\ge1$. Then $D^d(c)<x_0$ if and only if
+\uses{def:ipm, def:constant}
+Let $L\in(0,\infty)^K$, $(\nu,\nu')\in\Simp^K\times\Simp^K$, let $a$ be an arm with
+$\mu_a<\mu^\star<\xmax$, let $d$ be a pseudo-distance of Definition~\ref{def:ipm}, $c\ge0$,
+$x_0>0$, and assume $J^d(x_0,c)\ge1$. Then $D^d(c)<x_0$ if and only if
 $J^d(x_0,c)>1$.
 \end{lemma}
 
@@ -949,8 +1036,8 @@ $J^d(x,c)\le1-(x_0-x)\Ko<1$, so $D^d(c)\ge x_0$.
 \emph{The mean model.} On $\Pairs^{\dmean}_a(\mu^\star)$, $m(q)\ge\mu^\star$ and
 $m(q')\ge m(q)-L\ge\mu^\star-L$, so $J^{\dmean}(x,c)\ge x\Ko+c\Kop$. The pair $(\Qs,\Qps)$ is
 feasible: if $\Kop>0$, $|m(\Qs)-m(\Qps)|=L$; if $\Kop=0$, $\Qps=\nu'$ and
-$\mu^\star-L\le m(\nu')<\mu_a+L<\mu^\star+L$, where the middle inequality is (M) with
-$d(\nu,\nu')<L$. So $J^{\dmean}(x,c)=x\Ko+c\Kop$, and $D^{\dmean}(c)=(1-c\Kop)_+/\Ko$.
+$\mu^\star-L\le m(\nu')\le\mu^\star+L$, the first inequality by $\Kop=0$
+(Lemma~\ref{lem:projection}) and the second by the hypothesis $m(\nu')\le\mu^\star+L$. So $J^{\dmean}(x,c)=x\Ko+c\Kop$, and $D^{\dmean}(c)=(1-c\Kop)_+/\Ko$.
 \emph{Ordering.} If $d$ has (M), $\Pairs^d_a(\mu)\subset\Pairs^{\dmean}_a(\mu)$, so
 $J^d\ge J^{\dmean}$ and $D^d\le D^{\dmean}$. More generally $d_1\le d_2$ gives
 $\Pairs^{d_2}\subset\Pairs^{d_1}$, $J^{d_2}\ge J^{d_1}$ and $D^{d_2}\le D^{d_1}$; apply it to
@@ -960,7 +1047,8 @@ $\dmean\le W_1\le\KSd\le\TV$ (Lemma~\ref{lem:ipm-order}).
 \begin{proof}[Proof of Proposition~\ref{prop:criteria}]
 \proves{prop:criteria}
 \uses{def:ipm, def:constant, lem:criterion-point, lem:projection, lem:J, prop:order}
-(a) Let $x_0:=D^{\dmean}(c)=(1-c\Kop)/\Ko>0$ (Proposition~\ref{prop:order}). Then
+(a) Let $x_0:=D^{\dmean}(c)=(1-c\Kop)/\Ko>0$ (Proposition~\ref{prop:order}, whose first claim
+applies as $m(\nu')\le\mu^\star+L$). Then
 $J^d(x_0,c)\ge J^{\dmean}(x_0,c)=1$. By Lemma~\ref{lem:criterion-point}, $D^d(c)<x_0$ iff
 $J^d(x_0,c)>1$. The infimum $J^d(x_0,c)$ is attained (Lemma~\ref{lem:J}(a)) and every feasible
 pair has $\KL(\nu,q)\ge\Ko$ and $\KL(\nu',q')\ge\Kop$ (by (M), $m(q')\ge\mu^\star-L$). As $x_0,c>0$,
@@ -969,8 +1057,8 @@ that is $q=\Qs$ and $q'=\Qps$ (uniqueness, Lemma~\ref{lem:projection}), iff $d(\
 (b) Let $x_0:=1/\Ko$. Every feasible pair has $\KL(\nu,q)\ge\Ko$, so $J^d(x_0,c)\ge1$, with
 equality iff some feasible pair has $\KL(\nu,q)=\Ko$ and $\KL(\nu',q')=0$, that is $q=\Qs$ and
 $q'=\nu'$, iff $d(\Qs,\nu')\le L$. Conclude with Lemma~\ref{lem:criterion-point}. For the mean gap,
-$d(\Qs,\nu')=|\mu^\star-m(\nu')|$, and $m(\nu')>\mu^\star+L$ is impossible since
-$m(\nu')<\mu_a+L$.
+$d(\Qs,\nu')=|\mu^\star-m(\nu')|$ (as $m(\Qs)=\mu^\star$), and when $m(\nu')\le\mu^\star+L$ the
+condition $|\mu^\star-m(\nu')|>L$ reads $m(\nu')<\mu^\star-L$.
 \end{proof}
 
 \begin{proof}[Proof of Proposition~\ref{prop:threshold}]
@@ -1028,7 +1116,7 @@ $\xmax$ too.
 Lemma~\ref{lem:ipm-order},
 $|\sum_yf(y)(\Qs-\Qps)(y)|\le\sum_i(y_{i+1}-y_i)(-G(y_i))=m(\Qs)-m(\Qps)\le L$, the last
 inequality because $m(\Qps)\ge\mu^\star-L$. So $W_1(\Qs,\Qps)\le L$; Proposition~\ref{prop:criteria}(a)
-gives $D^{\Wone}(c)=D^{\dmean}(c)$ for $c>0$ with $c\Kop<1$, and the cases $c=0$ and $c\Kop\ge1$ are as
+(whose hypothesis $m(\nu')\le\mu^\star+L$ holds, as $m(\nu')=\mu_a<\mu^\star$) gives $D^{\Wone}(c)=D^{\dmean}(c)$ for $c>0$ with $c\Kop<1$, and the cases $c=0$ and $c\Kop\ge1$ are as
 in the proof of Proposition~\ref{prop:bernoulli}.
 \end{proof}
 
@@ -1040,7 +1128,8 @@ with $\Delta_\pm\ge0$ of disjoint supports and mass $\TV(\Qs,\Qps)$. Then
 $L=\sum_yy\Delta_+(y)-\sum_yy\Delta_-(y)\le\TV(\Qs,\Qps)(\xmax-\xmin)$, with equality only if
 $\Delta_+$ is carried by $\xmax$ and $\Delta_-$ by $\xmin$. Under either condition of the
 statement, $\TV(\Qs,\Qps)>L$, and Proposition~\ref{prop:criteria}(a) ($\TV$ has (M),
-Lemma~\ref{lem:ipm-order}) gives the strict inequality for $c\in(0,1/\Kop)$. If $\nu'=\nu$ (so
+Lemma~\ref{lem:ipm-order}, and $m(\nu')<\mu^\star-L$ since $\Kop>0$, Lemma~\ref{lem:projection})
+gives the strict inequality for $c\in(0,1/\Kop)$. If $\nu'=\nu$ (so
 $m(\nu)<\mu^\star-L$ as $\Kop>0$), Lemma~\ref{lem:projection} gives, at $y\in A$,
 $\Qs(y)=\Qps(y)$ iff $\lambda(y-\mu^\star)=\lambda'(y-\mu^\star+L)$. At two distinct points this
 forces $\lambda=\lambda'$ and then $\lambda L=0$, impossible. So $\Qs\ne\Qps$ at one of two
@@ -1083,7 +1172,8 @@ $\rho(y)(\log A(y)+1)$. Hence $\KL(\rho,q)+q\cdot h\ge\E_\rho\log A+1-\zeta$; ap
 \item \emph{Mean gap}: $D^{\dmean}_a(c)=(1-c\Kop)_+/\Ko$ (Proposition~\ref{prop:order}), which is
   the first-order constant of K2(i) and K3(i) (not their second-order terms, nor their random
   sizes) for deterministic sizes on $S$ when $1\in S$ (then $\Ks=\mathcal K_{\inf}$ for
-  laws carried by $S$); the condition of improvement is $m(\nu'_a)<\mu^\star-L_a$
+  laws carried by $S$), on instances with $|\mu_a-m(\nu'_a)|<L_a$ (then
+  $m(\nu'_a)\le\mu^\star+L_a$); the condition of improvement is $m(\nu'_a)<\mu^\star-L_a$
   (Proposition~\ref{prop:criteria}(b)), that of K2; when $m(\nu'_a)\ge\mu^\star-L_a$, $\Kop=0$ and
   $D^{\dmean}_a=1/\Ko$, which is K2(ii) and K3(ii). The boundary $m(\nu'_a)=\mu^\star-L_a$ falls in
   the second case, as in K4 when the sizes are deterministic.
@@ -1132,8 +1222,9 @@ $D^{\TV}_a$ & 5.7289 & 5.4322 & 4.5595 & 3.1692 & 0.6940 & 0\\
 The mean and $W_1$ rows are Propositions~\ref{prop:order} and~\ref{prop:w1}; that $D^{\TV}_a<6.0285$
 for every $c>0$ is Proposition~\ref{prop:criteria}(b). The threshold is analytic
 (Proposition~\ref{prop:threshold}): for $q'=(\alpha_0,\beta_0,\gamma_0)$ with $\alpha_0\le L_a$,
-$\omega_{\TV}(q')=\alpha_0+(L_a-\alpha_0)/2$, and $m(q')+\omega_{\TV}(q')\ge0.6$ iff
-$\gamma_0\ge0.09$; if $\alpha_0>L_a$ the condition forces $\gamma_0\ge\alpha_0-0.02>0.09$. The
+$\omega_{\TV}(q')=\alpha_0+\min(\beta_0,L_a-\alpha_0)/2$, and $m(q')+\omega_{\TV}(q')\ge0.6$ iff
+$\gamma_0\ge0.09$ (if $\beta_0\ge L_a-\alpha_0$, $m(q')+\omega_{\TV}(q')=(1+\gamma_0+L_a)/2$; otherwise
+$m(q')+\omega_{\TV}(q')=1$, and $\gamma_0>1-L_a\ge0.09$); if $\alpha_0>L_a$ the condition forces $\gamma_0\ge\alpha_0-0.02>0.09$. The
 projection of $\nu'_a$ on $\{\gamma_0\ge0.09\}$ has $\alpha_0=0.0186\le L_a$, so
 $G^{\TV}=0.98\log\frac{0.98}{0.91}+0.02\log\frac{0.02}{0.09}=0.042544$ and $1/G^{\TV}=23.505$.
 \end{example}
@@ -1223,21 +1314,31 @@ Technique (where) & Earliest source found \\
 Change of measure with source data and a pseudo-distance (Proposition~\ref{prop:lower}) &
 \cite[Theorem~3]{PMM25}; data-processing form \cite[(6), (11)]{GMS19} \\
 Source as forced pulls of extra arms (Proposition~\ref{prop:lower}, Step 1) & source not known (the
-decomposition of the divergence with a source is in \cite[proof of the lower-bound theorem]{PMRM26}) \\
-Index ``maximum of the mean over a divergence ball of pairs'' (Definition~\ref{def:algo}) & K8
-\cite[Section~4.2]{PMRM26}, for the mean gap; empirical KL-UCB \cite[Section~5]{CGMMS13} \\
+decomposition of the divergence with a source is in \cite[proof of Theorem~2]{PMRM26}, and in
+substance in \cite[Appendix~A]{PMM25}) \\
+Index ``maximum of the mean over a divergence ball of pairs'' (Definition~\ref{def:algo}) &
+\cite[Section~5.2, (4)]{PMM25} (source-penalised index, Gaussian laws, mean gap), then K8
+\cite[Section~5.2]{PMRM26}, for the mean gap; without source, on a known finite support,
+\cite{BK96} (to be checked); empirical KL-UCB \cite[Section~5]{CGMMS13}; a mean maximised under
+one KL budget over several samples tied by a structure: \cite[Section~4.1]{MCP14} (OSLB, CKL-UCB) \\
 Margin on the source of the optimal arm, exponential moment (Lemmas~\ref{lem:source},
-\ref{lem:optimal-arm}) & \cite[proof of the first upper-bound theorem, lemma on the exponential moment of
-$N'_1\mathcal K_{\inf}(\hat\nu'_1,\cdot)$]{PMRM26}, for $\mathcal K_{\inf}$ and the mean gap \\
-Method of types (Lemma~\ref{lem:types}) & standard (Csisz\'ar--K\"orner); not in the
-bibliography of the library \\
+\ref{lem:optimal-arm}) & \cite[Lemma~17 (stated in Appendix~B.4)]{PMRM26}, for $\mathcal K_{\inf}$
+and the mean gap \\
+Method of types (Lemma~\ref{lem:types}) & standard; \cite{CK11} (to be checked) \\
 Mixture $(1-\theta)p+\theta r$ giving a gain $\theta\KL$ (Lemma~\ref{lem:deviation}) & source not
 known \\
-Tilted form of the KL projection on a bounded support (Lemma~\ref{lem:projection}) &
+Tilted form of the KL projection on a bounded support (Lemma~\ref{lem:projection}) & the weights
+$\rho(y)/(1-\lambda(y-\ell))$ are the empirical-likelihood weights of \cite{O88} (to be checked);
 \cite[Theorems~5 and~8, proof of Theorem~8]{HT10}, on $[0,1]$ by Lagrangian duality; the proof by
 $\log u\le u-1$ given here: source not known \\
-Semicontinuity of marginal functions (Lemma~\ref{lem:lsc}) & Berge's maximum theorem; not in the
-bibliography of the library \\
+Semicontinuity of marginal functions (Lemma~\ref{lem:lsc}) & standard: Berge's maximum theorem
+(reference to be checked; not in the bibliography of the library) \\
+Likelihood-ratio order implies the usual stochastic order (Lemma~\ref{lem:lr}) & standard:
+\cite[Theorem~1.C.1]{SS07} (to be checked) \\
+$|m(q)-m(q')|\le W_1\le\KSd\le\TV$ on $[0,1]$ (Lemma~\ref{lem:ipm-order}) & standard (reference to be
+checked); the proof by Abel summation given here uses the definitions only \\
+History before the game reducing the regret to $o(\log T)$ (Proposition~\ref{prop:threshold}) &
+\cite{SJ12} (abstract read), without drift \\
 Structure of the constant (Propositions~\ref{prop:order} to~\ref{prop:tv}), weak duality
 (Lemma~\ref{lem:weak-duality}) & source not known \\
 \hline
@@ -1255,7 +1356,13 @@ structured bandits (Graves--Lai) with prior data; bandits with misspecified prio
 Kolmogorov, Wasserstein or total variation robustness; bandits corrupted by nature (total
 variation contamination); multi-task bandits with similar distributions; distributionally robust
 bandits with Wasserstein ambiguity sets and KL-UCB; transfer with historical data and ``total
-variation distance''. They returned \cite{PMM25} (whose Theorem~3 is the lower bound above),
+variation distance''. On 2026-11-15 (revision, after the scope referee's report, which named
+\cite{BK96}, \cite{MCP14}, \cite{SJ12}, \cite[Section~5.2]{PMM25} and the numbering of
+\cite{PMRM26}): the posted HTML of \cite{PMRM26} (outline, Lemma~17), of \cite{PMM25} (Section~5.2)
+and of \cite{MCP14} (Section~4.1); the PMLR page of \cite{SJ12}; the query ``Burnetas Katehakis
+1996 Optimal adaptive policies for sequential allocation problems pdf'', which returned the
+publisher's page (access refused) and citing papers; Crossref records for the metadata of
+\cite{BK96}, \cite{CK11}, \cite{SS07} and \cite{O88}. The searches of 2026-11-14 returned \cite{PMM25} (whose Theorem~3 is the lower bound above),
 \cite{PMRM26}, \cite{CL24} (mean bias), \cite{KT26} (Wasserstein sets, testing), works on
 Bayesian priors in total variation, on Huber contamination, on multi-task bandits with a mean or
 parameter distance, and on dynamic pricing under covariate shift; none gives an algorithm for a
