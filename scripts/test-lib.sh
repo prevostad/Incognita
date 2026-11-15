@@ -35,7 +35,7 @@ ok "one_line" '[ "$(printf "a\nb  c\n" | one_line 10)" = "a b c" ]'
 ok "ghr passes the output of gh" '[ "$( gh() { echo hi; }; ghr api x )" = hi ]'
 ok "ghr fails when gh fails three times" '! ( gh() { echo partial; return 4; }; sleep() { :; }; ghr api x >/dev/null 2>&1 )'
 ok "ghr keeps the status of gh" '( gh() { return 4; }; sleep() { :; }; ghr api x >/dev/null 2>&1; [ $? = 4 ] )'
-ok "ghr succeeds at the second try" '[ "$( n=0; gh() { n=$((n+1)); [ $n -ge 2 ] && echo ok2; }; sleep() { :; }; ghr api x 2>/dev/null )" = ok2 ]'
+ok "ghr succeeds at the second try" '[ "$( : > "$t/ghcount"; gh() { echo x >> "$t/ghcount"; [ "$(wc -l < "$t/ghcount")" -ge 2 ] && echo ok2; }; sleep() { :; }; ghr api x 2>/dev/null )" = ok2 ]'
 
 # ---- statuses and verdicts
 sts=$(printf '%s\t%s\t%s\t%s\n' \
