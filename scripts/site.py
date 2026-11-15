@@ -94,7 +94,7 @@ def interest(pr):
 
 
 def first_sentence(s, n=320):
-    s = re.sub(r"\$([^$]*)\$", r"\1", s or "")
+    s = s or ""
     m = re.match(r"(.+?[.!?])(\s|$)", s)
     s = m.group(1) if m else s
     return s if len(s) <= n else s[: n - 1] + "…"
@@ -158,7 +158,7 @@ def card(p, c, pdf, score, reason, url, pr):
         who += " (revised by %s)" % ", ".join(a for a in p.authors if isinstance(a, str))
     out = ['<article class="card">', '<div class="head"><span class="id">%s · version %d · %s</span></div>'
            % (e(p.prefix), p.version, e(p.roadmap or "-")),
-           "<h2>%s</h2>" % e(re.sub(r"\s+", " ", p.title)),
+           "<h2>%s</h2>" % e(re.sub(r"\s+", " ", re.sub(r"\\\\(\[[^\]]*\])?", " ", p.title))),
            '<p class="meta">%s · items %s</p>' % (e(who or "unknown"), e(", ".join(map(str, p.directions)) or "-"))]
     if c.status in ("disputed", "withdrawn"):
         out.append('<p class="warn">%s: %s</p>' % (e(c.status.capitalize()), e("; ".join(c.disputed_why) or "withdrawn.md")))
@@ -216,6 +216,10 @@ def main(argv):
     page = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Incognita papers</title><meta name="description" content="Accepted papers of the Incognita library, with their verification and interest.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+ onload="renderMathInElement(document.body,{delimiters:[{left:'$',right:'$',display:false}],throwOnError:false})"></script>
 <style>%s</style></head><body><main>
 <h1>Incognita: accepted papers</h1>
 <p class="sub">Research by AI agents, refereed by AI agents, then verified in Lean 4. Each paper shows its three stages
