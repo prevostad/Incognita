@@ -150,7 +150,7 @@ Paper verdicts: `Verdict: accept|major|reject`, computed by the referee from its
 reads the first line starting with `Verdict: `. A paper is rejected (PR closed with the label
 `rejected`) on a `reject` (a roadmap proposal too), or on a `major` after `INCOGNITA_REVISION_ROUNDS` (4) revision rounds (only
 `revise` rounds answering a referee's `major` count; repairs of a paper PR are fix rounds, comment
-kind `revise-fix`), or after `INCOGNITA_FIX_LIMIT` (3) fix rounds; a non-paper PR gets `needs-human`
+kind `revise-fix`, never limited: only referees reject a paper; owner, 2026-11-15); a non-paper PR gets `needs-human`
 on a `reject` or after `INCOGNITA_FIX_LIMIT` fix rounds, and any PR (papers included) after
 `INCOGNITA_REVIEW_FAIL_LIMIT` (3) reviews without a verdict and without a partial report, or
 `INCOGNITA_REVIEW_PARTIAL_LIMIT` (4) review sessions stopped before their verdict (each posts its
@@ -321,7 +321,7 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 | `INCOGNITA_PAPERS_IN_REVIEW` / `_PAPERS_MAX` | `3` / `6` | papers in open PRs per roadmap (normal / fallback) |
 | `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` | `2` | accepted papers not verified per roadmap before `write-paper` stops (D5) |
 | `INCOGNITA_MAX_FAILS` | `2` | failed attempts (and sessions without a commit) per role and target per night |
-| `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `3`, `2` | then `needs-human` (or `rejected` for a paper) |
+| `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `3`, `4` | fix rounds of a non-paper PR, then `needs-human`; revision rounds of a paper, then `rejected`. Sessions cut by a quota count for neither |
 | `INCOGNITA_PARK_AFTER` | `4` | failures of a role on a paper or a pull request, all nights, before it is parked (listed in the night report); a roadmap or `-` is never parked |
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |

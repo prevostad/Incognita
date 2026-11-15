@@ -686,11 +686,12 @@ choose_task() {
     # not a revision round), `fix-pr` for any other.
     fixer=fix-pr
     [ "$kind" = paper ] && fixer=revise
+    # A paper is never closed for repairs (owner, 2026-11-15: P001 was closed after a conflict made by
+    # other merges): only referees reject a paper. Real failures still park it (INCOGNITA_PARK_AFTER).
     if [ "$draft" = draft ]; then
       has_label "$labels" incomplete || continue
-      if [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then
-        if [ "$kind" = paper ]; then close_rejected "$n" "$H" "could not be completed after $fixes rounds"
-        else escalate "$n" "still incomplete after $fixes rounds"; fi
+      if [ "$kind" != paper ] && [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then
+        escalate "$n" "still incomplete after $fixes rounds"
         continue
       fi
       fixes_list="$fixes_list $fixer:$n:$H:incomplete"
@@ -698,9 +699,8 @@ choose_task() {
     fi
     cie=$(ci_effective "$H" "$ci")
     if [ "$cie" = failed ] || { [ "$mg" = CONFLICTING ] && mark_has "rebase-failed $H"; }; then
-      if [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then
-        if [ "$kind" = paper ]; then close_rejected "$n" "$H" "build or conflict not repaired after $fixes rounds"
-        else escalate "$n" "$fixes fix rounds without success"; fi
+      if [ "$kind" != paper ] && [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then
+        escalate "$n" "$fixes fix rounds without success"
         continue
       fi
       fixes_list="$fixes_list $fixer:$n:$H:$([ "$cie" = failed ] && echo build || echo conflict)"

@@ -106,11 +106,14 @@ cleanup() {
 trap cleanup EXIT
 trap 'log "interrupted"; exit 130' INT TERM
 
-finish() {  # ok|fail|skip <outcome...>: record and exit 0
+finish() {  # ok|fail|skip <outcome...>: record and exit 0 (4 after a quota cut)
   local kind=$1; shift
+  # A session cut by a quota is never a failure of its target (see quota_cut below).
+  if [ "${quota_cut:-false}" = true ] && [ "$kind" != ok ]; then kind=skip; set -- quota-cut "$@"; fi
   record_attempt "$role" "$target" "$kind" "$@"
   record_event task "$role" "$target" "$kind $* ${session_info:-}"
   log "== $role $target: $kind $*"
+  [ "${quota_cut:-false}" = true ] && exit 4
   exit 0
 }
 session_info=""
@@ -631,14 +634,26 @@ fi
 log "session ended: is_error=$is_error subtype=$subtype $session_info"
 errtext=$( { head -c 4000 "$tmp/result.txt"; tail -c 4000 "$tmp/session.err"; } 2>/dev/null)
 
+# quota_cut: the session was stopped by a quota (five-hour window, weekly limit, rate limit) or refused
+# at its start. Not a failure of the target: no failed attempt, no repair round counted, and the loop
+# waits (exit 4). The commits of a session cut in the middle are still kept (an `incomplete` draft).
+# (2026-11-15: such sessions ended in 1 s with a text the old pattern missed; they were counted as
+# failures, and the loop stayed idle for four hours with quota left.)
+quota_cut=false
 if [ "$is_error" = true ]; then
+  log "session error text: $(printf '%s' "$errtext" | one_line 300)"
   if printf '%s' "$errtext" | grep -qiE 'invalid api key|not logged in|please run /login|oauth token (has )?expired|authentication_error|401 unauthorized|invalid bearer token|credit balance'; then
     record_event stop "$role" "$target" "claude logged out"
     log "Claude is logged out (or the token in $INCOGNITA_AGENT_ENV is invalid)"
     record_attempt "$role" "$target" skip logged-out
     exit 3
   fi
-  if printf '%s' "$errtext" | grep -qiE 'usage limit|rate.?limit|limit reached|hit your limit|too many requests|\b429\b|overloaded|\b529\b'; then
+  turns=$(jq -r '.num_turns // 0' "$tmp/result.json" 2>/dev/null || echo 0)
+  [[ "$turns" =~ ^[0-9]+$ ]] || turns=0
+  refused_at_start=false
+  [ "$turns" -le 1 ] && [ "$elapsed" -lt 60 ] && refused_at_start=true
+  if printf '%s' "$errtext" | grep -qiE 'usage limit|rate.?limit|limit reached|hit your|session limit|weekly limit|5-hour|five-hour|resets? (at )?[0-9]|too many requests|\b429\b|overloaded|\b529\b' \
+      || [ "$refused_at_start" = true ]; then
     reset=$(printf '%s' "$errtext" | grep -oE '\|[0-9]{10}' | head -n 1 | tr -d '|')
     printf '%s' "$errtext" | grep -qiE 'overloaded|\b529\b' && [ -z "$reset" ] && reset=$(( $(now) + 600 ))
     if [ -z "$reset" ]; then
@@ -646,12 +661,17 @@ if [ "$is_error" = true ]; then
       [ -n "$when" ] && reset=$(date -d "$when" +%s 2>/dev/null)
       [ -n "$reset" ] && [ "$reset" -le "$(now)" ] && reset=$(( reset + 86400 ))
     fi
+    # A refusal at the start without a recognised message: wait 10 min, then the usage is read again.
+    [ -n "$reset" ] || { [ "$refused_at_start" = true ] && reset=$(( $(now) + 600 )); }
     [ -n "$reset" ] || reset=$(( $(now) + 1800 ))
     printf '%s\n' "$reset" > "$INCOGNITA_STATE/rate-limit-until"
     record_event quota "$role" "$target" "rate limited until $(date -d "@$reset" '+%H:%M')"
-    record_attempt "$role" "$target" skip rate-limited
     log "rate limited until $(date -d "@$reset" '+%F %T')"
-    exit 4
+    quota_cut=true
+    if [ "$refused_at_start" = true ]; then
+      record_attempt "$role" "$target" skip rate-limited
+      exit 4
+    fi
   fi
 fi
 
@@ -781,7 +801,8 @@ failed_session=false
 # (a repair of a paper PR) or `fix-pr`; `<kind>-nochange` when nothing was pushed.
 ckind=$role
 [ "$role" = revise ] && [ "$referee_round" != 1 ] && ckind=revise-fix
-is_fix_round() { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }
+# A round cut by a quota is not counted as a repair round.
+is_fix_round() { [ "$quota_cut" != true ] && { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }; }
 
 if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
   # A writer that found no open item says so (line "No open item in <Roadmap>."): the roadmap is
@@ -856,7 +877,7 @@ if [ -n "$pr" ]; then
     title="Revision round $(( rounds + 1 )) of $INCOGNITA_REVISION_ROUNDS: pushed \`${sq:0:12}\`."
   else
     title="Fix round: pushed \`${sq:0:12}\`."
-    counter_inc "fix-rounds $pr" >/dev/null
+    is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
   fi
   [ "$failed_session" = true ] && title="$title The session stopped before the end ($subtype): the pull request is marked \`incomplete\`."
   { printf '%s\n\n' "$title"; cat "$summary"; footer "$sq"; } > "$tmp/body.md"
