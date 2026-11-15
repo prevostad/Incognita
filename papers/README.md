@@ -16,10 +16,11 @@ badges), computed by `scripts/certify.py` (AGENTS.md, section 9).
 
 | File | Content | Written by | After acceptance |
 |---|---|---|---|
-| `paper.tex` | the paper and blueprint: labelled nodes, `\uses`, mandatory sections | `write-paper`, `revise` | **frozen**, except a new version after an erratum |
+| `paper.tex` | the paper and blueprint: labelled nodes, `\uses`, the sections of AGENTS.md §5.2; two builds, the reader's (`\uses` invisible) and the blueprint (`Uses:` lines printed) | `write-paper`, `revise` | **frozen**, except a new version (an erratum, an affected dependency, a presentation revision) |
+| `DOSSIER.md` | for the referees and the owner, never compiled: roadmap correspondence, closest known (KNOWN ids, derivation attempts), sanity checks, weak points, searches (AGENTS.md §5.2) | `write-paper`, `revise` | changes only with a new version of `paper.tex` |
 | `refs.bib` | the cited works, with the keys of `literature/bibliography.json` | `write-paper`, `revise` | metadata fixes by the bibliographer |
 | `META.toml` | `roadmap`, `kind` (`internal`, `external`, `definitions`), `directions` (D, F, C items), `authors`, `version`, `depends_on` (`"P001v2:thm:main"`), `source` (external) | `write-paper`, `revise` | `version` +1 with each new `paper.tex`; `depends_on` updated by a dependency check |
-| `notebook/` | working notes: `NOTEBOOK.md` (attempts, dead ends and why they fail, ideas, Lean drafts in `Exploration/<prefix>/`, answers to referees) and small `python3` experiments with their outputs. **Not refereed**, never part of the PDF | `write-paper`, `revise` | kept, marked "not refereed" |
+| `notebook/` | working notes: `NOTEBOOK.md` (attempts, dead ends and why they fail, ideas, Lean drafts in `Exploration/<prefix>/`, answers to referees) and small `python3` experiments with their outputs. **Not refereed**, never part of the PDF, except the PDF figures it makes for the paper | `write-paper`, `revise` | kept, marked "not refereed" |
 | `blueprint.md` | Lean name of each node, modelling decisions, back-translations | `formalize-statements`, `prove` | grows |
 | `formalisation.tex` | blueprint extension: lemmas the Lean proof needs that the paper does not state (labels `flem:…`, with `\lean` and `\uses`); not refereed, because Lean checks it | `prove` | grows |
 | `errata.md` | `E1`, `E2`, …: the paper is wrong (never renumbered); `revise` adds `Revised in` lines, `formalize-statements` adds `Resolved by` lines | entries: `prove`, `formalize-statements` | grows |
@@ -63,7 +64,8 @@ AGENTS.md, section 9.
 ## Versions and dependencies
 
 A paper is submitted as version 1; each new `paper.tex` after acceptance (an erratum, an affected
-dependency) is the next version, in the same pull request as `version` in META.toml (CI checks
+dependency, a presentation revision of the owner, AGENTS.md §5.6) is the next version, in the same
+pull request as `version` in META.toml (CI checks
 it); `papers/library.bib` is generated from it, never committed. A paper that depends on another records the
 version it read: `depends_on = ["P001v2:thm:main"]`. When a dependency gets a new version, the loop
 runs a **dependency check** (`revise`): not affected (a line in `dependency-checks.md`, `depends_on`
@@ -120,14 +122,18 @@ From the repository root, as CI does (the template loads `../../templates/paper/
 which gives `\lean`, `\leanok`, `\uses`… their plain-LaTeX meaning):
 
 ```bash
-latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex
-latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex   # if any
-latexmk -C -cd papers/<P>/paper.tex                                                     # clean up
+python3 scripts/certify.py bib                                   # papers/library.bib (never committed)
+latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex             # reader build
+latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint \
+  -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex                         # blueprint build
+latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex     # if any
+latexmk -C -cd papers/<P>/paper.tex; latexmk -C -jobname=paper-blueprint -cd papers/<P>/paper.tex
 ```
 
-The workflow "Papers" (job "Compile papers") compiles every paper on each pull request that
-touches `papers/` or the template, and on `main`; it fails on a LaTeX error, an undefined reference
-or citation or a duplicate label, and uploads the PDFs as the artifact `papers-pdf`. It is not a
+The workflow "Papers" (job "Compile papers") compiles every paper in both builds on each pull
+request that touches `papers/` or the template, and on `main`; it fails on a LaTeX error, an
+undefined reference or citation, a duplicate label, or a `Uses:` line in the reader build, and
+uploads the PDFs (`<P>.pdf` and `<P>-blueprint.pdf`) as the artifact `papers-pdf`. It is not a
 required check of `main` (it does not run on every pull request), but the loop merges a paper pull
 request only when both "Build and check" and "Compile papers" are green. PDFs are never committed
 (`.gitignore`).

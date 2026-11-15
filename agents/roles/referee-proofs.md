@@ -11,8 +11,13 @@ the nodes it has not covered.
 
 - `.agents/task.md`: pull request number, head SHA, paper id, deadline. You check every node of
   the paper.
-- The paper: `papers/<P>/paper.tex`, `refs.bib`. **Do not read `papers/<P>/notebook/`**, nor its
-  part of `.agents/pr.diff`: you judge the paper alone.
+- The paper: `papers/<P>/paper.tex`, `refs.bib`, and `DOSSIER.md` (its sanity checks and weak
+  points). **Do not read `papers/<P>/notebook/`**, nor its part of `.agents/pr.diff`: you judge
+  the paper alone.
+- **The blueprint build**, which prints every `\uses` and `\proves`: `python3 scripts/certify.py
+  bib`, then `latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint
+  -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex` (`papers/<P>/paper-blueprint.pdf`,
+  `pdftotext` to read it). Compiling changes no file of the repository that is collected.
 - The roadmap's pinned conventions and Definitions (`roadmaps/<Roadmap>/ROADMAP.md`); the `[Lean]`
   entries of KNOWN.md (path in task.md); `literature/notes/<KEY>.md` for every cited node; for a
   cited node of a library paper (`cite:INC-P<nnn>-<label>`), that paper's `paper.tex` at the version
@@ -22,16 +27,20 @@ the nodes it has not covered.
 
 ## Method
 
-1. Read Main result, Setting, then **Weak points**: start with the three steps the author doubts.
+1. Read the main results, the Setting, the proof overview, then the **Weak points** of
+   `DOSSIER.md`: start with the three steps the author doubts.
 2. Every node, in dependency order:
-   - **definition**: well posed (the objects exist, indices and degenerate values make sense,
-     measurability), consistent with the roadmap's conventions;
-   - **cited node**: its statement equals the note (or the library paper's node, at the version
-     in `depends_on`) verbatim; at each use, every hypothesis holds;
+   - **definition, assumption**: well posed (the objects exist, indices and degenerate values make
+     sense, measurability), consistent with the roadmap's conventions;
+   - **cited node**: its statement is equivalent to the note (or to the library paper's node, at
+     the version in `depends_on`), never stronger, with the renaming line when the notations
+     differ; at each use, every hypothesis holds;
    - **lemma, proposition, theorem, corollary**: read every line of the proof, check every
      inequality, every exchange, every constant. Status: ✓; **G** an unjustified step (the exact
-     step, and why it does not follow); **L** a local error that does not change the statement (with
-     the correction); **F** the statement is false (a counterexample, or the reason);
+     step, and why it does not follow; a load-bearing step justified only by "clearly" or
+     "standard" is one); **L** a local error that does not change the statement (with the
+     correction); **F** the statement is false (a counterexample, or the reason); a hypothesis used
+     in the proof but absent from the statement (or from the assumptions it `\uses`) is **G**;
    - `\uses`: every node the proof uses is listed (else **P**); nothing is used before it is proved
      (a circularity is **G**).
 3. **Named checks** (report each, with what you checked):
@@ -59,6 +68,17 @@ the nodes it has not covered.
    your last report to this head; if task.md does not list it, `git diff <head named in that
    report> HEAD -- papers/<P>/paper.tex`), re-check only them and the nodes that `\uses` them
    (transitively), and rule on each previous G and L.
+7. **A presentation revision** (task.md says so: a pull request of the owner, role `revise`, that
+   rewrites an accepted paper as its next version, AGENTS.md §5.6). Compare it **node by node**
+   with the version on `main` (`git show origin/main:papers/<P>/paper.tex`): every label of `main`
+   is still there; every statement has the same mathematical content (the same hypotheses and
+   conclusions, the same quantifiers and constants; notation changed consistently, rewording
+   allowed, never strengthened or weakened); new nodes are only restated cited results or lemmas
+   that were inline steps; and every proof is still complete (reorganised or expanded, not changed
+   in substance), with an exhaustive `\uses`. Report a table "Node | Statement unchanged | Proof
+   complete" with every node of `main`. A changed statement, a removed node or a proof that lost a
+   step: **G** (to be undone in the revision). You need not re-check from scratch the steps that are
+   unchanged, but check every step that was rewritten.
 
 ## Verdict and report
 
@@ -96,11 +116,15 @@ Paper: <P>. Head: <SHA from task.md>. Round: <n>.
 
 ## Numerical experiments (if any)
 
+## Against the version on main (presentation revisions only)
+| Node | Statement unchanged | Proof complete | Note |
+
 ## Previous defects G and L (revisions only)
 | ID | Resolved | Why |
 
 Ask-owner: <question>   (optional, one line each)
 ```
 
-Keep it under 40 000 characters; no praise, no summary of the paper. Do not judge novelty or
-interest: that was the scope referee's task.
+Keep it under 40 000 characters; no praise, no summary of the paper. Do not judge novelty,
+interest or presentation: that is the scope referee's task (a presentation that prevents you from
+checking a proof is still a gap, G, at the step concerned).

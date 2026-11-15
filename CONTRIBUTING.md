@@ -115,9 +115,11 @@ Everything else waits for the owner:
   and fix rounds start again, and a referee's `reject` on its head is answered by one more revision).
 
 **Reading a pull request.** Its description is the agent's summary (results in mathematics, with
-their Lean names or paper labels). Papers: the PDF is in the artifact `papers-pdf` of the "Papers"
-run (tab Checks; its check "Compile papers" must be green, as "Build and check", before the loop
-merges a paper), and the referee reports are comments starting with `Verdict:`. Statements: read
+their Lean names or paper labels). Papers: the two PDFs (`<P>.pdf`, the paper as its reader sees
+it, and `<P>-blueprint.pdf`, with every `Uses:` line) are in the artifact `papers-pdf` of the
+"Papers" run (tab Checks; its check "Compile papers" must be green, as "Build and check", before
+the loop merges a paper), `DOSSIER.md` is next to `paper.tex`, and the referee reports are
+comments starting with `Verdict:`. Statements: read
 the back-translations in `papers/<P>/blueprint.md` and the `review-statements` report.
 
 **Admin bypass.** CI fails, by design, on every non-additive change under `Statements/`. The
@@ -203,16 +205,39 @@ Taken on 2026-11-14:
   end), and the weekly cap is checked during a session too.
 - The owner may submit his own papers (below).
 
+Taken on 2026-11-15: the writing rules v1 ([docs/writing.md](docs/writing.md), AGENTS.md §5.2): a
+paper is written for an expert referee of JMLR or COLT; one source, two PDFs (the reader's, and the
+blueprint with its `Uses:` lines); what serves only the referees goes to `DOSSIER.md`; a blocking
+class R for readability (one revision round); presentation revisions of accepted papers (below).
+To be adjusted after the owner reads P002 version 2.
+
 **Submitting a paper of the owner.** It is refereed, revised and merged like an agent's paper:
 a branch `owner/<slug>`, one new directory `papers/P<nnn>-<slug>/` (the next free number, above
-those on `main` and in open pull requests) with `paper.tex`, `refs.bib`, `META.toml` and
-`notebook/` only, following `templates/paper/` and AGENTS.md section 5 (the paper is the
-blueprint). `META.toml` has `human_authors = ["Adrien Prevost"]` on one line: the paper's entry of
-`papers/library.bib` is in the owner's name, which dates the result publicly. The pull request's
-description starts with the line ``Role: `write-paper`. Target: `<Roadmap>`. Model: `owner`.``
-The loop then runs both referees on it; a `major` is answered by the agents' `revise` (targeted
-edits: they never change `human_authors` nor the `\author` line); on acceptance the loop merges it
-and formalisation follows. The owner may also push revisions himself on the branch.
+those on `main` and in open pull requests) with `paper.tex`, `DOSSIER.md`, `refs.bib`, `META.toml`
+and `notebook/` only, following `templates/paper/`, AGENTS.md section 5 (the paper is the
+blueprint) and [docs/writing.md](docs/writing.md). `META.toml` has
+`human_authors = ["Adrien Prevost"]` on one line: the paper's entry of `papers/library.bib` is in
+the owner's name, which dates the result publicly. The pull request's description starts with the
+line ``Role: `write-paper`. Target: `<Roadmap>`. Model: `owner`.`` The loop then runs both
+referees on it; a `major` is answered by the agents' `revise` (targeted edits: they never change
+`human_authors` nor the `\author` line); on acceptance the loop merges it and formalisation
+follows. The owner may also push revisions himself on the branch.
+
+**Converting a paper of the owner** to the library's format (done with Claude in a session):
+keep the owner's skeleton (his introduction, results, overview, appendices, figures, pseudo-code);
+add only the labels, the nodes and the hidden `\uses`; everything the template asks that is not
+for the reader (roadmap correspondence, comparison with KNOWN, derivation attempts, sanity checks,
+weak points, searches) goes to `DOSSIER.md`. Never insert material between the owner's
+introduction and his results.
+
+**A presentation revision of an accepted paper** (decided 2026-11-15, for P000 and P002 first;
+AGENTS.md §5.6): a new version whose `paper.tex` is rewritten for presentation, every node keeping
+its mathematical content. A branch `owner/<slug>` that changes only that paper's `paper.tex`,
+`DOSSIER.md`, `refs.bib`, `META.toml` (`version` + 1) and `notebook/`; the pull request's
+description starts with ``Role: `revise`. Target: `P<nnn>-<slug>`. Model: `<model>`.`` (the model
+that rewrote it, or `owner`). The loop referees it (scope: the presentation, and that nothing else
+changed; proofs: every statement unchanged and every proof complete, node by node against `main`),
+answers a `major` with `revise`, and merges it when both referees accept and the build is green.
 
 Pending (as of 2026-11-14):
 
