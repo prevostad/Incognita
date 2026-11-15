@@ -1,12 +1,16 @@
 name: Papers
 
-# Compiles every paper to PDF with latexmk (pdflatex, bibtex): papers/*/paper.tex, then the
-# blueprint extension papers/*/formalisation.tex when it exists, and the templates of
-# templates/paper/. Fails on a LaTeX error, an undefined reference or citation, or a duplicate
-# label; warns when a paper exceeds 100 pages (AGENTS.md, section 5.2). The PDFs and logs
-# are uploaded as the artifact `papers-pdf`. templates/paper/blueprint-macros.sty, loaded by a
-# relative path, gives the leanblueprint macros (\lean, \leanok, \uses, \proves, \notready,
-# \mathlibok) a plain-LaTeX meaning; the leanblueprint web build (plasTeX) is not done here.
+# Compiles every paper to PDF with latexmk (pdflatex, bibtex), in two builds of the same source
+# (AGENTS.md, section 5.2): the reader build of papers/*/paper.tex (<P>.pdf: no Uses lines, the
+# paper as its reader sees it) and the blueprint build (<P>-blueprint.pdf: jobname paper-blueprint,
+# \IncognitaBlueprint defined, every \uses, \proves and \extends printed); then the blueprint
+# extension papers/*/formalisation.tex when it exists, and the template of templates/paper/ in
+# both builds. Fails on a LaTeX error, an undefined reference or citation, or a duplicate label in
+# either build, or a "Uses:" line in the text of a reader build (pdftotext); warns when a paper
+# exceeds 100 pages. The PDFs and logs are uploaded as the artifact `papers-pdf`.
+# templates/paper/blueprint-macros.sty, loaded by a relative path, gives the leanblueprint macros
+# (\lean, \leanok, \uses, \proves, \notready, \mathlibok, \extends) a plain-LaTeX meaning; the
+# leanblueprint web build (plasTeX) is not done here.
 # Before compiling, `scripts/certify.py leanok` writes papers/*/certification.tex (never committed):
 # the green box "LEAN APPROVED" under each node whose frozen statement has a proof marker (checked
 # by the audit in the workflow CI), and the paper's certification line under its title
@@ -49,7 +53,12 @@ jobs:
           fetch-depth: 0   # certify.py reads the merge trailers (referees) and the garden log's commits
 
       - name: Certification of the PDFs
-        run: python3 scripts/certify.py leanok
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # On a pull request, a paper whose paper.tex is new or changed is printed "submitted".
+          if [ -n "$BASE_REF" ]; then python3 scripts/certify.py leanok --base "origin/$BASE_REF"
+          else python3 scripts/certify.py leanok; fi
 
       # The library's bibliography (keys INC-P<nnn>), generated, never committed (AGENTS.md 5.6).
       - name: Library bibliography
@@ -59,7 +68,8 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends latexmk texlive-latex-base \
-            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended lmodern
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-science \
+            texlive-pictures lmodern poppler-utils
 
       - name: Compile
         run: |
@@ -71,31 +81,46 @@ jobs:
             echo "|---|---|---|---|"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # compile <tex file> <output name>: prints the result, sets status=1 on failure.
+          # compile <tex file> <output name> [blueprint]: prints the result, sets status=1 on failure.
+          # The third argument builds the blueprint (jobname paper-blueprint, \IncognitaBlueprint
+          # defined before the class: every \uses, \proves and \extends printed); without it, the
+          # reader build, whose text must contain no "Uses:" line.
           compile() {
-            local tex=$1 name=$2 dir base log result=ok pages nodes
+            local tex=$1 name=$2 mode=${3:-reader} dir base job log result=ok pages nodes
+            local opts=()
             dir=$(dirname "$tex")
             base=$(basename "$tex" .tex)
-            log="$dir/$base.log"
+            job=$base
+            if [ "$mode" = blueprint ]; then
+              job=$base-blueprint
+              opts=(-jobname="$job" -usepretex='\def\IncognitaBlueprint{}')
+            fi
+            log="$dir/$job.log"
             echo "::group::$name"
-            if latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error \
+            if latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error ${opts[@]+"${opts[@]}"} \
                 -cd "$tex" > "out/$name.latexmk.txt" 2>&1; then
               if grep -nE 'Reference .* undefined|Citation .* undefined|There were undefined (references|citations)|multiply defined|multiply-defined' "$log"; then
-                echo "::error file=$tex::undefined reference or citation, or duplicate label (lines above)"
+                echo "::error file=$tex::undefined reference or citation, or duplicate label (lines above; $mode build)"
                 result="undefined or duplicate label"
                 status=1
               fi
-              cp "$dir/$base.pdf" "out/$name.pdf"
+              if [ "$mode" = reader ] && [ "$base" = paper ] \
+                  && pdftotext "$dir/$job.pdf" - 2>/dev/null | grep -nE '(^|[^A-Za-z])(Uses|Extends): '; then
+                echo "::error file=$tex::the reader build prints blueprint lines (Uses:, Extends:): they belong to the blueprint build only"
+                result="blueprint lines in the reader build"
+                status=1
+              fi
+              cp "$dir/$job.pdf" "out/$name.pdf"
             else
-              echo "::error file=$tex::LaTeX failed"
+              echo "::error file=$tex::LaTeX failed ($mode build)"
               grep -nE -A4 '^(\./)?[^ ]*:[0-9]+: |^! ' "$log" | head -n 60 \
                 || tail -n 60 "out/$name.latexmk.txt"
               result="LaTeX error"
               status=1
             fi
             pages=$(sed -n 's/^Output written on .* (\([0-9]*\) page.*/\1/p' "$log" 2>/dev/null | tail -n 1)
-            nodes=$(grep -cE '^[^%]*\\begin\{(definition|lemma|proposition|theorem|corollary)\}' "$tex" || true)
-            if [ "$base" = paper ]; then
+            nodes=$(grep -cE '^[^%]*\\begin\{(definition|assumption|lemma|proposition|theorem|corollary)\}' "$tex" || true)
+            if [ "$base" = paper ] && [ "$mode" = reader ]; then
               if [ -n "$pages" ] && [ "$pages" -gt 100 ]; then
                 echo "::warning file=$tex::$name has $pages pages (limit 100: split the paper)"
               fi
@@ -113,14 +138,14 @@ jobs:
               templates/paper) name=template ;;
               *) name=$(basename "$dir") ;;
             esac
+            # The reader build first: formalisation.tex reads its paper.aux.
             compile "$dir/paper.tex" "$name"
-            # The extension reads paper.aux: compile it after the paper.
+            compile "$dir/paper.tex" "$name-blueprint" blueprint
             if [ -f "$dir/formalisation.tex" ]; then
               compile "$dir/formalisation.tex" "$name-formalisation"
             fi
           done
           exit "$status"
-
       - name: Upload the PDFs
         if: always()
         uses: actions/upload-artifact@v4

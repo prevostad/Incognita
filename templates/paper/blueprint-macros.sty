@@ -93,9 +93,13 @@
 \newcommand{\notready}{\incognita@notreadytrue}
 \newcommand{\proves}[1]{}
 \newcommand{\discussion}[1]{}
+% In a proof of the reader build, \uses prints nothing; when it comes first (the label "Proof." still
+% pending), it starts the paragraph, as the "Uses:" line of the blueprint build does, so that a
+% \paragraph right after it behaves the same in both builds.
 \newcommand{\uses}[1]{%
   \ifincognita@inproof
-    \ifincognita@blueprint\incognita@greyline{Uses: \incognita@printrefs{#1}}\fi
+    \ifincognita@blueprint\incognita@greyline{Uses: \incognita@printrefs{#1}}%
+    \else\if@inlabel\leavevmode\ignorespaces\fi\fi
   \else
     \def\incognita@uses{#1}%
   \fi}
