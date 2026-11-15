@@ -1548,6 +1548,44 @@
     "identifiers": {},
     "version": ""
   },
+  "LFCK26": {
+    "uri": "https://arxiv.org/abs/2605.10289",
+    "citation": {
+      "id": "LFCK26",
+      "type": "article",
+      "title": "Sample-mean anchored Thompson sampling for offline-to-online learning with distribution shift",
+      "author": [
+        {
+          "family": "Li",
+          "given": ""
+        },
+        {
+          "family": "Fu",
+          "given": ""
+        },
+        {
+          "family": "Chen",
+          "given": ""
+        },
+        {
+          "family": "Kong",
+          "given": ""
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2605.10289"
+    },
+    "version": ""
+  },
   "LR85": {
     "uri": "",
     "citation": {

@@ -56,8 +56,9 @@ policy, KL-UCB-$d$-Transfer, that attains it: $\E N_a(T)\le D_a(c_a)\log T\,(1+o
 worse than KL-UCB at first order whatever the source sizes, and it needs the drift condition on
 one optimal arm only. We then describe the constant: $D^{\TV}\le D^{\KSd}\le D^{\Wone}\le D^{\dmean}$,
 an exact criterion for $D^d<D^{\dmean}$, no gain for Bernoulli laws, no gain for $W_1$ without
-drift, and a strict gain for total variation as soon as the projections differ at an interior
-atom. In an example with no drift at all, the mean model and $W_1$ transfer nothing, while total
+drift, and, when the source law must move ($\mathcal K_{\inf}$ of the source at level
+$\mu^\star-L_a$ positive), a strict gain for total variation as soon as the projections differ at an
+interior atom. In an example with no drift at all, the mean model and $W_1$ transfer nothing, while total
 variation divides the constant by $8.7$ at $c=20$ and makes it $0$ for $c\ge 23.505$. The proofs are
 complete and first order (method of types, a margin on the source of the optimal arm, and lower
 semicontinuity); they are not formalised.
@@ -127,8 +128,9 @@ $\liminf_T R_T/\log T\ge\mathcal R$.
 \cite[Theorem~3]{PMM25}. (b) An algorithm attains it (Theorem~\ref{thm:main}); each index is a
 convex programme in $2|S|$ variables (plus $O(|S|)$ slack variables for $\TV$, $\KSd$, $W_1$).
 (c) The pseudo-distances that give an improvement where the mean gives none are characterised
-(Propositions~\ref{prop:criteria} to~\ref{prop:tv}), and $d=$ mean gap gives back K2--K4 for
-deterministic sizes (Proposition~\ref{prop:order}). Missing: the nonparametric model
+(Propositions~\ref{prop:criteria} to~\ref{prop:tv}), and $d=$ mean gap gives back the first-order
+constants of K2--K4, for laws carried by $S$ with $1\in S$ and deterministic sizes only
+(Proposition~\ref{prop:order}, Section~\ref{sec:sanity}). Missing: the nonparametric model
 $\mathcal P([0,1])$ (the method of types is used; Open question~\ref{oq:nonparametric}), random
 source sizes, an explicit second-order term, and misspecification beyond the remark that
 Theorem~\ref{thm:main} needs the drift condition on one optimal arm only
@@ -325,7 +327,9 @@ is larger otherwise. The novelty is the source term.
 \paragraph{Biased offline data \cite{CL24}.} Cheung and Lyu study online bandits with offline
 data whose bias is bounded through the means only, $V(a)\ge|\mu^{(\rm off)}(a)-\mu^{(\rm on)}(a)|$
 (their (4)), for $1$-sub-Gaussian laws. Their algorithms use mean-based confidence radii and cannot
-use a drift between laws.
+use a drift between laws. Li, Fu, Chen and Kong \cite{LFCK26} (Thompson sampling anchored on the
+sample mean) also bound the shift of the means only, $|\mu^{\rm off}_i-\mu^{\rm on}_i|\le V_i$, and
+give no lower bound.
 
 \paragraph{Wasserstein ambiguity sets \cite{KT26}.} Kimura and Tamano borrow external data in
 clinical trials with Wasserstein ambiguity sets; it is a fixed-design test with type I error
@@ -1077,7 +1081,8 @@ $\rho(y)(\log A(y)+1)$. Hence $\KL(\rho,q)+q\cdot h\ge\E_\rho\log A+1-\zeta$; ap
 \item \emph{No source} ($N'_a=0$, $c_a=0$): $D_a(0)=1/\Ks(\nu_a,\mu^\star)$, the KL-UCB constant on
   $S$, which is that of \cite[Theorem~2]{CGMMS13} when $1\in S$ (Section~\ref{sec:closest}).
 \item \emph{Mean gap}: $D^{\dmean}_a(c)=(1-c\Kop)_+/\Ko$ (Proposition~\ref{prop:order}), which is
-  K2(i) and K3(i) for deterministic sizes on $S$ when $1\in S$ (then $\Ks=\mathcal K_{\inf}$ for
+  the first-order constant of K2(i) and K3(i) (not their second-order terms, nor their random
+  sizes) for deterministic sizes on $S$ when $1\in S$ (then $\Ks=\mathcal K_{\inf}$ for
   laws carried by $S$); the condition of improvement is $m(\nu'_a)<\mu^\star-L_a$
   (Proposition~\ref{prop:criteria}(b)), that of K2; when $m(\nu'_a)\ge\mu^\star-L_a$, $\Kop=0$ and
   $D^{\dmean}_a=1/\Ko$, which is K2(ii) and K3(ii). The boundary $m(\nu'_a)=\mu^\star-L_a$ falls in
@@ -1096,8 +1101,11 @@ KNOWN.md of TransferBandits has no \texttt{[Lean]} entry.
 $J_a$ numerically (slack variables for the absolute values) and bisecting on $x$. A feasible pair
 with objective $<1$ certifies $J_a(x,c)<1$, hence $D_a(c)\ge x$; a dual point of
 Lemma~\ref{lem:weak-duality} with value $\ge1$ certifies $J_a(x,c)\ge1$, hence $D_a(c)\le x$.
-Values are given to four decimals when the certified bracket has width below $10^{-4}$; the
-computations are in double precision, without interval arithmetic.
+Values are given to four decimals when the certified bracket has width below $10^{-4}$ (for
+$D^{\TV}_a(10)$ in Example~\ref{ex:no-drift}, after refining the starting points of the dual); the
+computations are in double precision with solver tolerances, without interval arithmetic. An
+independent implementation (feasible pairs repaired exactly, and a separately derived dual)
+reproduced the values of Examples~\ref{ex:no-drift} and~\ref{ex:w1-gain} to $10^{-5}$.
 
 \begin{example}[Bernoulli laws]\label{ex:bernoulli}
 $S=\{0,1\}$, $\nu_a=\mathrm{Ber}(0.4)$, $\nu'_a=\mathrm{Ber}(0.35)$, $\mu^\star=0.7$, $L_a=0.1$ (so
