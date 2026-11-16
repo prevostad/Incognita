@@ -1,6 +1,6 @@
 % Incognita paper template. Copy paper.tex, DOSSIER.md, refs.bib and META.toml to
 % papers/P<nnn>-<slug>/ and replace every <...>. Rules: AGENTS.md, section 5; what each section
-% holds, the presentation criteria W1-W14 and the rules for proofs: docs/writing.md. Keep this
+% holds, the presentation criteria W1-W15 and the rules for proofs: docs/writing.md. Keep this
 % preamble (packages: AGENTS.md 5.2); at most 100 pages.
 % The reader: an expert referee of JMLR or COLT who has never heard of Incognita. What serves only
 % the referees or the owner goes to DOSSIER.md, never here: the roadmap correspondence, KNOWN ids
@@ -36,6 +36,12 @@
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\KL}{\mathrm{KL}}
 \newcommand{\kl}{\mathrm{kl}}
+% Navigation (docs/writing.md 2a): an anchor \dt{s:...} where a quantity is defined, and one macro
+% per symbol built with \sy, used everywhere after, so that every symbol links to its definition.
+\newcommand{\dt}[1]{\hypertarget{#1}{}}
+\newcommand{\sy}[2]{\hyperlink{#1}{#2}}
+\newcommand{\N}{\sy{s:N}{N}}
+\newcommand{\Kinf}{\mathcal{K}_{\inf}}
 
 \title{<Title: the main result in words>}
 % A paper of the owner keeps his \author line (human_authors in META.toml); never change it.
@@ -53,31 +59,50 @@ the sense of optimality, only if both bounds are proved), how it compares with t
 result, the nature of the proof. Claim nothing the theorems do not give (W4).>
 \end{abstract}
 
+
 % ---------------------------------------------------------------- main text (about 15 pages at most
-% when the paper is longer than 25 pages)
+% when the paper is longer than 25 pages). THE MODEL IS THE OWNER'S PAPER arXiv:2610.21582: copy its
+% organisation of sections, its displayed equations between short paragraphs, its statements and its
+% appendix proofs (docs/writing.md, sections 2 and 2a).
 \section{Introduction}\label{sec:intro}
 
-% 1-3 pages, for an expert who has never heard of Incognita (W1). In this order: the problem and why
-% it matters (one or two paragraphs); the main result in informal words, with its constant, on page 1
-% or 2; what is new against the closest published result.
+% A few short paragraphs, for an expert who has never heard of Incognita (W1): the problem and why it
+% matters; the main result in informal words, with its constant, on page 1 or 2.
 <The problem and why it matters.>
 
-<The main result, informally: ``we show that ... with the constant ...'' (Theorem~\ref{thm:main}).>
+<The main result, informally, displayed:>
+\begin{equation*}
+  <\text{the main bound, e.g. } \lim_{T\to\infty}\frac{\E N_a(T)}{\ln T} = \frac{1}{\Kinf(\nu_a,\mu^\star)}>
+\end{equation*}
+<(Theorem~\ref{thm:main}).>
 
-\paragraph{Contributions.} <Each contribution points to a numbered result: Theorem~\ref{thm:main},
-Proposition~\ref{prop:key}, Section~\ref{sec:examples}.>
+\paragraph{Our contributions} We summarize our main contributions below:
+\begin{itemize}
+\item <A contribution, pointing to its result (Theorem~\ref{thm:main}).>
+\item <Another one (Section~\ref{sec:examples}).>
+\end{itemize}
 
-\paragraph{Related work.} % W2: a comparison, not a list. For each closest result: what it proves,
-% under which assumptions, and one sentence on why it does not give Theorem 1. A table from three
-% compared bounds on. Cite only parts that were read (literature/index.md); an unread work is at
-% most ``see also''.
-<The closest published results, compared with Theorem~\ref{thm:main} (Table~\ref{tab:comparison}).
-For example: \cite[Theorem~1]{GMS19} gives <...> under <...>; it does not give Theorem~\ref{thm:main}
-because <...>.>
+\paragraph{Outline} \autoref{sec:related} discusses related work. \autoref{sec:setting} formalizes the
+setting. \autoref{sec:main} states the main result. \autoref{sec:overview} explains how the proofs
+work, \autoref{sec:examples} gives examples, and \autoref{sec:open} concludes. The proofs are in the
+appendices.
+
+\section{Related work and context}\label{sec:related}
+
+% Run-in paragraphs by theme, then the closest related work and the gap with the literature (W2: a
+% comparison, not a list). For each closest result: what it proves, under which assumptions, and
+% one sentence on why it does not give Theorem 1. A table from three compared results on. Cite only
+% parts that were read (literature/index.md); an unread work is at most ``see also''.
+\paragraph{<A theme, e.g. Classical multi-armed bandits>} <...>
+
+\paragraph{Closest related work} <For example: \cite[Theorem~1]{GMS19} gives <...> under <...>; it
+does not give Theorem~\ref{thm:main} because <...> (Table~\ref{tab:comparison}).>
+
+\paragraph{Gap with the literature} <What no published result gives, and what this paper adds.>
 
 \begin{table}[t]
 \centering
-\caption{<Comparison with the closest known bounds: same problem, assumptions stated.>}\label{tab:comparison}
+\caption{<Comparison with the closest known results: same problem, assumptions stated.>}\label{tab:comparison}
 \begin{tabular}{@{}llll@{}}
 \toprule
 Setting and assumptions & Bound & Both bounds & Reference \\
@@ -88,22 +113,23 @@ Setting and assumptions & Bound & Both bounds & Reference \\
 \end{tabular}
 \end{table}
 
-\paragraph{Techniques.} <The ideas of the proof, each credited where it comes from (the earliest
-source is in Appendix~\ref{sec:attribution}), and the step that is new.>
+\section{Problem formulation}\label{sec:setting}
 
-\paragraph{Organisation.} <Section~\ref{sec:setting} sets the model, Section~\ref{sec:main} states
-the results, ... ; the proofs are in the appendices.>
+% The classical setting recalled first, then the new one (subsections). The model (what is observed
+% when, what the learner knows, the filtration), the definitions and assumptions as nodes, run-in
+% paragraphs for conventions. Every quantity introduced alone, with :=, and an anchor \dt{s:...}
+% so that its symbol macro (\sy) links to it. The roadmap's pinned conventions are used as written; a
+% change is declared here, with its reason.
+\subsection{Classical setting}
 
-\section{Setting}\label{sec:setting}
-
-% The model (what is observed when, what the learner knows, the filtration), the definitions and
-% assumptions as nodes (one node per concept), the algorithm in pseudo-code, a notation paragraph.
-% The roadmap's pinned conventions are used as written; a change is declared here, with its reason.
 <The model.>
 
 \begin{definition}[<Name>]\label{def:example}
-<A definition, in the roadmap's conventions; every new quantity with :=.>
+<A definition, in the roadmap's conventions; every new quantity with :=, for example
+\dt{s:N}$\N_a(T) := \sum_{t\le T}\mathbf 1(A_t = a)$.>
 \end{definition}
+
+\subsection{<The new setting>}
 
 % A standing assumption of a section: an assumption node that the statements of the section \uses,
 % instead of repeating its hypotheses.
@@ -112,119 +138,114 @@ the results, ... ; the proofs are in the appendices.>
 <A named hypothesis, used by the statements that list it in their uses.>
 \end{assumption}
 
-% An algorithm: its pseudo-code, and a definition node for the object the statements use.
+\paragraph{Notational convention} <The conventions used throughout (beyond about 30 symbols, the
+table of Appendix~\ref{sec:notation}).>
+
+\section{<The main result, e.g. Regret upper bound>}\label{sec:main}
+
+% One section per main result, in the logical order (lower bound, algorithm, upper bound,
+% extensions): the classical result recalled first, then the new one. An algorithm: its index
+% displayed in an equation, one sentence of intuition, then its pseudo-code; its name in \texttt{}.
+<The classical result, recalled with its reference, then the algorithm:>
+\begin{equation}\label{eq:index}
+  U_a(t) := <\text{the index}>.
+\end{equation}
+<One sentence of intuition.>
+
 \begin{algorithm}[t]
-\caption{<Name of the algorithm>}\label{alg:example}
+\caption{\texttt{<Name of the algorithm>}}\label{alg:example}
 \begin{algorithmic}[1]
 \Require <its parameters, and what it knows>
 \For{$t = 1, 2, \dots$}
-  \State <the choice at time $t$, with the index or statistic it uses>
+  \State <the choice at time $t$, with the index \eqref{eq:index}>
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
-\begin{definition}[<Name of the algorithm>]\label{def:algorithm}
+\begin{definition}[\texttt{<Name of the algorithm>}]\label{def:algorithm}
 \uses{def:example}
 <The learner of Algorithm~\ref{alg:example}, stated as a definition (the object the statements
-quantify over), with one sentence of intuition per design choice.>
+quantify over).>
 \end{definition}
 
-\paragraph{Notation.} <The notation used throughout (beyond about 30 symbols: Appendix~\ref{sec:notation}).>
-
-\section{Main results}\label{sec:main}
-
-% thm:main within the first 5 pages, every symbol in it defined before it, every quantifier in
-% order: the class of instances, the class of learners (information model, consistency notion) or
-% the algorithm, the criterion (which limit, along which times). Hypotheses in the statement or by
-% name (Assumption 2.2), separated from the conclusion by ``Then''.
+% The quantifiers first, in order (the class of instances, the learners or the algorithm, the
+% criterion); items (i), (ii) with displayed bounds; bounds fully explicit (valid for every T >= 3)
+% whenever possible (docs/writing.md 2a). Within the first 5 pages when possible.
 \begin{theorem}[<Short name>]\label{thm:main}
 \uses{def:example, ass:example, def:algorithm}
-<Under Assumption~\ref{ass:example}, let ... Then ...>
+For all instances satisfying Assumption~\ref{ass:example}, for every suboptimal arm $a$ and for every
+$T\ge3$, the algorithm \texttt{<Name>} satisfies
+\begin{equation*}
+  \E\big[\N_a(T)\big] \le <\text{the explicit bound}>.
+\end{equation*}
 \end{theorem}
+(see the proof in Appendix~\ref{sec:proofs}).
 
-\begin{remark}[Constants]
-<Explicit, or existential; on what they depend; their size if known.>
-\end{remark}
+\paragraph{Comparison with <the closest result>} <When the result improves on prior work, which term
+dominates, why each hypothesis is needed (W8).>
 
-\begin{remark}[Scope]
-<What is not proved, in plain words (no roadmap item ids): for example ``the case $x > 1$ is not
-covered''.>
-\end{remark}
+\paragraph{Constants and scope} <Explicit, or existential and on what they depend; what is not
+proved, in plain words (no roadmap item ids).>
 
-\begin{remark}[Interpretation and comparison]
-<When the result improves on prior work, which term dominates, why each hypothesis is needed (W8).>
-\end{remark}
+\section{How the proofs work}\label{sec:overview}
 
-% Other main results (a lower bound, structure results) here, same rules. Parallel results may be
-% one node with items (a), (b), ...
+% Mandatory when the paper exceeds 10 pages (W3): the decomposition, the key lemmas, how they
+% combine, where the difficulty lies, and a map of the appendices. The appendices need not be read to
+% believe the result.
+<The decomposition, in words and displayed:>
+\begin{equation*}
+  \N_a(T) \le K + \underbrace{<\dots>}_{A} + \underbrace{<\dots>}_{B}.
+\end{equation*}
+<What each term costs, and which lemma controls it (Lemmas~\ref{lem:decomposition} and~\ref{lem:term}).>
 
-\section{Proof overview}\label{sec:overview}
+\paragraph{Where the difficulty lies} <The new step, and why the known methods stop there.>
 
-% Mandatory when the paper exceeds 10 pages (W3): the decomposition, the key propositions (stated as
-% nodes or by reference), the proof of the main theorem from them, where the difficulty lies, and a
-% map of the appendices. The appendices need not be read to believe the result.
-<The decomposition, in words.>
+\section{<Numerical experiments, or Examples>}\label{sec:examples}
 
-\begin{proposition}[<Short name>]\label{prop:key}
-\uses{def:example, ass:example}
-<A key step, stated completely; proved in Appendix~\ref{sec:proofs}.>
-\end{proposition}
-
-\begin{proof}[Proof of Theorem~\ref{thm:main}]
-\proves{thm:main}
-\uses{def:example, ass:example, def:algorithm, prop:key}
-% Before any proof longer than half a page: an ``Idea.'' paragraph, then named steps (docs/writing.md, A2-A3).
-\emph{Idea.} <3 to 5 lines.>
-
-\emph{Step 1: <what it establishes>.} <...>, by Proposition~\ref{prop:key}, which <what it brings>.
-\end{proof}
-
-\paragraph{Where the difficulty lies.} <The new step, and why the known methods stop there.>
-
-\paragraph{Map of the appendices.} <Appendix~\ref{sec:cited}: results from the literature;
-Appendix~\ref{sec:proofs}: the proof of Proposition~\ref{prop:key}; ...>
-
-\section{Examples and special cases}\label{sec:examples}
-
-% One explicit instance satisfying all the hypotheses of Theorem 1 at once, the degenerate cases
-% (x = 1, K = 2, Bernoulli rewards, ties, ...), worked numbers; figures if useful.
+% The setup in a paragraph, a table or a figure, then a run-in paragraph interpreting it; one
+% explicit instance satisfying all the hypotheses at once; the degenerate cases.
 \begin{example}[<Name>]
 <An explicit instance (for example Bernoulli arms with means ...): the hypotheses hold because ...,
 and the constant of Theorem~\ref{thm:main} equals ...>
 \end{example}
 
-\section{Open questions}\label{sec:open}
+\paragraph{Interpretation} <What the numbers show, and only that.>
 
-% One to five questions this paper leaves open, each precise enough to be the main result of a
-% next paper: every quantifier, the class, the criterion; why the method of this paper stops there.
-% The roadmap items a question extends go in \extends{...} (printed only in the blueprint build),
-% never in the text. The scope referee rates each one; those it accepts become candidate directions
-% of the roadmap when the paper is accepted. External and definitions papers may write ``None''.
+\section{Conclusion and open questions}\label{sec:open}
+
+<What is shown, and the limitations.>
+
+% One to five questions, each precise enough to be the main result of a next paper: every
+% quantifier, the class, the criterion; why the method stops there. The roadmap items a question
+% extends go in \extends{...} (printed only in the blueprint build), never in the text. External and
+% definitions papers may write ``None''.
 \begin{openquestion}[<Short name>]\label{oq:example}
 \extends{D1}
-<The question, stated completely: for example, does the conclusion of Theorem~\ref{thm:main} hold
-on every grid with $x_{\ell} \to x > 1$, with the constant $x^2$? The method stops there because ...>
+<The question, stated completely. The method stops there because ...>
 \end{openquestion}
 
 % ---------------------------------------------------------------- appendices
 \appendix
 
-\section{Results from the literature}\label{sec:cited}
+\section{Useful lemmas}\label{sec:cited}
 
-% A cited result is a node labelled cite:<KEY>-<part>, without proof, stated IN THIS PAPER'S
-% NOTATION after one line giving the correspondence with the source's notation; the verbatim
-% statement stays in literature/notes/<KEY>.md (its restatement must be equivalent, never stronger).
-% A consequence that the source does not print is a lemma of this paper, proved from the node.
-<What this appendix collects.>
+% Results from other papers: each a node cite:<KEY>-<part>, without proof, titled
+% [From \cite{KEY}, <part>], stated IN THIS PAPER'S NOTATION after one line giving the correspondence
+% with the source's notation; the verbatim statement stays in literature/notes/<KEY>.md (the
+% restatement must be equivalent, never stronger). Each introduced by one sentence saying what it is
+% for. A consequence that the source does not print is a lemma of this paper, proved from the node.
+In this section we present the lemmas from other papers that we use in our proofs.
 
 \cite{GMS19} write $\underline{\nu}$ and $\underline{\nu}'$ for the bandit problems that are $\nu$
-and $\nu'$ here; the other symbols are the same.
+and $\nu'$ here; the other symbols are the same. The next lemma is the change of measure.
 
 % Verbatim: literature/notes/GMS19.md, inequality (6).
-\begin{lemma}[{\cite[inequality~(6)]{GMS19}}]\label{cite:GMS19-6}
+\begin{lemma}[{From \cite{GMS19}, inequality~(6)}]\label{cite:GMS19-6}
 For every random variable $Z \in [0,1]$ measurable with respect to the history up to time $T$,
-$\sum_a \E_\nu[N_a(T)]\,\KL(\nu_a, \nu'_a) \ge \kl(\E_\nu Z, \E_{\nu'} Z)$, where $\kl$ is the
-Bernoulli divergence.
+\begin{equation*}
+  \sum_a \E_\nu[\N_a(T)]\,\KL(\nu_a, \nu'_a) \ge \kl(\E_\nu Z, \E_{\nu'} Z),
+\end{equation*}
+where $\kl$ is the Bernoulli divergence.
 \end{lemma}
 
 % A result of a library paper used in a proof is a cited node too: \label{cite:INC-P001-thm:main}
@@ -232,38 +253,72 @@ Bernoulli divergence.
 % node of papers/P001-.../paper.tex at the version recorded in depends_on ("P001v2:thm:main"),
 % with the renaming line if the notations differ, no proof.
 
-\section{Proof of Proposition~\ref{prop:key}}\label{sec:proofs}
+\section{Proof of Theorem~\ref{thm:main}}\label{sec:proofs}
 
-% One or more appendices of proofs, in the order of the main text. Each opens with its plan: the
-% result it proves, the skeleton of the proof (the decomposition, what each term costs), the lemmas
-% grouped by the question they answer, each with a line ``Role.''. Granular lemmas go here.
-<The plan of this appendix.>
+% docs/writing.md 2a: a deterministic decomposition lemma, then one lemma per term with an explicit
+% bound and "(see the proof in Subsection ...)", then the proof of the theorem from the lemmas, then
+% one subsection per lemma, written as aligned chains on indicators of events with linking sentences.
+To prove this theorem we will use the following decomposition.
 
-\begin{lemma}[<Short name>]\label{lem:example}
-\uses{def:example}
-<A step of the proof, short enough to be checked and formalised on its own.>
+\begin{lemma}[Decomposition]\label{lem:decomposition}
+\uses{def:example, def:algorithm}
+For every $\varepsilon>0$ and every $T\ge3$,
+\begin{equation*}
+  \N_a(T) \le K + \underbrace{\sum_{t=K}^{T-1}\mathbf 1\big(<\text{event}>\big)}_{A}
+              + \underbrace{\sum_{t=K}^{T-1}\mathbf 1\big(<\text{event}>\cap A_{t+1}=a\big)}_{B}.
+\end{equation*}
 \end{lemma}
+(see the proof of Lemma~\ref{lem:decomposition} in Subsection~\ref{sec:proof-decomposition}).
 
-\emph{Role.} <Where it is used, and to show what.>
+From this decomposition we will use the following lemma to control each term.
 
-\begin{proof}
-\uses{def:example, cite:GMS19-6}
-\emph{Setting.} <What is fixed and assumed.> \emph{Goal.} <What is shown.>
+\begin{lemma}[<Short name>]\label{lem:term}
+\uses{def:example, ass:example}
+<With the same assumptions as Lemma~\ref{lem:decomposition},>
+\begin{equation*}
+  \E[A] \le <\text{an explicit bound}>.
+\end{equation*}
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-term}). <One sentence: classical (``as in the classical
+proof of KL-UCB; no contribution here'') or new, and why.>
 
-<The proof: one non-trivial relation per sentence, chains in align with the justification on the
-line, a sentence of conclusion after each chain (docs/writing.md, B7-B12b).>
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{def:example, ass:example, def:algorithm, lem:decomposition, lem:term}
+We define $\varepsilon := <\dots>$ (<the reason of this choice>). By Lemmas~\ref{lem:decomposition}
+and~\ref{lem:term},
 \begin{align*}
-  a &\le b && \text{(Lemma~\ref{cite:GMS19-6}, since <...>)}\\
-    &\le c && \text{(<reason>)}.
+  \E[\N_a(T)] &\le K + \E[A] + \E[B] \\
+              &\le <\dots>,
 \end{align*}
-Hence <what was shown>.
+which is the claimed bound.
 \end{proof}
 
-\begin{proof}[Proof of Proposition~\ref{prop:key}]
-\proves{prop:key}
-\uses{def:example, ass:example, lem:example}
-<The proof, citing each lemma where it is used and saying what it brings. A proof longer than about
-a page is split into lemmas, by meaning.>
+\subsection{Proof of Lemma~\ref{lem:decomposition}}\label{sec:proof-decomposition}
+
+\begin{proof}
+\uses{def:example, def:algorithm}
+<One transformation per line, on indicators of events written with $\cap$:>
+\begin{align*}
+  \N_a(T) &= \sum_{t=1}^{T}\mathbf 1(A_t=a) \\
+          &\le K + \sum_{t=K}^{T-1}\mathbf 1(A_{t+1}=a) \\
+          &\le K + <\dots>.
+\end{align*}
+Let us look at $A$, we have <...>. Finally we have <...>.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:term}}\label{sec:proof-term}
+
+\begin{proof}
+\uses{def:example, ass:example, cite:GMS19-6}
+\emph{Idea.} <3 to 5 lines, for a proof that is not routine.>
+
+<Now using Lemma~\ref{cite:GMS19-6} we get>
+\begin{align*}
+  \E[A] &\le <\dots> && \text{(Lemma~\ref{cite:GMS19-6}, since <...>)}\\
+        &\le <\dots>.
+\end{align*}
+Hence <what was shown>.
 \end{proof}
 
 \section{Sources of the techniques}\label{sec:attribution}
@@ -275,20 +330,21 @@ a page is split into lemmas, by meaning.>
 \toprule
 Technique (where) & Earliest source found \\
 \midrule
-<Change of measure, Lemma~\ref{lem:example}> & \cite[inequality~(6)]{GMS19} \\
+<Change of measure, Lemma~\ref{lem:term}> & \cite[inequality~(6)]{GMS19} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \section{Notation}\label{sec:notation}
 
-% When the paper has more than about 30 symbols: each symbol, its meaning, where it is defined.
+% Every symbol is a link to its definition (\sy macros). Each symbol, its meaning, where it is defined.
+Every symbol is a link to its definition.
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 \toprule
 Symbol & Meaning & Defined in \\
 \midrule
-$N_a(T)$ & <number of pulls of arm $a$ up to time $T$> & Definition~\ref{def:example} \\
+$\N_a(T)$ & <number of pulls of arm $a$ up to time $T$> & Definition~\ref{def:example} \\
 \bottomrule
 \end{tabular}
 \end{center}

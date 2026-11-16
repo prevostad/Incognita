@@ -32,44 +32,141 @@ One source, three documents (AGENTS.md §5.2):
 
 Never hide proof text in the reader build: the published text is the refereed text.
 
-## 2. The structure of a paper
+## 2. The structure of a paper: the owner's papers as the model
 
-In this order (AGENTS.md §5.2; the template `templates/paper/paper.tex` has a slot for each):
+**The model is the owner's paper arXiv:2610.21582** (Prevost, Mathieu, Radji, Maillard, *Transfer
+learning in bandits from unknown adaptive policies: problem-dependent lower and upper bounds*,
+2026; `PMRM26` in `literature/bibliography.json`; read its PDF on arXiv before writing a paper). Copy
+its organisation of sections, the airiness of its paragraphs around displayed equations, the shape
+of its statements and the way its proofs are written (section 2a below). In this order (AGENTS.md
+§5.2; the template `templates/paper/paper.tex` has a slot for each):
 
-1. **Introduction** (`sec:intro`, 1–3 pages): the problem and why it matters; the main result in
-   informal words with its constant, on page 1 or 2; what is new against the closest published
-   result; the contributions, each pointing to a numbered result; related work as a
-   **comparison** in prose (a table when three or more prior bounds are compared), with, for each
-   closest result, one sentence on why it does not give the main result; the techniques, credited
-   to where they come from; the organisation of the paper.
-2. **Setting** (`sec:setting`): the model (what is observed when, what the learner knows, the
-   filtration), the definitions and the assumptions as nodes, the algorithm in pseudo-code if
-   there is one, a notation paragraph. Standing assumptions of a section are `assumption` nodes
-   that later statements `\uses`.
-3. **Main results** (`sec:main`): `thm:main` with every quantifier, within the first 5 pages, every
-   symbol in it defined before it; then remarks in words: the nature of the constants (explicit,
-   or existential and on what they depend), the **scope** (what is not proved, in plain words, no
-   item ids), an interpretation (when it improves on prior work, which term dominates), the
-   comparison. Other main results (a lower bound, structure results) come here too; parallel
-   results may be one node with items.
-4. **Proof overview** (`sec:overview`), mandatory beyond 10 pages: the decomposition, the key
-   propositions or lemmas (stated as nodes or by reference), the proof of the main theorem from
-   them, where the difficulty lies, and a map of the appendices.
-5. **Examples and special cases** (`sec:examples`): one explicit instance satisfying all the
-   hypotheses at once, the degenerate cases, worked numbers, figures if useful.
-6. **Open questions** (`sec:open`): `openquestion` environments, each stated completely (every
-   quantifier, the class, the criterion, why the method stops there); the roadmap item it extends
-   goes in `\extends{D8}`, never in the text.
-7. `\appendix`: **Results from the literature** (`sec:cited`, the `cite:` nodes); the **proofs**,
-   in the order of the main text, each appendix opening with its plan; **Sources of the
-   techniques** (`sec:attribution`: technique, where, earliest source found); **Notation**
-   (`sec:notation`) beyond about 30 symbols.
+1. **Introduction** (`sec:intro`): the problem and why it matters, in a few short paragraphs; the
+   main result in informal words with its constant, on page 1 or 2; then a run-in paragraph
+   `\paragraph{Our contributions}` with an itemized list, each item pointing to a numbered result;
+   then `\paragraph{Outline}`, one sentence naming every section with `\autoref`.
+2. **Related work and context** (`sec:related`), its own section: run-in paragraphs by theme
+   (`\paragraph{Classical multi-armed bandits}`, …), ending with `\paragraph{Closest related work}`
+   and `\paragraph{Gap with the literature}`; a **comparison table** when three or more prior results
+   are compared; for each closest result, one sentence on why it does not give the main result; the
+   techniques credited to where they come from.
+3. **Problem formulation** (`sec:setting`): first the classical setting, recalled, then the new
+   one (subsections); the model (what is observed when, what the learner knows, the filtration),
+   the definitions and assumptions as nodes, run-in paragraphs for conventions
+   (`\paragraph{Notational convention}`, …). Standing assumptions of a section are `assumption`
+   nodes that later statements `\uses`.
+4. **One section per main result**, in the logical order of the paper (for instance: lower bound,
+   then algorithm, then upper bound, then extensions). Each section recalls the classical result
+   first (a theorem with its reference), then states the new one. `thm:main` carries every
+   quantifier, within the first 5 pages when possible, every symbol defined before it. A theorem
+   is followed by "(see the proof in Appendix …)" and by discussion paragraphs with run-in titles
+   (`\paragraph{Comparison with KL-UCB}`, `\paragraph{Comparison with the lower bound}`,
+   `\paragraph{Tightness}`, `\paragraph{Necessary and sufficient condition}`): the nature of the
+   constants, the **scope** in plain words (no item ids), an interpretation. An algorithm section
+   recalls the classical algorithm, then displays the new index in an `equation` with one sentence
+   of intuition, then gives the pseudo-code (`algorithm`, `algpseudocode`), the algorithm's name in
+   `\texttt{}`.
+5. **How the proofs work** (`sec:overview`), mandatory beyond 10 pages: the decomposition, the key
+   lemmas, how they combine, where the difficulty lies, and a map of the appendices.
+6. **Numerical experiments or examples** (`sec:examples`): the setup in a paragraph, a table or a
+   figure, then `\paragraph{Interpretation of Figure 1}`; one explicit instance satisfying all the
+   hypotheses at once; the degenerate cases.
+7. **Conclusion and open questions** (`sec:open`): what is shown, the limitations, then the
+   `openquestion` environments, each stated completely (every quantifier, the class, the criterion,
+   why the method stops there); the roadmap item goes in `\extends{D8}`, never in the text.
+8. `\appendix`: **Useful lemmas** (`sec:cited`): the results from other papers, each a cited node
+   titled `[From \cite{KEY}, Proposition 14]`, introduced by one sentence saying what it is for;
+   then **one appendix per theorem**, "Proof of Theorem 3", written as in section 2a; then
+   **Sources of the techniques** (`sec:attribution`) and **Notation** (`sec:notation`, "Every
+   symbol is a link to its definition").
 
-The main text (sections 1–6) is about 15 pages at most when the paper is longer than 25 pages. The
-lemmas written at blueprint granularity go to the appendices; the main text keeps the statements
-and the arguments a reader needs to believe the result.
+The main text is about 15 pages at most when the paper is longer than 25 pages: only the main
+statements (theorems, corollaries) and at most the one lemma that makes the interest of the work;
+**every other lemma and every proof goes to the appendices**, one subsection "Proof of Lemma X" per
+lemma.
 
-## 3. The fourteen presentation criteria
+## 2a. The house style (the owner's rules)
+
+These rules come from the owner's papers and notes. They complement section 5–6 (readability of
+proofs) and win over them in case of conflict.
+
+**Air and displays.**
+
+- Every formula that matters is **displayed**, in an `equation` environment (numbered when it is
+  referred to later, `equation*` otherwise) or in `align` for a chain. Never more than one
+  non-trivial relation in running text.
+- Short paragraphs of two to five lines, separated by a blank line, alternate with displays. A
+  paragraph that contains seven relations or more is rewritten.
+- Conditions on parameters are displayed one per line before the statement that uses them, for
+  example "for all $\mu^\dagger$ such that" followed by a display of $\mu^\dagger>\mu_a$,
+  $\mu^\dagger\le\mu_1$, $\mu^\dagger\le\mu'_1+L_1$.
+
+**Statements.**
+
+- The quantifiers come first, in order: "For all distributions …, for every suboptimal arm $a$ and
+  for every $T\ge3$, the algorithm \texttt{KL-UCB-Transfer} satisfies:", then items (i), (ii), each
+  with its displayed bound.
+- **Bounds are fully explicit** whenever possible: no $o(\cdot)$ and no "for $T$ large enough";
+  valid from $T\ge3$. Put a constant in front of $\varepsilon$ rather than a condition on $T$. When
+  an asymptotic hypothesis (for example $\log t=o(f(t))$) is replaced by a constant, state and
+  prove the link.
+- `:=` for a definition, `=` for an equality.
+
+**Proofs of a regret bound** (the appendix "Proof of Theorem X"):
+
+1. "To prove this theorem we will use the following decomposition": a **deterministic
+   decomposition lemma**, $N_a(T)\le K+\dots$ as a sum of sums of indicators of events, each term
+   named with `\underbrace` ($A$, $B$, …), followed by "(see the proof of Lemma 4 in Subsection
+   B.1)".
+2. "From this decomposition we will use the following lemmas to control each term": **one lemma
+   per term**, in expectation, with an explicit bound, each followed by "(see the proof in
+   Subsection B.2)" and one sentence saying whether it is classical ("as in the classical proof of
+   KL-UCB [CGMMS13]; no contribution here") or new and why.
+3. The proof of the theorem from these lemmas: the choice of $\varepsilon$ (defined with `:=`, with
+   the reason of the choice), the sum of the bounds, the conclusion.
+4. One subsection "Proof of Lemma X" per lemma.
+
+**Writing a proof.**
+
+- Long **aligned chains** of $\le$ and $=$ on indicators of events written with $\cap$, **one
+  transformation per line**, the justification at the end of the line when it is not obvious.
+- Short linking sentences between the chains: "Let us look at $A$, we have", "Now using Lemma 7 we
+  get", "Then we split according to this event", "Using Lemma 7 and that $\mu_1-\mu^\dagger\ge0$ we
+  get", "Finally we have". Each step ends by saying what it obtained.
+- Split explicitly on events (`\mathbf 1(G>0\cap\dots)+\mathbf 1(G\le0)`) rather than hiding a case
+  in a sentence.
+- An "Idea." paragraph before every proof that is not routine; a Setting/Goal block before a long
+  one (section 6).
+
+**Conventions for index policies** (unless the roadmap pins others):
+$N_k(t):=\sum_{u\le t}\mathbf 1(A_u=k)$ (round $t$ included); the index $U_k(t)$ is computed at the
+end of round $t$ from $N_k(t)$, $\hat\nu_k(t)$ and $\delta_t$, and $A_{t+1}\in\arg\max_kU_k(t)$ for
+$t\ge K$; the fundamental inequality $\sum_{t}\mathbf 1(A_{t+1}=k,\,N_k(t)=s)\le1$; the exploration
+rate $\delta_t:=\ln(t\vee3)+\ln\ln(t\vee3)$.
+
+**Navigation (mandatory).**
+
+- **Every quantity defined in the paper is defined with `:=`** (never `=`), in a sentence of its
+  own, and **every later use of it is a hyperlink back to the place where it is defined**: an anchor
+  at the definition (`\newcommand{\dt}[1]{\hypertarget{#1}{}}`, then `\dt{s:kinf}` just before the
+  `:=`) and one macro per symbol (`\newcommand{\sy}[2]{\hyperlink{#1}{#2}}`, then
+  `\newcommand{\Kinf}{\sy{s:kinf}{\mathcal K_{\inf}}}`), used **everywhere** after the definition,
+  in statements, proofs, displays and tables alike. The same for defined words (*activated*,
+  *rejected*): a macro `\term` that links to their definition. A symbol typed without its macro
+  after its definition is a defect (W15).
+- **Every lemma, proposition, theorem, definition, assumption or equation used is cited by
+  `\ref`/`\eqref`** (a hyperlink to it), at the place where it is used, never as "the previous
+  lemma", "the above", "by the same argument" without the link. A reference to a result that is not
+  on the same or the previous page also says its name and what it brings ("Lemma 5 (*the IMED phase
+  lifts the water level*), which bounds …"), not only its number.
+- The algorithm's name is a link to its pseudo-code.
+- The appendix **Notation** lists every symbol, each a link to its definition ("Every symbol is a
+  link to its definition").
+
+**Language.** English, plain, "we". No promotional adjectives; "optimal" only for a result paired
+with a lower bound in the same class.
+
+## 3. The fifteen presentation criteria
 
 The scope referee applies them to the **reader build** (the PDF's text, `pdftotext paper.pdf -`),
 in addition to the source. Each has a yes/no test. **R** marks a criterion whose failure is
@@ -144,6 +241,17 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
 - **W14 (P) Cleanliness.** The same notation and numbers in the abstract, the theorems and the text;
   no repetition of the main result; no remnant of the template. *Test*: compare the abstract with
   the theorems, and look for "<", "TODO" and duplicated paragraphs.
+- **W15 (P) The house style** (section 2a): the sections of section 2 in their order; formulas that
+  matter displayed in `equation`/`align`, short paragraphs between displays; statements with their
+  quantifiers first and explicit bounds; regret proofs as a decomposition lemma, one lemma per term,
+  then one subsection per lemma, written as aligned chains on indicators with linking sentences;
+  every defined quantity defined with `:=` and every later use of it a link to its definition;
+  every result used cited by a link at the place where it is used. *Test*: put the PDF next to
+  arXiv:2610.21582 and compare the organisation of the sections, one main-text page and one
+  appendix proof; in the source, pick ten symbols used in the proofs and check that each is typed
+  with its link macro and defined with `:=`; pick five places where a result is used and check the
+  `\ref`. A failure that makes a proof hard to follow (a dense paragraph of relations, a chain
+  without its steps, a result used without saying which) is R.
 
 ## 4. When a presentation defect blocks
 
