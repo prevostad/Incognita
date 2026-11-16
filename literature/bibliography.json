@@ -834,7 +834,7 @@
     "version": ""
   },
   "CGMMS13": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/13-AOS1119",
     "citation": {
       "id": "CGMMS13",
       "type": "article-journal",
@@ -874,7 +874,8 @@
       "page": "1516-1541"
     },
     "identifiers": {
-      "arxiv": "1210.1136"
+      "arxiv": "1210.1136",
+      "doi": "10.1214/13-AOS1119"
     },
     "version": ""
   },
@@ -951,7 +952,7 @@
     "citation": {
       "id": "CL24",
       "type": "article",
-      "title": "Online bandits with (biased) offline data: adaptive learning under distribution mismatch",
+      "title": "Online Bandits with (Biased) Offline Data: Adaptive Learning under Distribution Mismatch",
       "author": [
         {
           "family": "Cheung",
@@ -969,7 +970,8 @@
             2024
           ]
         ]
-      }
+      },
+      "note": "arXiv v2 (18 Dec 2025); the previous version appeared as 'Leveraging (Biased) Information: Multi-armed Bandits with Offline Data', Proceedings of the 41st International Conference on Machine Learning, PMLR 235:8286-8309, 2024"
     },
     "identifiers": {
       "arxiv": "2405.02594"
@@ -977,11 +979,11 @@
     "version": ""
   },
   "CMP17": {
-    "uri": "",
+    "uri": "https://proceedings.neurips.cc/paper/2017/hash/e19347e1c3ca0c0b97de5fb3b690855a-Abstract.html",
     "citation": {
       "id": "CMP17",
       "type": "paper-conference",
-      "title": "Minimal exploration in structured stochastic bandits",
+      "title": "Minimal Exploration in Structured Stochastic Bandits",
       "author": [
         {
           "family": "Combes",
@@ -992,7 +994,7 @@
           "given": "Stefan"
         },
         {
-          "family": "Proutière",
+          "family": "Proutiere",
           "given": "Alexandre"
         }
       ],
@@ -1004,7 +1006,38 @@
           ]
         ]
       },
-      "volume": "30"
+      "volume": "30",
+      "publisher": "Curran Associates, Inc.",
+      "editor": [
+        {
+          "family": "Guyon",
+          "given": "I."
+        },
+        {
+          "family": "Von Luxburg",
+          "given": "U."
+        },
+        {
+          "family": "Bengio",
+          "given": "S."
+        },
+        {
+          "family": "Wallach",
+          "given": "H."
+        },
+        {
+          "family": "Fergus",
+          "given": "R."
+        },
+        {
+          "family": "Vishwanathan",
+          "given": "S."
+        },
+        {
+          "family": "Garnett",
+          "given": "R."
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "1711.00400"
@@ -1947,11 +1980,11 @@
     "version": "v2"
   },
   "HT10": {
-    "uri": "",
+    "uri": "https://www.learningtheory.org/colt2010/papers/29honda.pdf",
     "citation": {
       "id": "HT10",
       "type": "paper-conference",
-      "title": "An asymptotically optimal bandit algorithm for bounded support models",
+      "title": "An Asymptotically Optimal Bandit Algorithm for Bounded Support Models",
       "author": [
         {
           "family": "Honda",
@@ -1962,7 +1995,7 @@
           "given": "Akimichi"
         }
       ],
-      "container-title": "Proceedings of the 23rd Conference on Learning Theory (COLT)",
+      "container-title": "COLT 2010: The 23rd Conference on Learning Theory",
       "issued": {
         "date-parts": [
           [
@@ -1970,7 +2003,19 @@
           ]
         ]
       },
-      "page": "67-79"
+      "page": "67-79",
+      "event-place": "Haifa, Israel",
+      "editor": [
+        {
+          "family": "Kalai",
+          "given": "Adam Tauman"
+        },
+        {
+          "family": "Mohri",
+          "given": "Mehryar"
+        }
+      ],
+      "ISBN": "978-0-9822529-2-5"
     },
     "identifiers": {},
     "version": ""
@@ -2724,7 +2769,7 @@
     "citation": {
       "id": "KT26",
       "type": "article",
-      "title": "Error-controlled borrowing from external data using Wasserstein ambiguity sets",
+      "title": "Error-Controlled Borrowing from External Data Using Wasserstein Ambiguity Sets",
       "author": [
         {
           "family": "Kimura",
@@ -3498,11 +3543,11 @@
     "version": ""
   },
   "MCP14": {
-    "uri": "https://arxiv.org/abs/1405.4758",
+    "uri": "https://proceedings.mlr.press/v35/magureanu14.html",
     "citation": {
       "id": "MCP14",
-      "type": "article",
-      "title": "Lipschitz Bandits: Regret Lower Bounds and Optimal Algorithms",
+      "type": "paper-conference",
+      "title": "Lipschitz Bandits: Regret Lower Bound and Optimal Algorithms",
       "author": [
         {
           "family": "Magureanu",
@@ -3517,15 +3562,34 @@
           "given": "Alexandre"
         }
       ],
-      "container-title": "arXiv preprint",
-      "note": "COLT 2014 (arXiv comment)",
+      "container-title": "Proceedings of The 27th Conference on Learning Theory",
       "issued": {
         "date-parts": [
           [
             2014
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "35",
+      "page": "975-999",
+      "publisher": "PMLR",
+      "event-place": "Barcelona, Spain",
+      "editor": [
+        {
+          "family": "Balcan",
+          "given": "Maria Florina"
+        },
+        {
+          "family": "Feldman",
+          "given": "Vitaly"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "note": "arXiv version: 'Lipschitz Bandits: Regret Lower Bounds and Optimal Algorithms'"
     },
     "identifiers": {
       "arxiv": "1405.4758"
@@ -3701,11 +3765,11 @@
     "version": ""
   },
   "PMM25": {
-    "uri": "https://arxiv.org/abs/2509.19098",
+    "uri": "https://proceedings.mlr.press/v304/prevost26a.html",
     "citation": {
       "id": "PMM25",
       "type": "paper-conference",
-      "title": "Asymptotically optimal problem-dependent bandit policies for transfer learning",
+      "title": "Asymptotically Optimal Problem-Dependent Bandit Policies for Transfer Learning",
       "author": [
         {
           "family": "Prevost",
@@ -3720,14 +3784,29 @@
           "given": "Odalric-Ambrym"
         }
       ],
-      "container-title": "Proceedings of the 17th Asian Conference on Machine Learning (ACML), PMLR 304",
+      "container-title": "Proceedings of the 17th Asian Conference on Machine Learning",
       "issued": {
         "date-parts": [
           [
             2025
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "304",
+      "page": "319-334",
+      "publisher": "PMLR",
+      "event-place": "Taipei, Taiwan",
+      "editor": [
+        {
+          "family": "Lee",
+          "given": "Hung-yi"
+        },
+        {
+          "family": "Liu",
+          "given": "Tongliang"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "2509.19098"
@@ -3739,7 +3818,7 @@
     "citation": {
       "id": "PMRM26",
       "type": "article",
-      "title": "Transfer learning in bandits from unknown adaptive policies: problem-dependent lower and upper bounds",
+      "title": "Transfer Learning in Bandits from Unknown Adaptive Policies: Problem-Dependent Lower and Upper Bounds",
       "author": [
         {
           "family": "Prevost",
@@ -4123,11 +4202,12 @@
           "given": "Thorsten"
         }
       ],
-      "container-title": "Proceedings of the Fifteenth International Conference on Artificial Intelligence and Statistics (AISTATS)",
+      "container-title": "Proceedings of the Fifteenth International Conference on Artificial Intelligence and Statistics",
       "collection-title": "Proceedings of Machine Learning Research",
       "volume": "22",
       "page": "1046-1054",
       "publisher": "PMLR",
+      "event-place": "La Palma, Canary Islands",
       "editor": [
         {
           "family": "Lawrence",
