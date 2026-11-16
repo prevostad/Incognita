@@ -3,6 +3,6 @@ roadmap = "BatchedBandits"
 kind = "internal"
 directions = ["F4", "F1"]
 authors = ["claude-opus-5-5"]
-version = 1
+version = 2
 depends_on = []
 human_authors = ["Adrien Prevost"]

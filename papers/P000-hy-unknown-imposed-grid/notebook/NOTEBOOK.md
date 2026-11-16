@@ -175,3 +175,79 @@ wrap existing paragraphs.
 - **SC1.10 (P)**: unchanged (10pt, 2.3cm margins); the owner's decision, still asked.
 
 Build: 66 pages, no error, no undefined reference, no duplicate label.
+
+## 2026-11-15, presentation revision, version 2 (role revise, Claude Opus 5.5)
+
+Rewrite of `paper.tex` for presentation under the writing rules of 2026-11-15 (one source, two builds;
+the paper's skeleton; `DOSSIER.md`), without changing the mathematics. Sources: version 1 (accepted)
+for every label, node, `\uses` and statement; the author's readable version of 4 November 2026 for
+the frame, the prose, the pseudo-code, the TikZ graphs and the Setting/Goal boxes. Details and the
+correspondence of every label: `DOSSIER.md`, sections 8 and 9.
+
+- **How it was done.** The appendices (version 1, lines 712–3755) were kept as they are and transformed
+  by a script (not committed): the 48 lines `\par\smallskip` that the conversion had written for
+  `\begin{setgoal}`/`\end{setgoal}` became the boxes again (they pair exactly with the 48 setgoal lines
+  of the readable version); the two lists "B ← A₁; A₂" became the author's TikZ graphs; "section"
+  became "appendix" in the plans; the two cited nodes moved to Appendix A. The front (introduction to
+  open questions), Appendix A, the attribution table and the notation tables were written by hand,
+  from the readable version's text where the content is the same.
+- **Self-check.** A script compared the two sources node by node (statement text normalised for
+  whitespace, `\uses`, anchors and list-label syntax; proofs matched by `\proves`): 173 labels of
+  version 1, all present except `sec:weak`; no node changed kind; 71 statements identical (`thm:main` included), 10
+  changed in wording only (listed in DOSSIER.md, section 9); 8 proofs changed in form only (boxes,
+  headings, "(to be checked)", the reference to `lem:primal`, the names (Q1), (Q2) in `lem:service`). One node added: `lem:primal` (the remark "How it
+  is used" after the HT10 node, now a lemma, rule D5).
+- **Dead ends.** A `\paragraph` right after `\begin{proof}` stops compiling with the new macros (the
+  reader build prints nothing for `\uses`, so the heading starts inside the proof's list item:
+  "Improper \prevdepth"); fixed by bold run-in headings. A `setgoal` box right after
+  `\begin{proof}` sits next to "Proof." and overflows by 31pt; the box of `thm:upper` went before the
+  proof, as in the readable version. `longtable` (used by the readable version for the notation) is
+  not in the allowed packages: two `tabular`s. `\raggedright` in `p` columns without the `array`
+  package: one `\raggedright` per cell and `\tabularnewline`.
+- **The `\author` line** is unchanged (rule), so its footnote still names item F4 and the private Lean
+  project; `sec:lean` is kept for its reference. Left to the owner (DOSSIER.md, section 7).
+- **`thm:main` is on page 8**, not within the first 5 pages: the author's order (setting, algorithm,
+  results) puts it after the algorithm, which its statement uses. The informal statement with the
+  constant is on page 2.
+- **Build.** Reader PDF 63 pages (main text pp. 1–12 with the references), blueprint PDF 66 pages; no
+  error, no undefined reference or citation, no duplicate label; two overfull displays of about 7pt,
+  already in version 1.
+## 2026-11-16, version 2, revision round 1 (role revise, Claude Opus 5.5)
+
+Answer to `referee-scope` (verdict major: SC1.1 L, SC1.2–SC1.9 P) and `referee-proofs` (accept: PF1.1–PF1.3 P)
+on `4c717f69a164`. Branch rebased on `origin/main` (ec5e8ec) without conflict. Presentation only: no
+statement, hypothesis or conclusion changed; no node added or removed. Details: DOSSIER.md, section 8,
+"Revision of 2026-11-16".
+
+- **SC1.1 (L), fixed**: the sequential lower bound is [BK96, Proposition 1] "as recalled by [HT10, (2)]",
+  with [HT10, Theorem 8] for the dual formula, in Section 2, Table 1, the Examples ("Batches of size one")
+  and the new paragraph "The classical sequential result" of Section 5. BK96 is a listed classic; only its
+  abstract is recorded as read, and the attribution of (2) to it is HT10's own (§2).
+- **SC1.2 (P), fixed**: natbib (round) + plainnat; every `\cite` converted by hand-checked rules
+  (`\citet` where the authors were named in the text or in the table columns, `\citealp` inside
+  existing parentheses, `\citep` elsewhere). Every refs.bib entry has authors and year.
+- **SC1.3 (P), fixed**: Section 2 "Related work and context" (`sec:related`), the existing paragraphs moved,
+  ending with "Closest related work" (label `sec:closest` there) and a new "Gap with the literature";
+  "Our contributions."
+- **SC1.4 (P), fixed** with the paragraph option: "Why no numerical experiments" (Section 7). Checked that the
+  geometric grid t_l = 2^(l+1) has no activated batch: s_l = floor(t^(1+theta)) >= 2t = t_(l+1), since t^2 >= 2t
+  for t >= 2 (theta = 1 when t < e^e) and t^(1+1/loglog t) >= e t when t >= e^e. A run there would only show
+  batched IMED. Doubly exponential grid: ends below 10^9 are 4, 16, 256, 65536.
+- **SC1.5 (P), fixed**: opening sentences for Setting, Results, Examples; "Conclusion and open questions" with
+  the result and the limitations (pointer to the scope remark, Subsection 5.4); "Plan." capitalised in
+  Appendices B, D, E, F.
+- **SC1.6 (P), fixed**: water level Lambda_j -> \mathcal W_j (macro `\Lam`); activation round tau_l -> \bar t_l
+  (macro `\tauA`); the local scaling factor tau (Lemma B.1(vi), proof of B.5, Lemma B.10, proofs of B.9 and
+  B.10) -> \varpi (27 occurrences, all the raw `\tau` of the file). tau_n (Def. B.4) keeps its name.
+- **SC1.7 (P), fixed** for Subsection 5.5 (what the green box certifies). The `\author` footnote is the
+  owner's line and is unchanged; the referee's Ask-owner stands.
+- **SC1.8 (P), fixed**: classical result recalled as a displayed statement in a run-in paragraph (not a new
+  node: HT10.md does not hold (2) verbatim, and BK96 was not read beyond its abstract, so a cited node would
+  need a reading first); Algorithm 1 typed with the link macros.
+- **SC1.9 (P), not done**: Qiao–Wu (arXiv:2611.17500) recorded in DOSSIER.md section 5; citing it waits for
+  the owner's answer to the referee's Ask-owner.
+- **PF1.2 (P), fixed** (`def:kinf`: "for mu in [0,1)"). **PF1.3 (P), fixed** (`\Require` line). **PF1.1**: no
+  change needed.
+
+Build: reader and blueprint, no error, no undefined reference or citation, no duplicate label; two overfull
+displays of about 7pt, as before.

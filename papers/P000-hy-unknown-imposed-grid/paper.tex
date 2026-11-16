@@ -1,14 +1,20 @@
 % Incognita paper P000, a paper of the owner (AGENTS.md 5.1; CONTRIBUTING.md, section 8). Rules:
-% AGENTS.md, section 5 (template preamble, except the font size and the margins of the author's version:
-% 10pt and 2.3cm, for which its displays were written; at most 100 pages). Working notes go in notebook/.
-% Converted on 2026-11-14 from the author's readable version of 4 November 2026 (statements and
-% proofs unchanged; form adapted to the library: sections, blueprint, packages).
-% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex (as CI),
-% after `python3 scripts/certify.py bib` (papers/library.bib, the library's papers; AGENTS.md 5.6).
+% AGENTS.md, section 5, and the writing rules of 2026-11-15 (one source, two builds; the owner's
+% skeleton: introduction, setting, algorithm, results, proof overview, examples, open questions,
+% then the proofs in appendices). Font size and margins of the author's version: 10pt and 2.3cm,
+% for which its displays were written; at most 100 pages. Working notes go in notebook/; what serves
+% the referees and the owner but not the reader goes in DOSSIER.md.
+% Version 2 (2026-11-15): presentation revision of version 1 (accepted 2026-11-15), back to the
+% frame and the prose of the author's readable version of 4 November 2026; every node keeps its
+% label and its mathematical content (DOSSIER.md, "Presentation revision v2: statement
+% correspondence").
+% Compile (as CI): python3 scripts/certify.py bib, then
+%   latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex            (reader)
+%   latexmk -pdf -jobname=paper-blueprint -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex
 % Blueprint conventions: every definition/lemma/proposition/theorem/corollary has a \label;
 % statements start with \uses{def:...} when they use definitions; every proof starts with an
 % exhaustive \uses{...}; a proof away from its statement has \proves{...}. Never write \lean,
-% \leanok or \mathlibok in this file. After acceptance this file is never edited (AGENTS.md 6.6).
+% \leanok or \mathlibok in this file.
 \documentclass[10pt]{article}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -16,6 +22,12 @@
 \usepackage[a4paper,margin=2.3cm]{geometry}
 \usepackage{amsmath,amssymb,mathtools}
 \usepackage{xcolor}
+\usepackage{enumitem,booktabs,tcolorbox}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[round]{natbib}
 \usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
 \usepackage{../../templates/paper/blueprint-macros}
 
@@ -55,7 +67,7 @@
 \newcommand{\wz}{\sy{s:alg}{w_0}}
 \newcommand{\yg}{\sy{s:alg}{y}}
 \newcommand{\Ug}{\sy{s:alg}{U}}
-\newcommand{\tauA}{\sy{s:alg}{\tau}}
+\newcommand{\tauA}{\sy{s:alg}{\bar t}}
 \newcommand{\sA}{\sy{s:alg}{s}}
 \newcommand{\tnu}{\sy{s:alg}{\widetilde\nu}}
 \newcommand{\tm}{\sy{s:alg}{\widetilde{\mathbf m}}}
@@ -146,7 +158,7 @@
 \newcommand{\ly}{\sy{s:ranksC}{\ell_y}}
 \newcommand{\lonez}{\sy{s:ranksC}{\ell_L}}
 \newcommand{\lz}{\sy{s:ranksC}{\ell_0}}
-\newcommand{\Lam}{\sy{s:water}{\Lambda}}
+\newcommand{\Lam}{\sy{s:water}{\mathcal W}}
 \newcommand{\lW}{\sy{s:water}{\ell_W}}
 \newcommand{\Dev}{\sy{s:evC}{\mathcal D}}
 \newcommand{\Vs}{\sy{s:evC}{\mathcal V^\star}}
@@ -184,7 +196,8 @@
 \newcommand{\role}[1]{\par\noindent{\small\textbf{Role.}\ #1}\par}
 % justification written on the line of an aligned chain
 \newcommand{\why}[1]{\text{\small\color{black!70}(#1)}}
-%---------------------------------------------------------------- statuses and Lean (hidden by \statutfalse)
+% the Setting/Goal blocks of the proofs (rules of redaction-preuves.md)
+\newtcolorbox{setgoal}{colback=gray!5,colframe=gray!55,boxrule=0.4pt,left=5pt,right=5pt,top=3pt,bottom=3pt,sharp corners,before skip=6pt,after skip=6pt}
 \setlength{\emergencystretch}{3em}
 
 \title{Batched bandits on an unknown imposed grid:\\ the optimal constant $x^2/\mathcal K_{\inf}$ for every $x\ge1$}
@@ -192,7 +205,7 @@
   2026-11-14. The proofs were checked by AI agents only, not by a human referee. The conversion to the format of the
   library was done with AI assistance (Claude Opus 5.5). The author verified the main statements in a private Lean~4
   project (Subsection~\ref{sec:lean}).}}
-\date{2026-11-14}
+\date{2026-11-15}
 
 \begin{document}
 \sloppy
@@ -211,12 +224,16 @@ with its own evidence one test earlier. HY is a proof of existence: its
 remainder terms are astronomical.
 \end{abstract}
 
-\section{Main result}\label{sec:main}\label{sec:intro}
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+%======================================================================
+\section{Introduction}\label{sec:intro}
 
 \paragraph{Motivation.} In many sequential decision problems the feedback is not available after every decision but by blocks: clinical trials run in phases, agronomic experiments give
 their yields once per season, recommender systems are updated once per day. The \emph{batched bandit} model captures this: the learner chooses arms at every round, but
 observes the rewards only at the end of each batch. Most of the literature lets the learner choose the batches, and asks how few batches suffice
-\cite{PRCS16,GHRZ19,JTXHXG21}, \cite{EKMM21} (to be checked). We consider the opposite situation, where the batches are \emph{imposed} by the environment
+\citep{PRCS16,GHRZ19,JTXHXG21} (see also \citealp{EKMM21}). We consider the opposite situation, where the batches are \emph{imposed} by the environment
 and are not even known in advance: the learner discovers the end of a batch when it happens.
 
 \paragraph{Setting in a nutshell.} The batch ends $t_1<t_2<\cdots$ are deterministic and fixed by the environment. In the information model $\Mz$ that we consider, at a round
@@ -227,136 +244,150 @@ learner cannot react inside a batch, the natural criterion is the regret \emph{a
 x_\ell:=\frac{\log t_\ell}{\log t_{\ell-1}},
 \]
 and we assume that $x_\ell\to x\in[1,\infty)$. Geometric, polynomial and bounded batch sizes give $x=1$; doubly exponential grids $t_\ell\approx t_1^{x^\ell}$, as used
-by Perchet et al.~\cite{PRCS16} and Gao et al.~\cite{GHRZ19}, give $x>1$.
+by \citet{PRCS16} and \citet{GHRZ19}, give $x>1$.
 
-
-\begin{theorem}[the optimal constant is $x^2/\Ki$, attained without knowing the grid]\label{thm:main}
-\uses{def:model, def:grid, def:learner, def:kinf, def:hy, def:M0}
-Let $x\in[1,\infty)$, $\nu\in\cP$ and $a$ a sub-optimal arm. On every grid with $\xg_\ell\to x$:
-\begin{enumerate}
-\item[(a)] every consistent batched learner, even one that knows the grid, satisfies $\limsup_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell\ge x^2/\Ki(\nu_a,\m^\star)$, and the same
-for the $\liminf$ if $x=1$ or if its counts are logarithmic at the ends of the batches;
-\item[(b)] the single learner \HY$(\wz,\beta,\ody,\thv,\gam)$ of $\Mz$, which knows neither the grid nor the instance, is consistent and has
-$\lim_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell=x^2/\Ki(\nu_a,\m^\star)$.
-\end{enumerate}
-Hence $x^2/\Ki(\nu_a,\m^\star)$ is the optimal constant at the ends of the batches, for every $x\ge1$, and one learner attains it simultaneously on every grid with
-$\xg_\ell\to x$, $x=1$ included (the remainder terms of Theorem~\ref{thm:upper} depend on the grid). The same holds for the regret, with the constant
-$C_x:=x^2\sum_{c:\Dg_c>0}\Dg_c/\Ki(\nu_c,\m^\star)$: every consistent batched learner has $\limsup_\ell\Reg(\tl_\ell)/\log\tl_\ell\ge C_x$, and \HY{} has
-$\lim_\ell\Reg(\tl_\ell)/\log\tl_\ell=C_x$.
-\end{theorem}
-
-
-\paragraph{Constants.} The first-order constant $x^2/\Ki(\nu_a,\m^\star)$ is explicit. The remainder terms behind the limits
-(Propositions~\ref{prop:fixedC} and~\ref{prop:dyA}) do not depend on the rank $\ell$; they depend on the instance, on the
-grid and on an accuracy $\varepsilon$, and they are astronomically large: the theorem describes the first-order behaviour
-only. Since they depend on the grid, the convergence is not uniform over the grids with $\xg_\ell\to x$.
-The remainders are \emph{existential}: they are written as formulas, but these formulas go through ranks defined as
-``the smallest rank such that'' a condition holds from that rank on (for example $\lfive(\varepsilon)$ in
-Proposition~\ref{prop:fixedC}, and $\lW$ of Lemma~\ref{lem:W}), whose existence is proved but which are not computed;
-in the author's Lean statements they are existential too.
-
-\paragraph{Roadmap items.} This paper serves item F4 of the roadmap BatchedBandits, whose Appendix~A states (verbatim,
-items~1 and~2 of ``Statements''; there $L_\ell=\log t_\ell$, $d_a=K_{\inf}(\nu_a,m^\star)$, and $y_k$, $\omega$, $\varepsilon_0$
-are the objects of \HY{} and of its proof):
-\begin{quote}\small
-On every grid with $x_\ell \to x \in [1, \infty)$, every $\nu$ with rewards in $[0,1]$ and
-$m^\star < 1$, every suboptimal arm $a$:
-\begin{enumerate}
-\item \textbf{Lower bound, ``explore two batches ahead''.} Every batched learner that is consistent at batch
-   ends, even one that knows the grid, has
-   \begin{itemize}
-   \item if $x = 1$: $\liminf_\ell \mathbb E N_a(t_\ell)/L_\ell \ge 1/d_a$ (this holds on every grid);
-   \item if $x > 1$: $\limsup_\ell \mathbb E N_a(t_\ell)/L_\ell \ge x^2/d_a$, and the same with
-     $\liminf$ if $\mathbb E N_a(t_\ell) = O(L_\ell)$;
-   \item for the regret: $\liminf_\ell \mathrm{Reg}(t_\ell)/L_\ell \ge x^2 \sum_{c:\Delta_c>0} \Delta_c / K_{\inf}(\nu_c, m^\star)$
-     when $x = 1$, or when $x > 1$ and every suboptimal count is $O(L_\ell)$.
-   \end{itemize}
-\item \textbf{Upper bound.} HY with its default parameters (below) is a deterministic learner of $M_0$,
-   consistent, with $\lim_\ell \mathbb E N_a(t_\ell)/L_\ell = x^2/d_a$ and the matching regret limit.
-   Non-asymptotic forms: for $x = 1$,
-   $\mathbb E N_a(t_L) \le L_L/d_a + (2/d_a + 4c^\star/d_a^2)\,\varepsilon L_L + R_1(\varepsilon)$
-   for every $\varepsilon \in (0, \varepsilon_0]$ and every $L$, with $c^\star := (2-m^\star)/(1-m^\star)$;
-   for $x > 1$, with a constant margin $\omega$,
-   $\mathbb E N_a(t_\ell) \le (1+\omega)(1/d_a + 3c^\star\varepsilon/d_a^2)\,H_\ell + R_x(\varepsilon)$
-   where $H_\ell := \max_{k \le \ell} y_{k-1} L_k$ and $H_\ell/L_\ell \to x^2$. The remainders do
-   not depend on $L$ or $\ell$ and are astronomically large.
-\end{enumerate}
-\end{quote}
-What is proved here, item by item:
-\begin{itemize}
-\item Item~1 is Theorem~\ref{thm:lower}, (i), (ii) and (iii) respectively; Theorem~\ref{thm:main}(a) and its regret part
-restate it.
-\item Item~2, first sentence: Theorem~\ref{thm:upper} (\HY{} is deterministic and in $\Mz$ by Definition~\ref{def:hy}
-and Properties~(i) of Subsection~\ref{sec:algo}); Theorem~\ref{thm:main}(b) restates it.
-\item Item~2, the non-asymptotic form for $x=1$: Proposition~\ref{prop:fixedC}, with $\Co=2/\da+4\cst/\da^2$
-(Definition~\ref{def:constC}) and $R_1(\varepsilon)=\RHo(\varepsilon)$.
-\item Item~2, the non-asymptotic form for $x>1$ with a constant margin $\omega$ \emph{is not proved in this paper}.
-For $x>1$ the paper proves only Proposition~\ref{prop:dyA}, a bound on the $\limsup$ for \HY{} with the default
-(dyadic) margins $\ody_\ell\to0$, which is what Theorem~\ref{thm:upper} needs.
-\item Item~3 of Appendix~A (the limit over all rounds) \emph{is not proved in this paper}. Proposition~\ref{prop:dyA}
-bounds the $\limsup$ over all rounds when $x>1$, but neither the matching $\liminf$ over all rounds nor the case
-$x=1$ over all rounds is proved here.
-\end{itemize}
-The paper also serves item F1 (the one-batch lower bound on every grid): Lemma~\ref{lem:onebatch} with the remark of
-Theorem~\ref{thm:lower}(i).
-
-
-\paragraph{Discussion.} \emph{On the assumption.} The only assumption on the grid is the convergence of $\xg_\ell$; its limit $x$ is not known to \HY, and bounded batch
-sizes, batches of size one and short batches alternating with long ones are allowed. Grids for which $\xg_\ell$ does not converge are not covered. \emph{On the distributions.} No parametric assumption is made: the results hold for every instance of $\cP$, that is, for all distributions on $[0,1]$
-with $\m^\star<1$, with any number of optimal arms. \emph{On the remainders.} The remainder terms are astronomically large: the theorems describe the first-order behaviour only. \emph{On the information.} The lower bound holds even for
-learners that know the grid, and \HY{} knows nothing about it: knowing the grid does not improve the first-order constant at the ends of the batches. \emph{Formal verification.}
-The author verified these statements in a private Lean project (Section~\ref{sec:lean}).
-
-
-\paragraph{Contributions.} We show that the optimal first-order constant of $\E[\Ng_a(t_\ell)]/\log t_\ell$ for a sub-optimal arm $a$ is
+\paragraph{Our contributions.} We show that the optimal first-order constant of $\E[\Ng_a(t_\ell)]/\log t_\ell$ for a sub-optimal arm $a$ is
 \[
 \frac{x^2}{\Ki(\nu_a,\m^\star)}\qquad\text{for every }x\in[1,\infty),
 \]
-where $\Ki$ is the non-parametric divergence of Honda and Takemura~\cite{HT10}, and that it is attained by one algorithm that needs no knowledge of the grid.
-\begin{itemize}
+where $\Ki$ is the non-parametric divergence of \citet{HT10}, and that it is attained by one algorithm that needs no knowledge of the grid.
+\begin{itemize}[leftmargin=*]
 \item \emph{Lower bound} (Theorem~\ref{thm:lower}). For every consistent batched learner, even one that knows the whole grid, $\limsup_\ell\E[\Ng_a(t_\ell)]/\log t_\ell\ge x^2/\Ki(\nu_a,\m^\star)$,
 and the same holds for the $\liminf$ when $x=1$ or when the counts are logarithmic. The factor $x^2$ means that the learner must explore \emph{two batches ahead}: at
 the end of batch $\ell$ it must already have explored enough for the horizon $t_{\ell+2}$, because the allocation of batch $\ell+1$ is decided without the rewards of
 batch $\ell$.
-\item \emph{Upper bound} (Theorem~\ref{thm:upper}). The algorithm \HY{} (Definition~\ref{def:hy}) satisfies $\lim_\ell\E[\Ng_a(t_\ell)]/\log t_\ell=x^2/\Ki(\nu_a,\m^\star)$ on
+\item \emph{Upper bound} (Theorem~\ref{thm:upper}). The algorithm \HY{} (Definition~\ref{def:hy} and Algorithm~\ref{alg:hy}) satisfies $\lim_\ell\E[\Ng_a(t_\ell)]/\log t_\ell=x^2/\Ki(\nu_a,\m^\star)$ on
 every instance with rewards in $[0,1]$ and $\m^\star<1$, for \emph{every} grid with $x_\ell\to x\in[1,\infty)$: bounded batch sizes, batches of size one, short batches
 alternating with long ones are all allowed.
 \item \emph{Optimality} (Theorem~\ref{thm:main}). The two theorems give the same constant, so that $x^2/\Ki$ is the optimal constant, attained by one learner of $\Mz$
 simultaneously on every convergent grid.
-\item \emph{Formal verification} (Section~\ref{sec:lean}). The author verified Theorems~\ref{thm:lower} and~\ref{thm:upper} and Theorem~\ref{thm:main} in a
-private Lean~4 project, for \HY{} with any tie rules; formalising this paper in the library ports that verification.
 \end{itemize}
-
+For $x>1$, the classical change of measure at the ends of the batches only gives $x/\Ki(\nu_a,\m^\star)$ (Lemma~\ref{lem:onebatch}), and the closest published lower
+bound, \citet[Theorem~4]{JTXHXG21}, shows for exponential families, without a constant, that the sequential constant cannot be attained on such grids. This
+paper gives the exact factor $x^2$, for all distributions on $[0,1]$, and shows that it is attained without knowing the grid.
 
 \paragraph{The algorithm in a nutshell.} \HY{} must explore two batches ahead without knowing where the current batch ends, and must stay reliable on every grid with
 $x_\ell\to x$, from bounded batch sizes to doubly exponential grids. It does so with three ingredients (Section~\ref{sec:algo}). \emph{Pacing}: an arm rejected by the test at
 $t_\ell$ is kept at $(1+\omega)x_\ell^2\log t/\widehat K$ pulls at every round $t$, so that, whenever the batch ends, its exploration aims at the test that will be made then;
-the arms that are not clearly rejected receive a polylogarithmic net. \emph{An IMED phase}: every batch starts with IMED rounds \cite{HT15}, computed with the
+the arms that are not clearly rejected receive a polylogarithmic net. \emph{An IMED phase}: every batch starts with IMED rounds \citep{HT15}, computed with the
 statistics frozen at $t_\ell$ and the current counts; a batch that lasts beyond $t_\ell^{1+\vartheta_\ell}$ then switches to the paced plan. The IMED rounds certify a
 deterministic ``water level'' that makes the leader reliable when $x=1$, whatever the batch sizes. \emph{A consistency threshold}: an arm is declared ambiguous only if its
 evidence has dropped, since the previous test, below the evidence it had then; this keeps the test robust when the IMED rounds lag behind $\log t$.
 
-
-
-\subsection{Formal verification}\label{sec:lean}
-
-The author verified Theorems~\ref{thm:lower}, \ref{thm:upper} and~\ref{thm:main} in a private Lean~4 project (Mathlib and
-LeanMachineLearning, no \texttt{sorry}, axioms \texttt{propext}, \texttt{Classical.choice}, \texttt{Quot.sound}), for \HY{}
-with any fixed tie rules, the remainders being existential. Those Lean statements write $\liminf\ge L$ as ``for every
-$c<L$, eventually $c\le u_\ell$'', $\limsup\ge L$ as ``for every $c<L$, $c<u_\ell$ for infinitely many $\ell$'', and limits
-as convergences. The Lean proof follows the architecture of the proofs below, but many lemmas are formalized in a different
-form, so the proofs are not claimed verified as written. That project is not part of this library: formalising this paper
-here (frozen statements, then proofs) is the next step, and only the library's audit can mark a node as verified.
-
-
-\setcounter{tocdepth}{1}
-\tableofcontents
+\paragraph{Outline.} Section~\ref{sec:related} compares our results with the related work, Section~\ref{sec:setting} describes the model, Section~\ref{sec:algo} the algorithm, Section~\ref{sec:main} the results, and
+Section~\ref{sec:overview} explains how the proofs work. Section~\ref{sec:examples} gives an explicit instance and special cases, and Section~\ref{sec:open} the open
+questions. All the proofs are in the appendices:
+\begin{itemize}[leftmargin=*,nosep]
+\item Appendix~\ref{sec:cited}: the two results of the literature that the proofs use;
+\item Appendix~\ref{sec:app-tools}: tools (properties of $\Ki$, deviations, reward stacks, sums);
+\item Appendix~\ref{sec:app-lower}: the lower bound;
+\item Appendix~\ref{sec:app-det}: deterministic properties of \HY;
+\item Appendix~\ref{sec:app-xsup}: the upper bound when $x>1$;
+\item Appendix~\ref{sec:app-xone}: the upper bound when $x=1$;
+\item Appendix~\ref{sec:app-end}: the end of the proof of Theorem~\ref{thm:upper};
+\item Appendix~\ref{sec:attribution}: the sources of the techniques;
+\item Appendix~\ref{sec:notation}: a table of notation.
+\end{itemize}
+The proof of Theorem~\ref{thm:upper} goes through two intermediate propositions: Proposition~\ref{prop:dyA} for $x>1$, and the non-asymptotic Proposition~\ref{prop:fixedC} for $x=1$.
 
 %======================================================================
+\section{Related work and context}\label{sec:related}
 
+This section places the results among the known bounds. It recalls the sequential theory on $[0,1]$, the batched and delayed settings, and
+the multi-stage tests from which the lower bound takes its mechanism; it credits the techniques of the proofs, and it ends with the
+closest results (Table~\ref{tab:related}) and what they leave open.
+
+\paragraph{Sequential bandits on $[0,1]$.} For distributions on $[0,1]$ the relevant divergence is $\Ki$: the sequential lower bound $1/\Ki(\nu_a,\m^\star)$ is \citet[Proposition~1]{BK96}, as
+recalled by \citet[(2)]{HT10}, and the dual formula of $\Ki$ is \citet[Theorem~8]{HT10}; with immediate feedback the constant
+$1/\Ki$ is attained by IMED \citep{HT15}, KL-UCB \citep{CGMMS13,GHMS22} and non-parametric Thompson sampling \citep{RH20}. On imposed batches the statistics of these index
+algorithms are frozen at $\tl_\ell$; when $x>1$ a batch lasts about $\tl_\ell^{\,x}$ rounds, so a wrong decision taken at $\tl_\ell$ (for instance an optimal arm judged
+sub-optimal) costs a power of $\tl_\ell$.
+
+\paragraph{Batched bandits with a chosen grid.} The learner chooses the grid in \citet{PRCS16} for two arms, \citet{GHRZ19} for $K$ arms, \citet{JTXHXG21} for asymptotic
+optimality with few batches (see also \citealp{EKMM21,JXXG21}, and \citealp{KMS21} for Thompson sampling). These algorithms design their grid and do not apply to imposed
+batches, which are revealed only when they happen; their lower bounds (\citealp[Theorem~4]{PRCS16}; \citealp[Section~3]{GHRZ19}) are minimax bounds in terms of the number of
+batches, and give no instance-dependent constant at imposed batch ends. The batches of the KLinf-UCB of \citet[Section~3, Algorithm~1]{AJK21}
+are also chosen by the algorithm: it pulls the arm of largest index for $\max\{1,\tilde\varepsilon N\}$ rounds, $N$ being its current count, and on heavy-tailed classes its
+constant is optimal up to the factor $1+\tilde\varepsilon$ \citep[Theorem~1 and Corollary~2]{AJK21}.
+
+\paragraph{Imposed batches.} \citet[Theorem~1]{KO21b} show that Gaussian Thompson sampling has a regret equivalent to
+$\sum_a(2/\Delta_a)\log T$ almost surely when $\limsup_\ell\log B_{\ell+1}/\log t_\ell<1$ (their condition~(6)), which implies $x_\ell\to1$; their constant is optimal for
+Gaussian rewards of unit variance, not for bounded rewards, and grids with $x>1$ are not covered. Their batch ends may be chosen by an adversary at the previous end, as
+functions of the history \citep[Section~II.A]{KO21b}: random ends of this kind are the subject of Open question~\ref{oq:random}. Here the grid is unknown, and everything
+that we use from the author's companion manuscript on imposed batch sizes (see also \citealp{P26}) is proved again.
+
+\paragraph{Delayed feedback.} Batching is a form of delay; the reduction of \citet[Theorem~6]{JGS13} adds to the regret without delays a term proportional to
+the largest number of missing feedbacks, here the largest batch, which preserves optimality only for batches of size $o(\log t)$, hence not when $x>1$.
+
+\paragraph{Multi-stage tests.} The mechanism of our lower bound is that of \citet[Theorem~3 and its proof]{L83}: under a density $g$ intermediate between the two
+hypotheses, the sample size of an asymptotically optimal $k$-stage test after $k-1$ stages is forced to its full asymptotic value, so that the last stage is negligible;
+evaluating the expected sample size at a parameter between the two hypotheses goes back to \citet{H60}. Here the stages are imposed, and the price of not being
+able to react inside a stage is the factor $x^2$.
+
+\paragraph{Techniques.} The lower bound combines Lorden's mechanism with a \emph{boundary tilt} of $\nu_a$, a distribution of mean exactly $\m^\star$ taken from the
+optimal distribution of the proof of \citet[Theorem~8]{HT10}, mixed with a small atom at $0$ or at $1$ as in the proof of the regularity lemma of
+\citet[Appendix~B.1]{GHMS22}. The upper bound uses the IMED index \citep[Section~2, Algorithm~1]{HT15}, paced exploration targets of the form $(1+\omega)c\log t$ as in
+OSSB \citep[Section~5, Algorithm~1]{CMP17}, a queue lemma close to the tracking lemma of \citet[Appendix~B.1, Lemma~15]{GK16}, and deviation inequalities for $n\Ki$ that
+are variants of those of \citet{CGMMS13}, \citet{HT15} and \citet{GHMS22} with a gain in the exponent. The water level of IMED rounds comes from the author's companion manuscript (see also
+\citealp{P26}) and is proved again here; the plan made two batches ahead from frozen statistics and the consistency threshold are new, as far as we know.
+Appendix~\ref{sec:attribution} lists these sources.
+
+\paragraph{Closest related work.}\label{sec:closest} Table~\ref{tab:related} compares the first-order constants of the closest results; for each of them we say why it does not give
+the results of this paper.
+
+\emph{The classical change of measure.} Applied at the ends of the batches, the change of measure of \citet{LR85}, in the form of
+\citet[(6)]{GMS19}, gives Lemma~\ref{lem:onebatch}: the count at $\tl_\ell$ must already pay for the horizon $\tl_{\ell+1}$, hence the constant $x/\Ki(\nu_a,\m^\star)$ when
+$x>1$, not $x^2/\Ki(\nu_a,\m^\star)$. This change of measure tilts every reward of $a$; it does not use that the allocation of batch $\ell+1$ is decided without the rewards
+of batch $\ell$.
+
+\emph{Anytime learners on static grids, and doubling tricks.} For one-parameter exponential families with a unique best arm, \citet[Theorem~4]{JTXHXG21}
+show that, for every static grid and every $c>0$, no anytime algorithm attains the asymptotically optimal regret, that is $\lim_TR_T/\log T=\sum_i\Delta_i/\kl(\mu_i,\mu_1)$
+along all rounds $T$, with at most $c\log\log T$ batches. A grid with $\xg_\ell\to x>1$ has about $\log\log T/\log x$ batch ends below $T$, so this theorem implies, for
+these families, that the sequential constant is not attained on such a grid: it is a qualitative special case of Theorem~\ref{thm:lower}(ii). Its proof
+\citep[Appendix~C]{JTXHXG21} is the one-batch change of measure: inside a gap between two batch ends $t_j<t_{j+1}$ it changes the mean of one arm on the observations up to
+$t_j$ and applies the Bretagnolle--Huber inequality, which gives at most the factor $\log t_{j+1}/\log t_j\to x$, that is the bound of Lemma~\ref{lem:onebatch}, and no
+quantitative factor is stated. It does not give Theorem~\ref{thm:lower}(ii): the factor $x^2$ needs a change of measure that tilts only the rewards of $a$ in one batch
+towards a law of mean exactly $\m^\star$ (Lemma~\ref{lem:twobatches}); the class is that of exponential families and $\kl$, not all distributions on $[0,1]$ and $\Ki$ with
+any number of optimal arms; and it is a lower bound only. Jin et al.\ present it as a confirmation of a conjecture of \citet[Section~6]{BK18}, stated
+there for the exponential doubling trick, which restarts a base algorithm at times $T_i\approx T_0^{b^i}$: the conjecture is that this trick never brings the right
+constant, and \citet[Remark~8]{BK18} show that it multiplies a bound $c\log T$ by at most $b^2/(b-1)$.
+
+\begin{table}[t]
+\centering\small
+\caption{First-order constants of the counts of a sub-optimal arm $a$ (or of the regret) in the closest settings. ``Sequential'': feedback after every round.}\label{tab:related}
+\begin{tabular}{p{0.24\textwidth}p{0.27\textwidth}p{0.14\textwidth}p{0.23\textwidth}}
+\toprule
+\raggedright Result & \raggedright Feedback, grid & \raggedright Rewards & \raggedright First-order constant\tabularnewline
+\midrule
+\raggedright Lower bound \citet[Proposition~1]{BK96} (as recalled by \citealp[(2)]{HT10}); IMED, KL-UCB \citep{HT15,CGMMS13,GHMS22} & \raggedright sequential & \raggedright $[0,1]$ & \raggedright $1/\Ki(\nu_a,\m^\star)$, optimal\tabularnewline
+\raggedright One-batch change of measure (Lemma~\ref{lem:onebatch}; cf.\ \citealp[(6)]{GMS19}) & \raggedright imposed, $\xg_\ell\to x$ & \raggedright $[0,1]$ & \raggedright lower bound $x/\Ki(\nu_a,\m^\star)$\tabularnewline
+\raggedright \citet[Theorem~4]{JTXHXG21} & \raggedright static grid, anytime, $O(\log\log T)$ batches & \raggedright exponential families & \raggedright sequential constant not attained (no factor given)\tabularnewline
+\raggedright \citet[Remark~8]{BK18} & \raggedright doubling trick at $T_0^{b^i}$ & \raggedright --- & \raggedright at most $b^2/(b-1)$ times the base constant\tabularnewline
+\raggedright \citet[Theorem~1]{KO21b} & \raggedright imposed, $\limsup\log B_{\ell+1}/\log t_\ell<1$ (so $x=1$) & \raggedright Gaussian, unit variance & \raggedright regret $\sum_a2/\Delta_a$ (Thompson sampling)\tabularnewline
+\raggedright \citet[Theorem~6]{JGS13} & \raggedright delayed (batches as delays) & \raggedright --- & \raggedright sequential, if batches are $o(\log t)$\tabularnewline
+\midrule
+\raggedright This paper (Theorems~\ref{thm:lower}--\ref{thm:main}) & \raggedright imposed, unknown, $\xg_\ell\to x\in[1,\infty)$ & \raggedright $[0,1]$, $\m^\star<1$ & \raggedright $x^2/\Ki(\nu_a,\m^\star)$, optimal, attained by \HY\tabularnewline
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Gap with the literature.} As far as we know, no previous result gives the first-order constant of the counts at imposed batch ends when
+$x>1$, even for a learner that knows the grid: the one-batch change of measure gives the lower bound $x/\Ki(\nu_a,\m^\star)$, and
+\citet[Theorem~4]{JTXHXG21} show, without a constant and for exponential families, that the sequential constant is not attained. The
+results with imposed batches \citep{KO21b} need $x=1$ and Gaussian rewards, and the algorithms with a chosen grid do not apply when the
+batches are imposed and revealed only when they happen. Theorems~\ref{thm:lower}--\ref{thm:main} fill this gap for all distributions on
+$[0,1]$ with $\m^\star<1$ and every $x\ge1$, with one algorithm that does not know the grid.
+
+%======================================================================
 \section{Setting}\label{sec:setting}
 
-The conventions of the roadmap BatchedBandits, made precise. Every definition below is a node; the algorithm \HY{} is defined in Subsection~\ref{sec:algo}.
+This section fixes the model of the main results: the imposed grid and its growth (Definitions~\ref{def:grid} and~\ref{def:ass-x}), the
+instances and the divergence $\Ki$ (Definitions~\ref{def:model} and~\ref{def:kinf}), the batched learners, the criterion and the
+information model $\Mz$ (Definitions~\ref{def:learner} and~\ref{def:M0}), and the reward stacks used in the proofs
+(Definition~\ref{def:stacks}).
+
+\paragraph{Notation.} $\log$ is the natural logarithm, $\delta_y$ the Dirac mass at $y$, $\KL$ the Kullback--Leibler divergence, $\kl(p,q):=p\log\frac pq+(1-p)\log\frac{1-p}{1-q}$
+the Bernoulli one, and $\Ber(p)$ the Bernoulli distribution of mean $p$. Every symbol of the paper is a link to its definition, and Appendix~\ref{sec:notation} lists them.
 
 \begin{definition}[grid]\label{def:grid}\dt{s:grid}
 The batch sizes are deterministic integers $\Bg_\ell\ge1$, $\ell\ge1$, with $\Bg_1\ge\max(2,K)$. The end of batch $\ell$ is
@@ -365,9 +396,10 @@ $\tl_\ell:=\Bg_1+\dots+\Bg_\ell$ ($\tl_0:=0$), and batch $\ell$ is the set of ro
 \xg_\ell:=\frac{\Lg_\ell}{\Lg_{\ell-1}}\ \ge1\quad(\ell\ge2),\qquad\xg_1:=1,\qquad\text{so that}\qquad\tl_\ell=\tl_{\ell-1}^{\,\xg_\ell}\quad(\ell\ge2).
 \]
 \end{definition}
-\begin{definition}[assumption on the grid]\label{def:ass-x}
+\begin{definition}[convergent grid]\label{def:ass-x}
 \uses{def:grid}
-$\xg_\ell\to x$ as $\ell\to\infty$, for some $x\in[1,\infty)$. Nothing else is assumed on the grid.
+The grid is \emph{convergent}, with \emph{limit} $x\in[1,\infty)$, if $\xg_\ell\to x$ as $\ell\to\infty$. This is the only condition on the grid in the main results:
+bounded batch sizes, batches of size one and short batches alternating with long ones are allowed.
 \end{definition}
 
 \begin{definition}[arms and the class $\cP$]\label{def:model}\dt{s:model}
@@ -382,8 +414,9 @@ For $\mu\in[0,1)$ let $\kap(\mu):=\log\frac1{1-\mu}$ and $\Lset{\mu}:=[0,\frac1{
 \[
 \Ki(G,\mu):=\sup_{\lambda\in\Lset{\mu}}\E_{X\sim G}\big[\log\big(1-\lambda(X-\mu)\big)\big]\ \in[0,\kap(\mu)],
 \]
-and $\Ki(G,1):=0$ if $\E_G[X]=1$, $+\infty$ otherwise. By Honda and Takemura~\cite[Theorem~8]{HT10} (Lemma~\ref{cite:honda2010asymptotically-primal} and the remark after it), $\Ki(G,\mu)$ is the infimum of $\KL(G,H)$ over the distributions $H$ on
-$[0,1]$ with $\E_H[X]>\mu$; the upper bound only uses the dual formula above. For an empirical distribution, the supremum can be taken over rational $\lambda$, so $\Ki$
+and $\Ki(G,1):=0$ if $\E_G[X]=1$, $+\infty$ otherwise. By \citet[Theorem~8]{HT10}, for $\mu\in[0,1)$, $\Ki(G,\mu)$ is the infimum of $\KL(G,H)$ over the distributions $H$ on $[0,1]$ with $\E_H[X]>\mu$
+(Lemma~\ref{lem:primal} gives it with $\E_H[X]\ge\mu$, and the strict inequality follows with the shift of the level of Lemma~\ref{lem:kinf}(v), as in Step~1 of the
+proof of Lemma~\ref{lem:onebatch}); the upper bound only uses the dual formula above. For an empirical distribution, the supremum can be taken over rational $\lambda$, so $\Ki$
 is a measurable function of the sample. We write $\da:=\Ki(\nu_a,\m^\star)$; it is positive (Lemma~\ref{lem:kinf}(iv)).
 \end{definition}
 
@@ -403,31 +436,32 @@ $\nu\in\cP$, every sub-optimal arm $c$ of $\nu$ and every $\alpha>0$: consistenc
 \begin{definition}[the information model $\Mz$]\label{def:M0}\dt{s:M0}
 \uses{def:grid}
 A learner of $\Mz$ is a batched learner whose policy at a round $t\in(\tl_\ell,\tl_{\ell+1}]$ depends on the grid only
-through $\tl_1,\dots,\tl_\ell$ and $t$: it does not know $\tl_{\ell+1}$, and it does not know any horizon. The lower bound of Section~\ref{sec:results} holds for every
+through $\tl_1,\dots,\tl_\ell$ and $t$: it does not know $\tl_{\ell+1}$, and it does not know any horizon. The lower bound of Section~\ref{sec:main} holds for every
 batched learner, and the upper bound is attained by a deterministic learner of $\Mz$.
 \end{definition}
 
 \begin{definition}[reward stacks]\label{def:stacks}\dt{s:stack}
 \uses{def:learner}
-As usual \cite[Section~4.6]{LS} (to be checked), we realize the rewards with \emph{stacks}: $\Xs_{c,k}$ is the reward of the
+As usual \citep[Section~4.6]{LS}, we realize the rewards with \emph{stacks}: $\Xs_{c,k}$ is the reward of the
 $k$-th pull of arm $c$, the variables $\Xs_{c,k}$ are independent with $\Xs_{c,k}\sim\nu_c$, and $\hnu_{c,n}$, $\hm_{c,n}$ are the empirical distribution and the mean of
 $\Xs_{c,1},\dots,\Xs_{c,n}$. At a round $t$ the learner has observed $\hnu_c(t):=\hnu_{c,\Ng_c(t)}$ and $\hm_c(t):=\hm_{c,\Ng_c(t)}$ only when $t$ is a batch end; at the end of batch
 $\ell$ these are the statistics of all the rewards of $c$ observed so far (Lemma~\ref{lem:stacks}).
 \end{definition}
 
-
-\subsection{The algorithm HY}\label{sec:algo}
+%======================================================================
+\section{The algorithm HY}\label{sec:algo}
 
 \HY{} works batch by batch. At each end $\tl_\ell$ it computes, from $\tl_1,\dots,\tl_\ell$ and the rewards observed so far, an IMED leader and IMED divergences, and a
 test of every non-leader against the best well-sampled arm. In batch $\ell+1$ it first plays IMED rounds, with the frozen statistics and the current counts, up to the round
 $\tl_\ell^{1+\thv_\ell}$ (the \emph{IMED phase}), and, if the batch is still running then, it follows the paced plan given by the test (the \emph{paced phase}).
+Algorithm~\ref{alg:hy} gives the same definition in pseudo-code.
 
 \begin{definition}[the algorithm \HY$(\wz,\beta,\om,\thv,\gam)$]\label{def:hy}\dt{s:alg}
 \uses{def:grid, def:learner, def:stacks, def:kinf}
 \emph{Parameters.} A pseudo-count $\wz\ge0$, a net exponent $\beta\ge2$, non-increasing margins $\om_\ell\in(0,1]$, activation exponents $\thv_\ell\in(0,1]$ and
 consistency margins $\gam_\ell\in(0,\frac12]$, all deterministic functions of $\tl_1,\dots,\tl_\ell$.
 
-\smallskip\noindent\emph{Default parameters} (used in Theorem~\ref{thm:upper} and Theorem~\ref{thm:main}(b)):
+\smallskip\noindent\emph{Default parameters} (used in Theorems~\ref{thm:upper} and~\ref{thm:main}(b)):
 \begin{center}
 \fbox{\begin{tabular}{lll}
 pseudo-count & $\wz:=1$ & (any $\wz\ge0$ is covered by the theorems)\\[2pt]
@@ -443,10 +477,10 @@ consistency margins & $\gam_\ell:=\min\big(\tfrac12,\max(\Lg_\ell,1)^{-1/4}\big)
 \yg_\ell:=\xg_\ell^{\,2},\qquad\Ug_{\ell+1}:=\big\lceil\Lg_\ell^\beta\big\rceil,\qquad\tauA_\ell:=\tl_\ell^{\,1+\thv_\ell},\qquad\sA_\ell:=\lfloor\tauA_\ell\rfloor
 \]
 ($\Ug_1:=1$, $\yg_0:=1$), and, writing $N_c:=\Ng_c(\tl_\ell)$ for every arm $c$, the following statistics (all computed at every end $\tl_\ell$):
-\begin{enumerate}
-\item[(1)] \emph{Pseudo-observation.} $\tnu_c(\tl_\ell):=\dfrac{N_c\,\hnu_c(\tl_\ell)+\wz\,\delta_0}{N_c+\wz}$, and its mean $\tm_c(\tl_\ell):=\dfrac{N_c\,\hm_c(\tl_\ell)}{N_c+\wz}$.
-\item[(2)] \dt{t:leader}\emph{Leader and IMED divergences.} The \emph{leader} $\Ld_\ell$ is an arm of largest $\tm_c(\tl_\ell)$ (fixed tie rule), $\tms_\ell:=\tm_{\Ld_\ell}(\tl_\ell)$, and $\Kt_\ell(c):=\Ki(\tnu_c(\tl_\ell),\tms_\ell)$.
-\item[(3)] \dt{t:ref}\emph{Reference and test divergences.} $\Wg_\ell:=\{c:N_c\ge\frac12\Ug_\ell\}$ (the \emph{well-sampled} arms); the \emph{reference} $\rr_\ell$ is an arm of largest $\tm_c(\tl_\ell)$ in $\Wg_\ell$
+\begin{enumerate}[label=(\arabic*),leftmargin=*]
+\item \emph{Pseudo-observation.} $\tnu_c(\tl_\ell):=\dfrac{N_c\,\hnu_c(\tl_\ell)+\wz\,\delta_0}{N_c+\wz}$, and its mean $\tm_c(\tl_\ell):=\dfrac{N_c\,\hm_c(\tl_\ell)}{N_c+\wz}$.
+\item \dt{t:leader}\emph{Leader and IMED divergences.} The \emph{leader} $\Ld_\ell$ is an arm of largest $\tm_c(\tl_\ell)$ (fixed tie rule), $\tms_\ell:=\tm_{\Ld_\ell}(\tl_\ell)$, and $\Kt_\ell(c):=\Ki(\tnu_c(\tl_\ell),\tms_\ell)$.
+\item \dt{t:ref}\emph{Reference and test divergences.} $\Wg_\ell:=\{c:N_c\ge\frac12\Ug_\ell\}$ (the \emph{well-sampled} arms); the \emph{reference} $\rr_\ell$ is an arm of largest $\tm_c(\tl_\ell)$ in $\Wg_\ell$
 ($\rr_\ell:=\Ld_\ell$ if $\Wg_\ell=\emptyset$); the \emph{test level} is $\mh_\ell:=\tm_{\rr_\ell}(\tl_\ell)$, and $\Kh_\ell(c):=\Ki(\tnu_c(\tl_\ell),\mh_\ell)$ for every arm $c$.
 These divergences are only used by the paced phase, but they are computed at every end: the threshold of the next test uses $\Kh_\ell$.
 \end{enumerate}
@@ -456,22 +490,22 @@ These divergences are only used by the paced phase, but they are computed at eve
 the leader $\Ld_\ell$ whenever it is a minimizer (other ties: fixed rule).
 
 \smallskip\noindent\textbf{Paced phase, $t>\sA_\ell$.} The test below uses only the data up to $\tl_\ell$ (it can be made at $\tl_\ell$ or at the first paced round).
-\begin{enumerate}
-\item[(4)] \emph{Consistency threshold.} $\Lh_1:=\Lg_1$; for $\ell\ge2$, with $\Qp_\ell:=\{c\notin\Wg_\ell:\ c\ne\Ld_{\ell-1}\}$ (poorly sampled arms, except the previous leader),
+\begin{enumerate}[label=(\arabic*),leftmargin=*,start=4]
+\item \emph{Consistency threshold.} $\Lh_1:=\Lg_1$; for $\ell\ge2$, with $\Qp_\ell:=\{c\notin\Wg_\ell:\ c\ne\Ld_{\ell-1}\}$ (poorly sampled arms, except the previous leader),
 \[
 \Lh_\ell:=\min\Big(\Lg_\ell,\ \min_{c\in\Qp_\ell}\Big[\frac{N_c\,\Kh_{\ell-1}(c)}{\yg_{\ell-1}}+\log N_c\Big]\Big)\quad(\min\emptyset:=+\infty),\qquad\hg_\ell:=(1-\gam_\ell)\,\yg_{\ell-1}\,\Lh_\ell .
 \]
-\item[(5)] \dt{t:verdict}\emph{Verdicts.} An arm $c\ne\Ld_\ell$ is \emph{rejected} if $\Kh_\ell(c)>0$ and $\Zg_\ell(c):=N_c\Kh_\ell(c)\ge\hg_\ell$; it is \emph{ambiguous} otherwise.
-\item[(6)] \dt{t:net}\emph{Paced targets.} For $c\ne\Ld_\ell$ and every integer $t\ge\tl_\ell$, $\nt_{\ell,c}(t):=K-1+\Ug_{\ell+1}$ if $c$ is ambiguous (the \emph{net}), and
+\item \dt{t:verdict}\emph{Verdicts.} An arm $c\ne\Ld_\ell$ is \emph{rejected} if $\Kh_\ell(c)>0$ and $\Zg_\ell(c):=N_c\Kh_\ell(c)\ge\hg_\ell$; it is \emph{ambiguous} otherwise.
+\item \dt{t:net}\emph{Paced targets.} For $c\ne\Ld_\ell$ and every integer $t\ge\tl_\ell$, $\nt_{\ell,c}(t):=K-1+\Ug_{\ell+1}$ if $c$ is ambiguous (the \emph{net}), and
 $\nt_{\ell,c}(t):=K-1+\min\big(\Ug_{\ell+1},\lceil(1+\om_\ell)\yg_\ell\log t/\Kh_\ell(c)\rceil\big)$ if $c$ is rejected ($h/\infty:=0$).
-\item[(7)] \emph{Rule.} Pull the first arm $c\ne\Ld_\ell$, in a fixed order, with $\Ng_c(t-1)<\nt_{\ell,c}(t)$; if there is none, pull $\Ld_\ell$.
+\item \emph{Rule.} Pull the first arm $c\ne\Ld_\ell$, in a fixed order, with $\Ng_c(t-1)<\nt_{\ell,c}(t)$; if there is none, pull $\Ld_\ell$.
 \end{enumerate}
 \end{definition}
 
 \begin{definition}[vocabulary and first facts]\label{def:hy-vocab}\dt{s:act}
 \uses{def:hy, def:grid}
 The following words and facts about \HY{} are used throughout.
-\begin{itemize}
+\begin{itemize}[leftmargin=*,nosep]
 \item \emph{Phases.} The \emph{IMED phase} of batch $\ell+1$ is $(\tl_\ell,\min(\sA_\ell,\tl_{\ell+1})]$, its \emph{paced phase} is $(\sA_\ell,\tl_{\ell+1}]$.
 \item \emph{Activation.} Batch $\ell+1$ is \emph{activated} if it has paced rounds, i.e.\ $\tl_{\ell+1}>\sA_\ell$. Let $\Act:=\{\ell\ge1:\tl_{\ell+1}>\sA_\ell\}$. Activation is a
 property of the grid alone.
@@ -481,46 +515,53 @@ $\hg_\ell\ge0$.
 \end{itemize}
 \end{definition}
 
-\begin{center}
-\fbox{\begin{minipage}{0.96\textwidth}\small
-\noindent\textbf{Pseudo-code of \HY$(w_0,\beta,\omega,\vartheta,\gamma)$}; at a round $t$ of batch $\ell+1$ only $t_1,\dots,t_\ell$ and $t$ are known.
-\begin{tabbing}
-\hspace*{1.4em}\=\hspace*{1.4em}\=\hspace*{1.4em}\=\hspace*{1.4em}\=\hspace*{1.4em}\=\kill
-\textbf{batch $1$:} pull the arms in turn; $U_1\gets1$, $y_0\gets1$\\
-\textbf{for} $\ell=1,2,\dots$ \hfill(at time $t_\ell$)\\
-\>$y_\ell\gets x_\ell^2$, \ $U_{\ell+1}\gets\lceil\mathsf L_\ell^\beta\rceil$, \ $s_\ell\gets\lfloor t_\ell^{1+\vartheta_\ell}\rfloor$\\
-\>$\widetilde\nu_c,\widetilde{\mathbf m}_c\gets$ statistics with the pseudo-count $w_0$; \ $\widehat c_\ell\gets\arg\max_c\widetilde{\mathbf m}_c$\\
-\>$\widetilde K_\ell(c)\gets\mathcal K_{\inf}(\widetilde\nu_c,\widetilde{\mathbf m}_{\widehat c_\ell})$ for every arm $c$\\
-\>$W_\ell\gets\{c:N_c(t_\ell)\ge\frac12U_\ell\}$; \ $r_\ell\gets\arg\max_{c\in W_\ell}\widetilde{\mathbf m}_c$ \ ($r_\ell\gets\widehat c_\ell$ if $W_\ell=\emptyset$)\\
-\>$\widehat\mu_\ell\gets\widetilde{\mathbf m}_{r_\ell}$; \ $\widehat K_\ell(c)\gets\mathcal K_{\inf}(\widetilde\nu_c,\widehat\mu_\ell)$ for every arm $c$ \hfill(used by the next test)\\
-\>\textbf{for} each round $t=t_\ell+1,t_\ell+2,\dots$ until the batch ends \hfill($t_{\ell+1}$ is not known)\\
-\>\>\textbf{if} $t\le s_\ell$ \hfill(\textbf{IMED phase})\\
-\>\>\>pull $\arg\min_c\big[N_c(t-1)\widetilde K_\ell(c)+y_\ell\log N_c(t-1)\big]$, and $\widehat c_\ell$ if it is a minimizer\\
-\>\>\textbf{else} \hfill(\textbf{paced phase})\\
-\>\>\>\textbf{if} $t=s_\ell+1$ \hfill(test, with the data up to $t_\ell$)\\
-\>\>\>\>$\widehat\Lambda_1\gets\mathsf L_1$ if $\ell=1$; otherwise\\
-\>\>\>\>$\widehat\Lambda_\ell\gets\min\big(\mathsf L_\ell,\min_{c\notin W_\ell,\,c\ne\widehat c_{\ell-1}}[N_c(t_\ell)\widehat K_{\ell-1}(c)/y_{\ell-1}+\log N_c(t_\ell)]\big)$\\
-\>\>\>\>$h_\ell\gets(1-\gamma_\ell)\,y_{\ell-1}\,\widehat\Lambda_\ell$\\
-\>\>\>\>\textbf{for} each $c\ne\widehat c_\ell$: \textbf{if} $\widehat K_\ell(c)>0$ and $N_c(t_\ell)\widehat K_\ell(c)\ge h_\ell$ \hfill(rejected)\\
-\>\>\>\>\>$n_{\ell,c}(\cdot):=K-1+\min\big(U_{\ell+1},\lceil(1+\omega_\ell)y_\ell\log(\cdot)/\widehat K_\ell(c)\rceil\big)$\\
-\>\>\>\>\textbf{else} $n_{\ell,c}(\cdot):=K-1+U_{\ell+1}$ \hfill(ambiguous: net)\\
-\>\>\>\textbf{if} some $c\ne\widehat c_\ell$ has $N_c(t-1)<n_{\ell,c}(t)$: pull the first such $c$; \textbf{else} pull $\widehat c_\ell$
-\end{tabbing}
-\end{minipage}}
-\end{center}
+\begin{algorithm}[ht]
+\caption[HY]{\HY$(\wz,\beta,\om,\thv,\gam)$ (Definition~\ref{def:hy}); at a round $t$ of batch $\ell+1$, only $\tl_1,\dots,\tl_\ell$ and $t$ are known}\label{alg:hy}
+\begin{algorithmic}[1]
+\Require $\wz\ge0$, $\beta\ge2$; $\om_\ell$, $\thv_\ell$, $\gam_\ell$ deterministic functions of $\tl_1,\dots,\tl_\ell$, with $\om_\ell\in(0,1]$ non-increasing in $\ell$, $\thv_\ell\in(0,1]$ and $\gam_\ell\in(0,\frac12]$, as in Definition~\ref{def:hy} (defaults: $\ody_\ell$; $1/\log\log\tl_\ell$, or $1$ if $\tl_\ell<e^e$; $\min(\frac12,\max(\Lg_\ell,1)^{-1/4})$)
+\State \textbf{batch $1$:} pull the arms in turn; $\Ug_1\gets1$, $\yg_0\gets1$
+\For{$\ell=1,2,\dots$}\Comment{at time $\tl_\ell$}
+  \State $\yg_\ell\gets\xg_\ell^2$, \ $\Ug_{\ell+1}\gets\lceil\Lg_\ell^\beta\rceil$, \ $\sA_\ell\gets\lfloor\tl_\ell^{1+\thv_\ell}\rfloor$
+  \State $\tnu_c,\tm_c\gets$ statistics with the pseudo-count $\wz$; $\Ld_\ell\gets\arg\max_c\tm_c$; $\Kt_\ell(c)\gets\Ki(\tnu_c,\tm_{\Ld_\ell})$
+  \State $\Wg_\ell\gets\{c:\Ng_c(\tl_\ell)\ge\frac12\Ug_\ell\}$; $\rr_\ell\gets\arg\max_{c\in\Wg_\ell}\tm_c$ ($\rr_\ell\gets\Ld_\ell$ if $\Wg_\ell=\emptyset$)
+  \State $\mh_\ell\gets\tm_{\rr_\ell}$; \ $\Kh_\ell(c)\gets\Ki(\tnu_c,\mh_\ell)$ for every arm $c$\Comment{used by the next test}
+  \For{each round $t=\tl_\ell+1,\tl_\ell+2,\dots$ until the batch ends}\Comment{$\tl_{\ell+1}$ is not known}
+    \If{$t\le\sA_\ell$}\Comment{\textbf{IMED phase}}
+      \State pull $\arg\min_c\big[\Ng_c(t-1)\Kt_\ell(c)+\yg_\ell\log\Ng_c(t-1)\big]$, $\Ld_\ell$ if it is a minimizer
+    \Else\Comment{\textbf{paced phase}}
+      \If{$t=\sA_\ell+1$}\Comment{test, with the data up to $\tl_\ell$}
+        \If{$\ell=1$} $\Lh_1\gets\Lg_1$
+        \Else\ $\Lh_\ell\gets\min\big(\Lg_\ell,\min_{c\notin\Wg_\ell,\,c\ne\Ld_{\ell-1}}[\Ng_c(\tl_\ell)\Kh_{\ell-1}(c)/\yg_{\ell-1}+\log\Ng_c(\tl_\ell)]\big)$
+        \EndIf
+        \State $\hg_\ell\gets(1-\gam_\ell)\,\yg_{\ell-1}\,\Lh_\ell$
+        \For{each $c\ne\Ld_\ell$}
+          \If{$\Kh_\ell(c)>0$ \textbf{and} $\Ng_c(\tl_\ell)\Kh_\ell(c)\ge\hg_\ell$}\Comment{rejected}
+            \State $\nt_{\ell,c}(\cdot):=K-1+\min\big(\Ug_{\ell+1},\lceil(1+\om_\ell)\yg_\ell\log(\cdot)/\Kh_\ell(c)\rceil\big)$
+          \Else\ \ $\nt_{\ell,c}(\cdot):=K-1+\Ug_{\ell+1}$\Comment{ambiguous: net}
+          \EndIf
+        \EndFor
+      \EndIf
+      \If{some $c\ne\Ld_\ell$ has $\Ng_c(t-1)<\nt_{\ell,c}(t)$} pull the first such $c$
+      \Else\ pull $\Ld_\ell$
+      \EndIf
+    \EndIf
+  \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 \paragraph{Comments: the three ideas.}
-\begin{enumerate}
-\item[(1)] \emph{Pacing.} A rejected arm is not pulled at the start of the batch up to a fixed target: its target $(1+\om_\ell)\yg_\ell\log t/\Kh_\ell(c)$ grows with the
+\begin{enumerate}[label=(\arabic*),leftmargin=*]
+\item \emph{Pacing.} A rejected arm is not pulled at the start of the batch up to a fixed target: its target $(1+\om_\ell)\yg_\ell\log t/\Kh_\ell(c)$ grows with the
 current round $t$. If the batch ends at $\tl_{\ell+1}$, the plan evaluated there is $(1+\om_\ell)\xg_\ell^2\Lg_{\ell+1}/\Kh_\ell(c)$, and the next test is made at the level
 $\approx\xg_\ell^2\Lg_{\ell+1}\approx\Lg_{\ell+3}$: whatever the batch turns out to be, the plan aims at the test that will actually be made, two batches ahead. The coefficient
 $\yg_\ell=\xg_\ell^2$ is fixed at $\tl_\ell$, from the past ends only. A queue lemma (Lemma~\ref{lem:service}) shows that the demands are served at every round, up to
 $K-1$ pulls, after an initial burst of size $O(K\Ug_{\ell+1})$.
-\item[(2)] \emph{IMED phase.} The IMED phase uses the index of IMED \cite{HT15} with the statistics frozen at $\tl_\ell$: the logarithm in the index uses the current count, the weight
+\item \emph{IMED phase.} The IMED phase uses the index of IMED \citep{HT15} with the statistics frozen at $\tl_\ell$: the logarithm in the index uses the current count, the weight
 $\yg_\ell$ multiplies it, and a pseudo-observation $0$ of weight $\wz$ lowers the means of the poorly sampled arms. If the batch is long, the IMED phase lasts about
 $\tl_\ell^{1+\thv_\ell}$ rounds; the arm that receives most of them certifies that every IMED index is at least $\log\tl_\ell$ at the end of the batch
 (Lemma~\ref{lem:W}, \emph{the IMED phase lifts the water level}). This ``water level'' is what makes the leader of a long batch reliable when $x=1$, even after many short batches.
-\item[(3)] \emph{Consistency threshold.} The test does not use the level $\yg_{\ell-1}\Lg_\ell$ directly but $(1-\gam_\ell)\yg_{\ell-1}\Lh_\ell$, where $\Lh_\ell$ is a water level
+\item \emph{Consistency threshold.} The test does not use the level $\yg_{\ell-1}\Lg_\ell$ directly but $(1-\gam_\ell)\yg_{\ell-1}\Lh_\ell$, where $\Lh_\ell$ is a water level
 computed with the divergences $\Kh_{\ell-1}$ of the \emph{previous} test. An arm $c\in\Qp_\ell$ is then declared ambiguous only if
 $\Ng_c(\tl_\ell)\Kh_\ell(c)<(1-\gam_\ell)\big[\Ng_c(\tl_\ell)\Kh_{\ell-1}(c)+\yg_{\ell-1}\log\Ng_c(\tl_\ell)\big]$: its divergence has dropped by a factor about $1-\gam_\ell$ between two
 tests. A sub-optimal arm with $\gtrsim\log t$ observations almost never does this, however late IMED is with respect to $\log t$ (Lemma~\ref{lem:amb}, \emph{consistency test}). When $x>1$,
@@ -529,117 +570,53 @@ $\Lh_\ell=\Lg_\ell$ from some rank on, on every run (Lemma~\ref{lem:thrA}).
 \paragraph{Properties.} (i) \emph{Information.} Every quantity used in batch $\ell+1$ is a function of $\tl_1,\dots,\tl_\ell$, of the observations up to $\tl_\ell$, of the current counts and of
 $t$: \HY{} is a deterministic learner of $\Mz$. It never uses $\Bg_{\ell+1}$, a horizon or the instance, so it can be run when the end of the current batch is only revealed
 when it happens. (ii) \emph{Tie rules.} The leader, the reference $\rr_\ell$, the arm pulled among several minimizers of $\Jg_\ell$ and the order of the paced rule are given by
-fixed rules; the proofs do not use these rules, and the Lean theorems hold for any rules satisfying their specification, with any order of batch~$1$ in which every arm
-is pulled (Section~\ref{sec:lean}). (iii) \emph{Cost.} Each test costs $K$ evaluations of $\Ki$ (one-dimensional concave maximizations), and each round $O(K)$ operations.
+fixed rules; the proofs do not use these rules. (iii) \emph{Cost.} Each test costs $K$ evaluations of $\Ki$ (one-dimensional concave maximizations), and each round $O(K)$ operations.
 (iv) A batch that is not activated consists of IMED rounds only; the leader is always the IMED leader, with no eligibility condition.
 
-
 %======================================================================
-\section{Closest known}\label{sec:closest}
+\section{Results}\label{sec:main}\label{sec:results}
 
-The KNOWN.md of the roadmap BatchedBandits has no reviewed entry yet. The roadmap states the result of this paper in its
-Appendix~A, from the author's manuscript, and its known-result item F1 (the one-batch lower bound, $x=1$) is
-Lemma~\ref{lem:onebatch} below. The related literature, as described in the author's manuscript and completed in the
-revision of 2026-11-14 (static grids, batches chosen for computation, multi-stage tests, doubling tricks):
+This section recalls the classical sequential result, then states the lower bound (Theorem~\ref{thm:lower}), the upper bound attained by
+\HY{} (Theorem~\ref{thm:upper}) and their combination (Theorem~\ref{thm:main}); it ends with the nature of the constants and the scope of
+the results.
 
-\paragraph{Related work.} \emph{Batched bandits with a chosen grid}: Perchet et al.~\cite{PRCS16} for two arms, Gao et al.~\cite{GHRZ19} and Esfandiari et al.~\cite{EKMM21} (to be checked) for
-$K$ arms, Jin et al.~\cite{JTXHXG21} and \cite{JXXG21} (to be checked) for asymptotic optimality with few batches, Karbasi et al.~\cite{KMS21} (to be checked) for Thompson sampling. These algorithms design
-their grid and do not apply to imposed batches. \emph{Batches chosen for computation}: the KLinf-UCB of Agrawal, Juneja and Koolen \cite[Section~3, Algorithm~1]{AJK21}
-pulls the arm of largest index for a batch of $\max\{1,\tilde\varepsilon N\}$ rounds, $N$ being its current count, so its batches are chosen by the algorithm (and random); on
-heavy-tailed classes its constant is optimal up to the factor $1+\tilde\varepsilon$ \cite[Theorem~1 and Corollary~2]{AJK21}. \emph{Imposed batches}: Kalkanli and {\"O}zg{\"u}r
-\cite[Theorem~1]{KO21b} show that Gaussian Thompson sampling has a regret equivalent to
-$\sum_a(2/\Delta_a)\log T$ almost surely when $\limsup_\ell\log B_{\ell+1}/\log t_\ell<1$ (their condition~(6)), which implies $x_\ell\to1$; their constant is optimal for Gaussian rewards of
-unit variance, not for bounded rewards. Their batch ends may be chosen by an adversary at the previous end, as functions of the history \cite[Section~II.A]{KO21b}: random
-ends of this kind are the subject of Open question~\ref{oq:random}. A companion work studies imposed batch sizes with a batched version of IMED and with an algorithm that plans its exploration from a
-\emph{known} grid \cite{P26} (to be checked); here the grid is unknown, and we reprove everything that we use from that work. \emph{Delayed feedback}: batching is a form of delay; the reduction of
-Joulani et al.~\cite[Theorem~6]{JGS13} adds to the regret without delays a term proportional to the largest number of missing feedbacks, here the largest batch, which preserves optimality only for batches of size $o(\log t)$. \emph{Non-parametric
-optimality}: for distributions on $[0,1]$ the relevant divergence is $\Ki$ \cite{BK96} (to be checked), \cite[(2) and Theorem~8]{HT10}; it is attained sequentially by IMED
-\cite{HT15}, KL-UCB \cite{CGMMS13,GHMS22} and non-parametric Thompson sampling \cite{RH20}. \emph{Multi-stage tests}: the mechanism
-of our lower bound is that of Lorden \cite[Theorem~3 and its proof]{L83}: under a density $g$ intermediate between the two hypotheses, the sample size of an asymptotically
-optimal $k$-stage test after $k-1$ stages is forced to its full asymptotic value, so that the last stage is negligible; evaluating the expected sample size at a parameter
-between the two hypotheses goes back to Hoeffding \cite{H60}. Here the stages are
-imposed, and the price of not being able to react inside a stage is the factor $x^2$. \emph{Doubling tricks}: Besson and Kaufmann \cite[Section~6]{BK18} conjecture
-that the exponential doubling trick, which restarts a base algorithm at times $T_i\approx T_0^{b^i}$, never brings the right constant; they show that it multiplies a bound
-$c\log T$ by at most $b^2/(b-1)$ \cite[Remark~8]{BK18}.
+\paragraph{The classical sequential result.} With immediate feedback (batches of size one), the optimal constant is known. For every
+learner that is consistent on $\cP$ in the sense of Definition~\ref{def:learner}, every $\nu\in\cP$ and every sub-optimal arm $a$,
+\[
+\liminf_{T\to\infty}\frac{\E_\nu[\Ng_a(T)]}{\log T}\ \ge\ \frac1{\Ki(\nu_a,\m^\star)}
+\]
+\citep[Proposition~1]{BK96}, as recalled by \citet[(2)]{HT10} with the divergence written as an infimum of $\KL$ over the distributions of larger mean,
+which is $\Ki$ by \citet[Theorem~8]{HT10} (see the remark in Definition~\ref{def:kinf}). This constant is attained with immediate feedback by IMED \citep{HT15}
+and KL-UCB \citep{CGMMS13,GHMS22}. The results below say what it becomes when the feedback arrives at imposed batch ends.
 
-\paragraph{Why Theorem~\ref{thm:main} does not follow from these works.}
-\begin{itemize}
-\item \emph{The classical change of measure} \cite{LR85} (to be checked), \cite[(6)]{GMS19}, applied at the ends of the
-batches, gives Lemma~\ref{lem:onebatch}: the count at $\tl_\ell$ must already pay for the horizon $\tl_{\ell+1}$, hence the
-constant $x/\Ki(\nu_a,\m^\star)$ when $x>1$, not $x^2/\Ki(\nu_a,\m^\star)$. The attempt to reach $x^2$ this way fails because
-this change of measure tilts every reward of $a$; it does not use that the allocation of batch $\ell+1$ is decided without
-the rewards of batch $\ell$. Lemma~\ref{lem:twobatches} tilts only those rewards, towards a distribution of mean exactly
-$\m^\star$.
-\item \emph{Sequential index algorithms} (IMED \cite{HT15}, KL-UCB \cite{CGMMS13,GHMS22}) attain
-$1/\Ki$ when the feedback is immediate. On imposed batches their statistics are frozen at $\tl_\ell$; when $x>1$ a batch
-lasts about $\tl_\ell^{\,x}$ rounds, so a wrong decision taken at $\tl_\ell$ (for instance an optimal arm judged
-sub-optimal) costs a power of $\tl_\ell$. The test of \HY{} makes such mistakes summable after multiplication by the
-batch size, thanks to a strict gain in the deviation inequalities (Lemmas~\ref{lem:single} and~\ref{lem:pair}); its paced
-plan aims at the test that will be made two batches later; its IMED phase and its consistency threshold keep the leader
-and the test reliable when $x=1$ (Subsection~\ref{sec:algo}).
-\item \emph{Batched bandits with a chosen grid} \cite{PRCS16,GHRZ19}, \cite{EKMM21} (to be checked)
-design the batch ends. Their algorithms do not apply when the ends are imposed and revealed only when they happen, and
-their lower bounds (\cite[Theorem~4]{PRCS16}, \cite[Section~3]{GHRZ19}) are minimax bounds in terms of the number of
-batches; they do not give the instance-dependent constant at imposed batch ends.
-\item \emph{Static grids and anytime learners} \cite[Theorem~4]{JTXHXG21}: for one-parameter exponential families (a unique
-best arm, bounded variance), ``for any static grid and constant $c>0$, no anytime algorithm can achieve the asymptotically
-optimal regret [\dots] within $c\log\log T$ batches'', asymptotic optimality meaning there that $\lim_T R_T/\log T$ equals the
-constant $\sum_i\Delta_i/\kl(\mu_i,\mu_1)$ along all rounds $T$. A grid with $\xg_\ell\to x>1$ has about
-$\log\log T/\log x$ batch ends below $T$, so Theorem~4 implies, for these families, that the sequential constant is not
-attained on such a grid: this is a qualitative special case of Theorem~\ref{thm:lower}(ii). It is presented by its authors
-as a confirmation of a conjecture of Besson and Kaufmann \cite[Section~6]{BK18} (stated there for the exponential doubling
-trick). Its proof \cite[Appendix~C]{JTXHXG21} is the one-batch change of measure: inside a gap between two batch ends
-$t_j<t_{j+1}$ it takes two times $N_n<N_{n+1}=N_n^{x'}$ with $x'=e^{1/(4c)}$, changes the mean of one arm only, on the
-observations up to $t_j$, and applies the Bretagnolle--Huber inequality; this gives a count at $t_j$ at least
-$x'(1-\epsilon')/(\kl(\mu_i,\mu_1)+\epsilon')$ times $\log t_j$ along a subsequence of ends, and no quantitative factor is
-stated. With $N_{n+1}$ just below $t_{j+1}$, the same argument gives at most the factor $\log t_{j+1}/\log t_j\to x$, that
-is the bound of Lemma~\ref{lem:onebatch}, not the factor $x^2$. Theorem~\ref{thm:lower}(ii) does not follow, for three
-reasons: the factor $x^2$ needs the change of measure of Lemma~\ref{lem:twobatches}, which tilts only the rewards of $a$ in
-one batch towards a law of mean exactly $\m^\star$, whereas moving the mean of every reward of $a$ cannot give more than
-$x$; Theorem~4 is about exponential families and $\kl$, not about all distributions on $[0,1]$ and $\Ki$ (with any number of
-optimal arms); and it does not give the constant $x^2/\Ki$, which is the content of Theorem~\ref{thm:lower}(ii). It is a
-lower bound only, so Theorem~\ref{thm:upper} does not follow from it either.
-\item \emph{Imposed batches with Thompson sampling} \cite[Theorem~1]{KO21b}: only grids with $x=1$, and the constant
-$2/\Delta_a$ of Gaussian rewards of unit variance, which is not the optimal constant for rewards in $[0,1]$.
-\item \emph{Delayed feedback} \cite[Theorem~6]{JGS13}: the reduction preserves optimality only for batches of size
-$o(\log t)$, so not when $x>1$.
-\item \emph{The companion manuscript} \cite{P26} (to be checked; unpublished; imposed batch sizes, a batched IMED and a plan
-computed from a known grid): every result used from it is proved again here.
-\end{itemize}
-
-%======================================================================
-\section{Proofs}\label{sec:proofs}\label{sec:results}
-
-This section states the two theorems behind Theorem~\ref{thm:main}, explains how their proofs work, and proves Theorem~\ref{thm:main}; Sections~\ref{sec:app-tools}--\ref{sec:app-end} prove the theorems.
-
-\subsection{The two theorems}
-
+\subsection{Lower bound}
 
 \begin{theorem}[lower bound: explore two batches ahead]\label{thm:lower}
 \uses{def:ass-x, def:model, def:learner, def:grid, def:kinf}
-Let the grid satisfy Assumption~\ref{def:ass-x} with $x\in[1,\infty)$, let a batched learner be consistent on $\cP$, let $\nu\in\cP$ and let $a$ be a sub-optimal arm.
-\begin{enumerate}
-\item[(i)] If $x=1$: $\displaystyle\liminf_{\ell\to\infty}\frac{\E_\nu[\Ng_a(\tl_\ell)]}{\log\tl_\ell}\ \ge\ \frac1{\Ki(\nu_a,\m^\star)}$. (This holds on every grid, convergent or not,
+Let the grid be convergent with limit $x\in[1,\infty)$ (Definition~\ref{def:ass-x}), let a batched learner be consistent on $\cP$, let $\nu\in\cP$ and let $a$ be a sub-optimal arm.
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+\item If $x=1$: $\displaystyle\liminf_{\ell\to\infty}\frac{\E_\nu[\Ng_a(\tl_\ell)]}{\log\tl_\ell}\ \ge\ \frac1{\Ki(\nu_a,\m^\star)}$. (This holds on every grid, convergent or not,
 since $\log\tl_{\ell+1}\ge\log\tl_\ell$ in Lemma~\ref{lem:onebatch}.)
-\item[(ii)] If $x>1$: $\displaystyle\limsup_{\ell\to\infty}\frac{\E_\nu[\Ng_a(\tl_\ell)]}{\log\tl_\ell}\ \ge\ \frac{x^2}{\Ki(\nu_a,\m^\star)}$; and if moreover
+\item If $x>1$: $\displaystyle\limsup_{\ell\to\infty}\frac{\E_\nu[\Ng_a(\tl_\ell)]}{\log\tl_\ell}\ \ge\ \frac{x^2}{\Ki(\nu_a,\m^\star)}$; and if moreover
 $\E_\nu[\Ng_a(\tl_\ell)]=O(\log\tl_\ell)$, the same holds with a $\liminf$.
-\item[(iii)] (Regret.) If $x=1$, or if $x>1$ and $\E_\nu[\Ng_c(\tl_\ell)]=O(\log\tl_\ell)$ for every sub-optimal arm $c$,
+\item (Regret.) If $x=1$, or if $x>1$ and $\E_\nu[\Ng_c(\tl_\ell)]=O(\log\tl_\ell)$ for every sub-optimal arm $c$,
 \[
 \liminf_{\ell\to\infty}\frac{\Reg(\tl_\ell)}{\log\tl_\ell}\ \ge\ x^2\sum_{c:\Dg_c>0}\frac{\Dg_c}{\Ki(\nu_c,\m^\star)} .
 \]
 \end{enumerate}
 \end{theorem}
-\noindent(see proof in Section~\ref{sec:app-lower}.)
+\noindent(see proof in Appendix~\ref{sec:app-lower}.)
 
 \noindent For $x>1$, the bound $x^2/\Ki$ is $x$ times larger than the bound $x/\Ki$ that the classical change of measure gives at the ends of the batches (the
 count at $\tl_\ell$ must cover the horizon $\tl_{\ell+1}$, Lemma~\ref{lem:onebatch}). The factor $x^2$ comes from a sharper change of measure, in which only the rewards of
 $a$ in batch $\ell$ are tilted towards a distribution of mean exactly $\m^\star$; the learner cannot tell whether $a$ is barely sub-optimal or barely optimal, and has
 to allocate batch $\ell+1$, of size $\approx\tl_{\ell+1}$, without being able to react inside it.
 
+\subsection{Upper bound}
 
 \begin{theorem}[upper bound: HY attains $x^2/\Ki$ without knowing the grid]\label{thm:upper}
 \uses{def:ass-x, def:model, def:hy, def:learner, def:grid, def:kinf}
-Let the grid satisfy Assumption~\ref{def:ass-x} with $x\in[1,\infty)$, let $\nu\in\cP$ and let $a$ be a sub-optimal arm. Then \HY{} with the default parameters,
+Let the grid be convergent with limit $x\in[1,\infty)$ (Definition~\ref{def:ass-x}), let $\nu\in\cP$ and let $a$ be a sub-optimal arm. Then \HY{} with the default parameters,
 \HY$(\wz,\beta,\ody,\thv,\gam)$, is consistent on $\cP$ and
 \[
 \lim_{\ell\to\infty}\frac{\E[\Ng_a(\tl_\ell)]}{\log\tl_\ell}=\frac{x^2}{\Ki(\nu_a,\m^\star)},\qquad
@@ -650,16 +627,29 @@ The same holds for every $\wz\ge0$ and every $\beta\ge2$, the other parameters b
 \noindent(see proof in Subsection~\ref{sec:app-proofupper}; it combines a non-asymptotic bound for $x>1$, Proposition~\ref{prop:dyA}, and one for $x=1$,
 Proposition~\ref{prop:fixedC}.)
 
+\subsection{Optimality}
 
-\subsection{Proof of the main result}
-
+\begin{theorem}[the optimal constant is $x^2/\Ki$, attained without knowing the grid]\label{thm:main}
+\uses{def:model, def:grid, def:learner, def:kinf, def:hy, def:M0}
+Let $x\in[1,\infty)$, $\nu\in\cP$ and $a$ a sub-optimal arm. On every grid with $\xg_\ell\to x$:
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item every consistent batched learner, even one that knows the grid, satisfies $\limsup_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell\ge x^2/\Ki(\nu_a,\m^\star)$, and the same
+for the $\liminf$ if $x=1$ or if its counts are logarithmic at the ends of the batches;
+\item the single learner \HY$(\wz,\beta,\ody,\thv,\gam)$ of $\Mz$, which knows neither the grid nor the instance, is consistent and has
+$\lim_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell=x^2/\Ki(\nu_a,\m^\star)$.
+\end{enumerate}
+Hence $x^2/\Ki(\nu_a,\m^\star)$ is the optimal constant at the ends of the batches, for every $x\ge1$, and one learner attains it simultaneously on every grid with
+$\xg_\ell\to x$, $x=1$ included (the remainder terms of Theorem~\ref{thm:upper} depend on the grid). The same holds for the regret, with the constant
+$C_x:=x^2\sum_{c:\Dg_c>0}\Dg_c/\Ki(\nu_c,\m^\star)$: every consistent batched learner has $\limsup_\ell\Reg(\tl_\ell)/\log\tl_\ell\ge C_x$, and \HY{} has
+$\lim_\ell\Reg(\tl_\ell)/\log\tl_\ell=C_x$.
+\end{theorem}
 \begin{proof}[Proof of Theorem~\ref{thm:main}]
 \proves{thm:main}
 \uses{thm:lower, thm:upper, def:learner, def:grid, def:model, def:hy}
 \stp{(a), (b)}{counts}(a) is Theorem~\ref{thm:lower}, and (b) is Theorem~\ref{thm:upper}.
 
 \stp2{regret of a consistent learner}Two cases.
-\begin{itemize}
+\begin{itemize}[leftmargin=*,nosep]
 \item If some sub-optimal arm $c$ has $\limsup_\ell\E[\Ng_c(\tl_\ell)]/\log\tl_\ell=\infty$, then
 $\limsup_\ell\Reg(\tl_\ell)/\log\tl_\ell\ge\Dg_c\limsup_\ell\E[\Ng_c(\tl_\ell)]/\log\tl_\ell=\infty$.
 \item Otherwise every sub-optimal arm has $\E[\Ng_c(\tl_\ell)]=O(\log\tl_\ell)$, and Theorem~\ref{thm:lower}(iii) gives $\liminf_\ell\Reg(\tl_\ell)/\log\tl_\ell\ge C_x$.
@@ -667,10 +657,51 @@ $\limsup_\ell\Reg(\tl_\ell)/\log\tl_\ell\ge\Dg_c\limsup_\ell\E[\Ng_c(\tl_\ell)]/
 \stp3{regret of \HY}The limit is Theorem~\ref{thm:upper}.
 \end{proof}
 
+\subsection{Discussion}\label{sec:discussion}
 
-\subsection{How the proofs work}\label{sec:how}
+\begin{remark}[constants]
+The first-order constant $x^2/\Ki(\nu_a,\m^\star)$ is explicit. The remainder terms behind the limits do not depend on the rank $\ell$; they depend on the instance, on the
+grid and on an accuracy $\varepsilon$, and they are astronomically large: the theorems describe the first-order behaviour only. Since they depend on the grid, the
+convergence is not uniform over the grids with $\xg_\ell\to x$. The remainders are \emph{existential}: they are written as formulas, but these formulas go through ranks
+defined as ``the smallest rank from which a condition holds'', whose existence is proved but which are not computed (Section~\ref{sec:overview} says where they appear).
+\end{remark}
 
-\paragraph{The lower bound.} For $x=1$ it is the classical change of measure \cite{LR85} (to be checked), \cite[(6)]{GMS19}, applied to the observations available at the
+\begin{remark}[scope: what is not proved here]
+For $x=1$ the proof gives a non-asymptotic bound at every batch end, with an existential remainder. For $x>1$ it gives only a bound on the $\limsup$, for \HY{} with the
+default margins $\ody_\ell\to0$, which is what Theorem~\ref{thm:upper} needs; a non-asymptotic bound for $x>1$, for instance for a constant margin $\om$, is not proved here.
+The criterion is the count at the ends of the batches: when $x>1$ the proof also bounds the $\limsup$ of $\E[\Ng_a(t)]/\log t$ over all rounds, but neither the matching
+$\liminf$ over all rounds nor the case $x=1$ over all rounds is proved here. Grids for which $\xg_\ell$ does not converge are not covered, and for $x>1$ the $\liminf$ form
+of the lower bound needs logarithmic counts (Open question~\ref{oq:liminf}).
+\end{remark}
+
+\paragraph{Interpretation.} \emph{On the assumption.} The only assumption on the grid is the convergence of $\xg_\ell$; its limit $x$ is not known to \HY, and bounded batch
+sizes, batches of size one and short batches alternating with long ones are allowed. \emph{On the distributions.} No parametric assumption is made: the results hold for every
+instance of $\cP$, that is, for all distributions on $[0,1]$ with $\m^\star<1$, with any number of optimal arms. \emph{On the information.} The lower bound holds even for learners that know the grid, and \HY{}
+knows nothing about it: knowing the grid does not improve the first-order constant at the ends of the batches. \emph{Comparison.} For $x>1$ the optimal constant is $x$ times
+the bound of the classical change of measure and $x^2$ times the sequential constant $1/\Ki(\nu_a,\m^\star)$ (Table~\ref{tab:related}); for $x=1$ the sequential constant
+is attained, whatever the batch sizes.
+
+\subsection{Formal verification}\label{sec:lean}
+
+The statements of this paper are written to be translated into the proof assistant Lean~4, and a second build of the same source lists, for every
+proof, the definitions and results that it uses. When the Lean translation of a statement, compared with the printed statement by a referee, has been proved
+in Lean, the statement is marked in the PDF by a green box ``LEAN APPROVED'': the box certifies that the statement as printed is proved formally, not that the
+printed proof is the formal one. A statement without the box is proved on paper only, in the appendices, and no claim of this paper rests on a formal proof
+that the reader cannot check.
+
+%======================================================================
+\section{How the proofs work}\label{sec:overview}\label{sec:how}\label{sec:proofs}
+
+\paragraph{Structure.} Theorem~\ref{thm:main} follows from Theorems~\ref{thm:lower} and~\ref{thm:upper} (its proof is given after its statement).
+Theorem~\ref{thm:lower} is proved in Appendix~\ref{sec:app-lower}. Theorem~\ref{thm:upper} is proved in Appendix~\ref{sec:app-end} from two propositions and the lower bound:
+for $x>1$, Proposition~\ref{prop:dyA} gives $\limsup_t\E[\Ng_a(t)]/\log t\le x^2/\da$ for \HY{} with the dyadic margins; for $x=1$, Proposition~\ref{prop:fixedC} gives, for
+every accuracy $\varepsilon\in(0,\ez]$ and every $L\ge1$, $\E[\Ng_a(\tl_L)]\le\Lg_L/\da+\Co\,\varepsilon\Lg_L+\RHo(\varepsilon)$ with a remainder $\RHo(\varepsilon)$
+independent of $L$, and a sequence $\varepsilon_L\to0$ (Lemma~\ref{lem:diag}) concludes. Their remainders are the existential ones of the remark on constants (the ranks
+$\lfive(\varepsilon)$ of Proposition~\ref{prop:fixedC} and $\lW$ of Lemma~\ref{lem:W}, for instance). Appendix~\ref{sec:app-tools} holds the tools,
+Appendix~\ref{sec:app-det} the deterministic properties of \HY{} used by both cases, and Appendices~\ref{sec:app-xsup} and~\ref{sec:app-xone} open with a graph of their
+lemmas.
+
+\paragraph{The lower bound.} For $x=1$ it is the classical change of measure \citep{LR85}, \citep[(6)]{GMS19}, applied to the observations available at the
 end of batch $\ell+1$: they contain the actions of batch $\ell+1$ but only the rewards of the first $\ell$ batches, so that the count $\Ng_a(\tl_\ell)$ must already pay for
 the horizon $\tl_{\ell+1}$ (Lemma~\ref{lem:onebatch}). For $x>1$, consider the histories in which the rewards of $a$ in batch $\ell$ look like a distribution $G$ of mean
 exactly $\m^\star$ with $\KL(\nu_a,G)\approx\da$ (a \emph{boundary tilt}, Lemma~\ref{lem:tilts}). The instances in which $\nu_a$ is replaced by $(1-s)G+s\delta_0$ ($a$ barely
@@ -698,7 +729,7 @@ gives many ``high'' batches, whose leaders have $\tl^{1-\dl}$ observations and a
 was explored at the level $\approx\log\tl_j$ in each high batch, which makes the bad events of the decomposition rare. A paced phase does not satisfy (W2) in general.
 \HY{} does, from some rank on, because an activated batch first runs $\approx\tl_\ell^{1+\thv_\ell}$ IMED rounds: the arm that gets most of them certifies a water level above
 $\log\tl_\ell$, above the logarithm of every count at the start of the batch (Lemma~\ref{lem:W}, \emph{the IMED phase lifts the water level}). So the whole water-level machinery holds for \HY{}
-(Section~\ref{sec:app-water}), and gives an accurate leader \emph{and} an optimal arm with at least $\frac12\Ug$ observations (Lemma~\ref{lem:optW}), hence an accurate test
+(Appendix~\ref{sec:app-water}), and gives an accurate leader \emph{and} an optimal arm with at least $\frac12\Ug$ observations (Lemma~\ref{lem:optW}), hence an accurate test
 level. In a paced phase a rejected sub-optimal arm then stays below $K+(1+\om_\ell)\yg_\ell\log t/\Ki(\hnu_a,\m^\star-2\varepsilon)$, the bound of IMED up to $(1+\om_\ell)\yg_\ell\to1$.
 
 \paragraph{The consistency threshold.} The remaining cost is a net $\approx\Lg_\ell^\beta$ when $a$ is ambiguous at the start of an activated batch. With a threshold
@@ -708,21 +739,173 @@ $a$ is rejected as soon as $\Kh_\ell(a)\ge(1-\gam_\ell/2)\Kh_{\ell-1}(a)$. The t
 are $\gam_\ell$-accurate, which fails with probability $e^{-c\sqrt{\Lg_\ell}/\log^2\Lg_\ell}$ for $\gam_\ell=\Lg_\ell^{-1/4}$ (Lemma~\ref{lem:amb}, \emph{consistency test}). Finally, activated batches are
 sparse on the logarithmic scale (Lemma~\ref{lem:sparse}, \emph{sparse activations}), which makes the nets summable.
 
+\paragraph{Where the difficulty lies.} Three steps carry most of the difficulty. In the lower bound, the order of the limits in Lemma~\ref{lem:twobatches} ($\ell\to\infty$,
+then $b\to\infty$, then $C\to\infty$, with a tilt that depends on $C$), and the use of the two instances where $a$ is barely sub-optimal or barely optimal instead of
+$\nu$ itself. For $x=1$, the water level of IMED rounds (Lemma~\ref{lem:W}) and the chain argument (Lemmas~\ref{lem:levelC}, \ref{lem:fewC} and~\ref{lem:optW}), which must
+hold from some rank on for every grid with $\xg_\ell\to1$, including short batches alternating with long ones. And the consistency test (Lemma~\ref{lem:amb}), whose
+failure probability is summable only thanks to the sparsity of the activated batches (Lemma~\ref{lem:sparse}).
+
+%======================================================================
+\section{Examples and special cases}\label{sec:examples}\label{sec:sanity}
+
+This section computes the constant on an explicit instance, checks the results on special and boundary cases, and says why we give no
+simulations.
+
+\paragraph{An explicit instance.} Let $K=2$, $\nu_1:=\Ber(1/2)$ and $\nu_2:=\Ber(3/10)$, so that $\nu\in\cP$ ($\m^\star=1/2<1$) and $a=2$. For $0<p<\mu<1$ the dual
+formula gives $\Ki(\Ber(p),\mu)=\kl(p,\mu)$ (the maximizer is $\lambda^\star=(\mu-p)/(\mu(1-\mu))\in\Lset{\mu}$, where $1-\lambda^\star(1-\mu)=p/\mu$ and
+$1+\lambda^\star\mu=(1-p)/(1-\mu)$), so $\da=\kl(0.3,0.5)\approx0.0823$.
+\begin{itemize}[leftmargin=*,nosep]
+\item On the doubly exponential grid $\tl_\ell:=2^{2^\ell}$ ($\tl_1=4\ge\max(2,K)$, and $\xg_\ell=2$ for $\ell\ge2$), Theorem~\ref{thm:main} gives
+$\E[\Ng_2(\tl_\ell)]\sim4\log\tl_\ell/\da\approx48.6\log\tl_\ell$ for \HY, and no consistent batched learner has a smaller $\limsup$. The one-batch change of measure
+(Lemma~\ref{lem:onebatch}) alone would only force $2\log\tl_\ell/\da\approx24.3\log\tl_\ell$.
+\item On the geometric grid $\tl_\ell:=2^{\ell+1}$ ($\xg_\ell=(\ell+1)/\ell\to1$) it gives $\E[\Ng_2(\tl_\ell)]\sim\log\tl_\ell/\da\approx12.2\log\tl_\ell$, the sequential
+constant.
+\end{itemize}
+All the hypotheses hold at once: rewards in $[0,1]$, $\m^\star<1$, $\Bg_1\ge K$, $\xg_\ell\to x$.
+
+\paragraph{Batches of size one: HY is IMED.} Take $\Bg_1:=\max(2,K)$ and $\Bg_\ell:=1$ for $\ell\ge2$. Then $\tl_\ell=\Bg_1+\ell-1$ and $\xg_\ell\to1$, and a batched
+learner observes every reward before the next round: the setting is the sequential one. Theorem~\ref{thm:main} then gives the constant $1/\Ki(\nu_a,\m^\star)$, the
+sequential optimal constant for distributions on $[0,1]$ (\citealp[Proposition~1]{BK96}, as recalled by \citealp[(2)]{HT10}; with the dual formula of
+\citealp[Theorem~8]{HT10}). On this grid no batch of \HY{} is activated:
+$\sA_\ell=\lfloor\tl_\ell^{1+\thv_\ell}\rfloor\ge\tl_\ell+1=\tl_{\ell+1}$, since $\tl^{1+\vartheta}\ge2t\ge t+1$ when $\tl_\ell<e^e$ ($\vartheta=1$), and
+$\tl^{1+\vartheta}=t\,e^{\log t/\log\log t}\ge e\,t\ge t+1$ when $\tl_\ell\ge e^e$. So every round is an IMED round with statistics refreshed at every round: \HY{} is IMED
+\citep{HT15}, with the weight $\yg_\ell=\xg_\ell^2\to1$ on the logarithm and the pseudo-observation of weight $\wz$.
+
+\paragraph{The constant is finite and positive.} By Lemma~\ref{lem:kinf}(i) and~(iv) (with $q:=\m_a$), $\Dg_a^2/8\le\da\le\kap(\m^\star)<\infty$ for every sub-optimal arm
+$a$ of an instance of $\cP$.
+
+\paragraph{Boundary of the class.} If $\m^\star=1$, then $\Ki(\nu_a,1)=+\infty$ for every arm of mean smaller than $1$, and the first-order constant would be $0$: such
+instances are excluded from $\cP$.
+
+\paragraph{Several optimal arms and ties.} $\cP$ allows several optimal arms, and the tie rules of \HY{} are arbitrary; the proofs use neither a unique optimal arm nor a
+particular tie rule (Section~\ref{sec:algo}, Properties~(ii)).
+
+\paragraph{Every arm is observed.} Batch $1$ has $\Bg_1\ge K$ rounds, so every count is at least $1$ at every end (Definition~\ref{def:hy-vocab}): no $\log0$ and no empty
+empirical distribution occurs.
+
+\paragraph{Why no numerical experiments.} \HY{} can be run, but a run of feasible length would not illustrate the theorems, and we give no
+simulations. The theorems describe the limit of $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell$ along the batch ends, behind remainder terms that are existential
+and astronomically large (the remark on constants in Subsection~\ref{sec:discussion}): a finite run cannot separate the constant from them, and
+must not be read as evidence for it. When $x>1$ the grid is doubly exponential: on the grid $\tl_\ell=2^{2^\ell}$ above, the ends below $10^9$
+are $4$, $16$, $256$ and $65536$, too few for a limit along the ends. When $x=1$, on the geometric grid $\tl_\ell=2^{\ell+1}$ above, no batch is
+activated, since $\tl_\ell^{1+\thv_\ell}\ge2\tl_\ell=\tl_{\ell+1}$ by the computation of the paragraph on batches of size one: \HY{} only plays IMED
+rounds with the statistics of the last end, and a run would show a batched IMED, not the paced phase and the consistency threshold, which act only
+in activated batches. The lower bound concerns every consistent learner and cannot be simulated. What can be computed is the constant itself on
+explicit instances, as above.
+
+%======================================================================
+\section{Conclusion and open questions}\label{sec:open}
+
+We have shown that $x^2/\Ki(\nu_a,\m^\star)$ is the optimal first-order constant of the counts of a sub-optimal arm at imposed batch ends, for
+every grid with $\xg_\ell\to x\in[1,\infty)$ and every instance of $\cP$, and that the single algorithm \HY{} attains it without knowing the grid
+(Theorem~\ref{thm:main}). The limitations are listed in the scope remark of Subsection~\ref{sec:discussion}: existential remainders, no
+non-asymptotic bound when $x>1$, the criterion at the batch ends only, and, when $x>1$, a $\liminf$ form of the lower bound that needs
+logarithmic counts. The first two questions below come from these limitations; the third asks what becomes of the result when the batch
+ends are random.
+
+\begin{openquestion}[explicit remainders]\label{oq:remainders}
+Is there a learner of $\Mz$ such that, for every $x\in[1,\infty)$, every grid with $\xg_\ell\to x$, every $\nu\in\cP$ and every
+sub-optimal arm $a$, and for every $\ell$,
+$\E[\Ng_a(\tl_\ell)]\le\frac{x^2}{\Ki(\nu_a,\m^\star)}\log\tl_\ell+C(\nu)\,(\log\tl_\ell)^{\alpha}+r_\ell$, with an exponent $\alpha<1$,
+a constant $C(\nu)$ polynomial in $1/\Ki(\nu_a,\m^\star)$, $1/(1-\m^\star)$ and $K$, and a term $r_\ell=o(\log\tl_\ell)$ given
+explicitly by the grid (through $\xg_\ell-x$)?
+\end{openquestion}
+\extends{D1, D2}
+\noindent\emph{Why it is open.} The remainders of \HY{} come from ranks after which the margins, the nets and the
+deviation inequalities with a gain take effect; they are existential and astronomical.
+
+\begin{openquestion}[the liminf without logarithmic counts]\label{oq:liminf}
+Let $x>1$, a grid with $\xg_\ell\to x$, a batched learner consistent on $\cP$, $\nu\in\cP$ and a sub-optimal arm $a$. Does
+$\liminf_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell\ge x^2/\Ki(\nu_a,\m^\star)$ hold without the assumption
+$\E_\nu[\Ng_a(\tl_\ell)]=O(\log\tl_\ell)$ of Theorem~\ref{thm:lower}(ii), or is there a consistent learner that violates it?
+\end{openquestion}
+\extends{F4}
+\noindent\emph{Why it is open.} Lemma~\ref{lem:twobatches} needs the number of pulls of $a$ in batch $\ell$ to be tight,
+which is where the logarithmic counts are used.
+
+\begin{openquestion}[random batch ends]\label{oq:random}
+Let the batch ends $\tl_1<\tl_2<\cdots$ be random, independent of the rewards and of the learner's randomization, with
+$\log\tl_\ell/\log\tl_{\ell-1}\to x\in[1,\infty)$ almost surely, each end being revealed when it happens. Is
+$x^2/\Ki(\nu_a,\m^\star)$ still the optimal first-order constant of $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell$: a lower bound for every
+consistent batched learner that knows the law of the grid, attained by \HY?
+\end{openquestion}
+\noindent\emph{Why it is open.} Theorem~\ref{thm:lower} fixes a deterministic grid, and the proof of
+Theorem~\ref{thm:upper} uses deterministic ranks of the grid; with random ends both must be conditioned on the grid, and a
+learner that knows the law of the grid may anticipate the end of a batch. Batch ends chosen by an adversary at the previous end, as in \citep[Section~II.A]{KO21b},
+are a further step.
+
+\bibliographystyle{plainnat}
+% refs: the works cited; ../../papers/library: the library's papers (generated; keys INC-P<nnn>).
+\bibliography{refs,../../papers/library}
+
+%======================================================================
+\appendix
+
+\section{Results from the literature}\label{sec:cited}
+
+The proofs use two results of the literature, stated below in the notation of this paper; each is preceded by the correspondence with the notation of its source. Standard facts are used by name, without a node: Hoeffding's inequality \citep{H63}
+(Lemma~\ref{lem:hoeffding}), Markov's inequality, the chain rule for the Kullback--Leibler divergence \citep[Lemma~15.1]{LS} and the construction of a bandit from reward
+stacks \citep[Section~4.6]{LS}.
+
+\paragraph{The primal formula of $\mathcal K_{\inf}$.} \citet{HT10} write $\mathcal A$ for the set of distributions on $[0,1]$, $D(F\|G)$ for $\KL(F,G)$,
+$D_{\min}(F,\mu)$ for the infimum on the left below, and $D'_{\min}(F,\mu)$ for the maximum on the right, with $\nu$ for the dual variable that we call $\lambda$.
+
+\begin{lemma}[{From \citet[Theorem~8]{HT10}, primal formula}]\label{cite:honda2010asymptotically-primal}
+\uses{def:kinf}
+% Verbatim (literature/notes/HT10.md): with A = {G : supp(G) in [0,1]}, D_min(F,mu;A) = inf_{G in A: E(G) >= mu} D(F||G),
+% H(nu;F,mu) = E_F[log(1-(X-mu)nu)] and D'_min(F,mu) = max_{0 <= nu <= 1/(1-mu)} H(nu;F,mu):
+% "D_min(F,mu) = D'_min(F,mu) holds for all F in A and mu < 1."
+For every distribution $F$ on $[0,1]$ and every $\mu<1$,
+\[
+\inf\big\{\KL(F,G):\ G\text{ distribution on }[0,1],\ \E_G[X]\ge\mu\big\}\ =\ \max_{0\le\lambda\le\frac1{1-\mu}}\E_F\big[\log\big(1-\lambda(X-\mu)\big)\big].
+\]
+\end{lemma}
+
+\noindent For the levels $\mu\in[0,1)$ used in this paper, the right side is $\Ki(F,\mu)$:
+
+\begin{lemma}[the primal formula in the notation of Definition~\ref{def:kinf}]\label{lem:primal}
+\uses{def:kinf}
+For every distribution $G$ on $[0,1]$ and every $\mu\in[0,1)$,
+\[
+\Ki(G,\mu)\ =\ \inf\big\{\KL(G,H):\ H\text{ distribution on }[0,1],\ \E_H[X]\ge\mu\big\}.
+\]
+\end{lemma}
+\begin{proof}
+\uses{cite:honda2010asymptotically-primal, def:kinf}
+By Lemma~\ref{cite:honda2010asymptotically-primal} with $F:=G$, the infimum equals the maximum over the closed interval $[0,\frac1{1-\mu}]$ of
+$\lambda\mapsto\E_G[\log(1-\lambda(X-\mu))]$. This function is concave on $[0,\frac1{1-\mu}]$, so its value at the right end is at most its limit from the left, and the
+maximum over the closed interval equals the supremum over $\Lset{\mu}=[0,\frac1{1-\mu})$, which is $\Ki(G,\mu)$ by Definition~\ref{def:kinf}.
+\end{proof}
+\noindent The strict form used in Lemma~\ref{lem:onebatch} (mean $>\mu$) follows from Lemma~\ref{lem:primal} at the level $\mu+\epsilon$ and from
+Lemma~\ref{lem:kinf}(v); it is derived in Step~1 of that proof. (Lemma~2 of \citet{HT10} states the strict form, but as printed only for $\mu<0$; it is not used here.)
+
+\paragraph{Data processing.} \citet[Lemma~1]{GMS19} use the same notation, except that the domain of $Z$ is printed $\Omega$ where $\Gamma$ is
+meant; $\kl$ is the Bernoulli divergence of Section~\ref{sec:setting}.
+
+\begin{lemma}[{From \citet[Lemma~1]{GMS19}, data processing}]\label{cite:garivier2019explore-dataprocessing}
+% Verbatim (literature/notes/GMS19.md): "Consider a measurable space (Gamma, G) equipped with two distributions P_1 and P_2, and any
+% G-measurable random variable Z : Omega -> [0,1]. We denote respectively by E_1 and E_2 the expectations under P_1 and P_2. Then,
+% KL(P_1, P_2) >= kl(E_1[Z], E_2[Z])."
+Let $(\Gamma,\mathcal G)$ be a measurable space with two probability distributions $\PP_1$ and $\PP_2$, with expectations $\E_1$ and $\E_2$, and let
+$Z:\Gamma\to[0,1]$ be $\mathcal G$-measurable. Then $\KL(\PP_1,\PP_2)\ge\kl(\E_1[Z],\E_2[Z])$.
+\end{lemma}
+\noindent It is used with $(\Gamma,\mathcal G)$ the space of an observation $O$, $\PP_1=P^O$ and $\PP_2=Q^O$: if $Z\in[0,1]$ is a measurable function of $O$, then
+$\KL(P^O,Q^O)\ge\kl(\E_P[Z],\E_Q[Z])$.
 
 %======================================================================
 \section{Tools}\label{sec:app-tools}
 
-\par\smallskip
-\Plan this section gathers the tools used by the proofs.
+\begin{setgoal}
+\Plan This appendix gathers the tools used by the proofs.
 \begin{itemize}
-\item Properties of $\Ki$ (Lemma~\ref{lem:kinf}, classical \cite{HT10,GHMS22}; we prove them from the dual formula, the only formula used in the
+\item Properties of $\Ki$ (Lemma~\ref{lem:kinf}, classical: \citealp{HT10,GHMS22}; we prove them from the dual formula, the only formula used in the
 upper bound) and of the pseudo-observation (Lemma~\ref{lem:pseudo}).
 \item Deviation inequalities: Hoeffding, deviations of $n\Ki$ \emph{with a gain} (Lemmas~\ref{lem:single}, \ref{lem:pair}), and explicit deviations of the empirical $\Ki$
-(Lemmas~\ref{lem:lowerdev}, \ref{lem:upperdev}). They are variants of known results \cite{CGMMS13,GHMS22,HT15} with the constants that we need; we
+(Lemmas~\ref{lem:lowerdev}, \ref{lem:upperdev}). They are variants of known results \citep{CGMMS13,GHMS22,HT15} with the constants that we need; we
 prove them.
 \item Reward stacks (Lemma~\ref{lem:stacks}), and elementary sums and sequences (Subsection~\ref{sec:app-sums}).
 \end{itemize}
-\par\smallskip
+\end{setgoal}
 
 \subsection{Properties of \texorpdfstring{$\mathcal K_{\inf}$}{Kinf}}
 
@@ -735,7 +918,7 @@ Let $G$ be a distribution on $[0,1]$ with mean $p$, and $\mu\in[0,1)$.
 \item[(iii)] $\mu\mapsto\Ki(G,\mu)$ is non-decreasing on $[0,1)$.
 \item[(iv)] If $p\le q<\mu$, then $\Ki(G,\mu)\ge(\mu-q)^2/8$.
 \item[(v)] If $0<\varepsilon\le\mu$, then $\Ki(G,\mu-\varepsilon)\ge\Ki(G,\mu)-\varepsilon/(1-\mu)$.
-\item[(vi)] (scaling) If $\lambda\in\Lset{\mu}$, $\tau\in(0,1]$ and $y\in[0,1]$, then $\log\big(1-\tau\lambda(y-\mu)\big)\ge\log\tau+\log\big(1-\lambda(y-\mu)\big)$.
+\item[(vi)] (scaling) If $\lambda\in\Lset{\mu}$, $\varpi\in(0,1]$ and $y\in[0,1]$, then $\log\big(1-\varpi\lambda(y-\mu)\big)\ge\log\varpi+\log\big(1-\lambda(y-\mu)\big)$.
 \end{enumerate}
 \end{lemma}
 \role{used throughout: monotonicity in the level (iii), quadratic lower bound (iv), shift of the level (v), scaling (vi).}
@@ -748,7 +931,7 @@ Let $G$ be a distribution on $[0,1]$ of mean $p$, $N\ge1$ an integer, $\tilde G:
 (i) $\Ki(\tilde G,\mu)\ge\Ki(G,\mu)$; (ii) $N\Ki(\tilde G,\mu)\le N\Ki(G,\mu)+\wz\kap(\mu)$; (iii) $p-\frac{\wz}{N+\wz}\le\tilde p\le p$.
 In particular, for $c$ with $\Ng_c(\tl_\ell)\ge\frac12\Ug_\ell$, $\tm_c(\tl_\ell)\ge\hm_c(\tl_\ell)-2\wz/\Ug_\ell$.
 \end{lemma}
-\role{compares the statistics of \HY{} (with the pseudo-observation) with the empirical ones, in Sections~\ref{sec:app-xsup} and~\ref{sec:app-xone}.}
+\role{compares the statistics of \HY{} (with the pseudo-observation) with the empirical ones, in Appendices~\ref{sec:app-xsup} and~\ref{sec:app-xone}.}
 \noindent(see proof in Subsection~\ref{sec:pf-lem:pseudo}.)
 
 
@@ -836,7 +1019,7 @@ $\PP\big(\Ki(\hnu_N,\mu)\le\Ki(\nu,\mu)-\varepsilon'\big)\le e^{-\rho'N}$.
 
 \begin{lemma}[upper deviation of the empirical $\Ki$]\label{lem:upperdev}
 \uses{def:kinf, def:stacks}
-With the notation of Lemma~\ref{lem:lowerdev}, let $\tau:=e^{-\varepsilon'/4}$ and $n_{\mathrm g}:=\lceil\frac8{\varepsilon'(1-\tau)(1-\mu)}\rceil+1$. Then for every $n\ge1$,
+With the notation of Lemma~\ref{lem:lowerdev}, let $\varpi:=e^{-\varepsilon'/4}$ and $n_{\mathrm g}:=\lceil\frac8{\varepsilon'(1-\varpi)(1-\mu)}\rceil+1$. Then for every $n\ge1$,
 $\PP\big(\Ki(\hnu_n,\mu)\ge\Ki(\nu,\mu)+\varepsilon'\big)\le n_{\mathrm g}e^{-\rho'n}$.
 \end{lemma}
 \role{the empirical divergence of $a$ is not too large: Lemma~\ref{lem:probasA}(c) and the event $\KC$ of Lemma~\ref{lem:amb}.}
@@ -854,7 +1037,7 @@ independent internal randomization $U$, uniform on $[0,1]^{\mathbb N}$, so that,
 measurable function of $U$, of the stacks of the arms $c\ne a$ and of $\Xs_{a,1},\dots,\Xs_{a,\Ng_a(\tl_\ell)}$, and the event $\{\Ng_a(\tl_\ell)=n\}$ only depends on $U$, on the
 stacks of the arms $c\ne a$ and on $\Xs_{a,1},\dots,\Xs_{a,n}$; the counts have the same law as in the original run.
 \end{lemma}
-\role{lets every probability be computed on independent i.i.d.\ stacks; (iii) carries the change of measure of Section~\ref{sec:app-lower}.}
+\role{lets every probability be computed on independent i.i.d.\ stacks; (iii) carries the change of measure of Appendix~\ref{sec:app-lower}.}
 \noindent(see proof in Subsection~\ref{sec:pf-lem:stacks}.)
 
 
@@ -908,9 +1091,9 @@ some $j\in S$ has $w_jD_j\ge(1-\delta')Y$, or $w_{j'+1}\ge(1-\delta')^{-(|S|-1)}
 \noindent(see proof in Subsection~\ref{sec:pf-lem:chain}.)
 
 \subsection{Proof of Lemma~\ref{lem:kinf}}\label{sec:pf-lem:kinf}
-\par\smallskip
+\begin{setgoal}
 \Setting $G$ on $[0,1]$ with mean $p$, $\mu\in[0,1)$; every item uses only the dual formula $\Ki(G,\mu)=\sup_{\lambda\in\Lset{\mu}}\E_G[\log(1-\lambda(X-\mu))]$.
-\par\smallskip
+\end{setgoal}
 \begin{proof}
 \proves{lem:kinf}
 \uses{def:kinf}
@@ -944,7 +1127,7 @@ $u:=-\lambda_0(X-\mu)$, so $|u|\le\frac14$. Then
 since $\alpha\lambda\varepsilon\le\frac\varepsilon{1-\mu+\varepsilon}=1-\alpha$. Hence $\Ki(G,\mu-\varepsilon)\ge\E\log(1-\lambda(X-\mu))+\log\alpha$, and
 $\log\alpha=-\log(1+\frac\varepsilon{1-\mu})\ge-\frac\varepsilon{1-\mu}$. Take the supremum over $\lambda$.
 
-\stp{(vi)}{scaling}$1-\tau\lambda(y-\mu)-\tau\big(1-\lambda(y-\mu)\big)=1-\tau\ge0$, and both sides are positive; take logarithms.
+\stp{(vi)}{scaling}$1-\varpi\lambda(y-\mu)-\varpi\big(1-\lambda(y-\mu)\big)=1-\varpi\ge0$, and both sides are positive; take logarithms.
 \end{proof}
 
 \subsection{Proof of Lemma~\ref{lem:pseudo}}\label{sec:pf-lem:pseudo}
@@ -968,17 +1151,17 @@ linearity,
 \subsection{Proof of Lemma~\ref{lem:hoeffding}}\label{sec:pf-lem:hoeffding}
 \begin{proof}
 \proves{lem:hoeffding}
-(a) is Hoeffding~\cite{H63} (to be checked). (b) By (a) with $y=n\rho$, $\PP(|S_n/n-\mu_Z|>\rho)\le2e^{-2\rho^2n}$. A union bound over the integers $n\ge\lceil u\rceil$ gives
+(a) is Hoeffding's inequality~\citep{H63}. (b) By (a) with $y=n\rho$, $\PP(|S_n/n-\mu_Z|>\rho)\le2e^{-2\rho^2n}$. A union bound over the integers $n\ge\lceil u\rceil$ gives
 \[
 2\sum_{n\ge\lceil u\rceil}e^{-2\rho^2n}\ =\ \frac{2e^{-2\rho^2\lceil u\rceil}}{1-e^{-2\rho^2}}\ \le\ \frac{2e^{-2\rho^2u}}{1-e^{-2\rho^2}} .
 \]
 \end{proof}
 
 \subsection{Proof of Lemma~\ref{lem:grid}}\label{sec:pf-lem:grid}
-\par\smallskip
+\begin{setgoal}
 \Setting $n\ge1$, $z\ge2$, and $n\Ki(\widehat G,r)\ge z$.
 \Goal a grid point $\lamk^{(k)}$, $1\le k\le\kn_n$, with $F(\lamk^{(k)})\ge z-2$.
-\par\smallskip
+\end{setgoal}
 \begin{proof}
 \proves{lem:grid}
 \uses{lem:kinf, def:kinf, def:empkinf}
@@ -987,11 +1170,11 @@ linearity,
 \stp2{a good $\lambda$ is not too small}Take $\lambda\in\Lset{r}$ with $F(\lambda)\ge z-1\ge1$. Since $\log(1+u)\le u$, $1\le F(\lambda)\le n\lambda r<n\lambda$, so $\lambda>\frac1n$.
 
 \stp3{it lies between two grid points}As $\taun_n^{\kn_n}\le e^{-\kn_n/(2n)}\le\frac{1-r}n$, we have $\lamk^{(\kn_n)}\le\frac1n<\lambda<\lamk^{(0)}$. So
-$\lambda\in(\lamk^{(k)},\lamk^{(k-1)}]$ for some $1\le k\le\kn_n$, and $\tau:=\lamk^{(k)}/\lambda\in[\taun_n,1)$.
+$\lambda\in(\lamk^{(k)},\lamk^{(k-1)}]$ for some $1\le k\le\kn_n$, and $\varpi:=\lamk^{(k)}/\lambda\in[\taun_n,1)$.
 
 \stp4{rounding down costs at most $1$}By Lemma~\ref{lem:kinf}(vi) and $\log(1-u)\ge-\frac u{1-u}$,
 \[
-F(\lamk^{(k)})\ \ge\ F(\lambda)+n\log\tau\ \ge\ z-1+n\log\Big(1-\frac1{2n}\Big)\ \ge\ z-1-\frac{1}{2-1/n}\ \ge\ z-2 .
+F(\lamk^{(k)})\ \ge\ F(\lambda)+n\log\varpi\ \ge\ z-1+n\log\Big(1-\frac1{2n}\Big)\ \ge\ z-1-\frac{1}{2-1/n}\ \ge\ z-2 .
 \]
 \end{proof}
 
@@ -1080,35 +1263,35 @@ the last inequality because $\varepsilon\le(1-\m^\star)(1-e^{-c_\theta/2})$.
 \begin{proof}
 \proves{lem:lowerdev}
 \uses{lem:kinf, lem:hoeffding, def:kinf, def:stacks}
-\stp1{a fixed test function}Let $\mathcal K:=\Ki(\nu,\mu)<\infty$, and take $\lambda\in\Lset{\mu}$ with $\E\log(1-\lambda(Y_1-\mu))\ge\mathcal K-\varepsilon'/4$. Let $\tau:=e^{-\varepsilon'/4}$ and
-$g(y):=\log(1-\tau\lambda(y-\mu))$.
+\stp1{a fixed test function}Let $\mathcal K:=\Ki(\nu,\mu)<\infty$, and take $\lambda\in\Lset{\mu}$ with $\E\log(1-\lambda(Y_1-\mu))\ge\mathcal K-\varepsilon'/4$. Let $\varpi:=e^{-\varepsilon'/4}$ and
+$g(y):=\log(1-\varpi\lambda(y-\mu))$.
 \begin{itemize}
-\item Since $1-\tau<1-\tau\lambda(y-\mu)\le\frac1{1-\mu}$, $g$ takes its values in an interval of length $R'$.
-\item By Lemma~\ref{lem:kinf}(vi), $\E g(Y_1)\ge\log\tau+\mathcal K-\varepsilon'/4=\mathcal K-\varepsilon'/2$.
+\item Since $1-\varpi<1-\varpi\lambda(y-\mu)\le\frac1{1-\mu}$, $g$ takes its values in an interval of length $R'$.
+\item By Lemma~\ref{lem:kinf}(vi), $\E g(Y_1)\ge\log\varpi+\mathcal K-\varepsilon'/4=\mathcal K-\varepsilon'/2$.
 \end{itemize}
-\stp2{reduction to a sum}As $\tau\lambda\in\Lset{\mu}$, $N\Ki(\hnu_N,\mu)\ge\sum_{k\le N}g(Y_k)$. So the event implies
+\stp2{reduction to a sum}As $\varpi\lambda\in\Lset{\mu}$, $N\Ki(\hnu_N,\mu)\ge\sum_{k\le N}g(Y_k)$. So the event implies
 \[
 \sum_{k\le N}g(Y_k)\ \le\ N(\mathcal K-\varepsilon')\ \le\ N\big(\E g(Y_1)-\varepsilon'/2\big).
 \]
-\stp3{Hoeffding}Lemma~\ref{lem:hoeffding}(a) applied to $(g(Y_k)-\log(1-\tau))/R'\in[0,1]$ bounds this probability by $e^{-2N(\varepsilon'/2)^2/R'^2}=e^{-\rho'N}$.
+\stp3{Hoeffding}Lemma~\ref{lem:hoeffding}(a) applied to $(g(Y_k)-\log(1-\varpi))/R'\in[0,1]$ bounds this probability by $e^{-2N(\varepsilon'/2)^2/R'^2}=e^{-\rho'N}$.
 \end{proof}
 
 \subsection{Proof of Lemma~\ref{lem:upperdev}}\label{sec:pf-lem:upperdev}
 \begin{proof}
 \proves{lem:upperdev}
 \uses{lem:kinf, def:kinf}
-\stp1{a finite net}Let $\mathcal K:=\Ki(\nu,\mu)$, $F(\lambda):=\sum_{k\le n}\log(1-\lambda(Y_k-\mu))$, $\eta':=\varepsilon'(1-\tau)/8$ and
-$\lambda_j:=\min(j\eta',\frac\tau{1-\mu})$ for $0\le j\le n_{\mathrm g}-1$. Every $\lambda'\in[0,\frac\tau{1-\mu}]$ is within $\eta'$ of some $\lambda_j$.
+\stp1{a finite net}Let $\mathcal K:=\Ki(\nu,\mu)$, $F(\lambda):=\sum_{k\le n}\log(1-\lambda(Y_k-\mu))$, $\eta':=\varepsilon'(1-\varpi)/8$ and
+$\lambda_j:=\min(j\eta',\frac\varpi{1-\mu})$ for $0\le j\le n_{\mathrm g}-1$. Every $\lambda'\in[0,\frac\varpi{1-\mu}]$ is within $\eta'$ of some $\lambda_j$.
 
-\stp2{$F$ is Lipschitz on $[0,\frac\tau{1-\mu}]$}There the derivative of $\lambda\mapsto\log(1-\lambda(y-\mu))$ is at most $\frac1{1-\tau}$ in absolute value, so
-$|F(\lambda)-F(\lambda')|\le n|\lambda-\lambda'|/(1-\tau)$.
+\stp2{$F$ is Lipschitz on $[0,\frac\varpi{1-\mu}]$}There the derivative of $\lambda\mapsto\log(1-\lambda(y-\mu))$ is at most $\frac1{1-\varpi}$ in absolute value, so
+$|F(\lambda)-F(\lambda')|\le n|\lambda-\lambda'|/(1-\varpi)$.
 
-\stp3{the event forces a large value on the net}On the event, take $\lambda$ with $F(\lambda)\ge n(\mathcal K+\frac78\varepsilon')$, $\lambda':=\tau\lambda$ and $j$ with
+\stp3{the event forces a large value on the net}On the event, take $\lambda$ with $F(\lambda)\ge n(\mathcal K+\frac78\varepsilon')$, $\lambda':=\varpi\lambda$ and $j$ with
 $|\lambda_j-\lambda'|\le\eta'$. Then
 \[
-F(\lambda_j)\ \ge\ F(\lambda')-\frac{n\eta'}{1-\tau}\ \ge\ F(\lambda)+n\log\tau-\frac{n\varepsilon'}8\ \ge\ n\Big(\mathcal K+\frac{\varepsilon'}2\Big)\qquad\why{Step~2; Lemma~\ref{lem:kinf}(vi)}.
+F(\lambda_j)\ \ge\ F(\lambda')-\frac{n\eta'}{1-\varpi}\ \ge\ F(\lambda)+n\log\varpi-\frac{n\varepsilon'}8\ \ge\ n\Big(\mathcal K+\frac{\varepsilon'}2\Big)\qquad\why{Step~2; Lemma~\ref{lem:kinf}(vi)}.
 \]
-\stp4{Hoeffding at each point of the net}For a fixed $j$, $Z_k:=\log(1-\lambda_j(Y_k-\mu))\in[\log(1-\tau),\kap(\mu)]$, an interval of length $R'$, and $\E Z_k\le\mathcal K$. Hoeffding's
+\stp4{Hoeffding at each point of the net}For a fixed $j$, $Z_k:=\log(1-\lambda_j(Y_k-\mu))\in[\log(1-\varpi),\kap(\mu)]$, an interval of length $R'$, and $\E Z_k\le\mathcal K$. Hoeffding's
 inequality gives $\PP(\sum_kZ_k\ge n(\mathcal K+\varepsilon'/2))\le e^{-\rho'n}$; a union bound over the $n_{\mathrm g}$ points concludes.
 \end{proof}
 
@@ -1117,7 +1300,7 @@ inequality gives $\PP(\sum_kZ_k\ge n(\mathcal K+\varepsilon'/2))\le e^{-\rho'n}$
 \proves{lem:stacks}
 \uses{def:hy, def:grid, def:stacks, def:learner}
 \stp{(i)}{stacks}Given the past, the reward of the $k$-th pull of $c$ has law $\nu_c$ and is independent of the past. Building the bandit from stacks drawn in advance gives
-histories with the same law, by induction on the rounds \cite[Section~4.6]{LS} (to be checked).
+histories with the same law, by induction on the rounds \citep[Section~4.6]{LS}.
 
 \stp{(ii)}{\HY{} is a function of the stacks}Induction on the batches and on the rounds: the arm pulled at a round of batch $\ell+1$ is a function of $\tl_1,\dots,\tl_\ell$, of
 the counts and samples frozen at $\tl_{\ell-1}$ and $\tl_\ell$ (through $\Kh_{\ell-1}$ and $\Ld_{\ell-1}$ in $\Qp_\ell$ and $\Lh_\ell$), of the current counts and of $t$. The
@@ -1193,8 +1376,8 @@ batch $\ell$, which gives the factor $x^2$ when $x>1$.
 \end{itemize}
 Subsection~\ref{sec:app-lb-assembly} assembles the two parts; the proofs of the lemmas follow.
 
-\par\smallskip
-\Setting (fixed in the whole section)
+\begin{setgoal}
+\Setting (fixed in the whole appendix)
 \begin{itemize}
 \item an instance $\nu\in\cP$ and a sub-optimal arm $a$;
 \item a batched learner, consistent on $\cP$, realized on the stacks and on an internal randomization $U$ as in Lemma~\ref{lem:stacks}(iii).
@@ -1206,42 +1389,15 @@ the law and the expectation of the run on $\nu^\rho$.
 \item $\mathcal H_\ell$ is the $\sigma$-field generated by $U$ and by the observations up to round $\tl_\ell$.
 \item $V:=\big(U,(\Xs_{c,k})_{c\ne a,\,k\ge1}\big)$; its law $P_V$ is the same on all the instances $\nu^\rho$.
 \end{itemize}
-\par\smallskip
+\end{setgoal}
 
 \noindent\emph{A consequence of batching, used throughout.} The actions of batch $\ell+1$ do not depend on the rewards of batch $\ell+1$. Hence
 \[
 \text{the actions up to round }\tl_{\ell+1},\ \text{and in particular every count }\Ng_c(\tl_{\ell+1}),\ \text{are }\mathcal H_\ell\text{-measurable.}
 \]
 
-\noindent\emph{Two classical tools}, cited (no proof here).
-
-\begin{lemma}[{primal formula \cite[Theorem~8]{HT10}}]\label{cite:honda2010asymptotically-primal}
-\uses{def:kinf}
-With $\mathcal A=\{G:\mathrm{supp}(G)\subset[0,1]\}$,
-$D_{\min}(F,\mu;\mathcal A)\equiv\inf_{G\in\mathcal A:\mathrm E(G)\ge\mu}D(F\|G)$,
-$H(\nu;F,\mu)\equiv\mathrm E_F[\log(1-(X-\mu)\nu)]$ and $D'_{\min}(F,\mu)\equiv\max_{0\le\nu\le\frac1{1-\mu}}H(\nu;F,\mu)$:
-$D_{\min}(F,\mu)=D'_{\min}(F,\mu)$ holds for all $F\in\mathcal A$ and $\mu<1$.
-\end{lemma}
-\noindent\emph{How it is used.} Here $D(F\|G)=\KL(F,G)$. For $\mu\in[0,1)$, $D'_{\min}(F,\mu)=\Ki(F,\mu)$: the function
-$\nu\mapsto H(\nu;F,\mu)$ is concave on $[0,\frac1{1-\mu}]$, so its value at the right end is at most its limit from the left,
-and the maximum over the closed interval equals the supremum over $\Lset{\mu}$ of Definition~\ref{def:kinf}. Hence, for $G$
-on $[0,1]$ and $\mu\in[0,1)$,
-\[
-\Ki(G,\mu)=\inf\big\{\KL(G,H):\ H\text{ on }[0,1],\ \E_H[X]\ge\mu\big\}.
-\]
-The strict form used in Lemma~\ref{lem:onebatch} (mean $>\mu$) follows from this one at the level $\mu+\epsilon$ and from
-Lemma~\ref{lem:kinf}(v); it is derived in Step~1 of that proof. (Lemma~2 of \cite{HT10} states the strict form, but as printed
-only for $\mu<0$; it is not used here.) This node is used only in Lemma~\ref{lem:onebatch}.
-
-\begin{lemma}[{data processing \cite[Lemma~1]{GMS19}}]\label{cite:garivier2019explore-dataprocessing}
-Consider a measurable space $(\Gamma,\mathcal G)$ equipped with two distributions
-$\mathbb P_1$ and $\mathbb P_2$, and any $\mathcal G$--measurable random variable $Z:\Omega\to[0,1]$. We denote
-respectively by $\mathbb E_1$ and $\mathbb E_2$ the expectations under $\mathbb P_1$ and $\mathbb P_2$. Then,
-$\mathrm{KL}(\mathbb P_1,\mathbb P_2)\ge\mathrm{kl}(\mathbb E_1[Z],\mathbb E_2[Z])$.
-\end{lemma}
-\noindent Here $\kl$ is the Bernoulli divergence, and ``$Z:\Omega\to[0,1]$'' is as printed (arXiv:1602.07182v3, Section~2.1;
-$\Gamma$ is meant). It is used with $(\Gamma,\mathcal G)$ the space of an observation $O$, $\mathbb P_1=P^O$ and
-$\mathbb P_2=Q^O$: if $Z\in[0,1]$ is a measurable function of $O$, then $\KL(P^O,Q^O)\ge\kl(\E_P[Z],\E_Q[Z])$.
+\noindent\emph{Two classical tools}, stated in Appendix~\ref{sec:cited}: the primal formula of $\Ki$ (Lemma~\ref{lem:primal}, from
+\citealp[Theorem~8]{HT10}) and data processing (Lemma~\ref{cite:garivier2019explore-dataprocessing}, from \citealp[Lemma~1]{GMS19}).
 
 %----------------------------------------------------------------------
 \subsection{One batch ahead}\label{sec:app-lb-one}
@@ -1371,7 +1527,7 @@ then for every $\varepsilon\in(0,1)$,
 \begin{proof}
 \proves{thm:lower}
 \uses{lem:onebatch, lem:twobatches, def:learner, def:grid, def:kinf, def:model}
-\paragraph{(i), $x=1$.} For every $\ell$,
+\par\medskip\noindent\textbf{(i), $x=1$.}\  For every $\ell$,
 \[
 \frac{\E[\Ng_a(\tl_\ell)]}{\log\tl_\ell}\ =\ \frac{\E[\Ng_a(\tl_\ell)]}{\log\tl_{\ell+1}}\cdot\xg_{\ell+1} .
 \]
@@ -1380,7 +1536,7 @@ The first factor has $\liminf\ge1/\da$ by Lemma~\ref{lem:onebatch}, and $\xg_{\e
 \noindent\emph{Every grid.} Since $\xg_{\ell+1}\ge1$, the same identity gives $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell\ge\E[\Ng_a(\tl_\ell)]/\log\tl_{\ell+1}$ on every grid, convergent or not,
 which is the remark in parentheses.
 
-\paragraph{(ii), $x>1$.} \emph{Lemma~\ref{lem:twobatches} applies.} Since $\tl_{\ell-1}=\tl_\ell^{1/\xg_\ell}$,
+\par\medskip\noindent\textbf{(ii), $x>1$.}\  \emph{Lemma~\ref{lem:twobatches} applies.} Since $\tl_{\ell-1}=\tl_\ell^{1/\xg_\ell}$,
 \[
 \frac{\Bg_\ell}{\tl_\ell}\ =\ 1-\frac{\tl_{\ell-1}}{\tl_\ell}\ =\ 1-e^{-\Lg_\ell(1-1/\xg_\ell)}\ \xrightarrow[\ell\to\infty]{}\ 1,
 \]
@@ -1396,12 +1552,12 @@ the $\limsup$ claim.
 
 \noindent\emph{Case B: otherwise.} Then $\limsup_\ell\E[\Ng_a(\tl_\ell)]/\log\tl_\ell=\infty$, and the $\limsup$ claim holds.
 
-\paragraph{(iii), regret.} By definition of the regret,
+\par\medskip\noindent\textbf{(iii), regret.}\  By definition of the regret,
 \[
 \frac{\Reg(\tl_\ell)}{\log\tl_\ell}\ =\ \sum_{c:\Dg_c>0}\Dg_c\,\frac{\E[\Ng_c(\tl_\ell)]}{\log\tl_\ell} .
 \]
 The $\liminf$ of a finite sum of non-negative sequences is at least the sum of the $\liminf$s. For each sub-optimal arm $c$, the $\liminf$ of $\E[\Ng_c(\tl_\ell)]/\log\tl_\ell$
-is at least $x^2/\Ki(\nu_c,\m^\star)$: by (i) if $x=1$, and by Case~A of (ii) if $x>1$ (the counts of every sub-optimal arm are assumed logarithmic). \hfill$\square$
+is at least $x^2/\Ki(\nu_c,\m^\star)$: by (i) if $x=1$, and by Case~A of (ii) if $x>1$ (the counts of every sub-optimal arm are assumed logarithmic).
 
 %----------------------------------------------------------------------
 \end{proof}
@@ -1410,18 +1566,18 @@ is at least $x^2/\Ki(\nu_c,\m^\star)$: by (i) if $x=1$, and by Case~A of (ii) if
 \noindent\emph{Idea.} The observations available at the end of batch $\ell+1$ contain the actions of batch $\ell+1$ but only the rewards of the first $\ell$ batches. A
 learner that gives batch $\ell+1$ to the right arm under both $\nu$ and an alternative where $a$ is optimal must have paid $\Ng_a(\tl_\ell)\da\gtrsim\log\tl_{\ell+1}$.
 
-\par\smallskip
+\begin{setgoal}
 \Setting a grid with $\Bg_1\ge2$, a consistent batched learner, $\nu\in\cP$, a sub-optimal arm $a$, and $\xi>0$.
 \Goal show that $\liminf_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_{\ell+1}\ge1/(\da+\xi)$; letting $\xi\to0$ then gives the lemma.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:onebatch}
-\uses{def:kinf, def:model, def:grid, def:learner, lem:kinf, cite:honda2010asymptotically-primal, cite:garivier2019explore-dataprocessing}
+\uses{def:kinf, def:model, def:grid, def:learner, lem:kinf, lem:primal, cite:garivier2019explore-dataprocessing}
 \stp1{an alternative instance where $a$ is optimal}Fix $\epsilon\in(0,1-\m^\star)$ with $\epsilon/(1-\m^\star-\epsilon)\le\xi/2$, and let
 $\mu':=\m^\star+\epsilon\in(\m^\star,1)$. By Lemma~\ref{lem:kinf}(v) at the level $\mu'$ with the shift $\epsilon\le\mu'$,
 $\Ki(\nu_a,\mu')\le\Ki(\nu_a,\m^\star)+\epsilon/(1-\mu')\le\da+\xi/2<\infty$. By the primal formula
-(Lemma~\ref{cite:honda2010asymptotically-primal} and the remark after it) at the level $\mu'$, there is a distribution $H$ on $[0,1]$ with
+(Lemma~\ref{lem:primal}) at the level $\mu'$, there is a distribution $H$ on $[0,1]$ with
 $\E_H[X]\ge\mu'$ and $\KL(\nu_a,H)\le\Ki(\nu_a,\mu')+\xi/2$. Hence
 \[
 \E_H[X]>\m^\star\qquad\text{and}\qquad\KL(\nu_a,H)\le\da+\xi .
@@ -1439,12 +1595,12 @@ be the observations up to $\tl_\ell$, followed by the actions of batch $\ell+1$.
 have the same conditional laws under $\nu$ and $\nu'$;
 \item each reward $R_t$, $t\le\tl_\ell$, has conditional law $\nu_{A_t}$ under $\nu$ and $\nu'_{A_t}$ under $\nu'$, and these differ only when $A_t=a$.
 \end{itemize}
-The chain rule \cite[Lemma~15.1]{LS} therefore gives
+The chain rule \citep[Lemma~15.1]{LS} therefore gives
 \[
 \KL\big(\PP_\nu^{O_\ell},\PP_{\nu'}^{O_\ell}\big)\ =\ \E_\nu[\Ng_a(\tl_\ell)]\,\KL(\nu_a,H).
 \]
 
-\stp3{data processing}Let $Z:=\Ng_a(\tl_{\ell+1})/\tl_{\ell+1}\in[0,1]$; it is a function of $O_\ell$. Let $p_\ell:=\E_\nu[Z]$ and $q_\ell:=\E_{\nu'}[Z]$. By data processing and
+\stp3{data processing}Let $Z:=\Ng_a(\tl_{\ell+1})/\tl_{\ell+1}\in[0,1]$; it is a function of $O_\ell$. Let $p_\ell:=\E_\nu[Z]$ and $q_\ell:=\E_{\nu'}[Z]$. By data processing (Lemma~\ref{cite:garivier2019explore-dataprocessing}, applied to $O_\ell$) and
 the elementary inequality $\kl(p,q)\ge(1-p)\log\frac1{1-q}-\log2$,
 \begin{align*}
 \E_\nu[\Ng_a(\tl_\ell)]\,\KL(\nu_a,H)\ &\ge\ \kl(p_\ell,q_\ell)&&\why{data processing, Step~2}\\
@@ -1489,10 +1645,10 @@ bounded above and below by positive constants. So their mutual densities are bou
 values in a bounded interval; $D_G$ is its length.
 
 \stp{(a), $\ge$}{Gibbs' inequality}
-\par\smallskip
+\begin{setgoal}
 \Setting a distribution $G$ on $[0,1]$ with $\E_G[X]\ge\m^\star$ and $\KL(\nu_a,G)<\infty$ (every boundary tilt is such a $G$).
 \Goal $\KL(\nu_a,G)\ge\da$.
-\par\smallskip
+\end{setgoal}
 Let $\lambda\in\Lset{\m^\star}$ and $f(y):=\log(1-\lambda(y-\m^\star))$, a bounded function on $[0,1]$. Let $G_f:=e^fG/\E_G[e^f]$. Since
 $\E_G[e^f]=1-\lambda(\E_G[X]-\m^\star)\le1$,
 \begin{align*}
@@ -1503,9 +1659,9 @@ So $\E_{\nu_a}[\log(1-\lambda(X-\m^\star))]\le\KL(\nu_a,G)$ for every $\lambda\i
 Lemma~\ref{lem:kinf}(iv).
 
 \stp{(a), $\le$}{a tilt from the dual formula}
-\par\smallskip
+\begin{setgoal}
 \Goal for every $\gamma'>0$, a boundary tilt $G$ with $\KL(\nu_a,G)\le\da+\gamma'$.
-\par\smallskip
+\end{setgoal}
 \noindent\emph{Notation.} Let $\Lambda^\star:=\frac1{1-\m^\star}$. For $\lambda\in[0,\Lambda^\star)$ and $y\in[0,1]$, let
 \[
 \varphi(\lambda):=\E_{\nu_a}\big[\log(1-\lambda(X-\m^\star))\big],\qquad h_\lambda(y):=\frac1{1-\lambda(y-\m^\star)},\qquad\chi(\lambda):=\E_{\nu_a}\big[(X-\m^\star)h_\lambda(X)\big],
@@ -1586,9 +1742,9 @@ $\PP_\nu$ coincide on $\mathcal H_{\ell-1}$.
 
 %----------------------------------------------------------------------
 \subsection{Proof of Lemma~\ref{lem:typ}}\label{sec:pf-lem:typ}
-\par\smallskip
+\begin{setgoal}
 \Goal bound by $\eta(b)/4$ the $\QQ$-probability of each of the four events (two sums, two values of $\rho$) whose union is $T_b^c$.
-\par\smallskip
+\end{setgoal}
 \begin{proof}
 \proves{lem:typ}
 \uses{lem:hoeffding, lem:tilts, def:tilt, def:stacks, def:Q}
@@ -1612,7 +1768,7 @@ computation, with a union bound over the value of $\Mb$, gives the same bound.
 $\nu^{\rhop}$ ($a$ barely optimal) unless $\Ng_a(\tl_{\ell-1})\da\gtrsim\log\tl_{\ell+1}$. Whatever it does with batch $\ell+1$, of size $\gtrsim\tl_{\ell+1}$, it then loses
 polynomially under one of them.
 
-\par\smallskip
+\begin{setgoal}
 \Setting\dt{s:lbproof} a constant $\cB>0$ and a rank $\ell_B$ with $\Bg_\ell\ge\cB\tl_\ell$ for every $\ell\ge\ell_B$ (they exist since $\liminf_\ell\Bg_\ell/\tl_\ell>0$).
 For (i): $\varepsilon\in(0,1)$ and $C<\infty$ are fixed; we write
 \[
@@ -1620,7 +1776,7 @@ For (i): $\varepsilon\in(0,1)$ and $C<\infty$ are fixed; we write
 \]
 \Goal (i) $\displaystyle\limsup_{\ell}\PP_\nu\Big(\nzero\le(1-\varepsilon)^2\frac z{\da}\Big)\le\limsup_\ell\PP_\nu(\Mb>Cz)$, where $\nzero=\Ng_a(\tl_{\ell-1})$ and
 $\Mb=\Ng_a(\tl_\ell)-\nzero$. Letting $C\to\infty$ gives (i), since $(1-\varepsilon)^2$ ranges over $(0,1)$. Then (ii).
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:twobatches}
@@ -1706,17 +1862,17 @@ Divide by $z$, let $\ell\to\infty$, then $\varepsilon\to0$.
 %======================================================================
 \section{Deterministic properties of HY}\label{sec:app-det}
 
-\par\smallskip
-\Setting every lemma of this section holds for \emph{every} run of \HY{} on \emph{every} sequence of rewards in $[0,1]$: no probability is involved. Recall that
+\begin{setgoal}
+\Setting every lemma of this appendix holds for \emph{every} run of \HY{} on \emph{every} sequence of rewards in $[0,1]$: no probability is involved. Recall that
 $\Ng_c(\tl_\ell)\ge1$ for every arm $c$ and every $\ell\ge1$ (batch $1$ pulls every arm).
-\Plan four properties, used by both upper bounds.
+\Plan Four properties, used by both upper bounds.
 \begin{enumerate}
 \item[(1)] Lemma~\ref{lem:imedround} (\emph{IMED rounds}): an arm pulled at an \term{s:act}{IMED round} has a small index, hence a bounded count.
 \item[(2)] Lemma~\ref{lem:service} (\emph{queue lemma}): in a \term{s:act}{paced phase}, every paced demand is served, up to $K-1$ pulls, after an initial burst.
 \item[(3)] Lemma~\ref{lem:W}: the \term{s:act}{IMED phase} of a long batch lifts the \term{s:water}{water level} above $\log\tl_{j-1}$.
 \item[(4)] Lemma~\ref{lem:sparse} (\emph{sparse activations}): \term{s:act}{activated} batches are sparse on the logarithmic scale.
 \end{enumerate}
-\par\smallskip
+\end{setgoal}
 
 
 \begin{lemma}[IMED rounds]\label{lem:imedround}
@@ -1807,7 +1963,7 @@ With the default $\thv$, for every run of \HY{} and every batch $j\ge\lW$:
 \item[(ii)] if batch $j$ is \term{s:act}{activated} ($j-1\in\Act$), then $\ \Lam_j\ \ge\ \log\big((\sA_{j-1}-\tl_{j-1})/K\big)\ \ge\ \Lg_{j-1}$.
 \end{enumerate}
 \end{lemma}
-\role{gives (W2) for \HY, on which the whole water-level argument of Section~\ref{sec:app-xone} rests (Lemma~\ref{lem:lowmass}).}
+\role{gives (W2) for \HY, on which the whole water-level argument of Appendix~\ref{sec:app-xone} rests (Lemma~\ref{lem:lowmass}).}
 \noindent(see proof in Subsection~\ref{sec:pf-lem:W}.)
 
 \begin{lemma}[activated batches are sparse on the logarithmic scale]\label{lem:sparse}
@@ -1848,24 +2004,24 @@ so $\Ng_c(t')<1+\yg_\ell\log t'/D$.
 \noindent\emph{Idea.} The backlog is a queue served at rate one. The targets of the rejected arms are concave in $t$ and capped, so after an initial burst they bring less
 than half a unit per round, plus one unit per arm for the ceilings.
 
-\par\smallskip
+\begin{setgoal}
 \Setting $\ell\in\Act$. Write $n_c:=\nt_{\ell,c}$, $U:=\Ug_{\ell+1}$, $Q:=Q_\ell$ and $\sigma:=\sA_\ell$; note $\sigma\ge\tl_\ell\ge2$.
 \Goal (a), (b), (c) for every paced round $t\in(\sigma,\tl_{\ell+1}]$.
-\par\smallskip
+\end{setgoal}
 
 \noindent\emph{Two facts.}
 \begin{itemize}
-\item[(F1)] For $c\in\mathcal C_\ell$, $\Kh_\ell(c)$, the verdict, $\om_\ell$ and $\yg_\ell$ are fixed during the batch. So $t\mapsto n_c(t)$ is non-decreasing on the integers,
+\item[(Q1)] For $c\in\mathcal C_\ell$, $\Kh_\ell(c)$, the verdict, $\om_\ell$ and $\yg_\ell$ are fixed during the batch. So $t\mapsto n_c(t)$ is non-decreasing on the integers,
 and $0\le n_c\le U+K-1$.
-\item[(F2)] At a paced round $t$, \HY{} pulls the first $c\in\mathcal C_\ell$ with $\Ng_c(t-1)<n_c(t)$, and $\Ld_\ell$ if there is none.
+\item[(Q2)] At a paced round $t$, \HY{} pulls the first $c\in\mathcal C_\ell$ with $\Ng_c(t-1)<n_c(t)$, and $\Ld_\ell$ if there is none.
 \end{itemize}
 
 \begin{proof}
 \proves{lem:service}
 \uses{def:learner, def:grid, def:hy, def:backlog}
-\stp{(a)}{no overshoot}If $c$ is not pulled in $(\sigma,t]$, then $\Ng_c(t)=\Ng_c(\sigma)$. Otherwise let $u$ be its last pull there. By (F2), $\Ng_c(u-1)<n_c(u)$, so
+\stp{(a)}{no overshoot}If $c$ is not pulled in $(\sigma,t]$, then $\Ng_c(t)=\Ng_c(\sigma)$. Otherwise let $u$ be its last pull there. By (Q2), $\Ng_c(u-1)<n_c(u)$, so
 \[
-\Ng_c(t)\ =\ \Ng_c(u-1)+1\ \le\ n_c(u)\ \le\ n_c(t)\qquad\why{(F1)}.
+\Ng_c(t)\ =\ \Ng_c(u-1)+1\ \le\ n_c(u)\ \le\ n_c(t)\qquad\why{(Q1)}.
 \]
 Each pull of $c$ in the paced phase brings its count to a distinct value in $(\Ng_c(\sigma),U+K-1]$; so there are at most $U+K-1$ of them.
 
@@ -1924,10 +2080,10 @@ $\Ld_\ell$.
 pull, that all the indices are at least the logarithm of its count. After $\approx\tl^{1+\thv}$ IMED rounds this is above $\log\tl_{j-1}$, hence above the logarithm of every
 count at the start of the batch, which gives (W2) at the paced rounds too.
 
-\par\smallskip
+\begin{setgoal}
 \Setting a batch $j\ge\lW$; write $\ell:=j-1$, so that batch $j$ is batch $\ell+1$.
 \Goal (i) (W2) in batch $j$; (ii) if $\ell\in\Act$, $\Lam_j\ge\log((\sA_\ell-\tl_\ell)/K)\ge\Lg_\ell$.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:W}
@@ -1987,11 +2143,11 @@ m-1\ <\ 2(k+1)(\log2)^2\ <\ k+1 .
 %======================================================================
 \section{Upper bound when \texorpdfstring{$x>1$}{x>1}}\label{sec:app-xsup}
 
-\par\smallskip
-\Setting (in the whole section) $\xg_\ell\to x\in(1,\infty)$; $\thv_\ell\to0$ and $\gam_\ell\to0$ are deterministic; $\wz\ge0$, $\beta\ge2$; the margins $(\om_\ell)$
+\begin{setgoal}
+\Setting (in the whole appendix) $\xg_\ell\to x\in(1,\infty)$; $\thv_\ell\to0$ and $\gam_\ell\to0$ are deterministic; $\wz\ge0$, $\beta\ge2$; the margins $(\om_\ell)$
 are a non-increasing sequence in $(0,1]$, fixed in each statement. The default parameters satisfy these conditions.
 \Goal Proposition~\ref{prop:dyA}: with the dyadic margins $\ody$, $\ \limsup_{t\to\infty}\E[\Ng_a(t)]/\log t\le x^2/\da$.
-\Plan the section goes from the top down.
+\Plan The appendix goes from the top down.
 \begin{enumerate}
 \item[(1)] Constants, ranks and levels (Subsection~\ref{sec:app-constA}).
 \item[(2)] \emph{The skeleton} (Subsection~\ref{sec:app-skelA}): the proposition; the events; the decomposition of $\Ng_a(t)$ over the batches into a plan, \term{t:net}{nets} and
@@ -2000,19 +2156,28 @@ lost batches; the probabilities and sums that make the \term{t:net}{nets} and th
 \item[(4)] \emph{Why is the \term{t:leader}{leader} optimal?} (Subsection~\ref{sec:app-leaderA}).
 \item[(5)] \emph{What happens in a \term{s:evA}{good batch}?} (Subsection~\ref{sec:app-goodA}): $a$ is \term{t:verdict}{rejected} and follows its optimal plan.
 \end{enumerate}
-\par\smallskip
+\end{setgoal}
 
-\noindent\emph{Map.} A line ``$B\leftarrow A_1;\ A_2$'' means that $A_1$ and $A_2$ are used in the proof of $B$; the tools of Section~\ref{sec:app-tools} are not drawn, and Lemmas~\ref{lem:constA}, \ref{lem:ranksA} (used by almost every lemma) are only
+\noindent\emph{Map.} An arrow $A\to B$ means that $A$ is used in the proof of $B$; the tools of Appendix~\ref{sec:app-tools} are not drawn, and Lemmas~\ref{lem:constA}, \ref{lem:ranksA} (used by almost every lemma) are only
 linked to the proposition.
-\begin{itemize}
-\item Prop.~\ref{prop:dyA}, dyadic margins $\leftarrow$ Lemma~\ref{lem:decompA}, decomposition; Lemmas~\ref{lem:probasA}, \ref{lem:sumsA}, bad events, sums; Lemmas~\ref{lem:constA}, \ref{lem:ranksA}, \ref{lem:H}, constants, ranks, levels.
-\item Lemma~\ref{lem:decompA}, decomposition $\leftarrow$ Lemma~\ref{lem:goodA}, good batch; Lemma~\ref{lem:leaderA}, the leader; Lemmas~\ref{lem:service}, \ref{lem:imedround}, queue, IMED rounds; Lemma~\ref{lem:structA}, structure of a batch.
-\item Lemma~\ref{lem:goodA}, good batch $\leftarrow$ Lemma~\ref{lem:countsA}, counts of $a$; Lemma~\ref{lem:leaderA}, the leader; Lemma~\ref{lem:thrA}, threshold; Lemmas~\ref{lem:service}, \ref{lem:imedround}, queue, IMED rounds; Lemma~\ref{lem:structA}, structure of a batch.
-\item Lemma~\ref{lem:countsA}, counts of $a$ $\leftarrow$ Lemma~\ref{lem:leaderA}, the leader; Lemma~\ref{lem:structA}, structure of a batch.
-\item Lemma~\ref{lem:leaderA}, the leader $\leftarrow$ Lemma~\ref{lem:thrA}, threshold; Lemma~\ref{lem:structA}, structure of a batch.
-\item Lemma~\ref{lem:thrA}, threshold $\leftarrow$ Lemma~\ref{lem:structA}, structure of a batch.
-\item Lemma~\ref{lem:structA}, structure of a batch $\leftarrow$ Lemmas~\ref{lem:service}, \ref{lem:imedround}, queue, IMED rounds.
-\end{itemize}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1.15cm,every edge/.style={draw,-{Stealth[length=4pt]},gray!70!black},
+  mb/.style={draw,rounded corners,font=\scriptsize,align=center,inner sep=2.5pt,fill=white}]
+\node[mb] (dy) at (7,0) {Prop.~\ref{prop:dyA}\\ dyadic margins};
+\node[mb] (dec) at (3.4,-1.2) {Lemma~\ref{lem:decompA}\\ decomposition};
+\node[mb] (prob) at (7,-1.2) {Lemmas~\ref{lem:probasA}, \ref{lem:sumsA}\\ bad events, sums};
+\node[mb] (H) at (10.6,-1.2) {Lemmas~\ref{lem:constA}, \ref{lem:ranksA}, \ref{lem:H}\\ constants, ranks, levels};
+\node[mb] (good) at (3.4,-2.4) {Lemma~\ref{lem:goodA}\\ good batch};
+\node[mb] (counts) at (7,-2.4) {Lemma~\ref{lem:countsA}\\ counts of $a$};
+\node[mb] (lead) at (5.2,-3.6) {Lemma~\ref{lem:leaderA}\\ the leader};
+\node[mb] (thr) at (5.2,-4.8) {Lemma~\ref{lem:thrA}\\ threshold};
+\node[mb] (str) at (5.2,-6) {Lemma~\ref{lem:structA}\\ structure of a batch};
+\node[mb] (serv) at (1.4,-6) {Lemmas~\ref{lem:service}, \ref{lem:imedround}\\ queue, IMED rounds};
+\path (dec) edge (dy) (prob) edge (dy) (H) edge (dy) (good) edge (dec) (lead) edge (dec)
+  (counts) edge (good) (lead) edge (good) (thr) edge (good) (lead) edge (counts) (thr) edge (lead) (str) edge (thr) (str) edge (lead)
+  (serv) edge (str) (serv) edge (good) (serv) edge (dec) (str) edge (counts) (str) edge (good) (str) edge (dec);
+\end{tikzpicture}
+\end{center}
 
 
 %----------------------------------------------------------------------
@@ -2102,7 +2267,7 @@ and $\HH(t):=0$ for $t\le\tl_1$. So $\HH(\tl_j)=\HH_j$ for $j\ge2$, and $\HH(\tl
 
 \begin{lemma}[the levels]\label{lem:H}
 \uses{def:ass-x, def:grid, def:H}
-Under Assumption~\ref{def:ass-x} (any $x\ge1$), $\HH_j/\Lg_j\to x^2$ as $j\to\infty$, and $\HH(t)/\log t\to x^2$ as $t\to\infty$.
+If the grid is convergent with limit $x\in[1,\infty)$ (Definition~\ref{def:ass-x}), then $\HH_j/\Lg_j\to x^2$ as $j\to\infty$, and $\HH(t)/\log t\to x^2$ as $t\to\infty$.
 \end{lemma}
 \noindent(see proof in Subsection~\ref{sec:pf-lem:H}.)
 
@@ -2199,7 +2364,7 @@ $\varepsilon_k\in(0,\eb]$ depending on $k$, since the bounds of Lemma~\ref{lem:p
 Proposition~\ref{prop:dyA}).}
 \noindent(see proof in Subsection~\ref{sec:pf-lem:sumsA}.)
 
-\noindent The rest of the section proves the lemmas used by the decomposition, grouped by the question that they answer.
+\noindent The rest of the appendix proves the lemmas used by the decomposition, grouped by the question that they answer.
 
 %----------------------------------------------------------------------
 \subsection{Why is the threshold deterministic?}\label{sec:app-structA}
@@ -2366,12 +2531,12 @@ So $\HH_j\le\max(C_{\delta'},x^2(1+\delta')^2\Lg_j)$, and $\limsup_j\HH_j/\Lg_j\
 and it changes only at the few indices where $\ody$ halves. The decomposition of Lemma~\ref{lem:decompA}(b) then has a main term $\approx(1+\ody)\HH(t)/\da$, and remainders
 bounded independently of $t$.
 
-\par\smallskip
+\begin{setgoal}
 \Setting \HY$(\wz,\beta,\ody,\thv,\gam)$ with $\thv_\ell\to0$, $\gam_\ell\to0$; a number $\theta'>x^2/\da$.
 \Goal $\E[\Ng_a(t)]\le K_0+\varphi\,\HH(t)/\da$ for every $t$ large, with $K_0$ independent of $t$ and $\varphi\,x^2/\da<\theta'$. Since $\HH(t)/\log t\to x^2$
 (Lemma~\ref{lem:H}), this gives $\limsup_t\E[\Ng_a(t)]/\log t<\theta'$, for every $\theta'>x^2/\da$.
 \Plan Step~1 sets the accuracies; Step~2 a rank from which Lemma~\ref{lem:decompA} applies; Step~3 the decomposition; Steps~4--6 bound the \term{t:net}{nets}; Step~7 concludes.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{prop:dyA}
@@ -2622,11 +2787,11 @@ $(1+K)\Ceta\,\sig_{4\beta}(\eg)$ by Lemma~\ref{lem:sums}(ii).
 \noindent\emph{Idea.} By (R2) the paced phase is long enough for the queue lemma: every demand is served up to $K-1$ pulls, and the leader keeps the rest. An arm that
 ends the batch with fewer than $\frac12\Ug_{\ell+1}$ pulls cannot have been ambiguous (it would have received the net), so it was rejected and served its uncapped plan.
 
-\par\smallskip
+\begin{setgoal}
 \Setting $\ell\ge\lA-4$, so that (R2) holds at $\ell+1$: $\ell\in\Act$, the \term{s:act}{paced phase} has $\tl_{\ell+1}-\sA_\ell\ge K(\Ug_{\ell+1}+K)\ge(K-1)(\Ug_{\ell+1}+K-1)$ rounds,
 and the condition $\sA_\ell\log\sA_\ell\ge2(K-1)\Ug_{\ell+1}$ of Lemma~\ref{lem:service}(b) (\emph{queue lemma}) holds.
 \Goal (S1)--(S4).
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:structA}
@@ -2679,11 +2844,11 @@ So the bracket of $c$ in the definition of $\Lh_\ell$ is at least $\Lg_\ell$ (as
 \noindent\emph{Idea.} A sub-optimal leader comes either from a test made against a bad level (no optimal arm is well sampled: event $\Vg_\ell$), or from a poorly
 sampled sub-optimal arm whose mean climbed after it was rejected at the previous test (event $\Pig_\ell$).
 
-\par\smallskip
+\begin{setgoal}
 \Setting $\varepsilon\in(0,\eb]$, $\ell\ge\lA$ with $2\wz\le\varepsilon\Ug_\ell$, and an outcome in $\Ag_{\ell-1}\cap\Ag_\ell\cap\Vg_\ell^c\cap\Pig_\ell^c$ (only $\Ag_{\ell-1}$
 for the last claim).
 \Goal (i), (ii), (iii) and the last claim.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:leaderA}
@@ -2759,10 +2924,10 @@ Finally $\tms_\ell\ge\mh_\ell$ (the leader maximizes $\tm$ over all arms), so $\
 \noindent\emph{Idea.} The paced plan of batch $\ell$, evaluated at the actual end $\tl_\ell$, aimed above the present threshold; the margin $1+\om_{\ell-1}$ absorbs the change
 of the empirical $\Ki$ between the two tests. In the IMED phase, $a$ is explored up to $\yg_\ell\log t$ only, below its paced target.
 
-\par\smallskip
+\begin{setgoal}
 \Setting $\varepsilon\in(0,\eb]$ with $\De_\varepsilon>0$, $\ell\ge\lone(\varepsilon,\varepsilon')$, $(1+\om_{\ell-1})\De_\varepsilon\ge\Kp_\varepsilon$, and an outcome in $\Gg_\ell(\varepsilon)$.
 \Goal the three points of the lemma.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:goodA}
@@ -2816,14 +2981,14 @@ Steps~3 and~4 give the bound at every round of batch $\ell+1$.
 %======================================================================
 \section{Upper bound when \texorpdfstring{$x=1$}{x=1}}\label{sec:app-xone}
 
-\par\smallskip
-\Setting (in the whole section) $\xg_\ell\to1$; the margins $\om_\ell\in(0,1]$ are non-increasing with $\om_\ell\to0$ (for instance the dyadic margins $\ody$); $\thv$ and
+\begin{setgoal}
+\Setting (in the whole appendix) $\xg_\ell\to1$; the margins $\om_\ell\in(0,1]$ are non-increasing with $\om_\ell\to0$ (for instance the dyadic margins $\ody$); $\thv$ and
 $\gam$ are the defaults; $\wz\ge0$ and $\beta\ge2$.
 \Goal Proposition~\ref{prop:fixedC}: for every accuracy $\varepsilon\in(0,\ez]$ and every $L\ge1$,
 \[
 \E[\Ng_a(\tl_L)]\ \le\ \frac{\Lg_L}{\da}+\Co\,\varepsilon\Lg_L+\RHo(\varepsilon),\qquad\RHo(\varepsilon)<\infty\ \text{independent of }L.
 \]
-\Plan the section goes from the top down.
+\Plan The appendix goes from the top down.
 \begin{enumerate}
 \item[(1)] Constants and ranks (Subsection~\ref{sec:app-constC}).
 \item[(2)] \emph{The skeleton} (Subsection~\ref{sec:app-skelC}): the proposition, the decomposition of $\Ng_a(\tl_L)$ batch by batch according to four \term{s:evC}{classes}, and the
@@ -2835,22 +3000,34 @@ deterministic, and holds for \HY{} thanks to Lemma~\ref{lem:W} (\emph{the IMED p
 \item[(5)] \emph{Why is an optimal arm well sampled, and how many times is $a$ pulled in a batch?} (Subsection~\ref{sec:app-optW}).
 \item[(6)] \emph{Why does $a$ pass the consistency test?} (Subsection~\ref{sec:app-amb}).
 \end{enumerate}
-\par\smallskip
+\end{setgoal}
 
-\noindent\emph{Map.} A line ``$B\leftarrow A_1;\ A_2$'' means that $A_1$ and $A_2$ are used in the proof of $B$; the tools of Section~\ref{sec:app-tools}, the lemmas of Section~\ref{sec:app-det} other than Lemma~\ref{lem:W}, and Lemma~\ref{lem:constC} (used almost
+\noindent\emph{Map.} An arrow $A\to B$ means that $A$ is used in the proof of $B$; the tools of Appendix~\ref{sec:app-tools}, the lemmas of Appendix~\ref{sec:app-det} other than Lemma~\ref{lem:W}, and Lemma~\ref{lem:constC} (used almost
 everywhere) are not drawn.
-\begin{itemize}
-\item Prop.~\ref{prop:fixedC}, fixed accuracy $\leftarrow$ Lemma~\ref{lem:decompC}, decomposition; Lemmas~\ref{lem:controlC}, \ref{lem:sumC}, probabilities, sums; Lemma~\ref{lem:amb}, consistency test.
-\item Lemma~\ref{lem:decompC}, decomposition $\leftarrow$ Lemma~\ref{lem:pullsC}, pulls of $a$; Lemma~\ref{lem:fewC}, few observations; Lemma~\ref{lem:logcountC}, logarithmic count; Lemma~\ref{lem:amb}, consistency test.
-\item Lemma~\ref{lem:amb}, consistency test $\leftarrow$ Lemmas~\ref{lem:controlC}, \ref{lem:sumC}, probabilities, sums; Lemma~\ref{lem:optW}, optimal arm in $\Wg$; Lemma~\ref{lem:fewC}, few observations; Lemma~\ref{lem:logcountC}, logarithmic count.
-\item Lemma~\ref{lem:pullsC}, pulls of $a$ $\leftarrow$ Lemma~\ref{lem:optW}, optimal arm in $\Wg$.
-\item Lemma~\ref{lem:fewC}, few observations $\leftarrow$ Lemma~\ref{lem:goodhigh}, good high batches; Lemma~\ref{lem:highC}, evidence in a high batch.
-\item Lemma~\ref{lem:logcountC}, logarithmic count $\leftarrow$ Lemma~\ref{lem:goodhigh}, good high batches.
-\item Lemma~\ref{lem:optW}, optimal arm in $\Wg$ $\leftarrow$ Lemma~\ref{lem:goodhigh}, good high batches; Lemma~\ref{lem:highC}, evidence in a high batch.
-\item Lemma~\ref{lem:goodhigh}, good high batches $\leftarrow$ Lemma~\ref{lem:levelC}, many high batches.
-\item Lemma~\ref{lem:levelC}, many high batches $\leftarrow$ Lemma~\ref{lem:lowmass}, low batches; Lemma~\ref{lem:growth}, growth of the grid.
-\item Lemma~\ref{lem:lowmass}, low batches $\leftarrow$ Lemma~\ref{lem:W}, IMED phase lifts, the water level.
-\end{itemize}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1.15cm,every edge/.style={draw,-{Stealth[length=4pt]},gray!70!black},
+  mb/.style={draw,rounded corners,font=\scriptsize,align=center,inner sep=2.5pt,fill=white}]
+\node[mb] (fix) at (7,0) {Prop.~\ref{prop:fixedC}\\ fixed accuracy};
+\node[mb] (dec) at (3.6,-1.2) {Lemma~\ref{lem:decompC}\\ decomposition};
+\node[mb] (ctl) at (8.2,-1.2) {Lemmas~\ref{lem:controlC}, \ref{lem:sumC}\\ probabilities, sums};
+\node[mb] (amb) at (12.2,-1.2) {Lemma~\ref{lem:amb}\\ consistency test};
+\node[mb] (pulls) at (1.2,-2.4) {Lemma~\ref{lem:pullsC}\\ pulls of $a$};
+\node[mb] (few) at (5,-2.4) {Lemma~\ref{lem:fewC}\\ few observations};
+\node[mb] (log) at (8.6,-2.4) {Lemma~\ref{lem:logcountC}\\ logarithmic count};
+\node[mb] (opt) at (12.2,-2.4) {Lemma~\ref{lem:optW}\\ optimal arm in $\Wg$};
+\node[mb] (gh) at (6.8,-3.6) {Lemma~\ref{lem:goodhigh}\\ good high batches};
+\node[mb] (hc) at (10.6,-3.6) {Lemma~\ref{lem:highC}\\ evidence in a high batch};
+\node[mb] (lev) at (6.8,-4.8) {Lemma~\ref{lem:levelC}\\ many high batches};
+\node[mb] (low) at (3.6,-6) {Lemma~\ref{lem:lowmass}\\ low batches};
+\node[mb] (gro) at (10,-6) {Lemma~\ref{lem:growth}\\ growth of the grid};
+\node[mb] (W) at (0.6,-6) {Lemma~\ref{lem:W}\\ IMED phase lifts\\ the water level};
+\path (dec) edge (fix) (ctl) edge (fix) (amb) edge (fix) (ctl) edge (amb)
+  (pulls) edge (dec) (few) edge (dec) (log) edge (dec) (amb) edge (dec)
+  (opt) edge (pulls) (opt) edge (amb) (few) edge (amb) (log) edge (amb)
+  (gh) edge (few) (gh) edge (log) (gh) edge (opt) (hc) edge (few) (hc) edge (opt)
+  (lev) edge (gh) (low) edge (lev) (gro) edge (lev) (W) edge (low);
+\end{tikzpicture}
+\end{center}
 
 
 %----------------------------------------------------------------------
@@ -3037,7 +3214,7 @@ where $\Cfour(\varepsilon)<\infty$ is the sum of Lemma~\ref{lem:amb} (\emph{cons
 The sum of these bounds, $\tl_{\lfive-1}$ and $K$ is $\RHo(\varepsilon)$.
 \end{proof}
 
-\noindent The rest of the section proves the lemmas used by the decomposition, grouped by the question that they answer.
+\noindent The rest of the appendix proves the lemmas used by the decomposition, grouped by the question that they answer.
 
 %----------------------------------------------------------------------
 \subsection{Why are many batches high?}\label{sec:app-water}
@@ -3255,10 +3432,10 @@ since $(1+2\ezz)(1-2\dl)\ge(1+2\ezz)(1-4\dl)\ge1+\ezz$ by (c).
 the pulls of $a$ are bounded by the IMED inequality or by the paced plan (Lemma~\ref{lem:pullsC}(ii)), and counted once over the batches. On $\cO$ they are bounded by
 $\Cg_\varepsilon$ times the count, and summed over distinct counts. The only new cost is the net of an ambiguous $a$ in an activated batch, charged to $\Eamb$.
 
-\par\smallskip
+\begin{setgoal}
 \Setting $\varepsilon\in(0,\ez]$, $L\ge\lfive:=\lfive(\varepsilon)$, and $G'_j:=\Dev_j^c\cap(\Vs_j)^c$.
 \Goal the bound of the lemma, by splitting $\Ng_a(\tl_L)=\Ng_a(\tl_{\lfive-1})+\sum_{j=\lfive}^Ln_j(a)$ according to the classes.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:decompC}
@@ -3340,11 +3517,11 @@ $[\lW,e(c))$, so $c$ is pulled in them at most $\Ng_c(\tl_{e(c)-1})-\Ng_c(\tl_{\
 
 %----------------------------------------------------------------------
 \subsection{Proof of Lemma~\ref{lem:growth}}\label{sec:pf-lem:growth}
-\par\smallskip
+\begin{setgoal}
 \Setting for $n'\in[k_0,n]$, let $w(n')$ be the mass of the batches of $(k_0,n']\setminus S$, $h(n')$ the number of batches of $(k_0,n']$ in $S$, and $A:=\log(\tl_{k_0}+W')\ge0$.
 \Goal by induction on $n'$: $\ \log\big(\tl_{n'}+W'-w(n')\big)\le(1+\beta_0)^{h(n')}\big(A+h(n')\log2\big)$. At $n'=n$, $\log\tl_n\le\log(\tl_n+W'-w(n))$ since $W'\ge w(n)$, which
 gives the lemma.
-\par\smallskip
+\end{setgoal}
 \begin{proof}
 \proves{lem:growth}
 \uses{def:grid}
@@ -3365,7 +3542,7 @@ with $h:=h(n')$ and $h(n'+1)=h+1$.
 \noindent\emph{Idea.} If fewer than $m'$ batches were high, all the other batches except at most $K$ would carry few pulls (Lemma~\ref{lem:lowmass}). So $\tl$ could only
 grow through at most $K+m'$ batches, each raising $\log\tl$ by a factor close to $1$: $\log\tl_{L-1}\le(1-g/2)\log\tl_L+O(1)$. But $\xg_L\to1$.
 
-\par\smallskip
+\begin{setgoal}
 \Setting the following quantities, which depend only on $g$, $m'$, $K$, $\beta$ and the grid.
 \begin{itemize}
 \item $\bar h:=K+m'$, the number of exceptional batches allowed.
@@ -3375,7 +3552,7 @@ grow through at most $K+m'$ batches, each raising $\log\tl$ by a factor close to
 \item A rank $\lonez\ge k_0+2$ such that every $L\ge\lonez$ has $\xg_L\le(1-g/4)^{-1}$ and $\Lg_L>4\omega'/g$.
 \end{itemize}
 \Goal for $L\ge\lonez$, the set $\mathrm{Hi}$ of the $(g,L)$-high batches of $[2,L)$ has at least $m'$ elements.
-\par\smallskip
+\end{setgoal}
 \begin{proof}
 \proves{lem:levelC}
 \uses{lem:lowmass, lem:growth, def:grid, def:water, def:high}
@@ -3435,10 +3612,10 @@ and the chain lemma turns this into a large $n\Ki$ at some count $n\le\up_j$.
 Assume $\Dev_j^c$, and let $\Sgo_j$ be as in Lemma~\ref{lem:goodhigh}.
 
 \stp1{common step}
-\par\smallskip
+\begin{setgoal}
 \Setting an arm $c$ with $\Ng_c(\tl_{j-1})<\up_j$, and $r'\in[0,1)$ with $\kap(r')\le\kap(\m^\star+\varepsilon)$ and $\tms_{i-1}\le r'$ for every $i\in\Sgo_j$.
 \Goal some $i\in\Sgo_j$ has $n:=\Ng_c(\tl_{i-1})\in[1,\up_j)$ and $n\Ki(\hnu_{c,n},r')\ge(1-4\dl)\Lg_j$.
-\par\smallskip
+\end{setgoal}
 \emph{Each good high batch gives evidence at its end.} Let $i\in\Sgo_j$ and $D_i:=\Ki(\tnu_c(\tl_{i-1}),r')$.
 \begin{itemize}
 \item $\Ng_c(\tl_i)\le\Ng_c(\tl_{j-1})<\up_j$, since $i\le j-1$.
@@ -3598,10 +3775,10 @@ evidence bounds the threshold from above; its new evidence is at least $1-\gam_\
 $\Ki(\hnu_{a,n},\m^\star)$ is $\zetp_\ell$-accurate at both counts. The failure probability is $e^{-c\sqrt{\Lg_\ell}/\log^2\Lg_\ell}$, and the activated batches are sparse
 (Lemma~\ref{lem:sparse}, \emph{sparse activations}).
 
-\par\smallskip
+\begin{setgoal}
 \Setting $\varepsilon\in(0,\ez]$, $\ell\ge\lfour(\varepsilon)$, and (for Steps~1--4) an outcome in $\Eamb_\ell(\varepsilon)^c$. Write $N:=\Ng_a(\tl_\ell)$.
 \Goal Steps~1--4: $a\notin\{\Ld_\ell,\rr_\ell\}$, $\Kh_\ell(a)\ge\varepsilon^2/8$, and $\Zg_\ell(a)\ge\hg_\ell$ (so $a$ is rejected). Steps~5--7: $\Cfour(\varepsilon)<\infty$.
-\par\smallskip
+\end{setgoal}
 
 \begin{proof}
 \proves{lem:amb}
@@ -3726,16 +3903,16 @@ and the series converges.
 \section{End of the proof of Theorem~\ref{thm:upper}}\label{sec:app-end}
 
 \subsection{Proof of Theorem~\ref{thm:upper}}\label{sec:app-proofupper}
+\begin{setgoal}
+\Setting \HY{} with the default parameters (the proof works for every $\wz\ge0$ and $\beta\ge2$), a grid with $\xg_\ell\to x\in[1,\infty)$, $\nu\in\cP$, a sub-optimal arm $a$.
+\Goal consistency, and $\lim_\ell\E[\Ng_a(\tl_\ell)]/\Lg_\ell=x^2/\da$. The upper bound comes from Appendix~\ref{sec:app-xone} ($x=1$) or~\ref{sec:app-xsup} ($x>1$), the lower bound
+from Theorem~\ref{thm:lower}, which needs consistency.
+\end{setgoal}
 \begin{proof}
 \proves{thm:upper}
 \uses{thm:lower, lem:diag, prop:fixedC, prop:dyA, def:hy, def:grid, def:model, def:learner, def:kinf, def:constC}
-\par\smallskip
-\Setting \HY{} with the default parameters (the proof works for every $\wz\ge0$ and $\beta\ge2$), a grid with $\xg_\ell\to x\in[1,\infty)$, $\nu\in\cP$, a sub-optimal arm $a$.
-\Goal consistency, and $\lim_\ell\E[\Ng_a(\tl_\ell)]/\Lg_\ell=x^2/\da$. The upper bound comes from Section~\ref{sec:app-xone} ($x=1$) or~\ref{sec:app-xsup} ($x>1$), the lower bound
-from Theorem~\ref{thm:lower}, which needs consistency.
-\par\smallskip
 
-\paragraph{Case $x=1$.} \emph{Upper bound.} By Lemma~\ref{lem:diag} with $\bar\varepsilon=\ez$ and $f=\RHo$, there is a sequence $\varepsilon_L\to0$ with $\RHo(\varepsilon_L)/\Lg_L\to0$.
+\par\medskip\noindent\textbf{Case $x=1$.}\  \emph{Upper bound.} By Lemma~\ref{lem:diag} with $\bar\varepsilon=\ez$ and $f=\RHo$, there is a sequence $\varepsilon_L\to0$ with $\RHo(\varepsilon_L)/\Lg_L\to0$.
 Proposition~\ref{prop:fixedC} with $\varepsilon=\varepsilon_L$ gives
 \[
 \frac{\E[\Ng_a(\tl_L)]}{\Lg_L}\ \le\ \frac1{\da}+\Co\varepsilon_L+\frac{\RHo(\varepsilon_L)}{\Lg_L}\ \xrightarrow[L\to\infty]{}\ \frac1{\da}.
@@ -3745,238 +3922,156 @@ is consistent on $\cP$.
 
 \noindent\emph{Lower bound.} Theorem~\ref{thm:lower}(i) gives $\liminf_L\E[\Ng_a(\tl_L)]/\Lg_L\ge1/\da=x^2/\da$.
 
-\paragraph{Case $x>1$.} \emph{Upper bound and consistency.} Proposition~\ref{prop:dyA} gives $\limsup_t\E[\Ng_a(t)]/\log t\le x^2/\da$, hence along $(\tl_\ell)$, and
+\par\medskip\noindent\textbf{Case $x>1$.}\  \emph{Upper bound and consistency.} Proposition~\ref{prop:dyA} gives $\limsup_t\E[\Ng_a(t)]/\log t\le x^2/\da$, hence along $(\tl_\ell)$, and
 $\E[\Ng_c(\tl_\ell)]=O(\Lg_\ell)$ for every instance and every sub-optimal $c$: \HY{} is consistent.
 
 \noindent\emph{Lower bound.} The counts are logarithmic, so Theorem~\ref{thm:lower}(ii) gives $\liminf_\ell\E[\Ng_a(\tl_\ell)]/\Lg_\ell\ge x^2/\da$.
 
-\paragraph{Regret.} Sum the limits over the finitely many sub-optimal arms, weighted by $\Dg_c$.
+\par\medskip\noindent\textbf{Regret.}\  Sum the limits over the finitely many sub-optimal arms, weighted by $\Dg_c$.
 \end{proof}
 
 %======================================================================
-\section{Sanity checks}\label{sec:sanity}
+\section{Sources of the techniques}\label{sec:attribution}
 
-\begin{itemize}
-\item \emph{Batches of size one ($x=1$, the sequential case).} Take $\Bg_1:=\max(2,K)$ and $\Bg_\ell:=1$ for $\ell\ge2$. Then
-$\tl_\ell=\Bg_1+\ell-1$ and $\xg_\ell\to1$, and a batched learner observes every reward before the next round: the setting
-is the sequential one. Theorem~\ref{thm:main} then gives the constant $1/\Ki(\nu_a,\m^\star)$, the sequential optimal
-constant for distributions on $[0,1]$ \cite{BK96} (to be checked), \cite[(2) and Theorem~8]{HT10}. On this grid no batch of \HY{} is
-activated: $\sA_\ell=\lfloor\tl_\ell^{1+\thv_\ell}\rfloor\ge\tl_\ell+1=\tl_{\ell+1}$, since $\tl^{1+\vartheta}\ge2t\ge t+1$ when
-$\tl_\ell<e^e$ ($\vartheta=1$), and $\tl^{1+\vartheta}=t\,e^{\log t/\log\log t}\ge e\,t\ge t+1$ when $\tl_\ell\ge e^e$. So every
-round is an IMED round with statistics refreshed at every round: \HY{} is IMED \cite{HT15}, with the weight
-$\yg_\ell=\xg_\ell^2\to1$ on the logarithm and the pseudo-observation of weight $\wz$.
-\item \emph{An explicit example, $K=2$, Bernoulli rewards.} Let $\nu_1:=\Ber(1/2)$ and $\nu_2:=\Ber(3/10)$, so that
-$\nu\in\cP$ ($\m^\star=1/2<1$) and $a=2$. For $0<p<\mu<1$ the dual formula gives $\Ki(\Ber(p),\mu)=\kl(p,\mu)$ (the maximizer
-is $\lambda^\star=(\mu-p)/(\mu(1-\mu))\in\Lset{\mu}$, where $1-\lambda^\star(1-\mu)=p/\mu$ and $1+\lambda^\star\mu=(1-p)/(1-\mu)$),
-so $\da=\kl(0.3,0.5)\approx0.0823$. On the grid $\tl_\ell:=2^{2^\ell}$ ($\tl_1=4\ge\max(2,K)$, and $\xg_\ell=2$ for $\ell\ge2$),
-Theorem~\ref{thm:main} gives $\E[\Ng_2(\tl_\ell)]\sim4\log\tl_\ell/\da\approx48.6\log\tl_\ell$; on the grid
-$\tl_\ell:=2^{\ell+1}$ ($\xg_\ell=(\ell+1)/\ell\to1$) it gives $\approx12.2\log\tl_\ell$. All the hypotheses hold at once:
-rewards in $[0,1]$, $\m^\star<1$, $\Bg_1\ge K$, $\xg_\ell\to x$.
-\item \emph{The constant is finite and positive.} By Lemma~\ref{lem:kinf}(i) and~(iv) (with $q:=\m_a$),
-$\Dg_a^2/8\le\da\le\kap(\m^\star)<\infty$ for every sub-optimal arm $a$ of an instance of $\cP$.
-\item \emph{Boundary of the class.} If $\m^\star=1$, then $\Ki(\nu_a,1)=+\infty$ for every arm of mean smaller than $1$, and
-the first-order constant would be $0$: such instances are excluded from $\cP$.
-\item \emph{Several optimal arms and ties.} $\cP$ allows several optimal arms, and the tie rules of \HY{} are arbitrary; the
-proofs use neither a unique optimal arm nor a particular tie rule (Subsection~\ref{sec:algo}, Properties~(ii)).
-\item \emph{Every arm observed.} Batch $1$ has $\Bg_1\ge K$ rounds, so every count is at least $1$ at every end
-(Definition~\ref{def:hy-vocab}): no $\log0$ and no empty empirical distribution occurs.
-\item \emph{Consistency with the roadmap.} KNOWN.md of BatchedBandits has no \texttt{[Lean]} entry yet. The statements
-agree with Appendix~A, items~1--2, of the roadmap, and with the author's private Lean statements
-(Subsection~\ref{sec:lean}).
-\end{itemize}
+For each technique of the proofs, the earliest source that we found.
 
-%======================================================================
-\section{Weak points}\label{sec:weak}
-
-The independent verifications (by AI agents) found no error; these are the steps where an error would be the hardest to
-see.
-\begin{enumerate}
-\item[(1)] Lemma~\ref{lem:twobatches}, Steps 3--4: the order of the limits ($\ell\to\infty$, then $b\to\infty$, then
-$C\to\infty$), with constants that depend on $C$ through the tilt, and the reason why the two instances $\nu^{\rhom}$ and
-$\nu^{\rhop}$ are used instead of $\nu$ itself. This is also where the logarithmic counts of Theorem~\ref{thm:lower}(ii)
-enter.
-\item[(2)] Lemma~\ref{lem:amb} (a sub-optimal arm passes the consistency test): the bound on the probability that $a$ is
-ambiguous at the start of an activated batch, of order $e^{-c\sqrt{\Lg_\ell}/\log^2\Lg_\ell}$, and its summability through
-Lemma~\ref{lem:sparse}; the constants of its Steps 5--7.
-\item[(3)] Lemma~\ref{lem:W} (the IMED phase lifts the water level) and the chain argument of the case $x=1$
-(Lemmas~\ref{lem:levelC}, \ref{lem:fewC} and~\ref{lem:optW}), which must hold from some rank on for every grid with
-$\xg_\ell\to1$, including short batches alternating with long ones.
-\end{enumerate}
-
-%======================================================================
-\section{Open questions}\label{sec:open}
-
-\begin{openquestion}[explicit remainders]\label{oq:remainders}
-Is there a learner of $\Mz$ such that, for every $x\in[1,\infty)$, every grid with $\xg_\ell\to x$, every $\nu\in\cP$ and every
-sub-optimal arm $a$, and for every $\ell$,
-$\E[\Ng_a(\tl_\ell)]\le\frac{x^2}{\Ki(\nu_a,\m^\star)}\log\tl_\ell+C(\nu)\,(\log\tl_\ell)^{\alpha}+r_\ell$, with an exponent $\alpha<1$,
-a constant $C(\nu)$ polynomial in $1/\Ki(\nu_a,\m^\star)$, $1/(1-\m^\star)$ and $K$, and a term $r_\ell=o(\log\tl_\ell)$ given
-explicitly by the grid (through $\xg_\ell-x$)?
-\end{openquestion}
-\noindent\emph{Why it is open.} The remainders of \HY{} come from ranks after which the margins, the nets and the
-deviation inequalities with a gain take effect; they are existential in the Lean proof and astronomical on paper. It
-extends roadmap directions D1 and D2.
-
-\begin{openquestion}[the liminf without logarithmic counts]\label{oq:liminf}
-Let $x>1$, a grid with $\xg_\ell\to x$, a batched learner consistent on $\cP$, $\nu\in\cP$ and a sub-optimal arm $a$. Does
-$\liminf_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell\ge x^2/\Ki(\nu_a,\m^\star)$ hold without the assumption
-$\E_\nu[\Ng_a(\tl_\ell)]=O(\log\tl_\ell)$ of Theorem~\ref{thm:lower}(ii), or is there a consistent learner that violates it?
-\end{openquestion}
-\noindent\emph{Why it is open.} Lemma~\ref{lem:twobatches} needs the number of pulls of $a$ in batch $\ell$ to be tight,
-which is where the logarithmic counts are used. It extends item~1 of Appendix~A of the roadmap.
-
-\begin{openquestion}[random batch ends]\label{oq:random}
-Let the batch ends $\tl_1<\tl_2<\cdots$ be random, independent of the rewards and of the learner's randomization, with
-$\log\tl_\ell/\log\tl_{\ell-1}\to x\in[1,\infty)$ almost surely, each end being revealed when it happens. Is
-$x^2/\Ki(\nu_a,\m^\star)$ still the optimal first-order constant of $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell$: a lower bound for every
-consistent batched learner that knows the law of the grid, attained by \HY?
-\end{openquestion}
-\noindent\emph{Why it is open.} Theorem~\ref{thm:lower} fixes a deterministic grid, and the proof of
-Theorem~\ref{thm:upper} uses deterministic ranks of the grid; with random ends both must be conditioned on the grid, and a
-learner that knows the law of the grid may anticipate the end of a batch. It extends the setting of the roadmap (a new
-direction).
-
-%======================================================================
-\section{Attribution}\label{sec:attribution}
-
-\begin{center}
-\begin{tabular}{p{0.40\textwidth}p{0.52\textwidth}}
-\hline
-Technique (where) & Earliest source found \\
-\hline
-Change of measure at the ends of the batches (Lemma~\ref{lem:onebatch}) & \cite{LR85} (to be checked); the form with
-events at a stopping time \cite[Lemma~1]{KCG16}; the form with a $[0,1]$-valued variable \cite[Lemma~1 and (6)]{GMS19}.
+\begin{center}\small
+\begin{tabular}{p{0.36\textwidth}p{0.58\textwidth}}
+\toprule
+Technique (where) & Source \\
+\midrule
+Change of measure at the ends of the batches (Lemma~\ref{lem:onebatch}) & \citet{LR85}; the form with
+events at a stopping time \citet[Lemma~1]{KCG16}; the form with a $[0,1]$-valued variable \citet[Lemma~1 and (6)]{GMS19}.
 Batched form, in which the observations available in a batch are those of the rounds before its start (``a product
-distribution of at most $t_{J(t)-1}$ marginals''): \cite[Appendix~A]{PRCS16} (proof of its lower bound, Theorem~4, for a
-fixed grid) and \cite[Section~3.1]{GHRZ19}; for static grids and anytime learners, \cite[Appendix~C]{JTXHXG21} \\
+distribution of at most $t_{J(t)-1}$ marginals''): \citet[Appendix~A]{PRCS16} (proof of its lower bound, Theorem~4, for a
+fixed grid) and \citet[Section~3.1]{GHRZ19}; for static grids and anytime learners, \citet[Appendix~C]{JTXHXG21} \\
 Tilting only the rewards of one batch towards an intermediate distribution, then the risk under the two neighbouring
 alternatives (Lemmas~\ref{lem:com}, \ref{lem:typ} and~\ref{lem:twobatches}) & the expected sample size at a parameter
-between the two hypotheses \cite{H60}; for multi-stage tests, the sample size after the penultimate stage forced by an
-intermediate density, so that the last stage is negligible \cite[Theorem~3 and its proof]{L83}; a reference measure for
-the observations before a batch \cite[Section~3.2, Lemmas~4--5 and Appendices~B.4--B.5]{GHRZ19}. New here, as far as we
-found: consistency on both sides at the batch ends (an instance where $a$ is barely sub-optimal and one where it is barely
+between the two hypotheses \citet{H60}; for multi-stage tests, the sample size after the penultimate stage forced by an
+intermediate density, so that the last stage is negligible \citet[Theorem~3 and its proof]{L83}; a reference measure for
+the observations before a batch \citet[Section~3.2, Lemmas~4--5 and Appendices~B.4--B.5]{GHRZ19}. New here, as far as we
+know: consistency on both sides at the batch ends (an instance where $a$ is barely sub-optimal and one where it is barely
 optimal), the boundary tilt of $\Ki$ mixed with atoms at $0$ and $1$ (for the mixing step itself, see two rows below), and the tightness of the number of pulls of $a$ in
 batch $\ell$ \\
 Boundary tilt from the optimality condition of the dual formula (Lemma~\ref{lem:tilts}(a)) & the optimal distribution of
-the proof of \cite[Theorem~8]{HT10} \\
+the proof of \citet[Theorem~8]{HT10} \\
 Mixing with a small atom at $0$ or at $1$ (Lemma~\ref{lem:tilts}(b)) & the mixture $(1-\alpha)\nu'+\alpha\delta_x$ with $x$
-close to $1$, which raises the mean, in the proof of the regularity lemma of $\Ki$ \cite[Appendix~B.1]{GHMS22} (``a variation
+close to $1$, which raises the mean, in the proof of the regularity lemma of $\Ki$ \citet[Appendix~B.1]{GHMS22} (``a variation
 on the proofs'' of Honda and Takemura); an atom at the right end also appears in the optimal distribution of the boundary case
-of the proof of \cite[Theorem~8]{HT10}. New here: the use of both mixtures, with $\delta_0$ and with $\delta_1$, to obtain an
+of the proof of \citet[Theorem~8]{HT10}. New here: the use of both mixtures, with $\delta_0$ and with $\delta_1$, to obtain an
 instance where $a$ is barely sub-optimal and one where it is barely optimal \\
-Dual formula of $\Ki$ and its properties (Lemma~\ref{lem:kinf}) & \cite[(5) and Theorems~5--8]{HT10}; also
-\cite{GHMS22} \\
-Deviations of $n\Ki$ with a gain (Lemmas~\ref{lem:grid}--\ref{lem:upperdev}) & variants of \cite[Section~5,
-Theorem~2]{CGMMS13}, \cite{HT15} and \cite[Section~2.3]{GHMS22}; the gain is this paper's \\
-IMED index (IMED phase of \HY) & \cite[Section~2, Algorithm~1]{HT15} \\
-Reward stacks (Lemma~\ref{lem:stacks}) & \cite[Section~4.6]{LS} (to be checked) \\
-Paced targets $(1+\omega)\,c\log t$ tracked at every round (Definition~\ref{def:hy}) & \cite[Section~5,
-Algorithm~1]{CMP17} (an arm is explored while its count is below $c(1+\gamma)\log t$); also \cite{LS17} (to be checked) \\
-The queue lemma (Lemma~\ref{lem:service}) & closest known form: the tracking lemma \cite[Appendix~B.1, Lemma~15]{GK16}
+\bottomrule
+\end{tabular}
+
+\medskip
+\begin{tabular}{p{0.36\textwidth}p{0.58\textwidth}}
+\toprule
+Technique (where) & Source \\
+\midrule
+Dual formula of $\Ki$ and its properties (Lemma~\ref{lem:kinf}) & \citet[(5) and Theorems~5--8]{HT10}; also
+\citet{GHMS22} \\
+Deviations of $n\Ki$ with a gain (Lemmas~\ref{lem:grid}--\ref{lem:upperdev}) & variants of \citet[Section~5,
+Theorem~2]{CGMMS13}, \citet{HT15} and \citet[Section~2.3]{GHMS22}; the gain is new here \\
+IMED index (IMED phase of \HY) & \citet[Section~2, Algorithm~1]{HT15} \\
+Reward stacks (Lemma~\ref{lem:stacks}) & \citet[Section~4.6]{LS} \\
+Paced targets $(1+\omega)\,c\log t$ tracked at every round (Definition~\ref{def:hy}) & \citet[Section~5,
+Algorithm~1]{CMP17} (an arm is explored while its count is below $c(1+\gamma)\log t$) \\
+The queue lemma (Lemma~\ref{lem:service}) & closest known form: the tracking lemma \citet[Appendix~B.1, Lemma~15]{GK16}
 (the rule that pulls an arm maximising the cumulated proportion minus its count keeps every count within $K-1$ of its
-cumulated proportion), from which \cite[Lemma~7]{GK16} derives the forced exploration of C-tracking. Lemma~\ref{lem:service}
+cumulated proportion), from which \citet[Lemma~7]{GK16} derives the forced exploration of C-tracking. Lemma~\ref{lem:service}
 differs in three ways: its rule pulls the first arm below its target in a fixed order, its demands are integer targets that
 grow like $\log t$ and are capped, and it has an initial burst of size $O(K\Ug_{\ell+1})$ \\
-The plan made from the statistics frozen at $\tl_\ell$ towards the test two batches later (Definition~\ref{def:hy}) & source
-not known \\
-Water level of IMED rounds (Lemma~\ref{lem:W}) and high batches & the companion manuscript \cite{P26} (to be checked;
-unpublished); source not known in the published literature \\
-Consistency threshold (Lemma~\ref{lem:amb}) & source not known \\
-\hline
+The plan made from the statistics frozen at $\tl_\ell$ towards the test two batches later (Definition~\ref{def:hy}) & new here, as far as we know \\
+Water level of IMED rounds (Lemma~\ref{lem:W}) and high batches & the author's companion manuscript (see also \citealp{P26}),
+unpublished; proved again here \\
+Consistency threshold (Lemma~\ref{lem:amb}) & new here, as far as we know \\
+\bottomrule
 \end{tabular}
 \end{center}
-
-\paragraph{Searches.} The conversion of 2026-11-14 ran no web search. The revision of 2026-11-14 read the sources above on
-the web (the PDFs of HT10, GMS19 arXiv v3, KCG16, JTXHXG21 and its supplement, BK18, GHRZ19 arXiv v3, PRCS16 arXiv v3,
-KO21b, JGS13 arXiv v2; the abstract of H60; the account of L83, Theorem~3, in Bartroff and Tartakovsky, arXiv:2403.18782,
-Section~2.5), and reuses the queries of the scope report of 2026-11-14, all run on that date, with what they found:
-``batched bandits imposed batch sizes fixed grid asymptotic lower bound Lai Robbins constant'' (PRCS16, GHRZ19, no constant
-on imposed grids); ``stochastic bandit feedback revealed at exogenous batch ends unknown in advance asymptotically optimal
-regret log t'' (EKMM21, nothing on unknown imposed ends); ``Kalkanli Ozgur asymptotic performance Thompson sampling batched
-multi-armed bandits batch size condition'' (KO21b); ``bandits delayed feedback asymptotic lower bound regret constant
-depends on delay growth polynomial delays Lai Robbins'' and ``bandit with delayed feedback delay proportional to time
-t\^{}beta regret lower bound increases factor'' (constant or i.i.d.\ delays only); ``multi-armed bandit unknown horizon
-doubly exponential checkpoints regret constant factor lower bound anytime doubling trick'' (BK18; JTXHXG21, Theorem~4);
-``batched bandit exponential time grid regret constant b\^{}2 lower bound K\_inf IMED batched'' (no $b^2$ constant found);
-``explore two batches ahead bandit lower bound grid'' (no hit); ``Prevost batched bandits imposed grid IMED K\_inf 2026
-arXiv'' (no public version); ``Lorden 1983 asymptotic efficiency three-stage hypothesis tests last stage negligible'' (L83,
-and its account in arXiv:2403.18782); ``Hoeffding 1960 lower bounds for the expected sample size and the average risk of a
-sequential procedure intermediate distribution'' (H60); ``lower bound batched bandit change of measure only rewards of last
-batch intermediate distribution'' (GHRZ19, Lemmas~2--5); ``Honda Takemura 2010 COLT bounded support models K\_inf dual
-Theorem 8 Lemma 2'' (HT10; the numbering of HT15 and of arXiv:2111.09724); ``OSSB Combes Magureanu Proutiere exploration
-rule (1+gamma) log t tracking'' (CMP17, Algorithm~1); ``adaptive treatment allocation grouped responses group sequential
-multi-armed bandit asymptotic regret'' (nothing with a sharp constant); ``non-asymptotic regret bound batched bandit unknown
-grid second order term explicit K\_inf'' (AJK21; nothing on unknown grids); ``batched bandits random batch sizes revealed
-online'' and ``bandits feedback at random times renewal process batch ends'' (only KO21b); ``lower bound liminf expected
-number of pulls consistent policy without assumption logarithmic regret batched or delayed'' (nothing on the batched
-$\liminf$). The second revision (2026-11-14) reuses two queries of the second scope report, with what they found:
-``K\_inf regularity proof mixture Dirac mass point x close to 1 increase mean continuity Honda Takemura'' (GHMS22,
-Appendix~B.1, read on ar5iv) and ``round-robin scheduling lemma deficits of several arms C-tracking lemma Garivier
-Kaufmann'' (GK16, Lemmas~7 and~15, read on ar5iv); it read the PMLR page of GK16 for its metadata.
-
 
 %======================================================================
 \section{Notation}\label{sec:notation}
 %----------------------------------------------------------------------
 \subsection{Vocabulary}\label{sec:app-vocab}
-Every word below is a link to its definition, and so are its main uses in the statements and in the paragraphs ``Setting/Goal''.
+Every word below is a link to its definition, and so are its main uses in the statements and in the boxes ``Setting/Goal''.
 
-\noindent \term{t:leader}{leader} $\Ld_\ell$\quad arm of largest $\tm_c(\tl_\ell)$; in batch $\ell+1$, preferred among the IMED minimizers, and pulled in the paced phase when no other arm has a demand\hfill{\small Def.~\ref{def:hy}}\par
-\noindent \term{t:ref}{well-sampled}, \term{t:ref}{reference}, \term{t:ref}{test level}\quad $N_c\ge\frac12\Ug_\ell$; best well-sampled arm $\rr_\ell$; its mean $\mh_\ell$, against which the arms are tested\hfill{\small Def.~\ref{def:hy}}\par
-\noindent \term{t:verdict}{rejected} / \term{t:verdict}{ambiguous}\quad verdict of the test at $\tl_\ell$: evidence $\Zg_\ell(c)$ above the threshold $\hg_\ell$, or not\hfill{\small Def.~\ref{def:hy}}\par
-\noindent \term{t:net}{net}\quad the target $K-1+\Ug_{\ell+1}$ of an ambiguous arm, polylogarithmic\hfill{\small Def.~\ref{def:hy}}\par
-\noindent \term{s:act}{IMED phase} / \term{s:act}{paced phase}\quad rounds $\le\sA_\ell$ of batch $\ell+1$ / rounds $>\sA_\ell$\hfill{\small Sec.~\ref{sec:algo}}\par
-\noindent \term{s:act}{activated} batch\quad batch $\ell+1$ with paced rounds, $\tl_{\ell+1}>\sA_\ell$ ($\ell\in\Act$)\hfill{\small Sec.~\ref{sec:algo}}\par
-\noindent \term{s:water}{water level} $\Lam_j$\quad smallest IMED index (divided by $\yg_{j-1}$) at the end of batch $j$\hfill{\small Sec.~\ref{sec:app-water-det}}\par
-\noindent \term{s:evA}{good batch} ($x>1$)\quad batch $\ell$ on the event $\Gg_\ell$: accurate means, no wrong rejection, typical divergence of $a$\hfill{\small Def.~\ref{def:evA}}\par
-\noindent \term{t:high}{$(g,L)$-high} batch ($x=1$)\quad batch $j<L$ whose water level is at least $(1-g)\log\tl_L$: every arm explored almost up to the horizon $\tl_L$\hfill{\small Sec.~\ref{sec:app-water}}\par
-\noindent \term{s:evC}{classes} $\cU,\cG,\cC,\cO$ ($x=1$)\quad unreliable leader; good; $a$ looks competitive; other (at the end of the previous batch)\hfill{\small Def.~\ref{def:evC}}\par
-\noindent count threshold, \term{s:ranksA}{$x>1$} / \term{s:constC}{$x=1$}\quad $\ug_\ell(\varepsilon)$ / $\up_j(\varepsilon)$: a count above which the means are accurate\hfill{\small Sec.~\ref{sec:app-constA}, Def.~\ref{def:constC}}\par
+\begin{center}\small
+\begin{tabular}{p{3.2cm}p{9.0cm}p{2.6cm}}
+\toprule
+Term & Meaning & Definition\\ \midrule
+\term{t:leader}{leader} $\Ld_\ell$ & arm of largest $\tm_c(\tl_\ell)$; in batch $\ell+1$, preferred among the IMED minimizers, and pulled in the paced phase when no other arm has a demand & Def.~\ref{def:hy}\\
+\term{t:ref}{well-sampled}, \term{t:ref}{reference}, \term{t:ref}{test level} & $N_c\ge\frac12\Ug_\ell$; best well-sampled arm $\rr_\ell$; its mean $\mh_\ell$, against which the arms are tested & Def.~\ref{def:hy}\\
+\term{t:verdict}{rejected} / \term{t:verdict}{ambiguous} & verdict of the test at $\tl_\ell$: evidence $\Zg_\ell(c)$ above the threshold $\hg_\ell$, or not & Def.~\ref{def:hy}\\
+\term{t:net}{net} & the target $K-1+\Ug_{\ell+1}$ of an ambiguous arm, polylogarithmic & Def.~\ref{def:hy}\\
+\term{s:act}{IMED phase} / \term{s:act}{paced phase} & rounds $\le\sA_\ell$ of batch $\ell+1$ / rounds $>\sA_\ell$ & Def.~\ref{def:hy-vocab}\\
+\term{s:act}{activated} batch & batch $\ell+1$ with paced rounds, $\tl_{\ell+1}>\sA_\ell$ ($\ell\in\Act$) & Def.~\ref{def:hy-vocab}\\
+\term{s:water}{water level} $\Lam_j$ & smallest IMED index (divided by $\yg_{j-1}$) at the end of batch $j$ & App.~\ref{sec:app-water-det}\\
+\term{s:evA}{good batch} ($x>1$) & batch $\ell$ on the event $\Gg_\ell$: accurate means, no wrong rejection, typical divergence of $a$ & Def.~\ref{def:evA}\\
+\term{t:high}{$(g,L)$-high} batch ($x=1$) & batch $j<L$ whose water level is at least $(1-g)\log\tl_L$: every arm explored almost up to the horizon $\tl_L$ & App.~\ref{sec:app-water}\\
+\term{s:evC}{classes} $\cU,\cG,\cC,\cO$ ($x=1$) & unreliable leader; good; $a$ looks competitive; other (at the end of the previous batch) & Def.~\ref{def:evC}\\
+count threshold, \term{s:ranksA}{$x>1$} / \term{s:constC}{$x=1$} & $\ug_\ell(\varepsilon)$ / $\up_j(\varepsilon)$: a count above which the means are accurate & Def.~\ref{def:ranksA}, Def.~\ref{def:constC}\\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \subsection{Notation}\label{sec:app-notation}
 Every symbol is a link to its definition.
 
-\medskip\noindent \emph{Model}\par\smallskip
-\noindent $\tl_\ell$, $\Bg_\ell$, $\Lg_\ell$, $\xg_\ell$\quad end and size of batch $\ell$, $\Lg_\ell:=\log\tl_\ell$, $\xg_\ell:=\Lg_\ell/\Lg_{\ell-1}$\hfill{\small Sec.~\ref{sec:setting}}\par
-\noindent $\nu_c$, $\m_c$, $\m^\star$, $\Dg_c$, $\mtwo$, $\Dg$, $\cP$\quad arm distributions and means, best mean, gaps, second best mean, smallest gap, class of instances\hfill{\small Sec.~\ref{sec:setting}}\par
-\noindent $a$, $a^\star$\quad the sub-optimal arm studied, a fixed optimal arm\hfill{\small Sec.~\ref{sec:setting}}\par
-\noindent $\Ki$, $\kap$, $\Lset{\mu}$, $\da$\quad divergence (dual formula), $\kap(\mu):=\log\frac1{1-\mu}$, $[0,\frac1{1-\mu})$, $\da:=\Ki(\nu_a,\m^\star)$\hfill{\small Sec.~\ref{sec:setting}}\par
-\noindent $\Ng_c(t)$, $\Reg(t)$\quad pulls of $c$ in rounds $1,\dots,t$ (included), regret\hfill{\small Sec.~\ref{sec:setting}}\par
-\noindent $\Xs_{c,k}$, $\hnu_{c,n}$, $\hm_{c,n}$, $\hnu_c(t)$, $\hm_c(t)$\quad reward stacks, empirical distribution and mean of the first $n$ rewards, and at round $t$\hfill{\small Sec.~\ref{sec:setting}}\par
-\noindent $\Mz$\quad information model: at round $t$ of batch $\ell+1$, $\tl_1,\dots,\tl_\ell$ and $t$ are known\hfill{\small Sec.~\ref{sec:setting}}\par
-\medskip\noindent \emph{Algorithm \HY}\par\smallskip
-\noindent $\wz$, $\beta$, $\om_\ell$, $\ody_\ell$, $\thv_\ell$, $\gam_\ell$\quad pseudo-count, net exponent, margins, dyadic margins, activation exponents, consistency margins\hfill{\small Def.~\ref{def:hy}}\par
-\noindent $\yg_\ell$, $\Ug_{\ell+1}$, $\tauA_\ell$, $\sA_\ell$\quad weight $\xg_\ell^2$, net $\lceil\Lg_\ell^\beta\rceil$, activation round $\tl_\ell^{1+\thv_\ell}$, last IMED round $\lfloor\tauA_\ell\rfloor$\hfill{\small Def.~\ref{def:hy}}\par
-\noindent $\tnu_c$, $\tm_c$, $\Ld_\ell$, $\tms_\ell$, $\Kt_\ell$, $\Jg_\ell$\quad statistics with the pseudo-observation, IMED leader and its mean, IMED divergences and index\hfill{\small Def.~\ref{def:hy}}\par
-\noindent $\Wg_\ell$, $\rr_\ell$, $\mh_\ell$, $\Kh_\ell$\quad well-sampled arms, reference, test level, test divergences\hfill{\small Def.~\ref{def:hy}}\par
-\noindent $\Qp_\ell$, $\Lh_\ell$, $\hg_\ell$, $\Zg_\ell$\quad poorly sampled arms except the previous leader, consistency level, threshold, evidence\hfill{\small Def.~\ref{def:hy}}\par
-\noindent $\nt_{\ell,c}(t)$, $\Act$\quad paced target, set of the $\ell$ such that batch $\ell+1$ is activated\hfill{\small Def.~\ref{def:hy}, Sec.~\ref{sec:algo}}\par
-\noindent $\HH_j$, $\HH(t)$\quad largest planned level up to batch $j$, resp.\ up to round $t$\hfill{\small Sec.~\ref{sec:app-constA}}\par
-\medskip\noindent \emph{Tools and lower bound}\par\smallskip
-\noindent $\Phis_\nu$, $\Psis_\nu$; $\taun_n$, $\lamk^{(k)}$, $\kn_n$\quad exponential moments of the tilt; grid of the dual formula\hfill{\small Sec.~\ref{sec:app-tools}}\par
-\noindent $\sig_p$\quad elementary sums\hfill{\small Lemma~\ref{lem:sums}}\par
-\noindent $\rhom$, $\rhop$, $\QQ$, $\nzero$, $\Mb$, $\Sl$, $\cB$\quad boundary instances, tilted measure and its log-likelihood ratios\hfill{\small Sec.~\ref{sec:app-lb-two}}\par
-\medskip\noindent \emph{Deterministic properties}\par\smallskip
-\noindent $\Lam_j$, $\lW$\quad water level of batch $j$, rank of Lemma~\ref{lem:W}\hfill{\small Sec.~\ref{sec:app-water-det}}\par
-\medskip\noindent \emph{Case $x>1$}\par\smallskip
-\noindent $\eb$, $\eg$, $\Ceta$, $\cst$, $\ew$, $\xp$, $\hb_\ell$\quad fixed constants: accuracy bound, gain, its constant, $\frac{2-\m^\star}{1-\m^\star}$, accuracy for the margin $\om$, $2x$, deterministic threshold\hfill{\small Def.~\ref{def:constA}}\par
-\noindent $\De_\varepsilon$, $\Kp_\varepsilon$, $\kape_\varepsilon$, $\Rt_\varepsilon$, $\rt_\varepsilon$, $\ngr_\varepsilon$, $\cAc(\varepsilon)$, $\CLU(\varepsilon)$\quad constants depending on $\varepsilon$, of the deviation inequalities\hfill{\small Def.~\ref{def:constA}}\par
-\noindent $\lA$, $\lone(\varepsilon,\varepsilon')$, $\ug_\ell(\varepsilon)$\quad ranks and count threshold\hfill{\small Sec.~\ref{sec:app-constA}}\par
-\noindent $\Ag$, $\Vg$, $\Pig$, $\Lo$, $\Up$, $\Gg$, $\Fg$\quad events\hfill{\small Def.~\ref{def:evA}}\par
-\noindent $\mt_\ell$, $\Yg_j$\quad plan of $a$ and nets of the decomposition\hfill{\small Lemma~\ref{lem:decompA}}\par
-\noindent $\SE_\varepsilon$\quad $\sup_y(2\xp^3y-\varepsilon^2y^\beta)$\hfill{\small Lemma~\ref{lem:sumsA}}\par
-\noindent $\epl_\ell$, $\cone$, $\etwo$, $\lonep$\quad accuracies and rank of the dyadic margins\hfill{\small Prop.~\ref{prop:dyA}}\par
-\medskip\noindent \emph{Case $x=1$}\par\smallskip
-\noindent $\ez$, $\ezz$, $\dl$, $\Cz$, $\Co$, $\yb$, $\thc$, $\ctl$, $\epth$\quad fixed constants\hfill{\small Def.~\ref{def:constC}}\par
-\noindent $\Dp_\varepsilon$, $\Me_\varepsilon$, $\Cg_\varepsilon$, $\Rz_\varepsilon$, $\rz_\varepsilon$, $\up_j(\varepsilon)$\quad constants depending on $\varepsilon$\hfill{\small Def.~\ref{def:constC}}\par
-\noindent $\lzp$, $\ly$, $\lonez$, $\lz$, $\lfour$, $\lfive$\quad ranks (functions of $\varepsilon$)\hfill{\small Sec.~\ref{sec:app-constC}, Def.~\ref{def:amb}}\par
-\noindent $\Dev$, $\Vs$, $\Va$, $\cU$, $\cG$, $\cC$, $\cO$\quad events and classes\hfill{\small Def.~\ref{def:evC}}\par
-\noindent $\Shi_j$, $\Sgo_j$\quad high batches, those with a well-sampled leader\hfill{\small Lemma~\ref{lem:goodhigh}}\par
-\noindent $\zet_\ell$, $\zetp_\ell$, $\nl_\ell$, $\Acc_\ell$, $\KC_\ell$, $\Eamb_\ell$, $\cell_\ell$, $\Cfour(\varepsilon)$\quad objects of the consistency threshold\hfill{\small Def.~\ref{def:amb}, Lemma~\ref{lem:amb}}\par
-\noindent $\Cpi(\varepsilon)$, $\RHo(\varepsilon)$\quad summed probabilities, remainder\hfill{\small Lemma~\ref{lem:sumC}, Prop.~\ref{prop:fixedC}}\par
+\begin{center}\small
+\begin{tabular}{p{4.0cm}p{8.2cm}p{2.6cm}}
+\toprule
+Symbol & Meaning & Definition\\ \midrule
+\multicolumn{3}{l}{\emph{Model}}\\
+$\tl_\ell$, $\Bg_\ell$, $\Lg_\ell$, $\xg_\ell$ & end and size of batch $\ell$, $\Lg_\ell:=\log\tl_\ell$, $\xg_\ell:=\Lg_\ell/\Lg_{\ell-1}$ & Def.~\ref{def:grid}\\
+$\nu_c$, $\m_c$, $\m^\star$, $\Dg_c$, $\mtwo$, $\Dg$, $\cP$ & arm distributions and means, best mean, gaps, second best mean, smallest gap, class of instances & Def.~\ref{def:model}\\
+$a$, $a^\star$ & the sub-optimal arm studied, a fixed optimal arm & Def.~\ref{def:model}\\
+$\Ki$, $\kap$, $\Lset{\mu}$, $\da$ & divergence (dual formula), $\kap(\mu):=\log\frac1{1-\mu}$, $[0,\frac1{1-\mu})$, $\da:=\Ki(\nu_a,\m^\star)$ & Def.~\ref{def:kinf}\\
+$\Ng_c(t)$, $\Reg(t)$ & pulls of $c$ in rounds $1,\dots,t$ (included), regret & Def.~\ref{def:learner}\\
+$\Xs_{c,k}$, $\hnu_{c,n}$, $\hm_{c,n}$, $\hnu_c(t)$, $\hm_c(t)$ & reward stacks, empirical distribution and mean of the first $n$ rewards, and at round $t$ & Def.~\ref{def:stacks}\\
+$\Mz$ & information model: at round $t$ of batch $\ell+1$, $\tl_1,\dots,\tl_\ell$ and $t$ are known & Def.~\ref{def:M0}\\
+\midrule
+\multicolumn{3}{l}{\emph{Algorithm \HY}}\\
+$\wz$, $\beta$, $\om_\ell$, $\ody_\ell$, $\thv_\ell$, $\gam_\ell$ & pseudo-count, net exponent, margins, dyadic margins, activation exponents, consistency margins & Def.~\ref{def:hy}\\
+$\yg_\ell$, $\Ug_{\ell+1}$, $\tauA_\ell$, $\sA_\ell$ & weight $\xg_\ell^2$, net $\lceil\Lg_\ell^\beta\rceil$, activation round $\tl_\ell^{1+\thv_\ell}$, last IMED round $\lfloor\tauA_\ell\rfloor$ & Def.~\ref{def:hy}\\
+$\tnu_c$, $\tm_c$, $\Ld_\ell$, $\tms_\ell$, $\Kt_\ell$, $\Jg_\ell$ & statistics with the pseudo-observation, IMED leader and its mean, IMED divergences and index & Def.~\ref{def:hy}\\
+$\Wg_\ell$, $\rr_\ell$, $\mh_\ell$, $\Kh_\ell$ & well-sampled arms, reference, test level, test divergences & Def.~\ref{def:hy}\\
+$\Qp_\ell$, $\Lh_\ell$, $\hg_\ell$, $\Zg_\ell$ & poorly sampled arms except the previous leader, consistency level, threshold, evidence & Def.~\ref{def:hy}\\
+$\nt_{\ell,c}(t)$, $\Act$ & paced target, set of the $\ell$ such that batch $\ell+1$ is activated & Defs.~\ref{def:hy}, \ref{def:hy-vocab}\\
+$\HH_j$, $\HH(t)$ & largest planned level up to batch $j$, resp.\ up to round $t$ & Def.~\ref{def:H}\\
+\bottomrule
+\end{tabular}
 
-\bibliographystyle{alpha}
-% refs: the works cited; ../../papers/library: the library's papers (generated; keys INC-P<nnn>).
-\bibliography{refs,../../papers/library}
+\medskip
+\begin{tabular}{p{4.0cm}p{8.2cm}p{2.6cm}}
+\toprule
+Symbol & Meaning & Definition\\ \midrule
+\multicolumn{3}{l}{\emph{Tools and lower bound}}\\
+$\Phis_\nu$, $\Psis_\nu$; $\taun_n$, $\lamk^{(k)}$, $\kn_n$ & exponential moments of the tilt; grid of the dual formula & Def.~\ref{def:empkinf}\\
+$\sig_p$ & elementary sums & App.~\ref{sec:app-sums}\\
+$\rhom$, $\rhop$, $\QQ$, $\nzero$, $\Mb$, $\Sl$, $\cB$ & boundary instances, tilted measure and its log-likelihood ratios & Defs.~\ref{def:tilt}, \ref{def:Q}\\
+\midrule
+\multicolumn{3}{l}{\emph{Deterministic properties}}\\
+$\Lam_j$, $\lW$ & water level of batch $j$, rank of Lemma~\ref{lem:W} & Def.~\ref{def:water}\\
+\midrule
+\multicolumn{3}{l}{\emph{Case $x>1$}}\\
+$\eb$, $\eg$, $\Ceta$, $\cst$, $\ew$, $\xp$, $\hb_\ell$ & fixed constants: accuracy bound, gain, its constant, $\frac{2-\m^\star}{1-\m^\star}$, accuracy for the margin $\om$, $2x$, deterministic threshold & Def.~\ref{def:constA}\\
+$\De_\varepsilon$, $\Kp_\varepsilon$, $\kape_\varepsilon$, $\Rt_\varepsilon$, $\rt_\varepsilon$, $\ngr_\varepsilon$, $\cAc(\varepsilon)$, $\CLU(\varepsilon)$ & constants depending on $\varepsilon$, of the deviation inequalities & Def.~\ref{def:constA}\\
+$\lA$, $\lone(\varepsilon,\varepsilon')$, $\ug_\ell(\varepsilon)$ & ranks and count threshold & Def.~\ref{def:ranksA}\\
+$\Ag$, $\Vg$, $\Pig$, $\Lo$, $\Up$, $\Gg$, $\Fg$ & events & Def.~\ref{def:evA}\\
+$\mt_\ell$, $\Yg_j$ & plan of $a$ and nets of the decomposition & Lemma~\ref{lem:decompA}\\
+$\SE_\varepsilon$ & $\sup_y(2\xp^3y-\varepsilon^2y^\beta)$ & Lemma~\ref{lem:sumsA}\\
+$\epl_\ell$, $\cone$, $\etwo$, $\lonep$ & accuracies and rank of the dyadic margins & Prop.~\ref{prop:dyA}\\
+\midrule
+\multicolumn{3}{l}{\emph{Case $x=1$}}\\
+$\ez$, $\ezz$, $\dl$, $\Cz$, $\Co$, $\yb$, $\thc$, $\ctl$, $\epth$ & fixed constants & Def.~\ref{def:constC}\\
+$\Dp_\varepsilon$, $\Me_\varepsilon$, $\Cg_\varepsilon$, $\Rz_\varepsilon$, $\rz_\varepsilon$, $\up_j(\varepsilon)$ & constants depending on $\varepsilon$ & Def.~\ref{def:constC}\\
+$\lzp$, $\ly$, $\lonez$, $\lz$, $\lfour$, $\lfive$ & ranks (functions of $\varepsilon$) & Defs.~\ref{def:ranksC}, \ref{def:amb}\\
+$\Dev$, $\Vs$, $\Va$, $\cU$, $\cG$, $\cC$, $\cO$ & events and classes & Def.~\ref{def:evC}\\
+$\Shi_j$, $\Sgo_j$ & high batches, those with a well-sampled leader & Lemma~\ref{lem:goodhigh}\\
+$\zet_\ell$, $\zetp_\ell$, $\nl_\ell$, $\Acc_\ell$, $\KC_\ell$, $\Eamb_\ell$, $\cell_\ell$, $\Cfour(\varepsilon)$ & objects of the consistency threshold & Def.~\ref{def:amb}, Lemma~\ref{lem:amb}\\
+$\Cpi(\varepsilon)$, $\RHo(\varepsilon)$ & summed probabilities, remainder & Lemma~\ref{lem:sumC}, Prop.~\ref{prop:fixedC}\\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \end{document}
