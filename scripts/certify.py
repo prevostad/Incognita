@@ -767,8 +767,8 @@ def check_tree(tree, base=None):
         for dp in sorted(deps - cited):
             errors.append("papers/%s/paper.tex does not cite INC-%s (in depends_on)" % (p.dir, dp))
         t = strip_comments(p.tex)
-        if p.tex and not re.search(r"\\section\*?\{Open questions\}", t):
-            errors.append("papers/%s/paper.tex: no section \"Open questions\"" % p.dir)
+        if p.tex and not re.search(r"\\section\*?\{(?:Conclusion and open questions|Open questions)\}", t):
+            errors.append("papers/%s/paper.tex: no section \"Conclusion and open questions\" (or \"Open questions\")" % p.dir)
         oqs = p.open_questions()
         if p.kind == "internal" and p.tex and not oqs:
             errors.append("papers/%s/paper.tex: an internal paper states at least one open question (openquestion environment)" % p.dir)
