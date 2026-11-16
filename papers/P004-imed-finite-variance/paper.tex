@@ -970,7 +970,8 @@ Section~\ref{sec:counter}, with the exploration function $\log t+2\log\log t+\lo
 and $\Kinf$ computed by the dual formula~\eqref{eq:dual}, for $500$ runs up to $T=10^4$.
 Table~\ref{tab:sim} reports the results. The scripts (\texttt{imed\_sim.py},
 \texttt{klinf\_ucb\_sim.py}) and their output, with the command line and the seed of each
-campaign, are in the directory \texttt{notebook} of this paper in the repository; running
+campaign, are in the directory \texttt{papers/P004-imed-finite-variance/notebook} of the
+repository \url{https://github.com/prevostad/Incognita}; running
 \texttt{python imed\_sim.py q runs T seed} (or \texttt{klinf\_ucb\_sim.py}) with the recorded
 arguments reproduces each row.
 
@@ -1447,15 +1448,25 @@ levels below $1$). It is not used in the proofs of the other results.
 \uses{def:model, def:kinf, def:rate, lem:dualfacts, lem:optimizer, lem:subopt}
 \emph{Idea.} By the dual formula, $\exp(n\Kinf(\hP_n,\mean(P)))$ is the maximum over the dual variable
 of products that are nonnegative martingales of mean $1$ under a finite mean only. Their average over
-the dual variable is again such a martingale, and it is at least the maximum divided by $n+1$ (the
-bound of universal portfolios), so Doob's maximal inequality gives (a). This is the method of
+the dual variable is again such a martingale, and it is at least the maximum divided by $n+1$, so
+Doob's maximal inequality gives (a). The products are the wealths of the constant-rebalanced
+portfolios on two assets of price relatives $1$ and $R_l$ (Step 1), their average is the universal
+portfolio with the uniform prior, and the factor $n+1$ is the bound of \citet[Theorem~1]{BK99} for
+two assets (see also \citealp{CO96}, to whom they credit it, and \citealp{Cov91}); Step 3 follows
+their proof.
+That such products are nonnegative martingales of mean $1$ for unbounded observations, as soon as
+each factor is nonnegative, is a property of betting martingales: see also
+\citet[Proposition~3 in arXiv v7]{WSR24}, and \citet[Section~2]{Min22}, who notes that these
+constructions give a one-sided confidence sequence for the mean of observations unbounded on one
+side with a bounded mean. The argument as a whole is the method of
 \citet[Proposition~5, proof in Appendix~B.4.1]{AJK21}, for laws on $\R$ with a known bound on a
 moment of order $1+\varepsilon$: a uniform mixture over the two dual variables, a factor
 $2\log(1+n)+1$ between the logarithms of the maximum and of the mixture (their Lemma~17), and
 Ville's inequality. \citet[Appendix~A.1]{PA26} state that the same argument, with the dual of
 \citet{HT10}, gives Assumption~2.3 for laws on a bounded interval, with $g(n)=\log(1+n)+1$. What (a)
-adds is the semi-bounded case: only an upper bound on the rewards and a finite mean are needed, the
-mixture is over one dual variable, and the factor is computed exactly, which gives $\log(n+1)$.
+adds is the time-uniform bound on $n\Kinf(\hP_n,\mean(P))$ for semi-bounded laws: only an upper
+bound on the rewards and a finite mean are needed, which is the form that Assumption~2.3 of
+\citet{PA26} takes on the class $\Mm_1$.
 Part (b) is the Chernoff bound
 of Lemma~\ref{lem:subopt}, whose rate is quadratic near the mean. Part (c) moves mass to $1$ or away
 from it.
@@ -2424,7 +2435,9 @@ Lower bound for \term{w:ufc}{uniformly fast convergent} \term{w:learner}{learner
 Frozen index after a negative jump (Lemma~\ref{lem:jump}, Theorem~\ref{thm:counter}) & new \\
 Maximum from pairs (Lemma~\ref{lem:pairs}) & elementary; source not known \\
 The summed bound needs three moments (Lemma~\ref{lem:three-moments}) & necessity half of a one-sided Baum--Katz theorem; see also \citet{CL75}, cited for this point by \citet[Section~9]{HT15}, and \citet{BK65} for the two-sided theorem \\
-Mixture over the dual variable and maximal inequality (Lemma~\ref{lem:pa-assumptions}(a)) & \citet[Proposition~5, Appendix~B.4.1]{AJK21}, for a known moment bound (two dual variables); \citet[Appendix~A.1]{PA26}, for bounded supports; new: the semi-bounded case with a finite mean only, one dual variable and the exact factor $n+1$; the assumption it checks is \citet[Assumption~2.3]{PA26} \\
+Mixture over the dual variable and maximal inequality (Lemma~\ref{lem:pa-assumptions}(a)) & \citet[Proposition~5, Appendix~B.4.1]{AJK21}, for a known moment bound (two dual variables); \citet[Appendix~A.1]{PA26}, for bounded supports; new: the time-uniform bound on $n\Kinf(\hP_n,\mean(P))$ for semi-bounded laws with a finite mean only; the assumption it checks is \citet[Assumption~2.3]{PA26} \\
+Uniform mixture against the best constant-rebalanced portfolio, factor $n+1$ for two assets (Lemma~\ref{lem:pa-assumptions}(a), Step~3) & \citet[Theorem~1]{BK99}; see also \citet{CO96}, to whom they credit it, and \citet{Cov91} \\
+Betting martingales for observations unbounded on one side (Lemma~\ref{lem:pa-assumptions}(a), Steps~1--2) & see also \citet[Proposition~3 in arXiv v7]{WSR24} and \citet[Section~2]{Min22} \\
 \bottomrule
 \end{tabular}
 \end{center}

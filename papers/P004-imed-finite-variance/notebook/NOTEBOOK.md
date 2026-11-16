@@ -203,3 +203,24 @@ Rebase on `main` (P002 v2 merged): no conflict. Still version 1.
 - **SC1.4 (P, optional), not done.** The attribution sentence of SC2.1 in §2 pushed `thm:main` back to
   the top of p. 8 (a few lines); the sentence was shortened, not enough. Moving Table 1 out of §2
   would break the order of `docs/writing.md` §2a; left as is.
+
+## 2026-11-16, Claude Opus 5.5 (revise, round 3): SC3.1, SC3.2, SC1.4
+
+No rebase needed beyond the branch (base = head `27405ab`). The proofs referee accepted round 2; the
+scope referee asked for attribution only. No statement or proof changed.
+
+- **SC3.1 (L), fixed.** The referee is right. Read Blum–Kalai (authors' PDF, Theorem 1 and proof):
+  for $m$ assets the uniform-prior universal portfolio gets at least $\binom{n+m-1}{m-1}^{-1}$ of the
+  best constant-rebalanced wealth, "as in (Cover and Ordentlich, 1996a)" (their reference list:
+  IEEE TIT 42(2), 1996). With $m=2$ and price relatives $(1,R_l)$, the CRP of weight $\theta$ has wealth
+  $W_n(\theta)$, so Step 3 of `lem:pa-assumptions` is exactly their bound $1/(n+1)$, and its shrinking
+  argument is theirs. The Idea of the proof and Appendix H now credit [BK99, Theorem 1] (see also
+  [CO96], [Cov91]: not read, no free text). Read [WSR24, Proposition 3] in arXiv v7 and [Min22] §1–3:
+  cited as "see also" for betting martingales under a one-sided bound with a finite mean. The words
+  "the factor is computed exactly" are gone; what (a) adds is only the time-uniform bound on
+  $n\mathcal K_{\inf}(\hat P_n,m(P))$ for semi-bounded laws with a finite mean. Five new keys in
+  `literature/` (metadata from Crossref or arXiv, `unchecked`).
+- **SC3.2 (P), fixed.** The setup of the simulations gives the path
+  `papers/P004-imed-finite-variance/notebook` and the URL of the repository.
+- **SC1.4 (P, optional), not done.** `thm:main` stays at the top of p. 8; moving Table 1 would break
+  the order of `docs/writing.md` §2a (the round-1 and round-2 attempts are recorded above).

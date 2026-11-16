@@ -282,6 +282,17 @@ Revision round 2 (2026-11-16) ran no new search: it fetched the sources named by
 (its queries 15–20): the PDF and the abstract page of arXiv:2102.03734 (only v1 exists), the HTML of
 arXiv:2604.14876v1 (App. A.1), and the PDF of arXiv:2303.06058v3 (Remark 1, App. B.4).
 
+Revision round 3 (2026-11-16) fetched the sources named by the scope referee (its queries 21–29):
+
+- Crossref queries "Cover Ordentlich Universal portfolios with side information", "Blum Kalai
+  Universal portfolios with and without transaction costs", "Cover Universal portfolios
+  Mathematical Finance 1991", "Waudby-Smith Ramdas Estimating means of bounded random variables by
+  betting": the metadata of CO96, BK99, Cov91, WSR24.
+- Web search "Cover Ordentlich "Universal portfolios with side information" pdf": no free full
+  text (IEEE Xplore only; course notes and theses that discuss it).
+- PDFs: arXiv:2010.09686v7 (WSR24), arXiv:2210.11133v1 (Min22), the authors' PDF of BK99
+  (cs.cmu.edu/~avrim/Papers/portfolio.pdf); parts read in `literature/index.md`.
+
 ## Reading notes
 
 - [HT15]: `literature/notes/HT15.md` (statements copied from the page images: Algorithm 1, (2),
@@ -305,6 +316,16 @@ arXiv:2604.14876v1 (App. A.1), and the PDF of arXiv:2303.06058v3 (Remark 1, App.
   Agrawal–Koolen–Juneja 2021b, $g(n)=\log(1+n)+1$); [BSH23, Remark 1 and Appendix B.4] read in the
   v3 PDF. Agrawal–Koolen–Juneja, arXiv:2008.07606 (the source of AJK21's Lemma 17), not read and
   not cited.
+- Revision round 3: [BK99, Theorem 1 and its proof] read in the authors' PDF: for $m$ assets and
+  $n$ periods, the uniform-prior universal portfolio has at least $\binom{n+m-1}{m-1}^{-1}\ge
+  (n+1)^{-(m-1)}$ times the wealth of the best constant-rebalanced portfolio, "as in (Cover and
+  Ordentlich, 1996a)"; with $m=2$ and the price relatives $(1,R_l)$, this is Step 3 of
+  `lem:pa-assumptions`, whose shrinking argument ($b=(1-\alpha)b^\star+\alpha z$, wealth
+  $\ge(1-\alpha)^n$ times) is theirs. [WSR24, Proposition 3 in arXiv v7] read (universal
+  representation of test martingales for possibly unbounded classes) and [Min22, §1–3 to Lemma 1]
+  read (§2: the constructions of WSR give a lower confidence sequence for observations unbounded
+  above with a bounded mean). Both cited as "see also" (the referee's wording); [CO96] and [Cov91]
+  not read (no free text found), cited as "see also" only.
 
 ## Verification defects (V1–V11) and how the paper answers them
 
@@ -399,3 +420,21 @@ Nodes for the referees to re-check:
 
 SC1.4 (optional): `thm:main` is at the top of p. 8 of the reader build (the round-2 attribution
 sentence in §2 moved it by a few lines); not changed further.
+
+## Revision round 3 (SC3.1, SC3.2, SC1.4, 2026-11-16; still version 1)
+
+No node changed in its statement or in its proof. Text changed:
+
+- `lem:pa-assumptions`, the "Idea" paragraph of its proof (SC3.1): the factor $n+1$ is credited to
+  [BK99, Theorem 1] (two assets; see also [CO96], to whom BK99 credit it, and [Cov91]), with the
+  identification of the products as constant-rebalanced portfolios on two assets of price relatives
+  $1$ and $R_l$; betting martingales under a one-sided bound with a finite mean credited as "see
+  also" [WSR24, Proposition 3 in arXiv v7] and [Min22, §2]; the claim "the factor is computed
+  exactly" is dropped, and what (a) adds is now only the time-uniform bound on
+  $n\mathcal K_{\inf}(\hat P_n,m(P))$ for semi-bounded laws with a finite mean.
+- Appendix H (sources of the techniques): the row of `lem:pa-assumptions`(a) changed in the same way,
+  and two new rows (the universal-portfolio bound of Step 3; betting martingales of Steps 1–2).
+- §9, "Setup of the simulations" (SC3.2): the path of the notebook and the URL of the repository.
+- `refs.bib`: new keys BK99, CO96, Cov91, WSR24, Min22.
+
+SC1.4 (optional): not changed; `thm:main` stays at the top of p. 8 (reader build, now 40 pages).
