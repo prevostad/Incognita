@@ -395,6 +395,11 @@ base=$(git rev-parse HEAD)
 sed -i 's/By .cite.Theorem~1..INC-P001../By the first paper./' papers/P002-second/paper.tex
 ok "certify: depends_on without a citation fails" '! C check >/dev/null'
 git checkout -q -- .
+sed -i 's/section{Open questions}/section{Conclusion and open questions}/' papers/P002-second/paper.tex
+ok "certify: the section of the template, Conclusion and open questions, passes" 'C check >/dev/null'
+sed -i 's/section{Conclusion and open questions}/section{Questions}/' papers/P002-second/paper.tex
+ok "certify: a paper without its open questions section fails" '! C check >/dev/null'
+git checkout -q -- .
 sed -i 's/thm:main/thm:nope/' papers/P002-second/META.toml
 ok "certify: a dependency on a missing label fails" '! C check >/dev/null'
 git checkout -q -- .
