@@ -1,4 +1,72 @@
 {
+  "AB09": {
+    "uri": "",
+    "citation": {
+      "id": "AB09",
+      "type": "paper-conference",
+      "title": "Minimax policies for adversarial and stochastic bandits",
+      "author": [
+        {
+          "family": "Audibert",
+          "given": "J.-Y."
+        },
+        {
+          "family": "Bubeck",
+          "given": "S."
+        }
+      ],
+      "container-title": "Proceedings of the 22nd Annual Conference on Learning Theory (COLT)",
+      "issued": {
+        "date-parts": [
+          [
+            2009
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "ACFS02": {
+    "uri": "https://doi.org/10.1137/S0097539701398375",
+    "citation": {
+      "id": "ACFS02",
+      "type": "article-journal",
+      "title": "The Nonstochastic Multiarmed Bandit Problem",
+      "author": [
+        {
+          "family": "Auer",
+          "given": "Peter"
+        },
+        {
+          "family": "Cesa-Bianchi",
+          "given": "Nicolò"
+        },
+        {
+          "family": "Freund",
+          "given": "Yoav"
+        },
+        {
+          "family": "Schapire",
+          "given": "Robert E."
+        }
+      ],
+      "container-title": "SIAM Journal on Computing",
+      "volume": "32",
+      "issue": "1",
+      "page": "48-77",
+      "DOI": "10.1137/S0097539701398375",
+      "issued": {
+        "date-parts": [
+          [
+            2002
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "AG12": {
     "uri": "https://proceedings.mlr.press/v23/agrawal12.html",
     "citation": {
@@ -199,6 +267,36 @@
     "identifiers": {},
     "version": ""
   },
+  "Adu25": {
+    "uri": "https://doi.org/10.3982/ECTA21075",
+    "citation": {
+      "id": "Adu25",
+      "type": "article-journal",
+      "title": "Risk and Optimal Policies in Bandit Experiments",
+      "author": [
+        {
+          "family": "Adusumilli",
+          "given": "Karun"
+        }
+      ],
+      "container-title": "Econometrica",
+      "volume": "93",
+      "issue": "3",
+      "page": "1003-1029",
+      "DOI": "10.3982/ECTA21075",
+      "issued": {
+        "date-parts": [
+          [
+            2025
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2112.06363"
+    },
+    "version": "v16"
+  },
   "BCL13": {
     "uri": "https://arxiv.org/abs/1209.1727",
     "citation": {
@@ -234,6 +332,82 @@
     "identifiers": {
       "arxiv": "1209.1727"
     },
+    "version": ""
+  },
+  "BCZ97": {
+    "uri": "",
+    "citation": {
+      "id": "BCZ97",
+      "type": "article-journal",
+      "title": "Bandit problems with infinitely many arms",
+      "author": [
+        {
+          "family": "Berry",
+          "given": "D."
+        },
+        {
+          "family": "Chen",
+          "given": "R."
+        },
+        {
+          "family": "Zame",
+          "given": "A."
+        },
+        {
+          "family": "Heath",
+          "given": "D."
+        },
+        {
+          "family": "Shepp",
+          "given": "L."
+        }
+      ],
+      "container-title": "The Annals of Statistics",
+      "volume": "25",
+      "issue": "5",
+      "issued": {
+        "date-parts": [
+          [
+            1997
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "BEZ20": {
+    "uri": "",
+    "citation": {
+      "id": "BEZ20",
+      "type": "article-journal",
+      "title": "On the asymptotic optimality of the comb strategy for prediction with expert advice",
+      "author": [
+        {
+          "family": "Bayraktar",
+          "given": "E."
+        },
+        {
+          "family": "Ekren",
+          "given": "I."
+        },
+        {
+          "family": "Zhang",
+          "given": "Y."
+        }
+      ],
+      "container-title": "The Annals of Applied Probability",
+      "volume": "30",
+      "issue": "6",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "BK18": {
@@ -299,6 +473,231 @@
     "identifiers": {
       "doi": "10.1006/aama.1996.0007"
     },
+    "version": ""
+  },
+  "BP13": {
+    "uri": "",
+    "citation": {
+      "id": "BP13",
+      "type": "paper-conference",
+      "title": "Two-target algorithms for infinite-armed bandits with Bernoulli rewards",
+      "author": [
+        {
+          "family": "Bonald",
+          "given": "T."
+        },
+        {
+          "family": "Proutière",
+          "given": "A."
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems (NeurIPS)",
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Bat83": {
+    "uri": "https://doi.org/10.1007/978-1-4612-5612-0_1",
+    "citation": {
+      "id": "Bat83",
+      "type": "chapter",
+      "title": "The Minimax Risk for the Two-Armed Bandit Problem",
+      "author": [
+        {
+          "family": "Bather",
+          "given": "J. A."
+        }
+      ],
+      "container-title": "Mathematical Learning Models — Theory and Algorithms: Proceedings of a Conference",
+      "collection-title": "Lecture Notes in Statistics",
+      "editor": [
+        {
+          "family": "Herkenrath",
+          "given": "Ulrich"
+        },
+        {
+          "family": "Kalin",
+          "given": "Dieter"
+        },
+        {
+          "family": "Vogel",
+          "given": "Walter"
+        }
+      ],
+      "publisher": "Springer New York",
+      "page": "1-11",
+      "DOI": "10.1007/978-1-4612-5612-0_1",
+      "issued": {
+        "date-parts": [
+          [
+            1983
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "isbn": "978-0-387-90913-4"
+    },
+    "version": ""
+  },
+  "Bil95": {
+    "uri": "",
+    "citation": {
+      "id": "Bil95",
+      "type": "book",
+      "title": "Probability and Measure",
+      "author": [
+        {
+          "family": "Billingsley",
+          "given": "P."
+        }
+      ],
+      "edition": "3",
+      "publisher": "Wiley",
+      "issued": {
+        "date-parts": [
+          [
+            1995
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Bil99": {
+    "uri": "",
+    "citation": {
+      "id": "Bil99",
+      "type": "book",
+      "title": "Convergence of Probability Measures",
+      "author": [
+        {
+          "family": "Billingsley",
+          "given": "P."
+        }
+      ],
+      "edition": "2",
+      "publisher": "Wiley",
+      "issued": {
+        "date-parts": [
+          [
+            1999
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Bro86": {
+    "uri": "",
+    "citation": {
+      "id": "Bro86",
+      "type": "book",
+      "title": "Fundamentals of Statistical Exponential Families",
+      "author": [
+        {
+          "family": "Brown",
+          "given": "L. D."
+        }
+      ],
+      "collection-title": "IMS Lecture Notes",
+      "volume": "9",
+      "issued": {
+        "date-parts": [
+          [
+            1986
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "CB97": {
+    "uri": "",
+    "citation": {
+      "id": "CB97",
+      "type": "article-journal",
+      "title": "How to use expert advice",
+      "author": [
+        {
+          "family": "Cesa-Bianchi",
+          "given": "N."
+        },
+        {
+          "family": "Freund",
+          "given": "Y."
+        },
+        {
+          "family": "Haussler",
+          "given": "D."
+        },
+        {
+          "family": "Helmbold",
+          "given": "D."
+        },
+        {
+          "family": "Schapire",
+          "given": "R."
+        },
+        {
+          "family": "Warmuth",
+          "given": "M."
+        }
+      ],
+      "container-title": "Journal of the ACM",
+      "volume": "44",
+      "issue": "3",
+      "issued": {
+        "date-parts": [
+          [
+            1997
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "CBL06": {
+    "uri": "https://doi.org/10.1017/CBO9780511546921",
+    "citation": {
+      "id": "CBL06",
+      "type": "book",
+      "title": "Prediction, Learning, and Games",
+      "author": [
+        {
+          "family": "Cesa-Bianchi",
+          "given": "Nicolò"
+        },
+        {
+          "family": "Lugosi",
+          "given": "Gábor"
+        }
+      ],
+      "publisher": "Cambridge University Press",
+      "ISBN": "9780521841085",
+      "DOI": "10.1017/CBO9780511546921",
+      "issued": {
+        "date-parts": [
+          [
+            2006,
+            3,
+            13
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "CGMMS13": {
@@ -509,6 +908,58 @@
     },
     "version": ""
   },
+  "Cov66": {
+    "uri": "",
+    "citation": {
+      "id": "Cov66",
+      "type": "paper-conference",
+      "title": "Behavior of sequential predictors of binary sequences",
+      "author": [
+        {
+          "family": "Cover",
+          "given": "T."
+        }
+      ],
+      "container-title": "Transactions of the Fourth Prague Conference on Information Theory",
+      "issued": {
+        "date-parts": [
+          [
+            1966
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "DP16": {
+    "uri": "",
+    "citation": {
+      "id": "DP16",
+      "type": "paper-conference",
+      "title": "Anytime optimal algorithms in stochastic multi-armed bandits",
+      "author": [
+        {
+          "family": "Degenne",
+          "given": "R."
+        },
+        {
+          "family": "Perchet",
+          "given": "V."
+        }
+      ],
+      "container-title": "Proceedings of the 33rd International Conference on Machine Learning (ICML)",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "DSK20": {
     "uri": "",
     "citation": {
@@ -541,6 +992,34 @@
     "identifiers": {
       "arxiv": "2007.00969"
     },
+    "version": ""
+  },
+  "EK86": {
+    "uri": "",
+    "citation": {
+      "id": "EK86",
+      "type": "book",
+      "title": "Markov Processes: Characterization and Convergence",
+      "author": [
+        {
+          "family": "Ethier",
+          "given": "S. N."
+        },
+        {
+          "family": "Kurtz",
+          "given": "T. G."
+        }
+      ],
+      "publisher": "Wiley",
+      "issued": {
+        "date-parts": [
+          [
+            1986
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "EKMM21": {
@@ -586,6 +1065,72 @@
     },
     "version": ""
   },
+  "EKNJ87": {
+    "uri": "https://doi.org/10.1080/17442508708833443",
+    "citation": {
+      "id": "EKNJ87",
+      "type": "article-journal",
+      "title": "Compactification methods in the control of degenerate diffusions: existence of an optimal control",
+      "author": [
+        {
+          "family": "El Karoui",
+          "given": "Nicole"
+        },
+        {
+          "family": "Huu Nguyen",
+          "given": "Du'"
+        },
+        {
+          "family": "Jeanblanc-Picqué",
+          "given": "Monique"
+        }
+      ],
+      "container-title": "Stochastics",
+      "volume": "20",
+      "issue": "3",
+      "page": "169-219",
+      "DOI": "10.1080/17442508708833443",
+      "issued": {
+        "date-parts": [
+          [
+            1987
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "FG21": {
+    "uri": "https://arxiv.org/abs/2105.09232",
+    "citation": {
+      "id": "FG21",
+      "type": "article",
+      "title": "Diffusion approximations for Thompson sampling",
+      "author": [
+        {
+          "family": "Fan",
+          "given": "L."
+        },
+        {
+          "family": "Glynn",
+          "given": "P."
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2105.09232"
+    },
+    "version": ""
+  },
   "FG24": {
     "uri": "https://arxiv.org/abs/2109.13595",
     "citation": {
@@ -615,6 +1160,96 @@
     "identifiers": {
       "arxiv": "2109.13595"
     },
+    "version": ""
+  },
+  "Fan52": {
+    "uri": "https://archive.org/details/minimaxtheorems2104fank",
+    "citation": {
+      "id": "Fan52",
+      "type": "report",
+      "title": "Minimax Theorems",
+      "author": [
+        {
+          "family": "Fan",
+          "given": "Ky"
+        }
+      ],
+      "publisher": "National Bureau of Standards, U.S. Department of Commerce",
+      "number": "NBS Report 2104",
+      "issued": {
+        "date-parts": [
+          [
+            1952,
+            12,
+            10
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Fan53": {
+    "uri": "https://doi.org/10.1073/pnas.39.1.42",
+    "citation": {
+      "id": "Fan53",
+      "type": "article-journal",
+      "title": "Minimax Theorems",
+      "author": [
+        {
+          "family": "Fan",
+          "given": "Ky"
+        }
+      ],
+      "container-title": "Proceedings of the National Academy of Sciences of the United States of America",
+      "volume": "39",
+      "issue": "1",
+      "page": "42-47",
+      "DOI": "10.1073/pnas.39.1.42",
+      "issued": {
+        "date-parts": [
+          [
+            1953
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "pmcid": "PMC1063722",
+      "pmid": "16589233"
+    },
+    "version": ""
+  },
+  "FvZ70": {
+    "uri": "https://doi.org/10.1214/aoms/1177696692",
+    "citation": {
+      "id": "FvZ70",
+      "type": "article-journal",
+      "title": "Some Remarks on the Two-Armed Bandit",
+      "author": [
+        {
+          "family": "Fabius",
+          "given": "J."
+        },
+        {
+          "family": "van Zwet",
+          "given": "W. R."
+        }
+      ],
+      "container-title": "The Annals of Mathematical Statistics",
+      "volume": "41",
+      "issue": "6",
+      "page": "1906-1916",
+      "DOI": "10.1214/aoms/1177696692",
+      "issued": {
+        "date-parts": [
+          [
+            1970
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "GC11": {
@@ -857,6 +1492,76 @@
       }
     }
   },
+  "GMS20": {
+    "uri": "https://doi.org/10.1214/19-STS716",
+    "citation": {
+      "id": "GMS20",
+      "type": "article-journal",
+      "title": "Fano's Inequality for Random Variables",
+      "author": [
+        {
+          "family": "Gerchinovitz",
+          "given": "Sébastien"
+        },
+        {
+          "family": "Ménard",
+          "given": "Pierre"
+        },
+        {
+          "family": "Stoltz",
+          "given": "Gilles"
+        }
+      ],
+      "container-title": "Statistical Science",
+      "volume": "35",
+      "issue": "2",
+      "page": "178-201",
+      "DOI": "10.1214/19-STS716",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1702.05985"
+    },
+    "version": ""
+  },
+  "GPS16": {
+    "uri": "",
+    "citation": {
+      "id": "GPS16",
+      "type": "paper-conference",
+      "title": "Towards optimal algorithms for prediction with expert advice",
+      "author": [
+        {
+          "family": "Gravin",
+          "given": "N."
+        },
+        {
+          "family": "Peres",
+          "given": "Y."
+        },
+        {
+          "family": "Sivan",
+          "given": "B."
+        }
+      ],
+      "container-title": "Proceedings of the ACM-SIAM Symposium on Discrete Algorithms (SODA)",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "H60": {
     "uri": "https://doi.org/10.1214/aoms/1177705898",
     "citation": {
@@ -912,6 +1617,36 @@
     },
     "identifiers": {},
     "version": ""
+  },
+  "HP23": {
+    "uri": "https://arxiv.org/abs/2302.03117",
+    "citation": {
+      "id": "HP23",
+      "type": "article",
+      "title": "Asymptotic Representations for Sequential Decisions, Adaptive Experiments, and Batched Bandits",
+      "author": [
+        {
+          "family": "Hirano",
+          "given": "Keisuke"
+        },
+        {
+          "family": "Porter",
+          "given": "Jack R."
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2023
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2302.03117"
+    },
+    "version": "v2"
   },
   "HT10": {
     "uri": "",
@@ -1002,6 +1737,34 @@
       },
       "volume": "16",
       "page": "3721-3756"
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Hal69": {
+    "uri": "https://doi.org/10.2307/3212107",
+    "citation": {
+      "id": "Hal69",
+      "type": "article-journal",
+      "title": "Embedding submartingales in Wiener processes with drift, with applications to sequential analysis",
+      "author": [
+        {
+          "family": "Hall",
+          "given": "W. J."
+        }
+      ],
+      "container-title": "Journal of Applied Probability",
+      "volume": "6",
+      "issue": "3",
+      "page": "612-632",
+      "DOI": "10.2307/3212107",
+      "issued": {
+        "date-parts": [
+          [
+            1969
+          ]
+        ]
+      }
     },
     "identifiers": {},
     "version": ""
@@ -1263,6 +2026,36 @@
     },
     "version": ""
   },
+  "KK23": {
+    "uri": "https://arxiv.org/abs/2202.05767",
+    "citation": {
+      "id": "KK23",
+      "type": "article",
+      "title": "A PDE-Based Analysis of the Symmetric Two-Armed Bernoulli Bandit",
+      "author": [
+        {
+          "family": "Kobzar",
+          "given": "Vladimir A."
+        },
+        {
+          "family": "Kohn",
+          "given": "Robert V."
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2023
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2202.05767"
+    },
+    "version": "v5"
+  },
   "KKM12": {
     "uri": "",
     "citation": {
@@ -1410,6 +2203,41 @@
     },
     "version": ""
   },
+  "KNS17": {
+    "uri": "https://arxiv.org/abs/1705.09977",
+    "citation": {
+      "id": "KNS17",
+      "type": "article",
+      "title": "Two-Armed Bandit Problem, Data Processing, and Parallel Version of the Mirror Descent Algorithm",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A."
+        },
+        {
+          "family": "Nazin",
+          "given": "A."
+        },
+        {
+          "family": "Shiyan",
+          "given": "D."
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "DOI": "10.48550/arXiv.1705.09977",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1705.09977"
+    },
+    "version": "v1"
+  },
   "KO21a": {
     "uri": "",
     "citation": {
@@ -1471,6 +2299,35 @@
     },
     "version": ""
   },
+  "KS91": {
+    "uri": "",
+    "citation": {
+      "id": "KS91",
+      "type": "book",
+      "title": "Brownian Motion and Stochastic Calculus",
+      "author": [
+        {
+          "family": "Karatzas",
+          "given": "I."
+        },
+        {
+          "family": "Shreve",
+          "given": "S. E."
+        }
+      ],
+      "edition": "2",
+      "publisher": "Springer",
+      "issued": {
+        "date-parts": [
+          [
+            1991
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "KT26": {
     "uri": "https://arxiv.org/abs/2602.20503",
     "citation": {
@@ -1498,6 +2355,407 @@
     },
     "identifiers": {
       "arxiv": "2602.20503"
+    },
+    "version": ""
+  },
+  "KW24": {
+    "uri": "",
+    "citation": {
+      "id": "KW24",
+      "type": "article-journal",
+      "title": "Weak signal asymptotics for sequentially randomized experiments",
+      "author": [
+        {
+          "family": "Kuang",
+          "given": "X."
+        },
+        {
+          "family": "Wager",
+          "given": "S."
+        }
+      ],
+      "container-title": "Management Science",
+      "issued": {
+        "date-parts": [
+          [
+            2024
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2101.09855"
+    },
+    "version": ""
+  },
+  "KZ21": {
+    "uri": "",
+    "citation": {
+      "id": "KZ21",
+      "type": "paper-conference",
+      "title": "A closer look at the worst-case behavior of multi-armed bandit algorithms",
+      "author": [
+        {
+          "family": "Kalvit",
+          "given": "A."
+        },
+        {
+          "family": "Zeevi",
+          "given": "A."
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems (NeurIPS)",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Kal02": {
+    "uri": "",
+    "citation": {
+      "id": "Kal02",
+      "type": "book",
+      "title": "Foundations of Modern Probability",
+      "author": [
+        {
+          "family": "Kallenberg",
+          "given": "O."
+        }
+      ],
+      "edition": "2",
+      "publisher": "Springer",
+      "issued": {
+        "date-parts": [
+          [
+            2002
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Kec95": {
+    "uri": "",
+    "citation": {
+      "id": "Kec95",
+      "type": "book",
+      "title": "Classical Descriptive Set Theory",
+      "author": [
+        {
+          "family": "Kechris",
+          "given": "A. S."
+        }
+      ],
+      "publisher": "Springer",
+      "issued": {
+        "date-parts": [
+          [
+            1995
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Kie57": {
+    "uri": "https://doi.org/10.1214/aoms/1177706874",
+    "citation": {
+      "id": "Kie57",
+      "type": "article-journal",
+      "title": "Invariance, Minimax Sequential Estimation, and Continuous Time Processes",
+      "author": [
+        {
+          "family": "Kiefer",
+          "given": "J."
+        }
+      ],
+      "container-title": "The Annals of Mathematical Statistics",
+      "volume": "28",
+      "issue": "3",
+      "page": "573-601",
+      "DOI": "10.1214/aoms/1177706874",
+      "issued": {
+        "date-parts": [
+          [
+            1957
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Kol11": {
+    "uri": "https://doi.org/10.1134/S0005117911050092",
+    "citation": {
+      "id": "Kol11",
+      "type": "article-journal",
+      "title": "Finding minimax strategy and minimax risk in a random environment (the two-armed bandit problem)",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "Automation and Remote Control",
+      "volume": "72",
+      "issue": "5",
+      "page": "1017-1027",
+      "DOI": "10.1134/S0005117911050092",
+      "issued": {
+        "date-parts": [
+          [
+            2011
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "mathnet": "at1708"
+    },
+    "version": ""
+  },
+  "Kol12": {
+    "uri": "https://doi.org/10.1134/S000511791204008X",
+    "citation": {
+      "id": "Kol12",
+      "type": "article-journal",
+      "title": "Parallel design of robust control in the stochastic environment (the two-armed bandit problem)",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "Automation and Remote Control",
+      "volume": "73",
+      "issue": "4",
+      "page": "689-701",
+      "DOI": "10.1134/S000511791204008X",
+      "issued": {
+        "date-parts": [
+          [
+            2012,
+            4
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "mathnet": "at3793"
+    },
+    "version": ""
+  },
+  "Kol14": {
+    "uri": "https://doi.org/10.1134/S0005117914120042",
+    "citation": {
+      "id": "Kol14",
+      "type": "article-journal",
+      "title": "Robust parallel control in a random environment and data processing optimization",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "Automation and Remote Control",
+      "volume": "75",
+      "issue": "12",
+      "page": "2124-2134",
+      "DOI": "10.1134/S0005117914120042",
+      "issued": {
+        "date-parts": [
+          [
+            2014,
+            12
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "mathnet": "at14162"
+    },
+    "version": ""
+  },
+  "Kol14a": {
+    "uri": "https://www.inase.org/library/2014/russia/bypaper/MEAS/MEAS-02.pdf",
+    "citation": {
+      "id": "Kol14a",
+      "type": "paper-conference",
+      "title": "Robust Normal Two-Armed Bandit and Parallel Data Processing",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "Alexander V."
+        }
+      ],
+      "container-title": "Recent Advances in Mathematical Methods in Applied Sciences (Proceedings of MMAS '14 and EAS '14, Saint Petersburg, 2014)",
+      "collection-title": "Mathematics and Computers in Science and Engineering Series",
+      "volume": "32",
+      "page": "32-40",
+      "ISBN": "978-1-61804-251-4",
+      "issued": {
+        "date-parts": [
+          [
+            2014
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Kol15": {
+    "uri": "https://doi.org/10.1134/S0005117915070085",
+    "citation": {
+      "id": "Kol15",
+      "type": "article-journal",
+      "title": "On a limiting description of robust parallel control in a random environment",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "Automation and Remote Control",
+      "volume": "76",
+      "issue": "7",
+      "page": "1229-1241",
+      "DOI": "10.1134/S0005117915070085",
+      "issued": {
+        "date-parts": [
+          [
+            2015,
+            7
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "mathnet": "at14258"
+    },
+    "version": ""
+  },
+  "Kol16": {
+    "uri": "http://www.naun.org/main/NAUN/mcs/2016/a362002-057.pdf",
+    "citation": {
+      "id": "Kol16",
+      "type": "article-journal",
+      "title": "Contributions to the Asymptotic Minimax Theorem for the Two-Armed Bandit Problem",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "International Journal of Mathematics and Computers in Simulation",
+      "volume": "10",
+      "page": "129-132",
+      "issued": {
+        "date-parts": [
+          [
+            2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "issn": "1998-0159"
+    },
+    "version": ""
+  },
+  "Kol17": {
+    "uri": "https://arxiv.org/abs/1704.03631",
+    "citation": {
+      "id": "Kol17",
+      "type": "article",
+      "title": "Batch Data Processing and Gaussian Two-Armed Bandit",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "DOI": "10.48550/arXiv.1704.03631",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1704.03631"
+    },
+    "version": "v1"
+  },
+  "Kol20": {
+    "uri": "https://doi.org/10.1134/S0032946020030059",
+    "citation": {
+      "id": "Kol20",
+      "type": "article-journal",
+      "title": "Gaussian Two-Armed Bandit: Limiting Description",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "Problems of Information Transmission",
+      "volume": "56",
+      "issue": "3",
+      "page": "278-301",
+      "DOI": "10.1134/S0032946020030059",
+      "issued": {
+        "date-parts": [
+          [
+            2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "mathnet": "ppi2323"
+    },
+    "version": ""
+  },
+  "Kol25": {
+    "uri": "https://doi.org/10.21538/0134-4889-2025-31-3-fon-06",
+    "citation": {
+      "id": "Kol25",
+      "type": "article-journal",
+      "title": "Minimax Approach to the Gaussian Multi-Armed Bandit",
+      "author": [
+        {
+          "family": "Kolnogorov",
+          "given": "A. V."
+        }
+      ],
+      "container-title": "Trudy Instituta Matematiki i Mekhaniki UrO RAN",
+      "volume": "31",
+      "issue": "3",
+      "page": "150-166",
+      "DOI": "10.21538/0134-4889-2025-31-3-fon-06",
+      "issued": {
+        "date-parts": [
+          [
+            2025
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "mathnet": "timm2202"
     },
     "version": ""
   },
@@ -1707,6 +2965,92 @@
     },
     "version": ""
   },
+  "LS19": {
+    "uri": "https://proceedings.mlr.press/v99/lattimore19a.html",
+    "citation": {
+      "id": "LS19",
+      "type": "paper-conference",
+      "title": "An Information-Theoretic Approach to Minimax Regret in Partial Monitoring",
+      "author": [
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        },
+        {
+          "family": "Szepesvári",
+          "given": "Csaba"
+        }
+      ],
+      "container-title": "Proceedings of the Thirty-Second Conference on Learning Theory",
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "99",
+      "page": "2111-2139",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Beygelzimer",
+          "given": "Alina"
+        },
+        {
+          "family": "Hsu",
+          "given": "Daniel"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2019
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1902.00470"
+    },
+    "version": ""
+  },
+  "LWKW26": {
+    "uri": "https://arxiv.org/abs/2609.22690",
+    "citation": {
+      "id": "LWKW26",
+      "type": "article",
+      "title": "Multi-Armed Bernoulli Bandits via Minimax Single-Arm Stopping",
+      "author": [
+        {
+          "family": "Liu",
+          "given": "Huikang"
+        },
+        {
+          "family": "Wang",
+          "given": "Zhengchao"
+        },
+        {
+          "family": "Kuhn",
+          "given": "Daniel"
+        },
+        {
+          "family": "Wiesemann",
+          "given": "Wolfram"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "number": "2609.22690",
+      "DOI": "10.48550/arXiv.2609.22690",
+      "issued": {
+        "date-parts": [
+          [
+            2026,
+            9,
+            19
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2609.22690"
+    },
+    "version": "v1"
+  },
   "MCP14": {
     "uri": "https://arxiv.org/abs/1405.4758",
     "citation": {
@@ -1772,6 +3116,34 @@
     },
     "version": ""
   },
+  "Man87": {
+    "uri": "https://doi.org/10.1214/aop/1176991992",
+    "citation": {
+      "id": "Man87",
+      "type": "article-journal",
+      "title": "Continuous Multi-Armed Bandits and Multiparameter Processes",
+      "author": [
+        {
+          "family": "Mandelbaum",
+          "given": "Avi"
+        }
+      ],
+      "container-title": "The Annals of Probability",
+      "volume": "15",
+      "issue": "4",
+      "page": "1527-1556",
+      "DOI": "10.1214/aop/1176991992",
+      "issued": {
+        "date-parts": [
+          [
+            1987
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "O88": {
     "uri": "https://doi.org/10.1093/biomet/75.2.237",
     "citation": {
@@ -1799,6 +3171,31 @@
     "identifiers": {
       "doi": "10.1093/biomet/75.2.237"
     },
+    "version": ""
+  },
+  "Obl04": {
+    "uri": "",
+    "citation": {
+      "id": "Obl04",
+      "type": "article-journal",
+      "title": "The Skorokhod embedding problem and its offspring",
+      "author": [
+        {
+          "family": "Obłój",
+          "given": "J."
+        }
+      ],
+      "container-title": "Probability Surveys",
+      "volume": "1",
+      "issued": {
+        "date-parts": [
+          [
+            2004
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "P26": {
@@ -1936,6 +3333,35 @@
     "identifiers": {},
     "version": ""
   },
+  "RH17": {
+    "uri": "",
+    "citation": {
+      "id": "RH17",
+      "type": "report",
+      "title": "High-Dimensional Statistics",
+      "author": [
+        {
+          "family": "Rigollet",
+          "given": "P."
+        },
+        {
+          "family": "Hütter",
+          "given": "J.-C."
+        }
+      ],
+      "genre": "Lecture notes",
+      "publisher": "MIT",
+      "issued": {
+        "date-parts": [
+          [
+            2017
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "RH20": {
     "uri": "https://proceedings.mlr.press/v117/riou20a.html",
     "citation": {
@@ -1971,6 +3397,62 @@
         "date-parts": [
           [
             2020
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "RY99": {
+    "uri": "",
+    "citation": {
+      "id": "RY99",
+      "type": "book",
+      "title": "Continuous Martingales and Brownian Motion",
+      "author": [
+        {
+          "family": "Revuz",
+          "given": "D."
+        },
+        {
+          "family": "Yor",
+          "given": "M."
+        }
+      ],
+      "edition": "3",
+      "publisher": "Springer",
+      "issued": {
+        "date-parts": [
+          [
+            1999
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Rod78": {
+    "uri": "",
+    "citation": {
+      "id": "Rod78",
+      "type": "article-journal",
+      "title": "On the many-armed bandit problem",
+      "author": [
+        {
+          "family": "Rodman",
+          "given": "L."
+        }
+      ],
+      "container-title": "The Annals of Probability",
+      "volume": "6",
+      "issue": "3",
+      "page": "491-498",
+      "issued": {
+        "date-parts": [
+          [
+            1978
           ]
         ]
       }
@@ -2116,6 +3598,150 @@
     },
     "identifiers": {
       "doi": "10.1007/978-0-387-34675-5"
+    },
+    "version": ""
+  },
+  "Sio58": {
+    "uri": "https://doi.org/10.2140/pjm.1958.8.171",
+    "citation": {
+      "id": "Sio58",
+      "type": "article-journal",
+      "title": "On general minimax theorems",
+      "author": [
+        {
+          "family": "Sion",
+          "given": "Maurice"
+        }
+      ],
+      "container-title": "Pacific Journal of Mathematics",
+      "volume": "8",
+      "issue": "1",
+      "page": "171-176",
+      "DOI": "10.2140/pjm.1958.8.171",
+      "issued": {
+        "date-parts": [
+          [
+            1958,
+            3,
+            1
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Ste56": {
+    "uri": "https://doi.org/10.1525/9780520313880-017",
+    "citation": {
+      "id": "Ste56",
+      "type": "chapter",
+      "title": "Efficient nonparametric testing and estimation",
+      "author": [
+        {
+          "family": "Stein",
+          "given": "Charles"
+        }
+      ],
+      "container-title": "Proceedings of the Third Berkeley Symposium on Mathematical Statistics and Probability, Volume 1: Contributions to the Theory of Statistics",
+      "page": "187-196",
+      "DOI": "10.1525/9780520313880-017",
+      "issued": {
+        "date-parts": [
+          [
+            1956
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Vog60": {
+    "uri": "https://doi.org/10.1214/aoms/1177705907",
+    "citation": {
+      "id": "Vog60",
+      "type": "article-journal",
+      "title": "An Asymptotic Minimax Theorem for the Two Armed Bandit Problem",
+      "author": [
+        {
+          "family": "Vogel",
+          "given": "Walter"
+        }
+      ],
+      "container-title": "The Annals of Mathematical Statistics",
+      "volume": "31",
+      "issue": "2",
+      "page": "444-451",
+      "DOI": "10.1214/aoms/1177705907",
+      "issued": {
+        "date-parts": [
+          [
+            1960
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "Vog60a": {
+    "uri": "https://doi.org/10.1214/aoms/1177705906",
+    "citation": {
+      "id": "Vog60a",
+      "type": "article-journal",
+      "title": "A Sequential Design for the Two Armed Bandit",
+      "author": [
+        {
+          "family": "Vogel",
+          "given": "Walter"
+        }
+      ],
+      "container-title": "The Annals of Mathematical Statistics",
+      "volume": "31",
+      "issue": "2",
+      "page": "430-443",
+      "DOI": "10.1214/aoms/1177705906",
+      "issued": {
+        "date-parts": [
+          [
+            1960
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "ZL19": {
+    "uri": "https://proceedings.neurips.cc/paper_files/paper/2019/hash/92cf3f7ef90630755b955924254e6ec4-Abstract.html",
+    "citation": {
+      "id": "ZL19",
+      "type": "paper-conference",
+      "title": "Connections Between Mirror Descent, Thompson Sampling and the Information Ratio",
+      "author": [
+        {
+          "family": "Zimmert",
+          "given": "Julian"
+        },
+        {
+          "family": "Lattimore",
+          "given": "Tor"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems",
+      "volume": "32",
+      "publisher": "Curran Associates, Inc.",
+      "issued": {
+        "date-parts": [
+          [
+            2019
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1905.11817"
     },
     "version": ""
   }

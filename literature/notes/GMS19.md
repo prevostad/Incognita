@@ -4,8 +4,8 @@
 |---|---|
 | Work | A. Garivier, P. Ménard, G. Stoltz, *Explore First, Exploit Next: The True Shape of Regret in Bandit Problems*, Mathematics of Operations Research 44(2), 2019 |
 | Identifiers | DOI 10.1287/moor.2017.0928, arXiv 1602.07182 (v1 23 Feb 2016, v2 17 Jun 2016, v3 13 Oct 2018, from the arXiv abs page) |
-| Read | abstract and introduction (arXiv v3); inequalities (6) and (11); arXiv v3 §2.1: (8), Remark 2, Lemma 1; Appendix A, Lemma 5. LaTeX source of arXiv:1602.07182v3 (the e-print, file `Bandit-lower-bounds-MOR-v3.tex`, in the INFORMS class with equations, theorems and definitions numbered through the paper): §1.1 (setting, strategies, $I_t$, $N_{\psi,a}(T)$, (1)); §1.2 ($\mathcal K_{\inf}$, (2)); §2 opening, (5)–(7), Remark 1; §2.1 (8), Remark 2, the proofs of the equality and of the inequality in (8), Lemma 1 and its proof; §2.2 Definition 1, Theorem 1 and its proof, (10)–(11); Appendix A, Lemma 5 and (the classical) Pinsker's inequality; the `.bbl` entries of the works credited in §1.2 and §2.1. Not read: §3–§4 in full, conclusion, the published MOR version |
-| By, date | an agent for the owner (inequalities (6), (11)), 2026-10-31; Claude (abstract, introduction), 2026-11-13; Claude Opus 5.5 (role revise, P000: arXiv v3, (8), Lemma 1, Remark 2, Lemma 5 of Appendix A), 2026-11-14; Claude Opus 5.5 (role bibliographer: the v3 LaTeX source, exact statements of (5), (6), (10), (11), Definition 1, Theorem 1), 2026-11-15 |
+| Read | abstract and introduction (arXiv v3); inequalities (6) and (11); arXiv v3 §2.1: (8), Remark 2, Lemma 1; Appendix A, Lemma 5. LaTeX source of arXiv:1602.07182v3 (the e-print, file `Bandit-lower-bounds-MOR-v3.tex`, in the INFORMS class with equations, theorems and definitions numbered through the paper): §1.1 (setting, strategies, $I_t$, $N_{\psi,a}(T)$, (1)); §1.2 ($\mathcal K_{\inf}$, (2)); §2 opening, (5)–(7), Remark 1; §2.1 (8), Remark 2, the proofs of the equality and of the inequality in (8), Lemma 1 and its proof; §2.2 Definition 1, Theorem 1 and its proof, (10)–(11); Appendix A, Lemma 5 and (the classical) Pinsker's inequality; the `.bbl` entries of the works credited in §1.2 and §2.1; Appendix B.1 (theorem, proof, and the paragraph after it) in the ar5iv rendering of arXiv:1602.07182 (labelled "Theorem B.1" there; that it is Theorem 6 in the PDF of v3 is not checked). Not read: §3–§4 in full, conclusion, the published MOR version |
+| By, date | an agent for the owner (inequalities (6), (11)), 2026-10-31; Claude (abstract, introduction), 2026-11-13; Claude Opus 5.5 (role revise, P000: arXiv v3, (8), Lemma 1, Remark 2, Lemma 5 of Appendix A), 2026-11-14; Claude Opus 5.5 (role bibliographer: the v3 LaTeX source, exact statements of (5), (6), (10), (11), Definition 1, Theorem 1), 2026-11-15; Claude Opus 5.5 (revise, P001: Appendix B.1), 2026-11-15 |
 
 ## Results
 
@@ -103,6 +103,22 @@ INFORMS page refused access, 403). The page images were not viewed: no page numb
 - Section 4 (not read in full): a non-asymptotic lower bound for large horizons for uniformly
   super-fast convergent strategies, with a second-order term of order $-\log\log T$. The exact
   constants and numbers must be read in the paper before any use.
+- **Theorem of Appendix B.1 "Distribution-free lower bound" (Appendix B "Re-derivation of other
+  earlier lower bounds"; "Theorem B.1" in the ar5iv rendering, reportedly Theorem 6 in the v3 PDF,
+  not checked).** "Consider the bandit model $\mathcal D=\mathcal M([0,1])$ of all probability
+  distributions over $[0,1]$. For all $\varepsilon\in(0,1/2)$, for all strategies $\psi$, there exists a
+  bandit problem $\underline\nu'$ in $\mathcal M([0,1])$ such that
+  $R_{\psi,\underline\nu',T}\ge T\varepsilon\bigl(1-\frac1K-\frac12\sqrt{\frac TK\ln\frac1{1-4\varepsilon^2}}\bigr)$.
+  This problem $\underline\nu'$ can be given by Bernoulli distributions, with parameters $1/2$ for all
+  arms but one, for which the parameter is $1/2+\varepsilon$." Proof: $\underline\nu$ all Bernoulli$(1/2)$;
+  "There exists an arm $k$ such that $\mathbb E_{\underline\nu}[N_{\psi,k}(T)]\le T/K$, as these $K$ numbers
+  of pulls sum up to $T$" (pigeonhole, a single arm, no prior); $\underline\nu'$ raises arm $k$ to
+  $1/2+\varepsilon$; (6) with $Z=N_{\psi,k}(T)/T$ and $\mathrm{kl}(1/2,1/2+\varepsilon)=\frac12\ln\frac1{1-4\varepsilon^2}$, then
+  "Pinsker's inequality (in its classical form, see Appendix A)"; no convexity of kl, no (11). The
+  paragraph after it takes $\varepsilon=\min\{\sqrt{K/T},1\}/4$ to get $\ge\frac1{20}\min\{\sqrt{KT},T\}$ and
+  says "The constant $1/20$ can actually be improved into $1/8$, see Cesa-Bianchi and Lugosi 2006,
+  Theorem 6.11". The text says the re-derivation "follows the very same proof scheme as in the
+  original proof" (Auer et al.).
 
 ## Techniques
 
@@ -125,6 +141,8 @@ INFORMS page refused access, 403). The page images were not viewed: no page numb
 Roadmaps StochasticBandits (F1–F3; KNOWN K2, K4, K5; directions D1, D3; it absorbed the draft
 RegretShape) and BatchedBandits (known result 1). Paper `papers/P000-hy-unknown-imposed-grid/`:
 node `cite:garivier2019explore-dataprocessing` (Lemma 1), Lemma `lem:onebatch`. Paper
+`papers/P001-minimax-constant/`: thm:bounds, Main result, Closest known, Attribution (fundamental
+inequality; Appendix B.1 as the closest known proof). Paper
 `papers/P002-transfer-drift-between-laws/`: nodes `cite:GMS19-6` ((6)) and `cite:GMS19-11` ((11)),
 used in the proof of `prop:lower`; its node `cite:GMS19-11` states the inequality
 $\mathrm{kl}(p,q)\ge p\log(1/q)-\log2$, which is a consequence of (11), not its statement (see
