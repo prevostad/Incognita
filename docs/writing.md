@@ -144,16 +144,24 @@ end of round $t$ from $N_k(t)$, $\hat\nu_k(t)$ and $\delta_t$, and $A_{t+1}\in\a
 $t\ge K$; the fundamental inequality $\sum_{t}\mathbf 1(A_{t+1}=k,\,N_k(t)=s)\le1$; the exploration
 rate $\delta_t:=\ln(t\vee3)+\ln\ln(t\vee3)$.
 
-**Navigation.**
+**Navigation (mandatory).**
 
-- Every quantity introduced is a **hyperlink to its definition**: an anchor at the definition
-  (`\newcommand{\dt}[1]{\hypertarget{#1}{}}`) and a macro per symbol
-  (`\newcommand{\sy}[2]{\hyperlink{#1}{#2}}`, then `\newcommand{\Kinf}{\sy{s:kinf}{\mathcal K_{\inf}}}`)
-  used everywhere after; the same for defined words (*activated*, *rejected*).
+- **Every quantity defined in the paper is defined with `:=`** (never `=`), in a sentence of its
+  own, and **every later use of it is a hyperlink back to the place where it is defined**: an anchor
+  at the definition (`\newcommand{\dt}[1]{\hypertarget{#1}{}}`, then `\dt{s:kinf}` just before the
+  `:=`) and one macro per symbol (`\newcommand{\sy}[2]{\hyperlink{#1}{#2}}`, then
+  `\newcommand{\Kinf}{\sy{s:kinf}{\mathcal K_{\inf}}}`), used **everywhere** after the definition,
+  in statements, proofs, displays and tables alike. The same for defined words (*activated*,
+  *rejected*): a macro `\term` that links to their definition. A symbol typed without its macro
+  after its definition is a defect (W15).
+- **Every lemma, proposition, theorem, definition, assumption or equation used is cited by
+  `\ref`/`\eqref`** (a hyperlink to it), at the place where it is used, never as "the previous
+  lemma", "the above", "by the same argument" without the link. A reference to a result that is not
+  on the same or the previous page also says its name and what it brings ("Lemma 5 (*the IMED phase
+  lifts the water level*), which bounds …"), not only its number.
 - The algorithm's name is a link to its pseudo-code.
-- A reference to a far result says its name and what it brings ("Lemma 5 (*the IMED phase lifts
-  the water level*)"), not only its number.
-- The appendix **Notation** lists every symbol, each a link to its definition.
+- The appendix **Notation** lists every symbol, each a link to its definition ("Every symbol is a
+  link to its definition").
 
 **Language.** English, plain, "we". No promotional adjectives; "optimal" only for a result paired
 with a lower bound in the same class.
@@ -237,9 +245,13 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
   matter displayed in `equation`/`align`, short paragraphs between displays; statements with their
   quantifiers first and explicit bounds; regret proofs as a decomposition lemma, one lemma per term,
   then one subsection per lemma, written as aligned chains on indicators with linking sentences;
-  symbols linked to their definitions. *Test*: put the PDF next to arXiv:2610.21582 and compare the
-  organisation of the sections, one main-text page and one appendix proof. A failure that makes a
-  proof hard to follow (a dense paragraph of relations, a chain without its steps) is R.
+  every defined quantity defined with `:=` and every later use of it a link to its definition;
+  every result used cited by a link at the place where it is used. *Test*: put the PDF next to
+  arXiv:2610.21582 and compare the organisation of the sections, one main-text page and one
+  appendix proof; in the source, pick ten symbols used in the proofs and check that each is typed
+  with its link macro and defined with `:=`; pick five places where a result is used and check the
+  `\ref`. A failure that makes a proof hard to follow (a dense paragraph of relations, a chain
+  without its steps, a result used without saying which) is R.
 
 ## 4. When a presentation defect blocks
 
