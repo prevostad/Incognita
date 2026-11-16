@@ -270,8 +270,8 @@ in order; they are the authors of its `papers/library.bib` entry). **Never add, 
 ### 5.2 Writing rules
 
 A paper has **one reader**: an expert referee of JMLR or COLT who has never heard of Incognita.
-[docs/writing.md](docs/writing.md) holds the writing rules: what each section holds, the fourteen
-presentation criteria W1–W14 that the scope referee applies, the owner's rules for proofs and the
+[docs/writing.md](docs/writing.md) holds the writing rules: what each section holds, the fifteen
+presentation criteria W1–W15 that the scope referee applies, the owner's rules for proofs and the
 failure modes of AI-written mathematics. Read it before writing, revising or refereeing a paper.
 One source gives two builds, and a dossier sits next to it:
 
@@ -324,40 +324,49 @@ General rules:
     `formalize-statements`; **never write `\leanok` or `\mathlibok`**: they come from the audit
     (inserted when the paper is built, never committed by an agent) and print the green
     "LEAN APPROVED" box.
-- **Sections**, in this order (the template has a slot for each; docs/writing.md §2 says what each
-  holds):
-  1. **Introduction** (`sec:intro`, 1–3 pages): the problem and why it matters; the main result in
-     informal words with its constant, on page 1 or 2; what is new against the closest published
-     result; the contributions, each pointing to a numbered result; related work as a comparison
-     in prose (a table when three or more prior bounds are compared), with, for each closest
-     result, one sentence on why it does not give the main result; the techniques, credited where
-     they come from; the organisation of the paper.
-  2. **Setting** (`sec:setting`): the model, the definitions and the assumptions as nodes, a
-     notation paragraph; the roadmap's conventions used, any change declared with its reason.
-  3. **Main results** (`sec:main`): `thm:main` with every quantifier, within the first 5 pages,
-     every symbol in it defined before it; then remarks in words: the nature of the constants
-     (explicit, or existential, and on what they depend), the **scope** (what is not proved, in
-     plain words, without item ids), an interpretation and the comparison. Other main results (a
-     lower bound, structure results) come here too.
-  4. **Proof overview** (`sec:overview`), mandatory when the paper exceeds 10 pages: the
-     decomposition, the key propositions or lemmas (stated as nodes or by reference), the proof of
-     the main theorem from them, where the difficulty lies, and a map of the appendices.
-  5. **Examples and special cases** (`sec:examples`): one explicit instance satisfying all the
-     hypotheses at once, the degenerate cases, worked numbers, figures if useful.
-  6. **Open questions** (`sec:open`): one to five questions the paper leaves open, each an
-     environment `openquestion` labelled `oq:<name>`, precise enough to be the main result of a
-     next paper (quantifiers, class, criterion), with why the paper's method stops there; the
-     roadmap items it extends go in `\extends{D8}` (printed only in the blueprint build, read by
-     `scripts/certify.py`), never in the text. An internal paper has at least one; an external or
-     definitions paper may write "None". They are not nodes. The scope referee rates them; the
-     accepted ones become candidate directions of the roadmap (§4.1).
-  7. `\appendix`, then: **Results from the literature** (`sec:cited`: the `cite:` nodes); the
-     **proofs**, in the order of the main text, each appendix opening with its plan; **Sources of
-     the techniques** (`sec:attribution`): for each technique of the proofs, where it is used and
-     the earliest source found (`\cite[<part>]{<KEY>}`, or "source not known"), without the web
-     queries; **Notation** (`sec:notation`) when the paper has more than about 30 symbols.
+- **Sections**, in this order, **in the style of the owner's paper arXiv:2610.21582** (`PMRM26`:
+  read it before writing; the template has a slot for each section; docs/writing.md §2 says what
+  each holds and §2a gives the house style: displays, statements, proofs):
+  1. **Introduction** (`sec:intro`): the problem and why it matters; the main result in informal
+     words with its constant, on page 1 or 2; `\paragraph{Our contributions}` (an itemized list,
+     each item pointing to a numbered result); `\paragraph{Outline}`.
+  2. **Related work and context** (`sec:related`): run-in paragraphs by theme, the closest related
+     work and the gap with the literature, a comparison table when three or more prior results are
+     compared, with, for each closest result, one sentence on why it does not give the main result;
+     the techniques credited where they come from.
+  3. **Problem formulation** (`sec:setting`): the classical setting recalled, then the new one; the
+     model, the definitions and the assumptions as nodes; the roadmap's conventions used, any change
+     declared with its reason.
+  4. **One section per main result** (lower bound, algorithm, upper bound, extensions…; the one
+     holding `thm:main` is labelled `sec:main`): the classical result recalled first; `thm:main`
+     with every quantifier, within the first 5 pages when possible, every symbol in it defined
+     before it; each theorem followed by "(see the proof in Appendix …)" and run-in discussion
+     paragraphs: the nature of the constants (explicit, or existential, and on what they depend),
+     the **scope** (what is not proved, in plain words, without item ids), an interpretation and
+     the comparison.
+  5. **How the proofs work** (`sec:overview`), mandatory when the paper exceeds 10 pages: the
+     decomposition, the key lemmas, how they combine, where the difficulty lies, and a map of the
+     appendices.
+  6. **Numerical experiments or examples** (`sec:examples`): one explicit instance satisfying all the
+     hypotheses at once, the degenerate cases, worked numbers, figures and their interpretation.
+  7. **Conclusion and open questions** (`sec:open`): the limitations, then one to five questions the
+     paper leaves open, each an environment `openquestion` labelled `oq:<name>`, precise enough to be
+     the main result of a next paper (quantifiers, class, criterion), with why the paper's method
+     stops there; the roadmap items it extends go in `\extends{D8}` (printed only in the blueprint
+     build, read by `scripts/certify.py`), never in the text. An internal paper has at least one; an
+     external or definitions paper may write "None". They are not nodes. The scope referee rates
+     them; the accepted ones become candidate directions of the roadmap (§4.1).
+  8. `\appendix`, then: **Useful lemmas** (`sec:cited`: the `cite:` nodes, each titled
+     `[From \cite{KEY}, Proposition 14]`); **one appendix per theorem** ("Proof of Theorem X":
+     a deterministic decomposition lemma, one lemma per term with "(see the proof in Subsection …)",
+     the proof of the theorem from the lemmas, then one subsection per lemma); **Sources of the
+     techniques** (`sec:attribution`): for each technique of the proofs, where it is used and the
+     earliest source found (`\cite[<part>]{<KEY>}`, or "source not known"), without the web queries;
+     **Notation** (`sec:notation`), every symbol a link to its definition.
 
-  The main text (sections 1–6) is about 15 pages at most when the paper is longer than 25 pages.
+  The main text (sections 1–7) is about 15 pages at most when the paper is longer than 25 pages; it
+  holds the main statements and at most the one lemma that makes the interest of the work, every
+  other lemma and every proof being in the appendices.
 - **`DOSSIER.md`**, in the sections of the template:
   - **Roadmap correspondence**: the items served (`directions` of META.toml) and how; for an
     owner's result, the roadmap's statement verbatim and its correspondence with `thm:main`; what
@@ -434,7 +443,7 @@ the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a fig
   novelty, fit, candidate or not), then `referee-proofs` (every proof, node by node, all nodes)
   when scope accepts or asks for changes (`major`): a revision then answers both reports at once.
   Only a scope `reject` skips the proofs. Both read `paper.tex` and `DOSSIER.md`; `referee-scope`
-  judges the presentation on the **reader build** (the text of its PDF, with the criteria W1–W14
+  judges the presentation on the **reader build** (the text of its PDF, with the criteria W1–W15
   of [docs/writing.md](docs/writing.md)), `referee-proofs` checks the proofs on the **blueprint
   build**.
 - **Every review can be resumed.** Every reviewer (referees, `review-pr`, `review-statements`,
@@ -449,7 +458,7 @@ the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a fig
   the owner (`needs-human`).
 - **Rubric.** Each referee report starts, after its verdict line, with a rubric: one row per
   criterion (scope: novelty, roadmap fit, interest, bibliography, attribution, presentation, the
-  last one summarising the criteria W1–W14; proofs: correctness, completeness, ready for Lean), its
+  last one summarising the criteria W1–W15; proofs: correctness, completeness, ready for Lean), its
   state (✅ no defect or P only, ⚠️ G, L or R, ❌ F) and a one-sentence summary naming the defect
   IDs. The scope referee also gives an
   **interest score** from 1 to 10: the significance of the result for the research community, as an expert of the field would judge it, not for the owner or the roadmap (the scale is in its role file). The rubric is
@@ -459,7 +468,7 @@ the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a fig
   unjustified step in a labelled proof (or, for scope, a novelty claim left unjustified). **L**
   local error: wrong but fixable without changing any statement. **R** readability: a
   presentation defect that prevents an expert from understanding or checking what is proved, or
-  hides or distorts what is claimed (the criteria W1–W14 of docs/writing.md say which failures
+  hides or distorts what is claimed (the criteria W1–W15 of docs/writing.md say which failures
   usually are). Test: could an expert of the field fix it without anyone re-checking after him? If
   yes, it is **P** presentation.
 - **Verdict, computed:** `reject` if any F; `major` if any G, L or R; otherwise `accept` (P defects

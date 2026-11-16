@@ -463,7 +463,7 @@ if [ -n "$pr" ] && [ "$pr_role" = revise ] && [ "${branch#owner/}" != "$branch" 
   mv_=${mv_:-1}
   add_situation "This pull request is a **presentation revision** of the accepted paper \`$paper\` (AGENTS.md section 5.6): its version $mv_ on \`main\` rewritten for presentation as version $(( mv_ + 1 )). The mathematical content of every node must be unchanged (the same labels, hypotheses and conclusions; no node removed; new nodes only for restated cited results or lemmas that were inline steps). The version on \`main\`: \`git show origin/main:papers/$paper/paper.tex\`."
   case "$role" in
-    referee-scope) add_situation "As scope referee: judge the presentation with the fourteen criteria on the reader build, and check against the version on \`main\` that nothing else changed in scope (main results, claims, comparison with prior work, attribution, open questions and their labels); novelty and interest are not judged again." ;;
+    referee-scope) add_situation "As scope referee: judge the presentation with the fifteen criteria on the reader build, and check against the version on \`main\` that nothing else changed in scope (main results, claims, comparison with prior work, attribution, open questions and their labels); novelty and interest are not judged again." ;;
     referee-proofs) add_situation "As proof referee: check node by node, against the version on \`main\`, that every statement's mathematical content is unchanged, that no node was removed, and that every proof is still complete (your role file, step 7)." ;;
     revise) add_situation "Answer the reports by changes of presentation only: never change the mathematics of a node." ;;
   esac

@@ -10,8 +10,13 @@ results), and leave precise open questions for the next papers.
    `papers/P<nnn>-<slug>/`: choose the slug; the script refuses another number), possibly the item
    to serve, the deadline, the context files.
 2. `AGENTS.md`, all of it. Sections 4, 5 and 7 are your rules. Then `docs/writing.md`: the
-   reader you write for, what each section holds, the fourteen criteria the scope referee applies
-   to your PDF, the rules for proofs.
+   reader you write for, what each section holds, the fifteen criteria the scope referee applies
+   to your PDF, the rules for proofs. **Then read the owner's model paper, arXiv:2610.21582
+   (https://arxiv.org/abs/2610.21582, its PDF), and write in its style** (`docs/writing.md` §2–2a):
+   its organisation of sections, its displayed equations between short paragraphs, its statements
+   (quantifiers first, items, explicit bounds) and its appendix proofs (decomposition lemma, one
+   lemma per term, "(see the proof in Subsection …)", aligned chains on indicators with linking
+   sentences).
 3. `roadmaps/<Roadmap>/ROADMAP.md`, and its KNOWN.md (path in task.md, plus any private file listed
    there). **If the roadmap's status is not `approved`, or KNOWN.md does not start with
    `Reviewed by owner: <date>`, stop at once**: write `.agents/summary.md` saying so, commit nothing.
@@ -116,7 +121,7 @@ closest published result; detail the hard step more than the easy ones.
    `papers/<P>/paper.log` and `paper-blueprint.log`: no error, no `undefined`, no
    `multiply defined`; at most 100 pages.
 2. Read the reader build as its reader will, from its text only: `pdftotext papers/<P>/paper.pdf -`.
-   Go through the fourteen criteria of `docs/writing.md` §3 (W1–W14), one by one, and fix what
+   Go through the fifteen criteria of `docs/writing.md` §3 (W1–W15), one by one, and fix what
    fails: after pages 1–2, are the result, its constant and its novelty clear? Is every symbol
    defined before use, with one meaning? No `Uses:` line, no KNOWN id, no "(to be checked)"?
    Then `latexmk -C -cd papers/<P>/paper.tex` and `latexmk -C -jobname=paper-blueprint -cd
