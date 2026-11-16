@@ -1,0 +1,1474 @@
+% Incognita paper P003. Rules: AGENTS.md, section 5; docs/writing.md (template preamble; at most
+% 100 pages). Working notes go in notebook/, never in this file; what serves only the referees and
+% the owner is in DOSSIER.md.
+% One source, two builds (AGENTS.md 5.2), after `python3 scripts/certify.py bib`:
+%   reader:    latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/P003-transfer-setting/paper.tex
+%   blueprint: latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint
+%                -usepretex='\def\IncognitaBlueprint{}' -cd papers/P003-transfer-setting/paper.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage[round]{natbib}
+\usepackage{../../templates/paper/blueprint-macros}
+
+% Macros of this paper: \newcommand only. Each symbol has one meaning in the whole paper.
+% Navigation (docs/writing.md 2a): an anchor \dt{s:...} where a quantity is defined, and one macro
+% per symbol built with \sy, used after its definition, so that the symbol links to it.
+\newcommand{\dt}[1]{\hypertarget{#1}{}}
+\newcommand{\sy}[2]{\hyperlink{#1}{#2}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\PP}{\sy{s:PP}{\mathbb{P}}}
+\newcommand{\KL}{\sy{s:KL}{\mathrm{KL}}}
+\newcommand{\kl}{\sy{s:kl}{\mathrm{kl}}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\Pc}{\sy{s:Pc}{\mathcal{P}}}
+\newcommand{\PcL}[1][L]{\sy{s:PcL}{\mathcal{P}_{#1}}}
+\newcommand{\Sd}{\sy{s:Sd}{\mathcal{S}}}
+\newcommand{\Gc}{\sy{s:Gc}{\mathcal{G}}}
+\newcommand{\Bx}{\sy{s:Bx}{B}}
+\newcommand{\ClL}[1][L]{\sy{s:Cl}{\mathcal{C}_{#1}}}
+\newcommand{\Hs}{\sy{s:Hs}{\mathcal{H}}}
+\newcommand{\Ber}{\sy{s:Ber}{\mathrm{Ber}}}
+\newcommand{\Drift}{\sy{s:Drift}{\mathrm{Drift}}}
+\newcommand{\one}{\sy{s:one}{\mathbf{1}_{K}}}
+\newcommand{\Nla}{\sy{s:Nla}{N}^{\mathrm{la}}}
+\newcommand{\pitr}{\sy{s:pitr}{\pi}^{\mathrm{tr}}}
+\newcommand{\Np}{\sy{s:Np}{N'}}
+\newcommand{\rhos}{\sy{s:Np}{\rho}}
+\newcommand{\Dd}{\sy{s:D}{D}}
+\newcommand{\PD}{\sy{s:PD}{P}^{D}}
+\newcommand{\Q}{\sy{s:Q}{Q}}
+\newcommand{\kap}{\sy{s:kappa}{\kappa}}
+\newcommand{\Nc}{\sy{s:Nk}{N}}
+\newcommand{\mean}{\sy{s:mu}{\mu}}
+\newcommand{\gap}{\sy{s:mu}{\Delta}}
+\newcommand{\Om}{\sy{s:Om}{\Omega'}}
+\newcommand{\Up}{\sy{s:Om}{U'}}
+\newcommand{\Xp}{\sy{s:Om}{X'}}
+\newcommand{\mhat}{\sy{s:mhat}{\hat m'}}
+\newcommand{\pis}{\sy{s:pis}{\pi}^{\sigma}}
+\newcommand{\Pp}{\sy{s:Om}{P'}}
+\newcommand{\Ncyc}{\sy{s:Ncyc}{N}^{\mathrm{cyc}}}
+% Lean names of the results of Mathlib and LML used by name: printed (as a footnote) in the
+% blueprint build only, never in the reader build (docs/writing.md, section 1).
+\makeatletter
+\newcommand{\leanfn}[1]{\ifincognita@blueprint\footnote{Lean: \nolinkurl{#1}.}\fi}
+\makeatother
+
+\title{The setting of transfer bandits with adaptively collected source data: size rules, the
+consistency class $\mathcal{C}_L$, and the divergence decomposition}
+\author{claude-opus-5-5, Incognita agents\thanks{Written by AI agents of the Incognita project
+  (\url{https://github.com/prevostad/Incognita}) and refereed by two AI agents; its certification
+  is under the date.}}
+\date{2026-11-16}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Before a $K$-armed bandit game with rewards in $[0,1]$, a learner receives, for each arm $k$, the
+first $N'_k$ values of an i.i.d.\ sequence drawn from a source law $\nu'_k$, where the sizes $N'_k$
+are chosen by an unknown and possibly adaptive strategy, and the source law may differ from the
+target law. We give a formal setting for this problem. A source strategy is a \emph{size rule}:
+the event $\{N'=n\}$ depends only on the first $n_k$ values of each sequence and on independent
+randomisation, that is, $N'$ is a stopping point of the $K$-parameter filtration of the source
+sequences. The main result is the divergence decomposition: the Kullback--Leibler divergence of the
+observations under two instances equals $\sum_k\E[N'_k]\,\mathrm{KL}(\nu'_k,\tilde\nu'_k)
++\sum_k\E[N_k(T)]\,\mathrm{KL}(\nu_k,\tilde\nu_k)$, for every size rule with $\E N'_k<\infty$, every
+learner and every horizon, and it fails for a size map that looks one value ahead. The identity is
+known when the source is a bandit game, and the proof combines classical facts: ignorability,
+Wald's identity and the chain rule. With two arms, the bounded size rules are exactly the counts of
+stopped bandit games; with three arms or more, a classical cyclic example shows that some size
+rules are not, even in law. We also give witnesses and exclusions for the drift conditions and
+for the consistency class.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+In transfer learning for stochastic bandits, a learner facing $K$ arms with unknown reward laws
+$\nu_1,\dots,\nu_K$ on $[0,1]$ also has data from a related \emph{source}: samples of laws
+$\nu'_1,\dots,\nu'_K$ whose means are close to the target means, $\mean_k-\mean'_k<L_k$ for known
+bounds $L_k$. When these samples were collected by another agent, their numbers $\Np_k$ are not
+fixed in advance: the other agent chose them, possibly adaptively, by looking at the values it had
+already seen. \citet{PMRM26} study this problem and prove a problem-dependent lower bound for a
+class $\ClL$ of consistent learners, quantified over ``every prior strategy''; their lower bound
+is stated for sources collected by a bandit game.
+
+A setting for this problem must say which source strategies are allowed, what the learner sees, and
+how a change of measure on the pair (source, online game) behaves: the lower bound of
+\citet{PMRM26}, like the classical ones, needs the divergence between the laws of the observations
+under two instances to depend on the source only through the expected sizes. This paper gives the
+setting and proves that property for a broad class of strategies. Our main result
+(Theorem~\ref{thm:main}) is the identity
+\begin{equation}\label{eq:intro-decomposition}
+\KL(\PP,\tilde\PP)=\sum_{k=1}^K\E[\Np_k]\,\KL(\nu'_k,\tilde\nu'_k)
++\sum_{k=1}^K\E[\Nc_k(T)]\,\KL(\nu_k,\tilde\nu_k),
+\end{equation}
+where $\PP$ and $\tilde\PP$ are the laws of the source data and of the first $T$ rounds under two
+transfer instances $(\nu,\nu')$ and $(\tilde\nu,\tilde\nu')$, $\Nc_k(T)$ is the number of pulls of arm
+$k$, and the expectations are under the first instance. It holds for every \emph{size rule} with
+$\E \Np_k<\infty$, every learner and every horizon $T$, with no constant and no asymptotics; it
+fails for a size map that looks one value ahead. Deterministic sizes and bandit games on the
+source, stopped or not, are size rules (Lemma~\ref{lem:prior-game},
+Proposition~\ref{prop:stopped-games}).
+
+The identity~\eqref{eq:intro-decomposition} is known for bandit-game sources observed through their
+ordered history \citep[Lemma~22]{PMRM26}, and follows in general from ignorability and Wald's
+identity (Section~\ref{sec:related}). What this paper adds is the class of size rules,
+the case of unbounded sizes with $\E \Np_k<\infty$, the source data as the learner's observation,
+and an explicit size map for which the identity fails. The class is strictly larger than that of
+stopped bandit games as soon as $K\ge3$, by a classical cyclic example (Section~\ref{sec:related}).
+
+\paragraph{Our contributions} We summarize our main contributions below:
+\begin{itemize}
+\item A formal setting (Section~\ref{sec:setting}): size rules (Definition~\ref{def:size-rule}),
+  source data (Definition~\ref{def:source-data}), transfer learners (Definition~\ref{def:learner}),
+  the law of the game (Definition~\ref{def:game}), the drift conditions
+  (Definition~\ref{def:drift}) and the class $\ClL$ (Definition~\ref{def:consistency}), with a
+  discussion of the choices the source paper leaves open (Section~\ref{sec:reading}).
+\item The divergence decomposition~\eqref{eq:intro-decomposition} for every size rule with
+  $\E \Np_k<\infty$, and an explicit size map for which it fails (Theorem~\ref{thm:main}); the
+  fundamental inequality of the change of measure follows (Corollary~\ref{cor:fundamental}). As
+  said above, the identity itself is known or classical; we contribute its statement for all size
+  rules, including unbounded ones, and the exclusion.
+\item Witnesses and exclusions for each definition (Section~\ref{sec:properties}): bandit games,
+  stopped or not, are size rules and the look-ahead map is not (Lemmas~\ref{lem:prior-game}
+  and~\ref{lem:lookahead}, Proposition~\ref{prop:stopped-games}(a)); with two arms every bounded
+  size rule is a stopped bandit game, and with three arms or more a classical cyclic size rule is
+  not, even in law (Proposition~\ref{prop:stopped-games}(b), (c)); the relations between the drift
+  conditions (Proposition~\ref{prop:drift}); $\ClL$ is antitone in $L$
+  (Proposition~\ref{prop:classes}), contains every source-ignoring consistent algorithm
+  (Proposition~\ref{prop:witness}), and excludes the learner that follows the source
+  (Proposition~\ref{prop:exclusion}).
+\end{itemize}
+
+\paragraph{Outline} Section~\ref{sec:related} discusses related work. Section~\ref{sec:setting}
+formalizes the setting. Section~\ref{sec:main} states the main result and
+Section~\ref{sec:properties} the basic properties of the definitions. Section~\ref{sec:overview}
+explains how the proofs work, Section~\ref{sec:examples} gives examples, and
+Section~\ref{sec:open} concludes with open questions. The proofs are in the appendices.
+
+\section{Related work and context}\label{sec:related}
+
+\paragraph{Transfer and offline data in bandits} \citet{SJ12} study bandits with historical
+observations collected before the game, and \citet[Section~2]{CL24} online bandits with a fixed
+number of possibly biased offline samples per arm. In the transfer model of
+\citet[Section~3]{PMM25}, the numbers of source samples are deterministic, from laws at a known
+bounded discrepancy from the target laws; \citet[Section~3.2]{PMRM26} let them be chosen by an
+unknown, possibly adaptive strategy, independent of the target, and define the class $\ClL$ of
+Definition~\ref{def:consistency}. For best-arm identification, \citet[Section~2]{AJSS23} consider
+offline samples collected by an unknown adaptive policy on the online instance.
+
+\paragraph{Change of measure in bandits} The divergence decomposition of a bandit history,
+$\KL=\sum_k\E[\Nc_k(T)]\KL(\nu_k,\tilde\nu_k)$, is \citet[Lemma~1]{KCG16} as an inequality on
+events and \citet[(8)]{GMS19} as an identity, with data processing \citep[Lemma~1]{GMS19}. For a
+sampling rule stopped at a stopping time, the expected log-likelihood ratio follows by Wald's
+identity \citep{W44}, as in \citet[Appendix~A, (18)]{KCG16}.
+
+\paragraph{Ignorability and missing data} A likelihood does not depend on a data-dependent choice
+of what is observed when that choice uses only the observed values: this is the ignorability of
+data missing at random \citep{R76}, made precise as ``everywhere missing at random'' by
+\citet[Definition~2 and Theorem~1]{SGJC13}, and stated by \citet[Theorem~1]{FDS18}, for finitely
+many variables, with the observed data a stopping-set $\sigma$-algebra. The condition
+$\{\Np=n\}\in\Gc_n$ of Definition~\ref{def:size-rule} implies missingness at random with boxes as
+observed sets, and the look-ahead map of Theorem~\ref{thm:main}(b) is not missing at random. In
+sequential analysis this is the stopping-rule principle; see also \citet{BW88}.
+
+\paragraph{Multiparameter processes and sequential observation} A size rule is a stopping point of
+the $K$-parameter filtration $(\Gc_n)_{n\in\N^K}$; see also \citet{CW75}. A bandit strategy is an
+optional increasing path over such a filtration \citep{M86,KM98}, and \citet[Section~1.3]{MV81}
+call a stopping point \emph{predictable} when a policy reaches it, as a stopped bandit game does.
+On $\N^2$ every stopping point is predictable under the conditional independence condition
+$(\mathrm{F}4)$ \citep[Theorem~4]{MV81}; for three independent Markov chains a cyclic stopping point
+is not \citep[Section~5.2]{MV81}; see also \citet{KS81}, \citet[Proposition~3]{M83} and \citet{W81}.
+The cyclic pattern goes back to Berry's stable function that is not sequential
+(\citealp[Proposition~II.2.2]{Ber76}; \citealp{Cur03}). In missing data, observing one variable at a time, chosen
+from the values already seen, is the randomised monotone missingness of \citet{RG97}, who state
+that some ignorable mechanisms are not of this form; see also \citet{GR97}.
+Proposition~\ref{prop:stopped-games} gives the versions of these facts needed here.
+
+\paragraph{Closest related work} \citet[Lemma~22]{PMRM26} prove~\eqref{eq:intro-decomposition} for
+a bandit-game source whose ordered history the learner sees; it does not give
+Theorem~\ref{thm:main}, since size rules need not be bandit games and our learner sees less.
+\citet[(10)]{AJSS23} write the analogous expansion for offline data with the online laws; it does
+not give Theorem~\ref{thm:main}, where the laws differ and the strategies need not be sequential.
+Section~\ref{sec:main} compares them in detail, with Table~\ref{tab:comparison}.
+
+\paragraph{Gap with the literature} For bounded size rules, Theorem~\ref{thm:main}(a) follows in
+about a page from classical facts: ignorability gives Lemma~\ref{lem:source-law}, Wald's identity
+the source term (Proposition~\ref{prop:source-kl}), and the chain rule the online term. We claim no
+new idea for the identity; we write this route for size rules that may be unbounded, with
+$\E \Np_k<\infty$, give a size map for which it fails, and give the setting itself.
+
+\section{Problem formulation}\label{sec:setting}
+
+\paragraph{Notational convention} Logarithms are natural; $\N:=\{0,1,2,\dots\}$,
+$[K]:=\{1,\dots,K\}$; in $[0,\infty]$, $0\cdot\infty:=0$. Rounds are numbered from $1$. Inequalities
+between vectors of $\N^K$ or $(0,\infty)^K$ are componentwise.
+
+\subsection{Laws and instances}
+
+\begin{definition}[{Laws on $[0,1]$}]\label{def:laws}
+\dt{s:Pc}$\mathcal P$ is the set of Borel probability measures on $[0,1]$, and $m(P):=\int x\,P(dx)$
+the mean of $P\in\Pc$; $\lambda$ is the uniform law on $[0,1]$,
+\dt{s:Ber}$\mathrm{Ber}(p)$ the Bernoulli law of mean $p$, and $\delta_x$ the Dirac mass at
+$x\in[0,1]$. For probability measures $P,Q$ on a measurable space,
+\dt{s:KL}$\mathrm{KL}(P,Q):=\int\log\frac{dP}{dQ}\,dP$ if $P\ll Q$, and $\mathrm{KL}(P,Q):=\infty$
+otherwise; \dt{s:kl}$\mathrm{kl}(p,q):=\KL(\Ber(p),\Ber(q))$.
+\end{definition}
+
+The integral defining $\KL(P,Q)$ exists in $[0,\infty]$: the negative part of the log-likelihood
+ratio is integrable (Lemma~\ref{lem:kl-neg} in Appendix~\ref{sec:proofs}). So $\KL$ equals the
+divergence of the Lean library Mathlib (Section~\ref{sec:overview})\leanfn{InformationTheory.klDiv},
+which is $\infty$ when $P\not\ll Q$ or when the log-likelihood ratio is not integrable.
+
+\begin{definition}[Instances]\label{def:instance}
+\uses{def:laws}
+Fix $K\ge2$. A target instance is $\nu=(\nu_1,\dots,\nu_K)\in\Pc^K$, with means\dt{s:mu} $\mean_k:=m(\nu_k)$,
+$\mean^\star:=\max_k\mean_k$ and gaps $\gap_k:=\mean^\star-\mean_k$; arm $k$ is suboptimal if $\mean_k<\mean^\star$.
+A source instance is $\nu'\in\Pc^K$, with means $\mean'_k:=m(\nu'_k)$. A transfer instance is a pair
+$(\nu,\nu')\in\Pc^K\times\Pc^K$.
+\end{definition}
+
+\subsection{The source phase}\label{sec:setting-source}
+
+The source is one probability space: for each arm an i.i.d.\ sequence (a \emph{stack}) of values
+from its source law, and an independent randomisation for the strategy.
+
+\begin{definition}[Source space]\label{def:source-space}
+\uses{def:laws, def:instance}
+\dt{s:Om}$\Om:=[0,1]^{\N}\times[0,1]^{[K]\times\N_{\ge1}}$ with the product $\sigma$-algebra and the
+coordinates $\Up=(\Up_i)_{i\in\N}$ (randomisation) and $\Xp_{k,j}$ (the $j$-th value of the stack of
+arm $k$). For $\nu'\in\Pc^K$, $\Pp_{\nu'}:=\lambda^{\otimes\N}\otimes\bigotimes_{k\in[K],j\ge1}\nu'_k$,
+and $\E_{\nu'}$ is the expectation under $\Pp_{\nu'}$. For $n\in\N^K$, the box of $n$ is
+\dt{s:Bx}$B(n):=\{(k,j):k\in[K],\,1\le j\le n_k\}$, and
+\dt{s:Gc}$\mathcal G_n:=\sigma(\Up,\,\Xp_{k,j}:(k,j)\in\Bx(n))$.
+\end{definition}
+
+So under $\Pp_{\nu'}$ the variables $\Up$ and $\Xp_{k,j}$ are independent, $\Xp_{k,j}$ has law $\nu'_k$,
+and $\Gc_n\subset\Gc_m$ when $n\le m$.
+
+\begin{definition}[Size maps, size rules, source strategies]\label{def:size-rule}
+\uses{def:source-space}
+A size map is a measurable map\dt{s:Np} $\Np=(\Np_1,\dots,\Np_K):\Om\to\N^K$. It is a size rule if
+\begin{equation*}
+\{\Np=n\}\in\Gc_n\qquad\text{for every }n\in\N^K.
+\end{equation*}
+A source strategy is a sequence $\rhos=(\Np^{(T)})_{T\ge1}$ of size rules, $\Np^{(T)}$ being used at
+horizon $T$.
+\end{definition}
+
+A size rule is a fixed map, which does not know $\nu'$; the law of $\Np$ under $\Pp_{\nu'}$ depends
+on $\nu'$. The decision to stop at the sizes $n$ uses only the values in the box of $n$ and the
+randomisation: $\Np$ is a stopping point of the $K$-parameter filtration $(\Gc_n)_{n\in\N^K}$.
+
+\begin{definition}[Source data]\label{def:source-data}
+\uses{def:source-space, def:size-rule}
+\dt{s:Sd}$\mathcal S:=\bigsqcup_{n\in\N^K}\Sd_n$ with $\Sd_n:=[0,1]^{\Bx(n)}$ (a countable disjoint
+union, with the sum $\sigma$-algebra); an element is $s=(n,x)$ with $x=(x_{k,j})_{(k,j)\in\Bx(n)}$,
+and $n_k(s):=n_k$. For a size map $\Np$, the source data are\dt{s:D}
+\begin{equation*}
+\Dd:=\big(\Np,(\Xp_{k,j})_{(k,j)\in\Bx(\Np)}\big):\Om\to\Sd,
+\end{equation*}
+and\dt{s:PD} $\PD_{\nu',\Np}$ is the law of $\Dd$ under $\Pp_{\nu'}$. For $s$ with $n_k(s)\ge1$,\dt{s:mhat}
+$\mhat_k(s):=n_k(s)^{-1}\sum_{j\le n_k(s)}x_{k,j}$ is the source empirical mean of arm $k$.
+\end{definition}
+
+$\Dd$ is measurable: on the event $\{\Np=n\}$ it equals $(n,(\Xp_{k,j})_{(k,j)\in\Bx(n)})$. The space
+$\Sd$ is standard Borel.
+
+\subsection{Learners and the law of the game}\label{sec:setting-game}
+
+\begin{definition}[Bandit algorithms and transfer learners]\label{def:learner}
+\uses{def:source-data}
+Let \dt{s:Hs}$\mathcal H_t:=([K]\times[0,1])^{t}$ (with $\Hs_0$ a point). A bandit algorithm is a
+sequence $\sigma=(\sigma_t)_{t\ge1}$ of Markov kernels from $\Hs_{t-1}$ to $[K]$. A transfer learner
+is a sequence $\pi=(\pi_t)_{t\ge1}$ of Markov kernels from $\Sd\times\Hs_{t-1}$ to $[K]$; for
+$s\in\Sd$, $\pi(s):=(\pi_t(s,\cdot))_{t\ge1}$ is a bandit algorithm. The source-ignoring learner of a
+bandit algorithm $\sigma$ is\dt{s:pis} $\pis_t(s,h):=\sigma_t(h)$.
+\end{definition}
+
+A transfer learner is a bandit algorithm whose initial state is the source data. It knows $L$ and
+$K$ (fixed before it is chosen), not the horizon.
+
+\begin{definition}[Law of the game]\label{def:game}
+\uses{def:instance, def:source-data, def:learner}
+For a bandit algorithm $\sigma$, $\nu\in\Pc^K$ and $T\in\N$,\dt{s:Q} $\Q^T_{\sigma,\nu}$ is the law on $\Hs_T$
+of $(A_1,Y_1,\dots,A_T,Y_T)$ when, for $t=1,\dots,T$, $A_t$ is drawn from $\sigma_t(H_{t-1})$ given
+the history $H_{t-1}:=(A_i,Y_i)_{i<t}$ and $Y_t$ from $\nu_{A_t}$ given $(H_{t-1},A_t)$; that is,
+$\Q^0_{\sigma,\nu}$ is the Dirac mass and
+\begin{equation*}
+\Q^t_{\sigma,\nu}:=\Q^{t-1}_{\sigma,\nu}\otimes(\sigma_t\otimes\nu),\qquad
+(\sigma_t\otimes\nu)(h,\cdot):=\int\sigma_t(h,da)\,\delta_a\otimes\nu_a.
+\end{equation*}
+For $h\in\Hs_T$,\dt{s:Nk} $\Nc_k(T)(h):=\#\{t\le T:a_t=k\}$, and $\E_{\sigma,\nu}$ is the expectation under
+$\Q^T_{\sigma,\nu}$. For a transfer learner $\pi$,\dt{s:kappa} $\kap^T_{\pi,\nu}(s):=\Q^T_{\pi(s),\nu}$ is a Markov
+kernel from $\Sd$ to $\Hs_T$, and for a size map $\Np$ and $\nu'\in\Pc^K$ the law of the game at
+horizon $T$ is\dt{s:PP}
+\begin{equation*}
+\mathbb P^T_{\nu',\Np,\nu,\pi}:=\PD_{\nu',\Np}\otimes\kap^T_{\pi,\nu}\quad\text{on }\Sd\times\Hs_T,
+\end{equation*}
+with coordinates $(\Dd,H_T)$; $\Np_k:=n_k(\Dd)$ and $\Nc_k(T):=\Nc_k(T)(H_T)$ on $\Sd\times\Hs_T$. For a
+source strategy $\rhos$, $\E_{\nu',\rhos,\nu,\pi}$ is the expectation under
+$\PP^T_{\nu',\Np^{(T)},\nu,\pi}$.
+\end{definition}
+
+The kernel $\kap^T_{\pi,\nu}$ is measurable in $s$ (finitely many composition products of kernels in
+$(s,h)$). Given the source data, the online game depends neither on $\nu'$ nor on $\Np$: this is the
+independence of the sizes and the target required by \citet[Section~3.2]{PMRM26}.
+
+\subsection{Drift conditions and consistency}\label{sec:setting-class}
+
+\begin{definition}[Drift conditions]\label{def:drift}
+\uses{def:instance}
+Let $L\in(0,\infty)^K$. The pair $(\nu,\nu')$ satisfies the drift condition
+\dt{s:Drift}$\mathrm{Drift}_L$ if $\mean_k-\mean'_k<L_k$ for every $k$, and the two-sided strict
+condition if $|\mean_k-\mean'_k|<L_k$ for every $k$. Following \citet[Section~4.2]{PMRM26},\dt{s:PcL}
+\begin{equation*}
+\mathcal P_L:=\big\{(\nu,\nu')\in\Pc^K\times\Pc^K:\ |\mean_k-\mean'_k|\le L_k\text{ for every }k\big\}.
+\end{equation*}
+We write \dt{s:one}$\mathbf 1_K:=(1,\dots,1)$.
+\end{definition}
+
+\begin{definition}[Consistency]\label{def:consistency}
+\uses{def:instance, def:size-rule, def:learner, def:game, def:drift}
+The class of \citet[Section~4.2]{PMRM26}, copied from the source: ``We define our class of
+consistent algorithms as
+\[
+\mathcal{C}_{L}:=\left\{\pi\;\middle|\;\begin{array}[]{l}\forall(\nu,\nu^{\prime})\in\mathcal{P}([0,1])_{L},\\\forall\text{ prior strategy }\pi^{\prime},\\\forall\text{ suboptimal arm }k,\\\forall\alpha>0\end{array},\ \mathbb{E}_{\nu^{\prime},\pi^{\prime},\nu,\pi}[N_{k}(T)]=o(T^{\alpha})\right\}.\text{''}
+\]
+Formally, for $L\in(0,\infty)^K$: a transfer learner $\pi$ belongs to \dt{s:Cl}$\mathcal C_L$ if for
+every $(\nu,\nu')\in\PcL$, every source strategy $\rhos$, every suboptimal arm $k$ of $\nu$ and every
+$\alpha>0$,
+\begin{equation*}
+\lim_{T\to\infty}\frac{\E_{\nu',\rhos,\nu,\pi}[\Nc_k(T)]}{T^{\alpha}}=0.
+\end{equation*}
+A bandit algorithm $\sigma$ is consistent on $\Pc^K$ \citep[Section~4.1]{PMRM26} if for every
+$\nu\in\Pc^K$, every suboptimal arm $k$ and every $\alpha>0$, $\E_{\sigma,\nu}[\Nc_k(T)]/T^{\alpha}\to0$
+as $T\to\infty$.
+\end{definition}
+
+\section{The divergence decomposition}\label{sec:main}
+
+For a fixed source, the law of the online history of a bandit algorithm satisfies the classical
+decomposition $\KL(\Q^T_{\sigma,\nu},\Q^T_{\sigma,\tilde\nu})=\sum_k\E_{\sigma,\nu}[\Nc_k(T)]\KL(\nu_k,\tilde\nu_k)$
+\citep[(8)]{GMS19}. The main result adds the source phase, for every size rule.
+
+\begin{theorem}[Divergence decomposition]\label{thm:main}
+\uses{def:laws, def:instance, def:source-space, def:size-rule, def:source-data, def:learner, def:game}
+For every $K\ge2$, every size rule $\Np$, every transfer learner $\pi$, every $T\in\N$ and all pairs
+$(\nu,\nu')$ and $(\tilde\nu,\tilde\nu')$ in $\Pc^K\times\Pc^K$ such that
+\begin{equation*}
+\E_{\nu'}[\Np_k]<\infty\qquad\text{for every arm }k,
+\end{equation*}
+write $\PP:=\PP^T_{\nu',\Np,\nu,\pi}$ and $\tilde\PP:=\PP^T_{\tilde\nu',\Np,\tilde\nu,\pi}$. Then:
+\begin{enumerate}
+\item[(a)] in $[0,\infty]$, with $0\cdot\infty:=0$,
+\begin{equation}\label{eq:main}
+\KL(\PP,\tilde\PP)=\sum_{k=1}^K\E_{\PP}[\Np_k]\,\KL(\nu'_k,\tilde\nu'_k)
++\sum_{k=1}^K\E_{\PP}[\Nc_k(T)]\,\KL(\nu_k,\tilde\nu_k),
+\end{equation}
+where $\E_{\PP}[\Np_k]=\E_{\nu'}[\Np_k]$ is the expected size of the source sample of arm $k$ under
+$\nu'$ and $\Nc_k(T)$ is the number of pulls of arm $k$ in the first $T$ rounds;
+\item[(b)] the hypothesis that $\Np$ is a size rule cannot be dropped. Let the look-ahead map
+$N^{\mathrm{la}}:\Om\to\N^K$ be defined by\dt{s:Nla}
+\begin{equation*}
+N^{\mathrm{la}}_1:=1\ \text{if }\Xp_{1,2}>1/2,\qquad \Nla_1:=2\ \text{otherwise},\qquad
+\Nla_k:=0\ \text{for }k\ge2.
+\end{equation*}
+It is a bounded size map and not a size rule. For all $p\ne q$ in $(0,1)$, every transfer learner
+$\pi$, every $T\in\N$, every $\nu\in\Pc^K$ and all $\nu'_2,\dots,\nu'_K\in\Pc$, if $\nu'_1=\Ber(p)$,
+$\tilde\nu'_1=\Ber(q)$, $\tilde\nu'_k=\nu'_k$ for $k\ge2$ and $\tilde\nu=\nu$, then the laws
+$\PP:=\PP^T_{\nu',\Nla,\nu,\pi}$ and $\tilde\PP:=\PP^T_{\tilde\nu',\Nla,\nu,\pi}$ satisfy
+\begin{equation*}
+\KL(\PP,\tilde\PP)=2\,\kl(p,q),
+\end{equation*}
+while the right-hand side of~\eqref{eq:main} equals $(2-p)\,\kl(p,q)<2\,\kl(p,q)$.
+\end{enumerate}
+\end{theorem}
+(see the proof in Appendix~\ref{sec:proofs}).
+
+\paragraph{Constants and scope} There is no constant: (a) is an identity, for every horizon $T$ and
+every pair of instances, with no asymptotics and no drift condition. The only hypothesis on the
+strategy, besides being a size rule, is $\E_{\nu'}[\Np_k]<\infty$ under the first source instance;
+nothing is assumed under the second one. We do not know whether (a) holds without this hypothesis:
+the proof uses it to split the expected log-likelihood ratio into a positive and a negative part.
+Every bandit game over $T'$ rounds has $\Np_k\le T'$, so the hypothesis holds for them. Part (b)
+shows one size map outside the class; we do not claim that size rules are the largest class for
+which (a) holds.
+
+\paragraph{Interpretation} The source enters the divergence only through the expected sizes
+$\E_{\nu'}[\Np_k]$, as if the sizes had been fixed at their means. Adaptivity of the source strategy
+is invisible to a change of measure as long as the decision to stop reads only the values it keeps.
+In (b) the size reveals the second value of the stack even when it is not kept, so the source data
+carry the information of two samples for an expected size of $2-p$.
+
+\paragraph{Comparison with the closest results} Table~\ref{tab:comparison} places
+Theorem~\ref{thm:main} among the decompositions discussed in Section~\ref{sec:related}.
+\begin{itemize}
+\item \citet[Appendix~E, Lemma~22]{PMRM26} prove~\eqref{eq:main} when the source is a bandit game
+  over $T'$ rounds: they write the prior and online games as one game of $T'+T$ rounds, whose
+  ordered history the learner sees, and apply the divergence decomposition of bandit histories,
+  under absolute continuity. It does not give Theorem~\ref{thm:main}: size rules need not be bandit
+  games (Proposition~\ref{prop:stopped-games}(c)), and our learner sees the source data $\Dd$, a
+  coarser observation than the ordered history.
+\item \citet[Appendix~B.1, (10)]{AJSS23} write the expected log-likelihood ratio of offline and
+  online data as $\sum_a(\E[N^{o}_a]+\E[\Nc_a])\KL(\nu_a,\tilde\nu_a)$, taking expectations ``with
+  respect to all the randomness in the system''. Their offline data are sequential and have the
+  online laws; it does not give Theorem~\ref{thm:main}, where the source laws differ from the target
+  laws and the strategies need not be sequential.
+\end{itemize}
+
+\begin{table}[ht]
+\centering
+\caption{Divergence decompositions with a phase of data collected before the online game. ``Seq.''
+means that the collection is a sequential sampling rule.}\label{tab:comparison}
+\begin{tabular}{@{}p{0.30\textwidth}p{0.24\textwidth}p{0.18\textwidth}p{0.20\textwidth}@{}}
+\toprule
+Data before the game & Observation & Statement & Reference \\
+\midrule
+none & online history & identity & \citet[(8)]{GMS19} \\
+one seq.\ rule at a stopping time, one law & ordered history & identity (Wald) & \citet[(18)]{KCG16} \\
+offline, unknown adaptive policy, same laws online & offline and online data & asserted & \citet[(10)]{AJSS23} \\
+bandit game over $T'$ rounds, source laws $\nu'$ & ordered prior history and online history & identity, $\nu\ll\tilde\nu$, $\nu'\ll\tilde\nu'$ & \citet[Lemma~22]{PMRM26} \\
+size rule with $\E \Np_k<\infty$, source laws $\nu'$ & source data $\Dd$ and online history & identity in $[0,\infty]$; fails for a look-ahead map & Theorem~\ref{thm:main} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The fundamental inequality} Combined with the data-processing inequality of
+\citet[Lemma~1]{GMS19} (Lemma~\ref{cite:GMS19-Lemma1}), Theorem~\ref{thm:main}(a) gives the
+inequality on which a lower bound rests, with the source term.
+
+\begin{corollary}[Fundamental inequality with a source]\label{cor:fundamental}
+\uses{def:laws, def:size-rule, def:source-data, def:learner, def:game, thm:main}
+Under the hypotheses of Theorem~\ref{thm:main}(a), with $\PP$ and $\tilde\PP$ as there, for every
+measurable $Z:\Sd\times\Hs_T\to[0,1]$,
+\begin{equation*}
+\sum_k\E_{\nu'}[\Np_k]\KL(\nu'_k,\tilde\nu'_k)+\sum_k\E_{\PP}[\Nc_k(T)]\KL(\nu_k,\tilde\nu_k)
+\ge\kl\big(\E_{\PP}[Z],\E_{\tilde\PP}[Z]\big).
+\end{equation*}
+\end{corollary}
+(see the proof in Appendix~\ref{sec:proof-cor}).
+
+\section{Basic properties of the definitions}\label{sec:properties}
+
+This section gives a witness and an exclusion for each definition of Section~\ref{sec:setting}. The
+proofs are in Appendix~\ref{sec:proofs-properties}.
+
+\paragraph{Size rules} Deterministic sizes and the counts of a prior bandit game are size rules;
+the look-ahead map of Theorem~\ref{thm:main}(b) is not. A prior bandit game is a bandit game
+played on the source stacks before the online game.
+
+\begin{definition}[Prior bandit game]\label{def:prior-game}
+\uses{def:source-space, def:size-rule}
+Let $T'\in\N$ and let $\alpha_r:[0,1]^{\N}\times([K]\times[0,1])^{r-1}\to[K]$, $r=1,\dots,T'$, be
+measurable.\dt{s:game0} On $\Om$ define $C_k(0):=0$ and, for $r=1,\dots,T'$,
+\begin{equation*}
+A'_r:=\alpha_r\big(\Up,(A'_i,Y'_i)_{i<r}\big),\qquad C_k(r):=C_k(r-1)+\ind\{A'_r=k\},\qquad
+Y'_r:=\Xp_{A'_r,C_{A'_r}(r)}.
+\end{equation*}
+The counts of the prior game are $\Np_k:=C_k(T')$.
+\end{definition}
+
+This is the source of the lower bound of \citet[Theorem~2]{PMRM26}: a bandit game played over $T'$
+rounds (possibly $T'=f(T)$) on the source stacks, by a strategy that uses its own observations. The
+game may also stop early, at a time chosen with its own observations.
+
+\begin{definition}[Stopped prior game]\label{def:stopped-game}
+\uses{def:source-space, def:prior-game}
+For a prior bandit game over $T'$ rounds,\dt{s:stopped} let $\mathcal F'_r:=\sigma\big(\Up,(A'_i,Y'_i)_{i\le r}\big)$
+for $r=0,\dots,T'$. A stopping time of the game is a map $\tau:\Om\to\{0,\dots,T'\}$ with
+$\{\tau=r\}\in\mathcal F'_r$ for every $r$, and the stopped counts are
+$\Np_k:=C_k(\tau)=\sum_{r=0}^{T'}\ind\{\tau=r\}\,C_k(r)$.
+\end{definition}
+
+With $\tau\equiv T'$ the stopped counts are the counts of Definition~\ref{def:prior-game}.
+
+
+\begin{lemma}[Witnesses of size rules]\label{lem:prior-game}
+\uses{def:size-rule, def:prior-game}
+(a) A constant map $\Np\equiv n^0\in\N^K$ is a size rule. (b) The counts $\Np$ of a prior bandit game
+over $T'$ rounds (Definition~\ref{def:prior-game}) form a size rule, with $\Np_k\le T'$.
+\end{lemma}
+
+\begin{lemma}[Exclusion: looking ahead]\label{lem:lookahead}
+\uses{def:size-rule}
+The look-ahead map $\Nla:\Om\to\N^K$, $\Nla_1:=1$ if $\Xp_{1,2}>1/2$ and $\Nla_1:=2$ otherwise,
+$\Nla_k:=0$ for $k\ge2$ (the map of Theorem~\ref{thm:main}(b)), is a bounded size map and not a
+size rule.
+\end{lemma}
+
+\paragraph{Size rules and stopped bandit games} Is a size rule just a bandit game on the source
+stacks, stopped when it chooses? With two arms, yes for bounded size rules; with three arms or more,
+no, not even in law. Write\dt{s:ek} $e_k$ for the $k$-th unit vector of $\N^K$ and $|n|:=\sum_kn_k$.
+
+\begin{proposition}[Size rules and stopped bandit games]\label{prop:stopped-games}
+\uses{def:source-space, def:size-rule, def:prior-game, def:stopped-game}
+\begin{enumerate}
+\item[(a)] The stopped counts of a prior game over $T'$ rounds (Definition~\ref{def:stopped-game})
+  form a size rule, with $|\Np|\le T'$.
+\item[(b)] Let $K=2$ and let $\Np$ be a size rule with $T':=\sup_{\Om}|\Np|<\infty$. There are a
+  prior game over $T'$ rounds and a stopping time $\tau$ of it whose stopped counts equal $\Np$ at
+  every point of $\Om$.
+\item[(c)] Let $K\ge3$ and $b_k:=\ind\{\Xp_{k,1}>1/2\}$ for $k=1,2,3$. The cyclic map
+  $N^{\mathrm{cyc}}:\Om\to\N^K$,\dt{s:Ncyc}
+  \begin{equation*}
+  N^{\mathrm{cyc}}:=\begin{cases}
+  e_1+e_2&\text{on }\{b_1=1,\,b_2=0\},\\
+  e_2+e_3&\text{on }\{b_2=1,\,b_3=0\},\\
+  e_3+e_1&\text{on }\{b_3=1,\,b_1=0\},\\
+  e_1+e_2+e_3&\text{elsewhere},
+  \end{cases}
+  \end{equation*}
+  is a size rule with $|\Ncyc|\le3$. There is no prior game, over any number $T'$ of rounds, with a
+  stopping time whose stopped counts have, for every $\nu'\in\Pc^K$, the same law under $\Pp_{\nu'}$
+  as $\Ncyc$.
+\end{enumerate}
+\end{proposition}
+
+Since the sizes are a function of the source data, no stopped prior game has the same law of source
+data as $\Ncyc$ for every $\nu'$ either: for $K\ge3$, size rules are strictly more general than
+stopped bandit games, also for the learner, who sees only $\Dd$.
+
+\paragraph{Sources of Proposition~\ref{prop:stopped-games}} Part (b) is a version of
+\citet[Theorem~4]{MV81} that holds pointwise and for all source laws at once. Part (c) is a
+classical example, and we claim nothing new in it beyond its writing for size rules. The pattern of
+$\Ncyc$ is that of a function of \citet[Proposition~II.2.2]{Ber76}, the ``Gustave function'' in
+the form of \citet{Cur03}, defined on three boolean arguments by $G(1,0,\bot)=G(\bot,1,0)=G(0,\bot,1)=1$, where $\bot$ is an argument not
+read: the arguments read on these three inputs are the observed arms of $\Ncyc$ on its first three
+cases. Berry shows that no argument can be evaluated first on every input, so that no sequential
+program computes $G$; this is the argument of our proof, and the example of
+\citet[Section~5.2]{MV81} for three Markov chains. With stacks of depth one ($\Np\le\one$), a size
+rule is a mechanism of missing data that is missing at random (Lemma~\ref{lem:source-law}), and a
+stopped prior game with counts at most $\one$ is a randomised monotone missingness scheme in the
+sense of \citet{RG97}, who
+state that some ignorable mechanisms are not of this form; see also \citet{GR97}. So part (c), in
+law and with randomisation, is that phenomenon for size rules, a class between monotone schemes and
+mechanisms missing at random.
+
+\paragraph{Source data and learners} A transfer learner sees the source only through $\Dd$: it cannot
+use a value that the size rule did not keep.
+
+\begin{lemma}[The learner does not see unobserved values]\label{lem:learner-exclusion}
+\uses{def:source-data, def:learner}
+Let $\Np\equiv(1,0,\dots,0)$. There is no measurable $f:\Sd\to[0,1]$ with $f(\Dd)=\Xp_{1,2}$ on
+$\Om$. Hence there is no transfer learner $\pi$ with $\pi_1(\Dd(\omega),\cdot)=\delta_{1}$ when
+$\Xp_{1,2}(\omega)>1/2$ and $\pi_1(\Dd(\omega),\cdot)=\delta_2$ otherwise, for every $\omega\in\Om$.
+\end{lemma}
+
+\paragraph{Drift conditions} The three conditions of Definition~\ref{def:drift} differ, and the
+next proposition says exactly when one implies another.
+
+\begin{proposition}[Relations between the drift conditions]\label{prop:drift}
+\uses{def:drift}
+Let $L\in(0,\infty)^K$.
+\begin{enumerate}
+\item[(a)] The two-sided strict condition implies $\Drift_L$ and $(\nu,\nu')\in\PcL$.
+\item[(b)] $\PcL\subset\{(\nu,\nu'):\Drift_{L'}\}$ for every $L'\in(0,\infty)^K$ with $L'_k>L_k$ for all $k$.
+\item[(c)] $\{\Drift_L\}\subset\PcL$ if and only if $L_k\ge1$ for every $k$; and
+  $\PcL\subset\{\Drift_L\}$ if and only if $L_k>1$ for every $k$. In particular, for
+  $L\in(0,1)^K$ neither set contains the other.
+\item[(d)] $\PcL=\Pc^K\times\Pc^K$ if and only if $L\ge\one$; $\Drift_L$ holds for every pair if and
+  only if $L_k>1$ for every $k$.
+\item[(e)] Witness and exclusion: every pair with $\nu'=\nu$ satisfies all three conditions for every
+  $L$; the pair with $\nu_k=\delta_1$, $\nu'_k=\delta_0$ for every $k$ is in $\PcL[\one]$ and does not
+  satisfy $\Drift_{\one}$.
+\end{enumerate}
+\end{proposition}
+
+\paragraph{The consistency class} $\ClL$ shrinks when $L$ grows, stops changing at $L=\one$, and
+lies between two explicit learners.
+
+\begin{proposition}[Monotonicity of $\mathcal{C}_L$]\label{prop:classes}
+\uses{def:consistency, def:drift}
+(a) If $L\le L'$, then $\ClL[L']\subset\ClL$. (b) $\ClL=\ClL[\one]$ whenever $L\ge\one$, and
+$\bigcap_{L\in(0,\infty)^K}\ClL=\ClL[\one]$: a transfer learner is in $\ClL$ for every $L$ if and
+only if it satisfies the condition of Definition~\ref{def:consistency} with $\PcL$ replaced by
+$\Pc^K\times\Pc^K$, that is, for every pair and every source strategy.
+\end{proposition}
+
+\begin{proposition}[Witness: source-ignoring learners]\label{prop:witness}
+\uses{def:consistency, def:learner, def:game}
+If a bandit algorithm $\sigma$ is consistent on $\Pc^K$, its source-ignoring learner $\pis$
+belongs to $\ClL[\one]$, hence to $\ClL$ for every $L\in(0,\infty)^K$. The algorithm UCB
+\citep{ACF02}, in the form formalised in the Lean library LML (Section~\ref{sec:overview}), with
+parameter $c>1/2$ (pull arm $t$ at rounds
+$t\le K$, then at round $t>K$ an arm maximising
+$\hat\mu_a(t-1)+\sqrt{2c\log t/\Nc_a(t-1)}$, with $\hat\mu_a(t-1)$ and $\Nc_a(t-1)$ the empirical mean
+and the count of arm $a$ after $t-1$ rounds and ties broken by a fixed rule) is consistent on
+$\Pc^K$; in particular $\ClL\ne\emptyset$.
+\end{proposition}
+
+\begin{proposition}[Exclusion: following the source]\label{prop:exclusion}
+\uses{def:consistency, def:learner, def:source-data}
+Let \dt{s:pitr}$\pi^{\mathrm{tr}}$ be the transfer learner that, when $n_k(s)\ge1$ for every $k$,
+pulls at every round the smallest arm $\hat k(s)$ maximising $\mhat_k(s)$, and otherwise pulls
+arm $1$ at every round. Then $\pitr\notin\ClL$ for every $L\in(0,\infty)^K$, and the failure already
+occurs on a pair with $\nu'=\nu$ and deterministic source sizes.
+\end{proposition}
+
+\subsection{Reading of the source}\label{sec:reading}
+
+Six points of Definitions~\ref{def:learner}--\ref{def:consistency} are choices where
+\citet{PMRM26} leave freedom.
+\begin{itemize}
+\item ``Prior strategy'' is not defined formally in \citet{PMRM26}: its Section~3.2 says that the
+  counts may come from an online game, may depend on $T$ and on the prior observations, and are
+  independent of the target. We read it as a source strategy (Definition~\ref{def:size-rule}): a
+  class for which Theorem~\ref{thm:main}(a) holds, which contains the bandit games of
+  \citet[Theorem~2]{PMRM26}, stopped or not (Lemma~\ref{lem:prior-game},
+  Proposition~\ref{prop:stopped-games}(a)), and outside which (a) can fail
+  (Theorem~\ref{thm:main}(b)). We do not claim that it is the largest such class. Restricting the
+  strategies (to bandit games, or to deterministic sizes) can only enlarge $\ClL$ (Open
+  question~\ref{oq:deterministic}).
+\item \citet[Section~3.1]{PMRM26} assume a single optimal arm; the definition of $\ClL$ quantifies
+  over all of $\mathcal P([0,1])_L$, and we keep it literally: every pair, ``suboptimal'' meaning
+  $\mean_k<\mean^\star$.
+\item The set $\PcL$ is closed and two-sided, while the drift condition of
+  \citet[Section~3.2]{PMRM26} is strict, and the one-sided strict condition $\Drift_L$ is the one
+  under which their upper bound holds (their Section~7 notes that the lower inequalities play no
+  role there). This is why the three conditions are defined; Proposition~\ref{prop:drift} compares
+  them.
+\item Learners are anytime (Definition~\ref{def:learner}), while the source strategy may depend on
+  $T$.
+\item The online phase is a composition product (Definition~\ref{def:game}) rather than a game on
+  stacks. Online rewards drawn from stacks $X_{k,j}\sim\nu_k$, the reward of round $t$ being
+  $X_{A_t,\Nc_{A_t}(t)}$, give the same law of $(\Dd,H_T)$; this realisation is not used.
+\item In the proof of the lower bound of \citet[Appendix~E]{PMRM26}, the learner of the online
+  phase sees the whole ordered prior history (the actions, the values and the randomisation of the
+  prior game). Our learner sees the source data $\Dd$ only: the sizes and the values of each arm, in
+  their order within the arm. For a bandit-game source, $\Dd$ is a function of the ordered prior
+  history, so every transfer learner is also a learner in their sense; a learner that uses the
+  interleaving of the arms in the prior game is not a transfer learner here. The results of
+  Sections~\ref{sec:main} and~\ref{sec:properties} do not depend on this choice except
+  Theorem~\ref{thm:main}, whose observation is $(\Dd,H_T)$.
+\end{itemize}
+
+The propositions on $\ClL$ use only deterministic sizes and source-ignoring learners, so they hold
+verbatim for the class defined with bandit-game sources only, or with the ordered prior history as
+the learner's observation.
+
+\section{How the proofs work}\label{sec:overview}
+
+\paragraph{The decomposition} The law of the game is a composition product
+$\PP=\PD_{\nu',\Np}\otimes\kap^T_{\pi,\nu}$ (Definition~\ref{def:game}). The chain rule for the
+Kullback--Leibler divergence of composition products splits $\KL(\PP,\tilde\PP)$ into the divergence
+of the source data and the average divergence of the online phase:
+\begin{equation*}
+\KL(\PP,\tilde\PP)=\underbrace{\KL\big(\PD_{\nu',\Np},\PD_{\tilde\nu',\Np}\big)}_{\text{source}}
++\underbrace{\int\KL\big(\kap^T_{\pi,\nu}(s),\kap^T_{\pi,\tilde\nu}(s)\big)\,\PD_{\nu',\Np}(ds)}_{\text{online}}.
+\end{equation*}
+The online term is the classical decomposition of bandit histories for each fixed $s$, integrated
+in $s$ (Lemmas~\ref{lem:mixture}, \ref{lem:lml-history} and~\ref{lem:online-kl}). The source term
+is handled in three steps:
+\begin{enumerate}
+\item \emph{Factorisation} (Lemma~\ref{lem:source-law}): on each slice $\{n\}\times\Sd_n$, the law
+  of $\Dd$ is $g_n\cdot\bigotimes_{(k,j)\in\Bx(n)}\nu'_k$, with a function $g_n\in[0,1]$ that does not
+  depend on $\nu'$. This is where the size-rule condition is used: $\{\Np=n\}$ is an event of
+  $\Gc_n$, so integrating out the randomisation leaves a function of the kept values only.
+\item \emph{Likelihood ratio}: since $g_n$ is the same under $\nu'$ and $\tilde\nu'$, the density of
+  $\PD_{\nu',\Np}$ with respect to $\PD_{\tilde\nu',\Np}$ is the product of the per-sample ratios
+  $\frac{d\nu'_k}{d\tilde\nu'_k}(x_{k,j})$.
+\item \emph{Wald} (Lemma~\ref{lem:wald}): the expectation of a sum over the kept values of arm $k$
+  is $\E_{\nu'}[\Np_k]$ times the expectation of one value, because the event $\{\Np_k\ge j\}$ is
+  independent of $\Xp_{k,j}$.
+\end{enumerate}
+Proposition~\ref{prop:source-kl} combines them.
+
+\paragraph{Where the difficulty lies} Each step is classical; the care is in the integrability.
+The expected log-likelihood ratio is a sum of a positive and a negative part, and the negative
+part of each per-sample ratio has integral at most $1/e$ (Lemma~\ref{lem:kl-neg}); the hypothesis
+$\E_{\nu'}[\Np_k]<\infty$ makes the sum of these negative parts integrable, which justifies the split.
+The case where $\nu'_k\not\ll\tilde\nu'_k$ for an arm that is sampled with positive probability is
+treated separately (both sides are infinite). For (b), the chain rule holds for every size map; the
+look-ahead map makes $\Dd$ a bijective image of the first two values of the stack, so the source
+divergence is that of two samples.
+
+\paragraph{Formal libraries} The setting is written to be formalised in the proof assistant Lean, on
+top of Mathlib, its library of mathematics (\url{https://github.com/leanprover-community/mathlib4}),
+and of LML, a Lean library of formalised results on bandits and sequential learning
+(\url{https://github.com/LeanMachineLearning/LML}). A few textbook steps of the proofs use results of
+these libraries by name: the chain rule for the Kullback--Leibler divergence, the divergence
+decomposition of bandit histories and a regret bound of UCB.
+
+\paragraph{Map of the appendices} Appendix~\ref{sec:cited} states the data-processing inequality
+of \citet{GMS19}. Appendix~\ref{sec:proofs} proves Theorem~\ref{thm:main} and
+Corollary~\ref{cor:fundamental}; Appendix~\ref{sec:proofs-properties} proves the results of
+Section~\ref{sec:properties}; Appendix~\ref{sec:attribution} lists the sources of the techniques
+and Appendix~\ref{sec:notation} the notation.
+
+\section{Examples}\label{sec:examples}
+
+This paper proposes no algorithm, so there is nothing to simulate; instead we compute the two sides
+of~\eqref{eq:main} exactly on small instances.
+
+\begin{example}[An adaptive rule computed by hand]\label{ex:hand}
+Let $K\ge2$ and sample the source of arm $1$ once, and once more if the first value is $1$, with no
+other arm sampled: $\Np_1:=1+\ind\{\Xp_{1,1}=1\}$ and $\Np_k:=0$ for $k\ge2$. This is a size rule:
+$\{\Np=(1,0,\dots,0)\}=\{\Xp_{1,1}\ne1\}$ is in $\Gc_{(1,0,\dots,0)}$,
+$\{\Np=(2,0,\dots,0)\}=\{\Xp_{1,1}=1\}$ is in $\Gc_{(2,0,\dots,0)}$, and the other events $\{\Np=n\}$
+are empty. Let
+$\nu'_1=\Ber(p)$, $\tilde\nu'_1=\Ber(q)$ and $\tilde\nu'_k=\nu'_k$ for $k\ge2$. The source data are
+$((1,0,\dots,0),(0))$ with probability $1-p$, and $((2,0,\dots,0),(1,y))$ with probability
+$p\cdot p^y(1-p)^{1-y}$ for $y\in\{0,1\}$. Hence
+\begin{align*}
+\KL\big(\PD_{\nu',\Np},\PD_{\tilde\nu',\Np}\big)
+&=(1-p)\log\frac{1-p}{1-q}+p\log\frac pq+p\,\kl(p,q)\\
+&=(1+p)\,\kl(p,q),
+\end{align*}
+and $\E_{\nu'}[\Np_1]=1+p$, as~\eqref{eq:main} says (with $T=0$).
+\end{example}
+
+\begin{example}[The look-ahead map]\label{ex:lookahead}
+For the map $\Nla$ of Theorem~\ref{thm:main}(b), ``keep the second value only if it is $0$'', the
+expected size is $\E_{\nu'}[\Nla_1]=2-p$ but the divergence is $2\,\kl(p,q)$: the size reveals
+$\Xp_{1,2}$. With $p=0.3$ and $q=0.5$, $\kl(0.3,0.5)=0.08228$, so
+\begin{equation*}
+\KL\big(\PD_{\nu',\Nla},\PD_{\tilde\nu',\Nla}\big)=0.16457,\qquad
+\E_{\nu'}[\Nla_1]\,\kl(p,q)=0.13988,
+\end{equation*}
+while the rule of Example~\ref{ex:hand} gives $(1+p)\kl(p,q)=0.10697$ on both sides.
+\end{example}
+
+\begin{example}[All the hypotheses at once]\label{ex:all}
+Let $K=2$, $\nu=\nu'=(\Ber(2/3),\Ber(1/3))$, $\tilde\nu=\tilde\nu'=(\Ber(2/3),\Ber(3/4))$ and
+$L=(0.1,0.1)$, so that $(\nu,\nu')$ satisfies $\Drift_L$, the two-sided strict condition and
+$(\nu,\nu')\in\PcL$. Take the source strategy of round-robin prior games over
+$T':=\lceil\log(T+1)\rceil$ rounds that pull the arms in the order $1,2,1,2,\dots$ (size rules with
+$\Np_k\le T'$, Lemma~\ref{lem:prior-game}), and the source-ignoring UCB with $c=1$, which is in $\ClL$
+(Proposition~\ref{prop:witness}). Then $\E[\Np_2]=\lfloor T'/2\rfloor$ and~\eqref{eq:main} reads
+\begin{equation*}
+\KL(\PP,\tilde\PP)=\big(\lfloor T'/2\rfloor+\E[\Nc_2(T)]\big)\,\kl\big(\tfrac13,\tfrac34\big).
+\end{equation*}
+\end{example}
+
+\paragraph{Degenerate cases} For $\Np\equiv0$, $\Dd$ is a point and Theorem~\ref{thm:main}(a) is the
+bandit decomposition of \citet[(8)]{GMS19}. For deterministic sizes $\Np\equiv n$, the source term is
+$\sum_kn_k\KL(\nu'_k,\tilde\nu'_k)$. For $T=0$, $\Hs_0$ is a point and (a) is
+Proposition~\ref{prop:source-kl}. If $\nu'_1=\Ber(1/2)$ and $\tilde\nu'_1=\delta_0$, then
+$\KL(\nu'_1,\tilde\nu'_1)=\infty$, and both sides of (a) are infinite as soon as
+$\Pp_{\nu'}(\Np_1\ge1)>0$; if arm $1$ is $\Pp_{\nu'}$-almost surely never sampled, its term is
+$0\cdot\infty=0$. Ties in the means play no role in Theorem~\ref{thm:main}; in
+Definition~\ref{def:consistency}, an instance with several optimal arms constrains only the arms
+with $\mean_k<\mean^\star$.
+
+\section{Open questions}\label{sec:open}
+
+\paragraph{Conclusion}
+We gave a formal setting for transfer bandits whose source sizes are chosen by an unknown adaptive
+strategy, and showed that the change of measure behaves as with fixed sizes, the source entering
+through $\E \Np_k$ only, for every size rule with $\E \Np_k<\infty$. The limitations: the lower and
+upper bounds of \citet{PMRM26} are not proved here (Proposition~\ref{prop:drift} only compares the
+sets of instances, not the bounds under each condition); the hypothesis $\E_{\nu'}[\Np_k]<\infty$ is
+not shown to be necessary; and the choice of size rules as the class of source strategies, and of
+$\Dd$ as the learner's observation, are modelling choices (Section~\ref{sec:reading}). For $K\ge3$
+these choices matter: size rules are strictly more general than stopped bandit games
+(Proposition~\ref{prop:stopped-games}(c)), and whether this changes the consistency class is part
+of the question below.
+
+\begin{openquestion}[Deterministic sizes against size rules]\label{oq:deterministic}
+\extends{D1}
+For $L\in(0,1)^K$, let $\mathcal C^{\rm det}_L$ be the class of Definition~\ref{def:consistency}
+with the source strategies restricted to deterministic sizes ($\Np^{(T)}\equiv n(T)$ for sequences
+$n(T)\in\N^K$), and $\mathcal C^{\rm game}_L$ the class with the strategies restricted to prior
+bandit games (Definition~\ref{def:prior-game}) over $T'(T)$ rounds. Then
+$\ClL\subset\mathcal C^{\rm game}_L\subset\mathcal C^{\rm det}_L$. Is either inclusion strict: is
+there a transfer learner, consistent for every deterministic sequence of sizes, that fails against
+an adaptive strategy, for instance one that keeps sampling the source of the optimal arm until its
+empirical mean looks low? Theorem~\ref{thm:main} cannot separate the classes, since it sees the
+strategy only through $\E \Np_k$; a separation needs a learner whose use of the source is valid for
+fixed sizes only (confidence bounds that are not uniform in the sample size), and must keep
+consistency on the closed set $\PcL$, including $\mean'_1+L_1=\mean_1$. The answer says whether the
+class of a lower bound depends on how the source was collected.
+\end{openquestion}
+
+\appendix
+
+\section{Useful lemmas}\label{sec:cited}
+
+In this section we present the lemma from other papers that we use in our proofs: the
+data-processing inequality, used in Corollary~\ref{cor:fundamental}.
+
+\citet{GMS19} write $(\Gamma,\mathcal G)$ for the measurable space and $\mathbb P_1,\mathbb P_2$ for
+the two laws; the domain of $Z$, printed $\Omega$ in the source, is $\Gamma$. We keep their
+notation.
+
+% Verbatim: literature/notes/GMS19.md, Lemma 1.
+\begin{lemma}[{From \citet[Lemma~1]{GMS19}}]\label{cite:GMS19-Lemma1}
+Consider a measurable space $(\Gamma,\mathcal G)$ equipped with two distributions $\mathbb P_1$ and
+$\mathbb P_2$, and any $\mathcal G$--measurable random variable $Z:\Gamma\to[0,1]$. We denote
+respectively by $\mathbb E_1$ and $\mathbb E_2$ the expectations under $\mathbb P_1$ and $\mathbb P_2$.
+Then, $\KL(\mathbb P_1,\mathbb P_2)\ge\kl(\mathbb E_1[Z],\mathbb E_2[Z])$.
+\end{lemma}
+
+\section{Proof of Theorem~\ref{thm:main}}\label{sec:proofs}
+
+To prove this theorem we use the chain rule of Section~\ref{sec:overview}; the following lemmas
+control the two terms.
+
+\paragraph{The source term} First a fact on divergences, then the three steps of
+Section~\ref{sec:overview}.
+
+\begin{lemma}[Negative part of the log-likelihood ratio]\label{lem:kl-neg}
+\uses{def:laws}
+If $P\ll Q$ with $r:=dP/dQ$, then
+\begin{equation*}
+\int(\log r)^-\,dP\le\frac1e,
+\end{equation*}
+so the integral defining $\KL(P,Q)$ exists in $[0,\infty]$.
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-kl-neg}).
+
+\begin{lemma}[Law of the source data]\label{lem:source-law}
+\uses{def:source-space, def:size-rule, def:source-data}
+Let $\Np$ be a size rule. For every $n\in\N^K$ there is a measurable $g_n:\Sd_n\to[0,1]$, which does
+not depend on $\nu'$, such that for every $\nu'\in\Pc^K$ and every measurable $G\subset\Sd_n$,
+\[
+\PD_{\nu',\Np}(\{n\}\times G)=\int_Gg_n\,d\Big(\bigotimes_{(k,j)\in\Bx(n)}\nu'_k\Big).
+\]
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-source-law}). This is an instance of the
+ignorability of a missing-at-random mechanism, which \citet[Theorem~1]{FDS18} state for finitely
+many variables; here there are countably many, and an independent randomisation.
+
+\begin{lemma}[Wald's identity for size rules]\label{lem:wald}
+\uses{def:source-space, def:size-rule}
+Let $\Np$ be a size rule, $\nu'\in\Pc^K$, $k\in[K]$ and $\varphi:[0,1]\to[0,\infty]$ measurable.
+Then, in $[0,\infty]$,
+\begin{equation*}
+\E_{\nu'}\Big[\sum_{j=1}^{\Np_k}\varphi(\Xp_{k,j})\Big]=\E_{\nu'}[\Np_k]\int\varphi\,d\nu'_k.
+\end{equation*}
+If $\E_{\nu'}[\Np_k]<\infty$ and $\int|\varphi|\,d\nu'_k<\infty$ for a real $\varphi$, the same
+identity holds with finite terms.
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-wald}). The proof is Wald's, with a stopping point in
+place of a stopping time.
+
+\begin{proposition}[Divergence of the source data]\label{prop:source-kl}
+\uses{def:laws, def:source-space, def:size-rule, def:source-data}
+Let $\Np$ be a size rule and $\nu',\tilde\nu'\in\Pc^K$ with $\E_{\nu'}[\Np_k]<\infty$ for every $k$.
+Then $\KL(\PD_{\nu',\Np},\PD_{\tilde\nu',\Np})=\sum_k\E_{\nu'}[\Np_k]\,\KL(\nu'_k,\tilde\nu'_k)$.
+\end{proposition}
+(see the proof in Subsection~\ref{sec:proof-source-kl}).
+
+\paragraph{The online term} The law of the game is a mixture over the source data, and for each
+value of the source data the online phase is a bandit game; Lemma~\ref{lem:lml-history} identifies
+its law with that of LML, whose divergence decomposition we use.
+
+\begin{lemma}[Mixture over the source]\label{lem:mixture}
+\uses{def:game}
+For a size map $\Np$, a transfer learner $\pi$, $\nu,\nu'\in\Pc^K$, $T\in\N$ and measurable
+$f:\Sd\times\Hs_T\to[0,\infty]$,
+$\E_{\PP^T_{\nu',\Np,\nu,\pi}}[f]=\int\E_{\pi(s),\nu}[f(s,\cdot)]\,\PD_{\nu',\Np}(ds)$. In particular
+$\E_{\PP}[\Np_k]=\E_{\nu'}[\Np_k]$ and $\E_{\PP}[\Nc_k(T)]=\int\E_{\pi(s),\nu}[\Nc_k(T)]\,\PD_{\nu',\Np}(ds)$.
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-mixture}).
+
+\begin{lemma}[The online law as an LML history]\label{lem:lml-history}
+\uses{def:laws, def:learner, def:game}
+Let $\sigma$ be a bandit algorithm and $\nu\in\Pc^K$. Let $c:\mathbb R\to[0,1]$,
+$c(y):=\min(\max(y,0),1)$, act on $([K]\times\mathbb R)^{t}$ coordinatewise on the rewards, let
+$\bar\sigma_t:=\sigma_t\circ c$ (a Markov kernel from $([K]\times\mathbb R)^{t-1}$ to $[K]$), let
+$\bar\nu_k$ be the image of $\nu_k$ by the inclusion $[0,1]\subset\mathbb R$, and let
+$\iota_t:\Hs_t\to([K]\times\mathbb R)^{t}$ be the inclusion. Let $(A_t,Y_t)_{t\ge1}$ be a sequence of
+random variables with values in $[K]\times\mathbb R$ such that, for every $t\ge1$, the conditional
+law of $A_t$ given $H_{t-1}:=(A_i,Y_i)_{i<t}$ is $\bar\sigma_t(H_{t-1})$ and the conditional law of
+$Y_t$ given $(H_{t-1},A_t)$ is $\bar\nu_{A_t}$. Then for every $T\in\N$, the law of $H_T$ is the
+image of $\Q^T_{\sigma,\nu}$ by $\iota_T$.
+
+In particular this holds for an algorithm--environment sequence of LML, read as follows. In LML the
+rounds are numbered from $0$, and before each action the algorithm receives an observation; for
+bandits the observations take values in a one-point space. A history of $t$ rounds of LML is a
+sequence of $t$ triples (observation, action, reward), and forgetting the observations is a
+measurable bijection $j_t$ from these histories onto $([K]\times\mathbb R)^{t}$, with a measurable
+inverse. Take the algorithm of LML whose policy of index $t-1$ is $\bar\sigma_t\circ j_{t-1}$ (the
+observation of the round being ignored) and the bandit environment of LML given by $\bar\nu$. Then
+the actions and rewards of index $t-1$ of an algorithm--environment sequence of LML are $(A_t,Y_t)$
+above, and the law of its history of $T$ rounds is the image of $\iota_T\#\Q^T_{\sigma,\nu}$ by
+$j_T^{-1}$.
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-lml-history}).
+
+\begin{lemma}[Divergence of the online phase]\label{lem:online-kl}
+\uses{def:laws, def:game}
+For a size map $\Np$, a transfer learner $\pi$, $\nu,\tilde\nu,\nu'\in\Pc^K$ and $T\in\N$, with
+$\PP:=\PP^T_{\nu',\Np,\nu,\pi}$,
+\begin{equation*}
+\int\KL\big(\kap^T_{\pi,\nu}(s),\kap^T_{\pi,\tilde\nu}(s)\big)\,\PD_{\nu',\Np}(ds)
+=\sum_k\E_{\PP}[\Nc_k(T)]\KL(\nu_k,\tilde\nu_k).
+\end{equation*}
+\end{lemma}
+(see the proof in Subsection~\ref{sec:proof-online-kl}). For a fixed source this is the classical
+decomposition \citep[(8)]{GMS19}; no contribution here.
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{prop:source-kl, lem:online-kl, lem:mixture, lem:lookahead, def:laws, def:instance, def:source-space, def:size-rule, def:source-data, def:learner, def:game}
+\emph{(a)} By the chain rule for the Kullback--Leibler divergence of composition products (a
+textbook fact, formalised in LML\leanfn{InformationTheory.klDiv_compProd_eq_add_lintegral}; it
+applies since $\Sd$ and $\Hs_T$ are standard Borel),
+\begin{equation*}
+\KL(\PP,\tilde\PP)=\KL(\PD_{\nu',\Np},\PD_{\tilde\nu',\Np})
++\int\KL(\kap^T_{\pi,\nu}(s),\kap^T_{\pi,\tilde\nu}(s))\,\PD_{\nu',\Np}(ds).
+\end{equation*}
+The first term is $\sum_k\E_{\nu'}[\Np_k]\KL(\nu'_k,\tilde\nu'_k)$ by
+Proposition~\ref{prop:source-kl} (\emph{divergence of the source data}), and
+$\E_{\nu'}[\Np_k]=\E_{\PP}[\Np_k]$ by Lemma~\ref{lem:mixture}; the second is
+$\sum_k\E_{\PP}[\Nc_k(T)]\KL(\nu_k,\tilde\nu_k)$ by Lemma~\ref{lem:online-kl}. This is~\eqref{eq:main}.
+
+\emph{(b)} The map $\Nla$ is a bounded size map and not a size rule by Lemma~\ref{lem:lookahead}.
+The chain rule above holds for every size map (it does not use Proposition~\ref{prop:source-kl}).
+Since $\tilde\nu=\nu$, $\kap^T_{\pi,\tilde\nu}=\kap^T_{\pi,\nu}$ and the second term vanishes, so
+\begin{equation*}
+\KL(\PP,\tilde\PP)=\KL\big(\PD_{\nu',\Nla},\PD_{\tilde\nu',\Nla}\big).
+\end{equation*}
+Under $\Pp_{\nu'}$ and under $\Pp_{\tilde\nu'}$, almost surely $\Xp_{1,1},\Xp_{1,2}\in\{0,1\}$,
+$\Nla_1=1$ if and only if $\Xp_{1,2}=1$, and $\Dd=\Phi(\Xp_{1,1},\Xp_{1,2})$ with
+\begin{equation*}
+\Phi(a,1):=\big((1,0,\dots,0),(a)\big),\qquad \Phi(a,0):=\big((2,0,\dots,0),(a,0)\big).
+\end{equation*}
+The map $\Phi$ is injective on $\{0,1\}^2$, so $\PD_{\nu',\Nla}$ and $\PD_{\tilde\nu',\Nla}$ are the
+images of $\Ber(p)^{\otimes2}$ and $\Ber(q)^{\otimes2}$ by $\Phi$, two laws on four atoms carried
+bijectively; hence
+\begin{equation*}
+\KL\big(\PD_{\nu',\Nla},\PD_{\tilde\nu',\Nla}\big)=\KL\big(\Ber(p)^{\otimes2},\Ber(q)^{\otimes2}\big)=2\,\kl(p,q).
+\end{equation*}
+On the other side, $\E_{\nu'}[\Nla_1]=p+2(1-p)=2-p$, $\Nla_k=0$ for $k\ge2$, and
+$\KL(\nu_k,\tilde\nu_k)=0$ for every $k$, so the right-hand side of~\eqref{eq:main} is
+$(2-p)\,\kl(p,q)$. Since $p\ne q$ are in $(0,1)$, $0<\kl(p,q)<\infty$, and $p>0$ gives
+$(2-p)\kl(p,q)<2\kl(p,q)$.
+\end{proof}
+
+\subsection{Proof of Corollary~\ref{cor:fundamental}}\label{sec:proof-cor}
+
+\begin{proof}
+\uses{thm:main, cite:GMS19-Lemma1, def:game, def:source-data}
+Apply Lemma~\ref{cite:GMS19-Lemma1} on $(\Gamma,\mathcal G):=\Sd\times\Hs_T$ with its product
+$\sigma$-algebra, $\mathbb P_1:=\PP$ and $\mathbb P_2:=\tilde\PP$ (probability measures by
+Definition~\ref{def:game}): $\KL(\PP,\tilde\PP)\ge\kl(\E_{\PP}[Z],\E_{\tilde\PP}[Z])$. Replace
+$\KL(\PP,\tilde\PP)$ by the right-hand side of Theorem~\ref{thm:main}(a), with
+$\E_{\PP}[\Np_k]=\E_{\nu'}[\Np_k]$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:kl-neg}}\label{sec:proof-kl-neg}
+
+\begin{proof}
+\uses{def:laws}
+The set $\{r=0\}$ has $P$-measure $0$, and $x(\log x)^-=x\log(1/x)\le1/e$ for $x\in(0,1)$, so
+\begin{equation*}
+\int(\log r)^-\,dP=\int r(\log r)^-\,dQ\le\sup_{0<x<1}x\log(1/x)=1/e.
+\end{equation*}
+So the integral of $\log r$ against $P$ exists in $(-\infty,\infty]$. It is nonnegative by Jensen's
+inequality: $\int\log(1/r)\,dP\le\log\int r^{-1}\,dP=\log Q(r>0)\le0$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:source-law}}\label{sec:proof-source-law}
+
+\begin{proof}
+\uses{def:source-space, def:size-rule, def:source-data}
+Let $Y_n:=(\Up,(\Xp_{k,j})_{(k,j)\in\Bx(n)})$, with values in $[0,1]^{\N}\times\Sd_n$. Since
+$\Gc_n=\sigma(Y_n)$ and $\{\Np=n\}\in\Gc_n$, there is a measurable set $E_n$ with
+$\{\Np=n\}=\{Y_n\in E_n\}$. On $\{\Np=n\}$, $\Dd=(n,(\Xp_{k,j})_{\Bx(n)})$, so
+\begin{equation*}
+\PD_{\nu',\Np}(\{n\}\times G)=\Pp_{\nu'}\big(Y_n\in E_n,\ (\Xp_{k,j})_{\Bx(n)}\in G\big).
+\end{equation*}
+Under $\Pp_{\nu'}$, $Y_n$ has law $\lambda^{\otimes\N}\otimes\bigotimes_{\Bx(n)}\nu'_k$ (independent
+coordinates). By Tonelli, the probability is $\int_G g_n\,d(\bigotimes_{\Bx(n)}\nu'_k)$ with
+\begin{equation*}
+g_n(x):=\int\ind_{E_n}(u,x)\,\lambda^{\otimes\N}(du)\in[0,1],
+\end{equation*}
+measurable in $x$. The set $E_n$ is determined by the map $\Np$ ($Y_n$ is a surjective coordinate
+projection), so $g_n$ depends only on $\Np$, not on $\nu'$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:wald}}\label{sec:proof-wald}
+
+\begin{proof}
+\uses{def:source-space, def:size-rule}
+For $j\ge1$ let $\mathcal F^{k,j}:=\sigma(\Up,\,\Xp_{i,l}\ (i\ne k,\,l\ge1),\,\Xp_{k,l}\ (l<j))$. Then
+\begin{equation*}
+\{\Np_k\le j-1\}=\bigcup_{n:\,n_k\le j-1}\{\Np=n\}
+\end{equation*}
+is a countable union of events of $\Gc_n\subset\mathcal F^{k,j}$, so $\{\Np_k\ge j\}\in\mathcal F^{k,j}$;
+and $\Xp_{k,j}$ is independent of $\mathcal F^{k,j}$ under $\Pp_{\nu'}$ (product measure). For
+nonnegative $\varphi$, by Tonelli,
+\begin{align*}
+\E_{\nu'}\Big[\sum_{j=1}^{\Np_k}\varphi(\Xp_{k,j})\Big]
+&=\sum_{j\ge1}\E_{\nu'}\big[\ind\{\Np_k\ge j\}\varphi(\Xp_{k,j})\big]\\
+&=\sum_{j\ge1}\Pp_{\nu'}(\Np_k\ge j)\int\varphi\,d\nu'_k && \text{(independence)}\\
+&=\E_{\nu'}[\Np_k]\int\varphi\,d\nu'_k,
+\end{align*}
+where the product of two independent nonnegative variables has the product of the expectations
+(also with the value $\infty$ and $0\cdot\infty=0$). For a real $\varphi$, apply this to
+$\varphi^+$ and $\varphi^-$; both terms are finite and the difference is the identity.
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:source-kl}}\label{sec:proof-source-kl}
+
+\begin{proof}
+\uses{lem:source-law, lem:wald, lem:kl-neg, def:laws, def:source-space, def:size-rule, def:source-data}
+\emph{Idea.} By Lemma~\ref{lem:source-law}, the law of $\Dd$ has a density, the product of the
+per-sample likelihood ratios. Wald's identity (Lemma~\ref{lem:wald}) computes the expectation of its
+logarithm, once the negative part is shown to be integrable.
+
+\emph{Setting.} Write $P:=\PD_{\nu',\Np}$, $\tilde P:=\PD_{\tilde\nu',\Np}$, and let
+\begin{equation*}
+A:=\{k:\Pp_{\nu'}(\Np_k\ge1)>0\}=\{k:\E_{\nu'}[\Np_k]>0\}.
+\end{equation*}
+Arms $k\notin A$ contribute $0$ to the right-hand side. \emph{Goal.} Show that
+\begin{equation*}
+\KL(P,\tilde P)=\sum_{k\in A}\E_{\nu'}[\Np_k]\KL(\nu'_k,\tilde\nu'_k).
+\end{equation*}
+
+\emph{Case 1: $\nu'_k\not\ll\tilde\nu'_k$ for some $k\in A$.} Take a Borel set $G$ with
+$\tilde\nu'_k(G)=0<\nu'_k(G)$, and let $F(s):=\#\{j\le n_k(s):x_{k,j}\in G\}$, a measurable function
+on $\Sd$. By Lemma~\ref{lem:wald} with $\varphi=\ind_G$,
+\begin{equation*}
+\int F\,dP=\E_{\nu'}[\Np_k]\,\nu'_k(G)>0,\qquad \int F\,d\tilde P=\E_{\tilde\nu'}[\Np_k]\,\tilde\nu'_k(G)=0.
+\end{equation*}
+So $\tilde P(F\ge1)=0<P(F\ge1)$, $P\not\ll\tilde P$, and both sides equal $\infty$ (the right-hand
+side contains $\E_{\nu'}[\Np_k]\cdot\infty$ with $\E_{\nu'}[\Np_k]>0$).
+
+\emph{Case 2: $\nu'_k\ll\tilde\nu'_k$ for every $k\in A$.} Let $r_k$ be a finite version of
+$d\nu'_k/d\tilde\nu'_k$ for $k\in A$, and on $\Sd$ let
+\begin{equation*}
+R(n,x):=\prod_{k\in A}\prod_{j\le n_k}r_k(x_{k,j})\ \text{ if }n_k=0\text{ for every }k\notin A,
+\qquad R(n,x):=0\ \text{ otherwise}.
+\end{equation*}
+\emph{Step 1: $dP=R\,d\tilde P$, slice by slice.} If $n_k\ge1$ for some $k\notin A$, then
+$P(\{n\}\times\Sd_n)\le \Pp_{\nu'}(\Np_k\ge1)=0$. Otherwise, $\Bx(n)$ only contains pairs $(k,j)$ with
+$k\in A$, where $\bigotimes_{\Bx(n)}\nu'_k$ has density $\prod_{\Bx(n)}r_k(x_{k,j})$ with respect to
+$\bigotimes_{\Bx(n)}\tilde\nu'_k$, so by Lemma~\ref{lem:source-law} (the same $g_n$ for both laws),
+\begin{equation*}
+P(\{n\}\times G)=\int_Gg_n\,R(n,\cdot)\,d\bigotimes_{\Bx(n)}\tilde\nu'_k=\int_{\{n\}\times G}R\,d\tilde P.
+\end{equation*}
+Summing over the countably many slices, $P\ll\tilde P$ with density $R$. Then $R>0$ $P$-almost
+surely, and $\KL(P,\tilde P)=\int\log R\,dP$.
+
+\emph{Step 2: the split.} Write $\ell_k:=\log r_k$ and, $P$-almost surely,
+\begin{equation*}
+\log R=\sum_{k\in A}\sum_{j\le n_k}\ell_k(x_{k,j})=F^+-F^-,\qquad
+F^\pm:=\sum_{k\in A}\sum_{j\le n_k}\ell_k^\pm(x_{k,j})\ge0.
+\end{equation*}
+Integrating over $P$ means taking $\E_{\nu'}$ of the same functions of $\Dd$, so by
+Lemma~\ref{lem:wald},
+\begin{equation*}
+\int F^\pm\,dP=\sum_{k\in A}\E_{\nu'}[\Np_k]\int\ell_k^\pm\,d\nu'_k.
+\end{equation*}
+We now split $\int\log R\,dP$ into these two integrals:
+\begin{align}
+\int F^-\,dP&=\sum_{k\in A}\E_{\nu'}[\Np_k]\int\ell_k^-\,d\nu'_k
+&&\text{(Wald, above)}\notag\\
+&\le\frac1e\sum_{k\in A}\E_{\nu'}[\Np_k]<\infty
+&&\text{(Lemma~\ref{lem:kl-neg}, hypothesis)},\label{eq:Fminus}\\
+(\log R)^++F^-&=F^++(\log R)^-\quad P\text{-a.s.}
+&&\text{(both are $\log R+F^-+(\log R)^-$)},\label{eq:parts}\\
+\int(\log R)^+dP+\int F^-dP&=\int F^+dP+\int(\log R)^-dP
+&&\text{(integrate~\eqref{eq:parts})},\notag\\
+\int\log R\,dP&=\int F^+\,dP-\int F^-\,dP
+&&\text{(subtract finite terms)}.\notag
+\end{align}
+In the third line all terms are nonnegative. The terms subtracted in the last line are finite:
+$\int F^-dP$ by~\eqref{eq:Fminus}, and $\int(\log R)^-dP\le1/e$ by Lemma~\ref{lem:kl-neg}, applied
+to $P\ll\tilde P$. By the two
+Wald identities above and~\eqref{eq:Fminus}, the last difference is
+\begin{align*}
+\int\log R\,dP&=\sum_{k\in A}\E_{\nu'}[\Np_k]\Big(\int\ell_k^+d\nu'_k-\int\ell_k^-d\nu'_k\Big)
+&&\text{(each $\E_{\nu'}[\Np_k]\int\ell_k^-d\nu'_k$ is finite)}\\
+&=\sum_{k\in A}\E_{\nu'}[\Np_k]\KL(\nu'_k,\tilde\nu'_k)
+&&\text{(Definition~\ref{def:laws}, $\nu'_k\ll\tilde\nu'_k$)},
+\end{align*}
+in $[0,\infty]$. Since $\KL(P,\tilde P)=\int\log R\,dP$ by Step~1, this is the identity of the
+proposition in Case~2, and Case~1 was settled above: the proposition holds in both cases.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:mixture}}\label{sec:proof-mixture}
+
+\begin{proof}
+\uses{def:source-data, def:game}
+This is the integral against a composition product $\mu\otimes\kappa$: for nonnegative measurable
+$f$,
+\begin{equation*}
+\int f\,d(\mu\otimes\kappa)=\int\!\!\int f(s,h)\,\kappa(s,dh)\,\mu(ds),
+\end{equation*}
+with $\mu=\PD_{\nu',\Np}$ and $\kappa(s)=\Q^T_{\pi(s),\nu}$. For $f=n_k(s)$ the inner integral is
+$n_k(s)$, whose $\PD_{\nu',\Np}$-integral is $\E_{\nu'}[\Np_k]$ since $n_k(\Dd)=\Np_k$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:lml-history}}\label{sec:proof-lml-history}
+
+\begin{proof}
+\uses{def:laws, def:learner, def:game}
+By induction on $T$. For $T=0$ both laws are the Dirac mass on the empty history. Assume that the
+law of $H_t$ is $\iota_t\#\Q^t_{\sigma,\nu}$. By the two conditional laws of the statement, the law
+of $H_{t+1}=(H_t,A_{t+1},Y_{t+1})$ is the composition product
+$(\iota_t\#\Q^t_{\sigma,\nu})\otimes(\bar\sigma_{t+1}\otimes\bar\nu)$. The law $\iota_t\#\Q^t_{\sigma,\nu}$
+is carried by $\iota_t(\Hs_t)$, on which $c$ is the identity, so
+$\bar\sigma_{t+1}(\iota_th)=\sigma_{t+1}(h)$ for $h\in\Hs_t$; and $\bar\nu_a$ is the image of $\nu_a$.
+Hence
+\begin{equation*}
+(\iota_t\#\Q^t_{\sigma,\nu})\otimes(\bar\sigma_{t+1}\otimes\bar\nu)
+=\iota_{t+1}\#\big(\Q^t_{\sigma,\nu}\otimes(\sigma_{t+1}\otimes\nu)\big)=\iota_{t+1}\#\Q^{t+1}_{\sigma,\nu},
+\end{equation*}
+by Definition~\ref{def:game}. This is the claim at $t+1$.
+
+For the reading in LML: the observations take a single value, so conditioning on the history of
+LML and the current observation is conditioning on $H_{t-1}$, read through $j_{t-1}$. The policy
+of index $t-1$ is then the conditional law $\bar\sigma_t(H_{t-1})$ of $A_t$, and the reward
+kernel of the bandit environment $\bar\nu$ is the conditional law $\bar\nu_{A_t}$ of $Y_t$. So the
+two conditional laws of the statement hold, the first part applies, and the history of $T$ rounds
+of LML is $j_T^{-1}(H_T)$, with law $j_T^{-1}\#(\iota_T\#\Q^T_{\sigma,\nu})$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:online-kl}}\label{sec:proof-online-kl}
+
+\begin{proof}
+\uses{def:laws, def:learner, def:game, lem:mixture, lem:lml-history}
+Fix $s$ and let $\sigma:=\pi(s)$. Let $\bar\sigma$, $\bar\nu$, $\bar{\tilde\nu}$ and $\iota_T$ be as in
+Lemma~\ref{lem:lml-history}, with the bijections $j_t$ of its second part, and take
+algorithm--environment sequences of LML for the algorithm built there from $\bar\sigma$, against
+the bandit environments $\bar\nu$ and $\bar{\tilde\nu}$ (they exist: LML constructs them as
+trajectory measures\leanfn{Learning.trajMeasure}). The divergence decomposition of bandit histories
+\citep[(8)]{GMS19}, in its formal version in LML\leanfn{Learning.IsAlgEnvSeq.klDiv_map_history_bandit},
+for one algorithm against two stationary environments with rewards in $\mathbb R$, gives for the
+laws of the histories of the first $T$ rounds
+\begin{equation*}
+\KL\big(j_T^{-1}\#(\iota_T\#\Q^T_{\sigma,\nu}),\,j_T^{-1}\#(\iota_T\#\Q^T_{\sigma,\tilde\nu})\big)
+=\sum_{t\le T}\E_{\sigma,\nu}\big[\KL(\bar\nu_{A_t},\bar{\tilde\nu}_{A_t})\big],
+\end{equation*}
+where the laws are identified by Lemma~\ref{lem:lml-history} (\emph{the online law as an LML
+history}). The maps $j_T^{-1}$ and $\iota_T$ are injective with measurable left inverses ($j_T$ and
+the clamp $c$), so they leave $\KL$ unchanged: $\KL(f\#P,f\#Q)=\KL(P,Q)$ for such a map $f$, by data
+processing in both directions. Likewise $\KL(\bar\nu_k,\bar{\tilde\nu}_k)=\KL(\nu_k,\tilde\nu_k)$.
+Since
+$\sum_{t\le T}\KL(\nu_{A_t},\tilde\nu_{A_t})=\sum_kN_k(T)\KL(\nu_k,\tilde\nu_k)$,
+\begin{equation*}
+\KL\big(\kap^T_{\pi,\nu}(s),\kap^T_{\pi,\tilde\nu}(s)\big)=\sum_k\E_{\pi(s),\nu}[\Nc_k(T)]\KL(\nu_k,\tilde\nu_k)
+\qquad\text{in }[0,\infty].
+\end{equation*}
+Integrate in $s$ against $\PD_{\nu',\Np}$: the constants $\KL(\nu_k,\tilde\nu_k)\in[0,\infty]$ come out
+of the integral of the nonnegative functions $s\mapsto\E_{\pi(s),\nu}[\Nc_k(T)]$ (also when a constant
+is $\infty$, with $0\cdot\infty=0$), and Lemma~\ref{lem:mixture} (\emph{mixture over the source})
+identifies the integrals with $\E_{\PP}[\Nc_k(T)]$.
+\end{proof}
+
+\section{Proofs of the basic properties}\label{sec:proofs-properties}
+
+This appendix proves the results of Section~\ref{sec:properties}, in their order.
+
+\subsection{Proof of Lemma~\ref{lem:prior-game}}
+
+\begin{proof}
+\uses{def:size-rule, def:prior-game, def:source-space}
+\emph{(a)} $\{\Np=n\}$ is $\Om$ or $\emptyset$, both in $\Gc_n$.
+
+\emph{(b)} The maps $A'_r$, $C(r)$, $Y'_r$ are measurable by induction on $r$ (compositions of
+measurable maps, and $Y'_r=\sum_{k,j}\ind\{A'_r=k,\,C_k(r)=j\}\Xp_{k,j}$). Let $\Psi(u,x)\in\N^K$ be
+the counts of the game run on $\omega=(u,x)\in\Om$, and for $n\in\N^K$ let $x^{(n)}$ be the stack
+family equal to $x$ on $\Bx(n)$ and to $0$ outside.
+
+\emph{Claim: if $x$ and $z$ agree on $\Bx(n)$ and $\Psi(u,x)=n$, then $\Psi(u,z)=n$.} By induction on
+$r$, the two games have the same first $r$ actions and observations: if this holds up to $r-1$,
+round $r$ has the same action $a$ in both games (same $u$, same past), the count $C_a(r)$ is the
+same in both games (same past actions), and the observations are $x_{a,C_a(r)}$ and $z_{a,C_a(r)}$;
+in the first game $C_a(r)\le C_a(T')=n_a$ and $C_a(r)\ge1$, so $(a,C_a(r))\in\Bx(n)$ and
+$x_{a,C_a(r)}=z_{a,C_a(r)}$. Hence the two games coincide and their final counts agree.
+
+\emph{Conclusion.} Applying the claim to $(x,x^{(n)})$ and to $(x^{(n)},x)$ (they agree on $\Bx(n)$),
+$\Psi(u,x)=n$ if and only if $\Psi(u,x^{(n)})=n$. So $\{\Np=n\}=\{\omega:\Psi(\Up,\Xp^{(n)})=n\}$, and
+$(\Up,\Xp^{(n)})$ is a measurable function of $\Up$ and of the coordinates in $\Bx(n)$; hence
+$\{\Np=n\}\in\Gc_n$. Finally $\sum_kN'_k=T'$, so $\Np_k\le T'$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:lookahead}}
+
+\begin{proof}
+\uses{def:size-rule, def:source-space}
+$\Nla$ is measurable (a function of $\Xp_{1,2}$) with values in $\{(1,0,\dots,0),(2,0,\dots,0)\}$.
+Let $n:=(1,0,\dots,0)$, so $\Gc_n=\sigma(\Up,\Xp_{1,1})$ and $\{\Nla=n\}=\{\Xp_{1,2}>1/2\}$. Every event
+of $\Gc_n$ has the form $\{(\Up,\Xp_{1,1})\in G\}$, so contains, with any $\omega$, every $\tilde\omega$
+having the same coordinates $\Up$ and $\Xp_{1,1}$. Take $\omega\in\Om$ with $\Xp_{1,2}(\omega)=1$ and
+$\tilde\omega$ equal to $\omega$ except $\Xp_{1,2}(\tilde\omega)=0$ (possible since $\Om$ is a
+product): $\omega\in\{\Nla=n\}$ and $\tilde\omega\notin\{\Nla=n\}$. So $\{\Nla=n\}\notin\Gc_n$.
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:stopped-games}}\label{sec:proof-stopped-games}
+
+\begin{proof}
+\uses{def:source-space, def:size-rule, def:prior-game, def:stopped-game, lem:prior-game}
+Throughout, the $j$-th observation of arm $k$ in a prior game is $\Xp_{k,j}$
+(Definition~\ref{def:prior-game}: $Y'_r=\Xp_{A'_r,C_{A'_r}(r)}$), and $|C(r)|=r$. For
+$m\in\N^K$ let $Y_m:=(\Up,(\Xp_{k,j})_{(k,j)\in\Bx(m)})$, with values in the Polish space
+$W_m:=[0,1]^{\N}\times[0,1]^{\Bx(m)}$; since $\Gc_m=\sigma(Y_m)$, for a size rule $\Np$ there are
+Borel sets $E_m\subset W_m$ with $\{\Np=m\}=\{Y_m\in E_m\}$.
+
+\emph{(a)} The stopped counts $\Np=\sum_r\ind\{\tau=r\}C(r)$ are measurable, with $|\Np|=\tau\le T'$.
+Let $\Psi(u,x)\in\N^K$ be the stopped counts at the point $\omega=(u,x)\in\Om$, and $x^{(n)}$ as
+in the proof of Lemma~\ref{lem:prior-game}. \emph{Claim: if $x$ and $z$ agree on $\Bx(n)$ and
+$\Psi(u,x)=n$, then $\Psi(u,z)=n$.} Let $r_0:=\tau(u,x)$, so $C(r_0)=n$ in the game run on $(u,x)$.
+For $r\le r_0$, the observation of round $r$ in that game is $x_{a,C_a(r)}$ with $a=A'_r$ and
+$1\le C_a(r)\le C_a(r_0)=n_a$, a coordinate in $\Bx(n)$. By the induction of the proof of
+Lemma~\ref{lem:prior-game}, the games run on $(u,x)$ and on $(u,z)$ have the same actions and
+observations in rounds $1,\dots,r_0$. Each event $\{\tau=r\}$, $r\le r_0$, is a function of $u$
+and of the first $r$ actions and observations ($\{\tau=r\}\in\mathcal F'_r$), so $\tau(u,z)=r_0$,
+and the counts at round $r_0$ agree: $\Psi(u,z)=n$. As for Lemma~\ref{lem:prior-game}, applying
+the claim to $(x,x^{(n)})$ and to $(x^{(n)},x)$ gives $\{\Np=n\}=\{\Psi(\Up,\Xp^{(n)})=n\}\in\Gc_n$.
+
+\emph{(b), idea.} A game that follows $\Np$ must, at each vector of counts $m$ it reaches, pull an
+arm whose size is not yet reached: arm $2$ on the event $A_m$ below, where the size of arm $1$ is
+reached and that of arm $2$ is not, and arm $1$ on the symmetric event $B_m$. These two events are
+separated by a Borel set of the data seen at $m$ (Step~1). The game pulls
+arm $2$ on that set and arm $1$ off it, and stops at the first $m$ at which the event $\{\Np=m\}$
+holds (Step~2); Step~3 checks that it stops at $\Np$.
+
+\emph{(b)} Let $K=2$, $\Np$ a size rule with $T':=\sup|\Np|<\infty$, and fix $m\in\N^2$. Let
+\begin{equation*}
+A_m:=\{\Np_1=m_1,\ \Np_2>m_2\},\qquad B_m:=\{\Np_1>m_1,\ \Np_2=m_2\},
+\end{equation*}
+the events where the first coordinate, or the second, has reached its final value at $m$ and the
+other has not. \emph{Step 1: a Borel set $S_m\subset W_m$ with $A_m\subset\{Y_m\in S_m\}$ and
+$B_m\cap\{Y_m\in S_m\}=\emptyset$.} Write a point of $\Om$ as $\omega=(y,a,b)$ with $y=Y_m(\omega)$,
+$a=(\Xp_{1,j})_{j>m_1}$ and $b=(\Xp_{2,j})_{j>m_2}$; every triple $(y,a,b)$ is a point of $\Om$.
+The event $A_m=\bigcup_{j>m_2}\{\Np=(m_1,j)\}$ is a countable union of events of the
+$\Gc_{(m_1,j)}$, which depend on $\omega$ only through $y$ and $b$; so $A_m=\{(y,b)\in A'\}$ for a
+Borel set $A'$. Likewise $B_m=\{(y,a)\in B'\}$ for a Borel set $B'$. If some $y$ had a $b$ with
+$(y,b)\in A'$ and an $a$ with $(y,a)\in B'$, the point $(y,a,b)$ would be in $A_m\cap B_m=\emptyset$.
+So the projections of $A'$ and $B'$ on $W_m$ are disjoint. They are analytic sets (projections of
+Borel subsets of Polish spaces), so by the Lusin separation theorem \citep[Theorem~14.7]{K95} there
+is a Borel set $S_m\subset W_m$ that contains the first and is disjoint from the second; it has the
+two properties.
+
+\emph{Step 2: the game.} For a history $h=(a_i,y_i)_{i<r}$ and $u\in[0,1]^{\N}$, let $c(h)\in\N^2$
+be the counts of $h$ and $w(u,h)\in W_{c(h)}$ the point $(u,(x_{k,j}))$ where $x_{k,j}$ is the
+$j$-th reward of arm $k$ in $h$; both are measurable. Let
+\begin{equation*}
+\alpha_r(u,h):=2\ \text{if }w(u,h)\in S_{c(h)},\qquad\alpha_r(u,h):=1\ \text{otherwise},
+\end{equation*}
+for $r=1,\dots,T'$, and $\tau:=\min\{r\le T':\,w(\Up,H'_r)\in E_{C(r)}\}$ (with $\min\emptyset:=T'$),
+where $H'_r:=(A'_i,Y'_i)_{i\le r}$. Then $\{\tau=r\}\in\mathcal F'_r$, and in the game
+$w(\Up,H'_r)=Y_{C(r)}$, because the $j$-th observation of arm $k$ is $\Xp_{k,j}$.
+
+\emph{Step 3: the game follows $\Np$.} Fix $\omega$. We show by induction that $C(r)\le \Np(\omega)$
+for $r\le|\Np(\omega)|$. It holds at $r=0$. Let $r<|\Np(\omega)|$ and $m:=C(r)\le \Np(\omega)$, so
+$m\ne \Np(\omega)$ since $|m|=r$. If $\omega\in A_m$, then $Y_m(\omega)\in S_m$, the game pulls arm $2$
+and $m+e_2\le \Np(\omega)$ because $\Np_2(\omega)>m_2$; if $\omega\in B_m$, then $Y_m(\omega)\notin S_m$,
+the game pulls arm $1$ and $m+e_1\le \Np(\omega)$; otherwise $\Np(\omega)>m$ in both coordinates and
+either pull keeps $C(r+1)\le \Np(\omega)$. So for $r<|\Np(\omega)|$, $C(r)\ne \Np(\omega)$, that is
+$Y_{C(r)}(\omega)\notin E_{C(r)}$, while $C(r)=\Np(\omega)$ at $r=|\Np(\omega)|\le T'$. Hence
+$\tau(\omega)=|\Np(\omega)|$ and the stopped counts at $\omega$ are $C(\tau)=\Np(\omega)$.
+
+\emph{(c)} The three events of the first three cases are disjoint: the first and second disagree on
+$b_2$, the second and third on $b_3$, the first and third on $b_1$. Hence $\Ncyc$ is well defined,
+measurable and $|\Ncyc|\le3$. It is a size rule: $\{\Ncyc=e_1+e_2\}=\{b_1=1,b_2=0\}\in\Gc_{e_1+e_2}$,
+and likewise for $e_2+e_3$ and $e_3+e_1$; $\{\Ncyc=e_1+e_2+e_3\}$ is the complement of the three
+events, all in $\Gc_{e_1+e_2+e_3}$; the other events $\{\Ncyc=n\}$ are empty.
+
+Suppose that a prior game over $T'$ rounds and a stopping time $\tau$ have stopped counts $\Np$ with
+the law of $\Ncyc$ under $\Pp_{\nu'}$ for every $\nu'\in\Pc^K$. Let $E_0:=\{\tau=0\}$ and, for
+$k\in[K]$, $E_k:=\{\tau\ge1,\ A'_1=k\}$. These events partition $\Om$ and belong to
+$\mathcal F'_0=\sigma(\Up)$ (since $A'_1=\alpha_1(\Up)$), and $\Up$ has the law $\lambda^{\otimes\N}$
+under every $\Pp_{\nu'}$; so $q_k:=\Pp_{\nu'}(E_k)$ does not depend on $\nu'$, and
+$\sum_{k=0}^Kq_k=1$. On $E_0$, $\Np=0$; on $E_k$, $\Np_k\ge C_k(1)=1$. Now:
+\begin{itemize}
+\item $\Ncyc\ne0$ everywhere, so $q_0\le \Pp_{\nu'}(\Np=0)=\Pp_{\nu'}(\Ncyc=0)=0$.
+\item Take $\nu'$ with $\nu'_2=\delta_1$ and $\nu'_3=\delta_0$. Then $b_2=1$ and $b_3=0$ almost
+  surely, so $\Ncyc=e_2+e_3$ and $\Ncyc_1=0$ almost surely; hence $q_1\le \Pp_{\nu'}(\Np_1\ge1)
+  =\Pp_{\nu'}(\Ncyc_1\ge1)=0$.
+\item In the same way, $\nu'_3=\delta_1$, $\nu'_1=\delta_0$ gives $\Ncyc=e_3+e_1$ almost surely and
+  $q_2=0$; and $\nu'_1=\delta_1$, $\nu'_2=\delta_0$ gives $\Ncyc=e_1+e_2$ almost surely and $q_3=0$.
+\item For $k\ge4$, $\Ncyc_k=0$ everywhere, so $q_k\le \Pp_{\nu'}(\Ncyc_k\ge1)=0$.
+\end{itemize}
+So $\sum_{k=0}^Kq_k=0$, a contradiction.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:learner-exclusion}}
+
+\begin{proof}
+\uses{def:source-data, def:learner, def:source-space, def:size-rule}
+Here $\Dd=((1,0,\dots,0),(\Xp_{1,1}))$ does not depend on $\Xp_{1,2}$: for $\omega,\tilde\omega$ equal
+except $\Xp_{1,2}(\omega)=1$, $\Xp_{1,2}(\tilde\omega)=0$, $f(\Dd(\omega))=f(\Dd(\tilde\omega))$ while the
+targets differ. For the learner: $f(s):=\pi_1(s,\{1\})$ would be measurable with
+$f(\Dd)=\ind\{\Xp_{1,2}>1/2\}$ on $\Om$, impossible by the same two points. (The statement is
+pointwise on $\Om$; under $\Pp_{\nu'}$ with $\nu'_1$ a Dirac mass, $\Xp_{1,2}$ is almost surely
+constant and the identity can hold almost surely.)
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:drift}}
+
+\begin{proof}
+\uses{def:drift, def:instance, def:laws}
+Means of laws on $[0,1]$ lie in $[0,1]$, so $|\mean_k-\mean'_k|\le1$. We check the items in order.
+\begin{itemize}
+\item (a) $\mean_k-\mean'_k\le|\mean_k-\mean'_k|<L_k$, and $|\mean_k-\mean'_k|<L_k$ gives $\le$.
+\item (b) $\mean_k-\mean'_k\le|\mean_k-\mean'_k|\le L_k<L'_k$.
+\item (c), first claim. If $L\ge\one$, $\PcL$ is everything (by $|\mean_k-\mean'_k|\le1$), so it
+  contains $\{\Drift_L\}$. If $L_i<1$ for some $i$, the pair with $\nu_i=\delta_0$, $\nu'_i=\delta_1$
+  and $\nu_k=\nu'_k$ for $k\ne i$ satisfies $\Drift_L$ ($-1<L_i$) and is not in $\PcL$ ($1>L_i$).
+\item (c), second claim. If $L_k>1$ for all $k$, $\Drift_L$ holds for every pair
+  ($\mean_k-\mean'_k\le1<L_k$). If $L_i\le1$ for some $i$, the pair with $\nu_i=\delta_{L_i}$,
+  $\nu'_i=\delta_0$ and $\nu_k=\nu'_k$ otherwise is in $\PcL$ (with $L_i\in(0,1]$, $\delta_{L_i}\in\Pc$)
+  and $\mean_i-\mean'_i=L_i\not<L_i$.
+\item (d) The ``if'' parts were shown in (c); for the ``only if'' parts, the two pairs of (c) are
+  counterexamples (the first is outside $\PcL$ when $L_i<1$, the second violates $\Drift_L$ when
+  $L_i\le1$).
+\item (e) $\mean_k-\mean'_k=0<L_k$; and $1-0=1\le1$, $1\not<1$. \qedhere
+\end{itemize}
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:classes}}
+
+\begin{proof}
+\uses{def:consistency, def:drift, prop:drift}
+\emph{(a)} $\PcL\subset\PcL[L']$, and the other quantifiers of Definition~\ref{def:consistency} do
+not depend on $L$, so a condition required on $\PcL[L']$ is required on the subset $\PcL$.
+
+\emph{(b)} For $L\ge\one$, $\PcL=\Pc^K\times\Pc^K=\PcL[\one]$ by Proposition~\ref{prop:drift}(d), so
+$\ClL=\ClL[\one]$. For every $L$, $L\vee\one\ge L$, so by (a) and the first claim,
+$\ClL[\one]=\ClL[L\vee\one]\subset\ClL$; hence $\ClL[\one]\subset\bigcap_L\ClL\subset\ClL[\one]$.
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:witness}}
+
+\begin{proof}
+\uses{def:consistency, def:learner, def:game, def:instance, lem:mixture, prop:classes, lem:lml-history}
+\emph{The source-ignoring learner.} For every size map, $\pis(s)=\sigma$ for all $s$, so
+Lemma~\ref{lem:mixture} gives
+\begin{equation*}
+\E_{\nu',\rhos,\nu,\pis}[\Nc_k(T)]=\int\E_{\sigma,\nu}[\Nc_k(T)]\,\PD(ds)=\E_{\sigma,\nu}[\Nc_k(T)],
+\end{equation*}
+which is $o(T^\alpha)$ for every suboptimal $k$ and $\alpha>0$, for every pair, whatever $\nu'$ and
+$\rhos$: $\pis\in\ClL[\one]$, and $\ClL[\one]\subset\ClL$ by Proposition~\ref{prop:classes}(b).
+
+\emph{UCB.} Let $\sigma$ be UCB as in the statement, on histories with rewards in $[0,1]$, and let
+$\nu\in\Pc^K$. The UCB algorithm of LML acts on histories with real rewards; on histories with
+rewards in $[0,1]$ it chooses its arm by the rule of the statement, so it agrees there with
+$\bar\sigma=\sigma\circ c$ of Lemma~\ref{lem:lml-history}, since the clamp $c$ does not change such
+histories. Against the bandit environment $\bar\nu$ the rewards are in $[0,1]$ almost surely, so
+the conditional laws of the actions of a run of LML's UCB against $\bar\nu$ agree almost surely with
+those given by $\bar\sigma$: the run satisfies the two conditional laws of
+Lemma~\ref{lem:lml-history} (\emph{the online law as an LML history}), and the law of its first $n$
+rounds is $\iota_n\#\Q^n_{\sigma,\nu}$. Hence the expected numbers of pulls of the run are
+$\E_{\sigma,\nu}[\Nc_a(n)]$. A law on $[0,1]$ is sub-Gaussian with variance proxy $1/4$ around its
+mean (Hoeffding's lemma, in Mathlib\leanfn{ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc}), and
+for $c>2\cdot\frac14$ the regret bound of UCB, due to \citet{ACF02} and formalised in LML with the
+following constants\leanfn{Bandits.UCB.regret_le_of_gt_two} (variance proxy $1/4$), gives, for
+every $n\in\N$,
+\begin{equation*}
+\sum_a\gap_a\E_{\sigma,\nu}[\Nc_a(n)]\le\sum_{a:\,\gap_a>0}\Big(\frac{8c\log(n+1)}{\gap_a}
++\gap_a\Big(4+\frac{1/2}{c-1/2}\Big)\Big).
+\end{equation*}
+Each term on the left is nonnegative, so $\E_{\sigma,\nu}[\Nc_k(n)]=O(\log n)$ for every suboptimal
+$k$, which is $o(n^\alpha)$ for every $\alpha>0$.
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:exclusion}}
+
+\begin{proof}
+\uses{def:consistency, def:learner, def:source-data, def:drift, def:game, def:instance, def:laws, lem:mixture, lem:prior-game}
+$\pitr$ is a transfer learner: its kernels are Dirac masses at a measurable function of $s$ ($\hat k$
+is measurable on each slice $\Sd_n$). Take $\nu_1=\nu'_1=\Ber(2/3)$, $\nu_2=\nu'_2=\Ber(1/3)$ and
+$\nu_k=\nu'_k=\delta_0$ for $k\ge3$: then $(\nu,\nu')\in\PcL$ for every $L$ (no drift), and arm $2$ is
+suboptimal. Take the source strategy $\Np^{(T)}\equiv\one$ (a size rule by
+Lemma~\ref{lem:prior-game}(a)). On the event $\{\Xp_{1,1}=0,\,\Xp_{2,1}=1\}$, of probability
+$\frac13\cdot\frac13=\frac19$, the source empirical means are $0,1,0,\dots,0$, so $\hat k(\Dd)=2$ and
+$\Nc_2(T)=T$. By Lemma~\ref{lem:mixture},
+\begin{equation*}
+\E_{\nu',\rhos,\nu,\pitr}[\Nc_2(T)]\ge T\,\PD(\hat k=2)\ge\frac T9,\qquad\text{so}\qquad
+\frac{\E_{\nu',\rhos,\nu,\pitr}[\Nc_2(T)]}{T^{1/2}}\ge\frac{T^{1/2}}9\not\to0. \qedhere
+\end{equation*}
+\end{proof}
+
+\section{Sources of the techniques}\label{sec:attribution}
+
+For each technique, where it is used and the earliest source we found.
+
+\begin{center}
+\begin{tabular}{@{}p{0.45\textwidth}p{0.49\textwidth}@{}}
+\toprule
+Technique (where) & Earliest source found \\
+\midrule
+Source model: prior counts chosen by an unknown, possibly adaptive strategy, independent of the
+target (Definitions~\ref{def:size-rule}--\ref{def:game}) & \citet[Section~3.2]{PMRM26} \\
+The class $\ClL$ (Definition~\ref{def:consistency}) & \citet[Section~4.2]{PMRM26}, copied \\
+Size rules as stopping points of a multiparameter filtration (Definition~\ref{def:size-rule}) &
+bandits as control over a multiparameter filtration: \citet{M86}, \citet{KM98}; see also
+\citet{CW75} \\
+Counts of a bandit game, stopped or not, are a stopping point (Lemma~\ref{lem:prior-game},
+Proposition~\ref{prop:stopped-games}(a)) & \citet[Section~1.3]{MV81} (the end point of a policy is
+a predictable stopping point); for bandits, \citet{KM98}; see also \citet{KS81}; the induction is
+written here \\
+Every stopping point of two parameters is reached by a policy (Proposition~\ref{prop:stopped-games}(b))
+& \citet[Theorem~4]{MV81}, for one probability measure under $(\mathrm{F}4)$, by separating the
+events $A_m$ and $B_m$; here the separation is pointwise, by the Lusin separation theorem
+\citep[Theorem~14.7]{K95} \\
+A stopping point of three parameters that no policy reaches (Proposition~\ref{prop:stopped-games}(c))
+& the cyclic pattern and the argument (no argument is read first on every input): Berry's stable
+non-sequential function \citep[Proposition~II.2.2]{Ber76}, see \citet{Cur03}; for three independent
+Markov chains, \citet[Section~5.2]{MV81}. In law and with randomisation, for mechanisms missing at
+random: \citet{RG97}, see also \citet{GR97}. Written here for size rules \\
+Factorisation of the law of the source data (Lemma~\ref{lem:source-law}) & ignorability under
+missing at random: \citet{R76}; \citet[Theorem~1]{SGJC13}; \citet[Theorem~1]{FDS18}; see also
+\citet{BW88} \\
+Wald's identity at a stopping point (Lemma~\ref{lem:wald}) & \citet{W44}; for the log-likelihood
+ratio of a bandit at a stopping time, \citet[Appendix~A, (18)]{KCG16} \\
+Source term $\E[\Np_k]\KL(\nu'_k,\tilde\nu'_k)$ (Proposition~\ref{prop:source-kl}) & for bandit-game
+sources, \citet[Lemma~22]{PMRM26}; offline data on the same instance,
+\citet[Appendix~B.1, (10)]{AJSS23} \\
+Divergence decomposition of bandit histories (Lemma~\ref{lem:online-kl}) & \citet[Lemma~1]{KCG16};
+as an identity, \citet[(8)]{GMS19}; formalised in LML \\
+Chain rule for composition products (Theorem~\ref{thm:main}) & textbook; formalised in LML \\
+Data processing (Corollary~\ref{cor:fundamental}) & \citet[Lemma~1]{GMS19} \\
+Look-ahead counterexample (Theorem~\ref{thm:main}(b)) & an instance of a mechanism that is not
+missing at random \citep{R76} \\
+The learner that follows the source (Proposition~\ref{prop:exclusion}) & source not known \\
+Regret bound of UCB (Proposition~\ref{prop:witness}) & \citet{ACF02}; formalised in LML, with the
+constants used here \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Notation}\label{sec:notation}
+
+Every symbol is a link to its definition.
+
+\begin{center}
+\begin{tabular}{@{}p{0.27\textwidth}p{0.47\textwidth}p{0.2\textwidth}@{}}
+\toprule
+Symbol & Meaning & Defined in \\
+\midrule
+$\Pc$, $\Ber(p)$ & laws on $[0,1]$, Bernoulli law & Definition~\ref{def:laws} \\
+$\KL$, $\kl$ & Kullback--Leibler divergence, Bernoulli divergence & Definition~\ref{def:laws} \\
+$\mean_k$, $\mean'_k$, $\mean^\star$, $\gap_k$ & target and source means, best mean, gaps & Definition~\ref{def:instance} \\
+$\Om$, $\Up$, $\Xp_{k,j}$, $\Pp_{\nu'}$ & source space, randomisation, stacks, their law & Definition~\ref{def:source-space} \\
+$\Bx(n)$, $\Gc_n$ & box of $n$, its $\sigma$-algebra & Definition~\ref{def:source-space} \\
+$\Np$, $\rhos$ & size map or size rule, source strategy & Definition~\ref{def:size-rule} \\
+$\Sd$, $\Sd_n$, $\Dd$, $\PD_{\nu',N'}$ & space of source data, its slices, source data, their law & Definition~\ref{def:source-data} \\
+$\mhat_k(s)$ & source empirical mean & Definition~\ref{def:source-data} \\
+$\sy{s:game0}{A'_r}$, $\sy{s:game0}{Y'_r}$, $\sy{s:game0}{C_k(r)}$ & actions, observations and counts of a prior game & Definition~\ref{def:prior-game} \\
+$\sy{s:stopped}{\mathcal F'_r}$, $\sy{s:stopped}{\tau}$ & filtration of a prior game, stopping time & Definition~\ref{def:stopped-game} \\
+$\Hs_t$, $\sy{s:Hs}{\sigma}$, $\sy{s:Hs}{\pi}$, $\pis$ & histories, bandit algorithm, transfer learner, source-ignoring learner & Definition~\ref{def:learner} \\
+$\Q^T_{\sigma,\nu}$, $\kap^T_{\pi,\nu}$, $\PP^T_{\nu',N',\nu,\pi}$ & law of the online history, its kernel, law of the game & Definition~\ref{def:game} \\
+$\Nc_k(T)$ & number of pulls of arm $k$ in the first $T$ rounds & Definition~\ref{def:game} \\
+$\Drift_L$, $\PcL$, $\one$ & drift condition, closed two-sided set, vector of ones & Definition~\ref{def:drift} \\
+$\ClL$ & consistency class & Definition~\ref{def:consistency} \\
+$\Nla$ & look-ahead map & Theorem~\ref{thm:main} \\
+$\sy{s:ek}{e_k}$, $\sy{s:ek}{|n|}$, $\Ncyc$ & unit vector, total size, cyclic size rule & Proposition~\ref{prop:stopped-games} \\
+$\pitr$ & learner that follows the source & Proposition~\ref{prop:exclusion} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\bibliographystyle{plainnat}
+\bibliography{refs,../../papers/library}
+
+\end{document}

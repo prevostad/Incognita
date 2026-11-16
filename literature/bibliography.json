@@ -27,6 +27,42 @@
     "identifiers": {},
     "version": ""
   },
+  "ACF02": {
+    "uri": "https://doi.org/10.1023/A:1013689704352",
+    "citation": {
+      "id": "ACF02",
+      "type": "article-journal",
+      "title": "Finite-time Analysis of the Multiarmed Bandit Problem",
+      "author": [
+        {
+          "family": "Auer",
+          "given": "Peter"
+        },
+        {
+          "family": "Cesa-Bianchi",
+          "given": "Nicolò"
+        },
+        {
+          "family": "Fischer",
+          "given": "Paul"
+        }
+      ],
+      "container-title": "Machine Learning",
+      "volume": "47",
+      "issue": "2-3",
+      "page": "235-256",
+      "issued": {
+        "date-parts": [
+          [
+            2002
+          ]
+        ]
+      },
+      "DOI": "10.1023/A:1013689704352"
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "ACFS02": {
     "uri": "https://doi.org/10.1137/S0097539701398375",
     "citation": {
@@ -230,6 +266,44 @@
       "arxiv": "2102.03734"
     },
     "version": ""
+  },
+  "AJSS23": {
+    "uri": "https://arxiv.org/abs/2306.09048",
+    "citation": {
+      "id": "AJSS23",
+      "type": "article",
+      "title": "Optimal Best-Arm Identification in Bandits with Access to Offline Data",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shubhada"
+        },
+        {
+          "family": "Juneja",
+          "given": "Sandeep"
+        },
+        {
+          "family": "Shanmugam",
+          "given": "Karthikeyan"
+        },
+        {
+          "family": "Suggala",
+          "given": "Arun Sai"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2023
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2306.09048"
+    },
+    "version": "v1"
   },
   "AMS09": {
     "uri": "https://doi.org/10.1016/j.tcs.2009.01.016",
@@ -503,6 +577,38 @@
     "identifiers": {},
     "version": ""
   },
+  "BW88": {
+    "uri": "",
+    "citation": {
+      "id": "BW88",
+      "type": "book",
+      "title": "The Likelihood Principle",
+      "author": [
+        {
+          "family": "Berger",
+          "given": "James O."
+        },
+        {
+          "family": "Wolpert",
+          "given": "Robert L."
+        }
+      ],
+      "collection-title": "IMS Lecture Notes-Monograph Series",
+      "volume": "6",
+      "edition": "2",
+      "publisher": "Institute of Mathematical Statistics",
+      "ISBN": "0940600137",
+      "issued": {
+        "date-parts": [
+          [
+            1988
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "Bat83": {
     "uri": "https://doi.org/10.1007/978-1-4612-5612-0_1",
     "citation": {
@@ -545,6 +651,33 @@
     "identifiers": {
       "isbn": "978-0-387-90913-4"
     },
+    "version": ""
+  },
+  "Ber76": {
+    "uri": "http://www.numdam.org/item/ITA_1976__10_1_47_0/",
+    "citation": {
+      "id": "Ber76",
+      "type": "article-journal",
+      "title": "Bottom-up computation of recursive programs",
+      "author": [
+        {
+          "family": "Berry",
+          "given": "Gérard"
+        }
+      ],
+      "container-title": "Revue française d'automatique, informatique, recherche opérationnelle. Informatique théorique",
+      "volume": "10",
+      "issue": "R1",
+      "page": "47-82",
+      "issued": {
+        "date-parts": [
+          [
+            1976
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
     "version": ""
   },
   "Bil95": {
@@ -908,6 +1041,37 @@
     },
     "version": ""
   },
+  "CW75": {
+    "uri": "https://doi.org/10.1007/BF02392100",
+    "citation": {
+      "id": "CW75",
+      "type": "article-journal",
+      "title": "Stochastic integrals in the plane",
+      "author": [
+        {
+          "family": "Cairoli",
+          "given": "R."
+        },
+        {
+          "family": "Walsh",
+          "given": "John B."
+        }
+      ],
+      "container-title": "Acta Mathematica",
+      "volume": "134",
+      "page": "111-183",
+      "DOI": "10.1007/BF02392100",
+      "issued": {
+        "date-parts": [
+          [
+            1975
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "Cov66": {
     "uri": "",
     "citation": {
@@ -930,6 +1094,36 @@
       }
     },
     "identifiers": {},
+    "version": ""
+  },
+  "Cur03": {
+    "uri": "https://doi.org/10.2178/bsl.1052669287",
+    "citation": {
+      "id": "Cur03",
+      "type": "article-journal",
+      "title": "Symmetry and interactivity in programming",
+      "author": [
+        {
+          "family": "Curien",
+          "given": "Pierre-Louis"
+        }
+      ],
+      "container-title": "Bulletin of Symbolic Logic",
+      "volume": "9",
+      "issue": "2",
+      "page": "169-180",
+      "issued": {
+        "date-parts": [
+          [
+            2003
+          ]
+        ]
+      },
+      "DOI": "10.2178/bsl.1052669287"
+    },
+    "identifiers": {
+      "arxiv": "cs/0501034"
+    },
     "version": ""
   },
   "DP16": {
@@ -1099,6 +1293,40 @@
       }
     },
     "identifiers": {},
+    "version": ""
+  },
+  "FDS18": {
+    "uri": "https://arxiv.org/abs/1801.06739",
+    "citation": {
+      "id": "FDS18",
+      "type": "article",
+      "title": "Missing at random: a stochastic process perspective",
+      "author": [
+        {
+          "family": "Farewell",
+          "given": "Daniel"
+        },
+        {
+          "family": "Daniel",
+          "given": "Rhian"
+        },
+        {
+          "family": "Seaman",
+          "given": "Shaun"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2018
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1801.06739"
+    },
     "version": ""
   },
   "FG21": {
@@ -1457,6 +1685,43 @@
     "identifiers": {},
     "version": ""
   },
+  "GLR97": {
+    "uri": "https://doi.org/10.1007/978-1-4684-6316-3_14",
+    "citation": {
+      "id": "GLR97",
+      "type": "chapter",
+      "title": "Coarsening at Random: Characterizations, Conjectures, Counter-Examples",
+      "author": [
+        {
+          "family": "Gill",
+          "given": "Richard D."
+        },
+        {
+          "family": "van der Laan",
+          "given": "Mark J."
+        },
+        {
+          "family": "Robins",
+          "given": "James M."
+        }
+      ],
+      "container-title": "Proceedings of the First Seattle Symposium in Biostatistics",
+      "collection-title": "Lecture Notes in Statistics",
+      "volume": "123",
+      "page": "255-294",
+      "publisher": "Springer",
+      "DOI": "10.1007/978-1-4684-6316-3_14",
+      "issued": {
+        "date-parts": [
+          [
+            1997
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "GMS19": {
     "uri": "https://doi.org/10.1287/moor.2017.0928",
     "identifiers": {
@@ -1555,6 +1820,39 @@
         "date-parts": [
           [
             2016
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "GR97": {
+    "uri": "https://doi.org/10.1007/978-1-4684-6316-3_15",
+    "citation": {
+      "id": "GR97",
+      "type": "chapter",
+      "title": "Sequential Models for Coarsening and Missingness",
+      "author": [
+        {
+          "family": "Gill",
+          "given": "Richard D."
+        },
+        {
+          "family": "Robins",
+          "given": "James M."
+        }
+      ],
+      "container-title": "Proceedings of the First Seattle Symposium in Biostatistics",
+      "collection-title": "Lecture Notes in Statistics",
+      "volume": "123",
+      "page": "295-305",
+      "publisher": "Springer",
+      "DOI": "10.1007/978-1-4684-6316-3_15",
+      "issued": {
+        "date-parts": [
+          [
+            1997
           ]
         ]
       }
@@ -1990,6 +2288,35 @@
     },
     "version": ""
   },
+  "K95": {
+    "uri": "https://doi.org/10.1007/978-1-4612-4190-4",
+    "citation": {
+      "id": "K95",
+      "type": "book",
+      "title": "Classical Descriptive Set Theory",
+      "author": [
+        {
+          "family": "Kechris",
+          "given": "Alexander S."
+        }
+      ],
+      "collection-title": "Graduate Texts in Mathematics",
+      "publisher": "Springer",
+      "publisher-place": "New York",
+      "issued": {
+        "date-parts": [
+          [
+            1995
+          ]
+        ]
+      },
+      "DOI": "10.1007/978-1-4612-4190-4"
+    },
+    "identifiers": {
+      "isbn": "9781461241904"
+    },
+    "version": ""
+  },
   "KCG16": {
     "uri": "https://jmlr.org/papers/v17/kaufman16a.html",
     "citation": {
@@ -2166,6 +2493,38 @@
     },
     "version": ""
   },
+  "KM98": {
+    "uri": "https://doi.org/10.1214/aoap/1028903380",
+    "citation": {
+      "id": "KM98",
+      "type": "article-journal",
+      "title": "Multi-armed bandits in discrete and continuous time",
+      "author": [
+        {
+          "family": "Kaspi",
+          "given": "Haya"
+        },
+        {
+          "family": "Mandelbaum",
+          "given": "Avishai"
+        }
+      ],
+      "container-title": "The Annals of Applied Probability",
+      "volume": "8",
+      "issue": "4",
+      "page": "1270-1290",
+      "DOI": "10.1214/aoap/1028903380",
+      "issued": {
+        "date-parts": [
+          [
+            1998
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "KMS21": {
     "uri": "https://proceedings.neurips.cc/paper_files/paper/2021/hash/56f0b515214a7ec9f08a4bbf9a56f7ba-Abstract.html",
     "citation": {
@@ -2297,6 +2656,38 @@
     "identifiers": {
       "arxiv": "2110.00158"
     },
+    "version": ""
+  },
+  "KS81": {
+    "uri": "https://doi.org/10.1016/0047-259X(81)90109-3",
+    "citation": {
+      "id": "KS81",
+      "type": "article-journal",
+      "title": "Stopping rules and tactics for processes indexed by a directed set",
+      "author": [
+        {
+          "family": "Krengel",
+          "given": "Ulrich"
+        },
+        {
+          "family": "Sucheston",
+          "given": "Louis"
+        }
+      ],
+      "container-title": "Journal of Multivariate Analysis",
+      "volume": "11",
+      "issue": "2",
+      "page": "199-229",
+      "issued": {
+        "date-parts": [
+          [
+            1981
+          ]
+        ]
+      },
+      "DOI": "10.1016/0047-259X(81)90109-3"
+    },
+    "identifiers": {},
     "version": ""
   },
   "KS91": {
@@ -3051,6 +3442,61 @@
     },
     "version": "v1"
   },
+  "M83": {
+    "uri": "http://www.numdam.org/item?id=AIHPB_1983__19_3_223_0",
+    "citation": {
+      "id": "M83",
+      "type": "article-journal",
+      "title": "Chemins croissants optionnels et théorème de section",
+      "author": [
+        {
+          "family": "Merzbach",
+          "given": "Ely"
+        }
+      ],
+      "container-title": "Annales de l'I.H.P. Probabilités et statistiques",
+      "volume": "19",
+      "issue": "3",
+      "page": "223-234",
+      "issued": {
+        "date-parts": [
+          [
+            1983
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "M86": {
+    "uri": "https://doi.org/10.1007/BF00366276",
+    "citation": {
+      "id": "M86",
+      "type": "article-journal",
+      "title": "Discrete multi-armed bandits and multi-parameter processes",
+      "author": [
+        {
+          "family": "Mandelbaum",
+          "given": "Avi"
+        }
+      ],
+      "container-title": "Probability Theory and Related Fields",
+      "volume": "71",
+      "issue": "1",
+      "page": "129-147",
+      "DOI": "10.1007/BF00366276",
+      "issued": {
+        "date-parts": [
+          [
+            1986
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "MCP14": {
     "uri": "https://arxiv.org/abs/1405.4758",
     "citation": {
@@ -3114,6 +3560,38 @@
     "identifiers": {
       "arxiv": "1702.07211"
     },
+    "version": ""
+  },
+  "MV81": {
+    "uri": "https://doi.org/10.1007/BF00535493",
+    "citation": {
+      "id": "MV81",
+      "type": "article-journal",
+      "title": "Optimal stopping and supermartingales over partially ordered sets",
+      "author": [
+        {
+          "family": "Mandelbaum",
+          "given": "A."
+        },
+        {
+          "family": "Vanderbei",
+          "given": "R. J."
+        }
+      ],
+      "container-title": "Zeitschrift für Wahrscheinlichkeitstheorie und verwandte Gebiete",
+      "volume": "57",
+      "issue": "2",
+      "page": "253-264",
+      "issued": {
+        "date-parts": [
+          [
+            1981
+          ]
+        ]
+      },
+      "DOI": "10.1007/BF00535493"
+    },
+    "identifiers": {},
     "version": ""
   },
   "Man87": {
@@ -3333,6 +3811,66 @@
     "identifiers": {},
     "version": ""
   },
+  "R76": {
+    "uri": "https://doi.org/10.1093/biomet/63.3.581",
+    "citation": {
+      "id": "R76",
+      "type": "article-journal",
+      "title": "Inference and missing data",
+      "author": [
+        {
+          "family": "Rubin",
+          "given": "Donald B."
+        }
+      ],
+      "container-title": "Biometrika",
+      "volume": "63",
+      "issue": "3",
+      "page": "581-592",
+      "DOI": "10.1093/biomet/63.3.581",
+      "issued": {
+        "date-parts": [
+          [
+            1976
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "RG97": {
+    "uri": "https://doi.org/10.1002/(SICI)1097-0258(19970115)16:1<39::AID-SIM535>3.0.CO;2-D",
+    "citation": {
+      "id": "RG97",
+      "type": "article-journal",
+      "title": "Non-response models for the analysis of non-monotone ignorable missing data",
+      "author": [
+        {
+          "family": "Robins",
+          "given": "James M."
+        },
+        {
+          "family": "Gill",
+          "given": "Richard D."
+        }
+      ],
+      "container-title": "Statistics in Medicine",
+      "volume": "16",
+      "issue": "1",
+      "page": "39-56",
+      "issued": {
+        "date-parts": [
+          [
+            1997
+          ]
+        ]
+      },
+      "DOI": "10.1002/(SICI)1097-0258(19970115)16:1<39::AID-SIM535>3.0.CO;2-D"
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "RH17": {
     "uri": "",
     "citation": {
@@ -3527,6 +4065,48 @@
     "identifiers": {},
     "version": ""
   },
+  "SGJC13": {
+    "uri": "https://doi.org/10.1214/13-STS415",
+    "citation": {
+      "id": "SGJC13",
+      "type": "article-journal",
+      "title": "What Is Meant by “Missing at Random”?",
+      "author": [
+        {
+          "family": "Seaman",
+          "given": "Shaun"
+        },
+        {
+          "family": "Galati",
+          "given": "John"
+        },
+        {
+          "family": "Jackson",
+          "given": "Dan"
+        },
+        {
+          "family": "Carlin",
+          "given": "John"
+        }
+      ],
+      "container-title": "Statistical Science",
+      "volume": "28",
+      "issue": "2",
+      "page": "257-268",
+      "DOI": "10.1214/13-STS415",
+      "issued": {
+        "date-parts": [
+          [
+            2013
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "1306.2812"
+    },
+    "version": ""
+  },
   "SJ12": {
     "uri": "https://proceedings.mlr.press/v22/shivaswamy12.html",
     "citation": {
@@ -3706,6 +4286,63 @@
         "date-parts": [
           [
             1960
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "W44": {
+    "uri": "https://doi.org/10.1214/aoms/1177731235",
+    "citation": {
+      "id": "W44",
+      "type": "article-journal",
+      "title": "On Cumulative Sums of Random Variables",
+      "author": [
+        {
+          "family": "Wald",
+          "given": "Abraham"
+        }
+      ],
+      "container-title": "The Annals of Mathematical Statistics",
+      "volume": "15",
+      "issue": "3",
+      "page": "283-296",
+      "DOI": "10.1214/aoms/1177731235",
+      "issued": {
+        "date-parts": [
+          [
+            1944
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
+  },
+  "W81": {
+    "uri": "https://doi.org/10.1007/BFb0091100",
+    "citation": {
+      "id": "W81",
+      "type": "chapter",
+      "title": "Optional increasing paths",
+      "author": [
+        {
+          "family": "Walsh",
+          "given": "John B."
+        }
+      ],
+      "container-title": "Processus Aléatoires à Deux Indices",
+      "collection-title": "Lecture Notes in Mathematics",
+      "volume": "863",
+      "page": "172-201",
+      "publisher": "Springer",
+      "DOI": "10.1007/BFb0091100",
+      "issued": {
+        "date-parts": [
+          [
+            1981
           ]
         ]
       }
