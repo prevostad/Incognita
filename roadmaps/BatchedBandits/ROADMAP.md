@@ -49,11 +49,11 @@ and why.
 - **Lean.** Follow the conventions of LMLExplore's Bandits roadmap (`LMLRoadmaps/Bandits/README.md`):
   rounds numbered from 0, arms as a `Fintype α` (never `Fin K`), bounded rewards as
   `∀ a, ∀ᵐ x ∂(ν a), x ∈ Set.Icc 0 1`, LML's environments and regret. The translation of the grid
-  to 0-based rounds is fixed once, by P000 (F0), and then reused.
+  to 0-based rounds is fixed once, by the setting paper (F0, P006), and then reused.
 
 ## Definitions
 
-The core objects, with their planned Lean names. The setting paper P000 (item F0) formalises them;
+The core objects, with their planned Lean names. The setting paper (item F0, P006) formalises them;
 it may change a name or a shape only with a justification in its Setting. Names of the dependencies
 were read on LMLExplore's `main` on 2026-11-14: check them at the pinned revision.
 
