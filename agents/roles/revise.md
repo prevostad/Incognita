@@ -25,7 +25,7 @@ You **revise a paper** of the Incognita repository. Five situations (task.md say
 - `papers/<P>/`: **read `notebook/NOTEBOOK.md` first**, then `paper.tex`, `DOSSIER.md`,
   `refs.bib`, `META.toml`, `errata.md`, `statement-corrections.md`.
 - The roadmap, its KNOWN.md (path in task.md), `literature/notes/`; `AGENTS.md` §5, §6.6, §7;
-  `docs/writing.md` (the reader, the structure, the criteria W1–W15 behind R and P defects; §2–2a: the house style, modelled on the owner's paper arXiv:2610.21582, which you read).
+  `docs/writing.md` (the reader, the structure, the criteria W1–W16 behind R and P defects; §2–2a: the house style, modelled on the owner's paper arXiv:2610.21582, which you read).
 
 ## Steps
 

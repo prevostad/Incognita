@@ -68,7 +68,7 @@ of its statements and the way its proofs are written (section 2a below). In this
    `\texttt{}`.
 5. **How the proofs work** (`sec:overview`), mandatory beyond 10 pages: the decomposition, the key
    lemmas, how they combine, where the difficulty lies, and a map of the appendices.
-6. **Numerical experiments or examples** (`sec:examples`): the setup in a paragraph, a table or a
+6. **Numerical experiments or examples** (`sec:examples`; criterion W16: simulations when the algorithm can be run, otherwise a paragraph saying why): the setup in a paragraph, a table or a
    figure, then `\paragraph{Interpretation of Figure 1}`; one explicit instance satisfying all the
    hypotheses at once; the degenerate cases.
 7. **Conclusion and open questions** (`sec:open`): what is shown, the limitations, then the
@@ -172,7 +172,7 @@ locus when a precise result is used (`\citet[Theorem~3]{HT15}`). Never alpha key
 **Language.** English, plain, "we". No promotional adjectives; "optimal" only for a result paired
 with a lower bound in the same class.
 
-## 3. The fifteen presentation criteria
+## 3. The sixteen presentation criteria
 
 The scope referee applies them to the **reader build** (the PDF's text, `pdftotext paper.pdf -`),
 in addition to the source. Each has a yes/no test. **R** marks a criterion whose failure is
@@ -258,6 +258,18 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
   with its link macro and defined with `:=`; pick five places where a result is used and check the
   `\ref`. A failure that makes a proof hard to follow (a dense paragraph of relations, a chain
   without its steps, a result used without saying which) is R.
+- **W16 (P) Numerical experiments, or why not** (owner, 2026-11-16). A paper that proposes or
+  analyses an algorithm that can be run has a section "Numerical experiments" (as in
+  arXiv:2610.21582): the setup (instances, horizon, number of runs, the algorithms compared, among
+  them the closest published ones), a table or a figure, and a paragraph interpreting it. The
+  scripts and their outputs are committed in `notebook/` and the paper says how to reproduce the
+  numbers; runs stay small (no campaign of thousands of runs: the agents' machines are modest).
+  Simulations **illustrate**: never present them as evidence for an asymptotic constant or a
+  second-order term (a horizon of $10^5$ does not show a $\ln\ln T$ term). When simulations are
+  not possible or not meaningful (a lower bound, an impossibility, a constant without an algorithm,
+  an index that cannot be computed reliably), the section says why in a paragraph and gives what
+  can be computed instead (for example the constants on explicit instances). *Test*: is there an
+  experiments section with reproducible numbers, or a paragraph that justifies its absence?
 
 ## 4. When a presentation defect blocks
 
