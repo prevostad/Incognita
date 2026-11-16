@@ -30,6 +30,10 @@
 % positioning}), tcolorbox.
 \usepackage{xcolor}
 \usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+% Citations in author-year style (first author and year), as in the owner's papers: \citet{KEY} in
+% running text (``Garivier et al. (2019) show''), \citep{KEY} in parentheses, with a locus
+% \citet[Theorem~1]{KEY}; never alpha keys such as [GMS19].
+\usepackage[round]{natbib}
 \usepackage{../../templates/paper/blueprint-macros}
 
 % Macros of this paper: \newcommand only. Each symbol has one meaning in the whole paper.
@@ -95,7 +99,7 @@ appendices.
 % parts that were read (literature/index.md); an unread work is at most ``see also''.
 \paragraph{<A theme, e.g. Classical multi-armed bandits>} <...>
 
-\paragraph{Closest related work} <For example: \cite[Theorem~1]{GMS19} gives <...> under <...>; it
+\paragraph{Closest related work} <For example: \citet[Theorem~1]{GMS19} give <...> under <...>; it
 does not give Theorem~\ref{thm:main} because <...> (Table~\ref{tab:comparison}).>
 
 \paragraph{Gap with the literature} <What no published result gives, and what this paper adds.>
@@ -107,7 +111,7 @@ does not give Theorem~\ref{thm:main} because <...> (Table~\ref{tab:comparison}).
 \toprule
 Setting and assumptions & Bound & Both bounds & Reference \\
 \midrule
-<...> & <...> & <yes or no> & \cite[Theorem~1]{GMS19} \\
+<...> & <...> & <yes or no> & \citet[Theorem~1]{GMS19} \\
 <...> & <...> & <yes or no> & Theorem~\ref{thm:main} \\
 \bottomrule
 \end{tabular}
@@ -230,17 +234,17 @@ and the constant of Theorem~\ref{thm:main} equals ...>
 \section{Useful lemmas}\label{sec:cited}
 
 % Results from other papers: each a node cite:<KEY>-<part>, without proof, titled
-% [From \cite{KEY}, <part>], stated IN THIS PAPER'S NOTATION after one line giving the correspondence
+% [From \citet{KEY}, <part>], stated IN THIS PAPER'S NOTATION after one line giving the correspondence
 % with the source's notation; the verbatim statement stays in literature/notes/<KEY>.md (the
 % restatement must be equivalent, never stronger). Each introduced by one sentence saying what it is
 % for. A consequence that the source does not print is a lemma of this paper, proved from the node.
 In this section we present the lemmas from other papers that we use in our proofs.
 
-\cite{GMS19} write $\underline{\nu}$ and $\underline{\nu}'$ for the bandit problems that are $\nu$
+\citet{GMS19} write $\underline{\nu}$ and $\underline{\nu}'$ for the bandit problems that are $\nu$
 and $\nu'$ here; the other symbols are the same. The next lemma is the change of measure.
 
 % Verbatim: literature/notes/GMS19.md, inequality (6).
-\begin{lemma}[{From \cite{GMS19}, inequality~(6)}]\label{cite:GMS19-6}
+\begin{lemma}[{From \citet{GMS19}, inequality~(6)}]\label{cite:GMS19-6}
 For every random variable $Z \in [0,1]$ measurable with respect to the history up to time $T$,
 \begin{equation*}
   \sum_a \E_\nu[\N_a(T)]\,\KL(\nu_a, \nu'_a) \ge \kl(\E_\nu Z, \E_{\nu'} Z),
@@ -249,7 +253,7 @@ where $\kl$ is the Bernoulli divergence.
 \end{lemma}
 
 % A result of a library paper used in a proof is a cited node too: \label{cite:INC-P001-thm:main}
-% (cite:INC-P<nnn>-<label>), optional argument [{\cite[Theorem~2]{INC-P001}}], equivalent to the
+% (cite:INC-P<nnn>-<label>), optional argument [{\citet[Theorem~2]{INC-P001}}], equivalent to the
 % node of papers/P001-.../paper.tex at the version recorded in depends_on ("P001v2:thm:main"),
 % with the renaming line if the notations differ, no proof.
 
@@ -330,7 +334,7 @@ Hence <what was shown>.
 \toprule
 Technique (where) & Earliest source found \\
 \midrule
-<Change of measure, Lemma~\ref{lem:term}> & \cite[inequality~(6)]{GMS19} \\
+<Change of measure, Lemma~\ref{lem:term}> & \citet[inequality~(6)]{GMS19} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -349,7 +353,7 @@ $\N_a(T)$ & <number of pulls of arm $a$ up to time $T$> & Definition~\ref{def:ex
 \end{tabular}
 \end{center}
 
-\bibliographystyle{alpha}
+\bibliographystyle{plainnat}
 % refs: the works cited; ../../papers/library: the library's papers (generated; keys INC-P<nnn>).
 \bibliography{refs,../../papers/library}
 

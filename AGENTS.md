@@ -389,7 +389,7 @@ General rules:
   classics may be cited for standard facts (Hoeffding, Lai–Robbins, Burnetas–Katehakis,
   Lattimore–Szepesvári). CI refuses a changed `paper.tex` with a KNOWN id or "(to be checked)" in
   its text, or without a `DOSSIER.md` (`scripts/certify.py check --base`).
-- LaTeX: the packages of the template (`booktabs`, `algorithm` and `algpseudocode` included) and,
+- LaTeX: the packages of the template (`booktabs`, `algorithm`, `algpseudocode` and `natbib` included) and,
   when needed, `graphicx` (a figure made by a committed script of `notebook/`: a PDF of at most
   200 kB, also in `notebook/`), `enumitem`, `tikz` (libraries `arrows.meta` and `positioning`) and
   `tcolorbox`; no other package. Macros by `\newcommand` in the preamble; no `\def`, no Unicode
