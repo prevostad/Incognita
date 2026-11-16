@@ -163,6 +163,12 @@ rate $\delta_t:=\ln(t\vee3)+\ln\ln(t\vee3)$.
 - The appendix **Notation** lists every symbol, each a link to its definition ("Every symbol is a
   link to its definition").
 
+**Citations.** Author–year style, as in the owner's papers: `natbib` with `\bibliographystyle{plainnat}`;
+`\citet{KEY}` in running text ("Garivier et al. (2019) show"), `\citep{KEY}` in parentheses, with a
+locus when a precise result is used (`\citet[Theorem~3]{HT15}`). Never alpha keys such as
+"[GMS19]" in the PDF. The keys of `literature/bibliography.json` are unchanged; every entry of
+`refs.bib` has its authors and year so that the label prints correctly.
+
 **Language.** English, plain, "we". No promotional adjectives; "optimal" only for a result paired
 with a lower bound in the same class.
 
