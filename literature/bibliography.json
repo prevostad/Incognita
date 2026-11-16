@@ -371,6 +371,33 @@
     },
     "version": "v16"
   },
+  "B62": {
+    "uri": "",
+    "citation": {
+      "id": "B62",
+      "type": "article-journal",
+      "title": "Probability Inequalities for the Sum of Independent Random Variables",
+      "author": [
+        {
+          "family": "Bennett",
+          "given": "George"
+        }
+      ],
+      "container-title": "Journal of the American Statistical Association",
+      "issued": {
+        "date-parts": [
+          [
+            1962
+          ]
+        ]
+      },
+      "volume": "57",
+      "issue": "297",
+      "page": "33-45"
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "BCL13": {
     "uri": "https://arxiv.org/abs/1209.1727",
     "citation": {
@@ -516,6 +543,37 @@
     },
     "version": "v1"
   },
+  "BK65": {
+    "uri": "",
+    "citation": {
+      "id": "BK65",
+      "type": "article-journal",
+      "title": "Convergence rates in the law of large numbers",
+      "author": [
+        {
+          "family": "Baum",
+          "given": "Leonard E."
+        },
+        {
+          "family": "Katz",
+          "given": "Melvin"
+        }
+      ],
+      "container-title": "Transactions of the American Mathematical Society",
+      "issued": {
+        "date-parts": [
+          [
+            1965
+          ]
+        ]
+      },
+      "volume": "120",
+      "issue": "1",
+      "page": "108-123"
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "BK96": {
     "uri": "",
     "citation": {
@@ -576,6 +634,40 @@
     },
     "identifiers": {},
     "version": ""
+  },
+  "BSH23": {
+    "uri": "https://arxiv.org/abs/2303.06058",
+    "citation": {
+      "id": "BSH23",
+      "type": "article",
+      "title": "A General Recipe for the Analysis of Randomized Multi-Armed Bandit Algorithms",
+      "author": [
+        {
+          "family": "Baudry",
+          "given": "Dorian"
+        },
+        {
+          "family": "Suzuki",
+          "given": "Kazuya"
+        },
+        {
+          "family": "Honda",
+          "given": "Junya"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2023
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2303.06058"
+    },
+    "version": "v3"
   },
   "BW88": {
     "uri": "",
@@ -976,6 +1068,37 @@
     "identifiers": {
       "arxiv": "2405.02594"
     },
+    "version": ""
+  },
+  "CL75": {
+    "uri": "https://doi.org/10.1090/S0002-9947-1975-0380973-6",
+    "citation": {
+      "id": "CL75",
+      "type": "article-journal",
+      "title": "Some one-sided theorems on the tail distribution of sample sums with applications to the last time and largest excess of boundary crossings",
+      "author": [
+        {
+          "family": "Chow",
+          "given": "Y. S."
+        },
+        {
+          "family": "Lai",
+          "given": "T. L."
+        }
+      ],
+      "container-title": "Transactions of the American Mathematical Society",
+      "issued": {
+        "date-parts": [
+          [
+            1975
+          ]
+        ]
+      },
+      "volume": "208",
+      "page": "51-72",
+      "DOI": "10.1090/S0002-9947-1975-0380973-6"
+    },
+    "identifiers": {},
     "version": ""
   },
   "CMP17": {
@@ -1421,6 +1544,38 @@
     "identifiers": {
       "arxiv": "2109.13595"
     },
+    "version": ""
+  },
+  "FN71": {
+    "uri": "https://doi.org/10.1137/1116071",
+    "citation": {
+      "id": "FN71",
+      "type": "article-journal",
+      "title": "Probability inequalities for sums of independent random variables",
+      "author": [
+        {
+          "family": "Fuk",
+          "given": "D. Kh."
+        },
+        {
+          "family": "Nagaev",
+          "given": "S. V."
+        }
+      ],
+      "container-title": "Theory of Probability and Its Applications",
+      "issued": {
+        "date-parts": [
+          [
+            1971
+          ]
+        ]
+      },
+      "volume": "16",
+      "issue": "4",
+      "page": "643-660",
+      "DOI": "10.1137/1116071"
+    },
+    "identifiers": {},
     "version": ""
   },
   "Fan52": {
@@ -2331,6 +2486,34 @@
     "identifiers": {
       "arxiv": "2006.08754"
     },
+    "version": ""
+  },
+  "Jan86": {
+    "uri": "https://doi.org/10.2307/1427253",
+    "citation": {
+      "id": "Jan86",
+      "type": "article-journal",
+      "title": "Moments for first-passage and last-exit times, the minimum, and related quantities for random walks with positive drift",
+      "author": [
+        {
+          "family": "Janson",
+          "given": "Svante"
+        }
+      ],
+      "container-title": "Advances in Applied Probability",
+      "issued": {
+        "date-parts": [
+          [
+            1986
+          ]
+        ]
+      },
+      "volume": "18",
+      "issue": "4",
+      "page": "865-879",
+      "DOI": "10.2307/1427253"
+    },
+    "identifiers": {},
     "version": ""
   },
   "K95": {
@@ -3686,6 +3869,34 @@
     "identifiers": {},
     "version": ""
   },
+  "Nag79": {
+    "uri": "https://doi.org/10.1214/aop/1176994938",
+    "citation": {
+      "id": "Nag79",
+      "type": "article-journal",
+      "title": "Large deviations of sums of independent random variables",
+      "author": [
+        {
+          "family": "Nagaev",
+          "given": "S. V."
+        }
+      ],
+      "container-title": "The Annals of Probability",
+      "issued": {
+        "date-parts": [
+          [
+            1979
+          ]
+        ]
+      },
+      "volume": "7",
+      "issue": "5",
+      "page": "745-789",
+      "DOI": "10.1214/aop/1176994938"
+    },
+    "identifiers": {},
+    "version": ""
+  },
   "O88": {
     "uri": "https://doi.org/10.1093/biomet/75.2.237",
     "citation": {
@@ -3763,6 +3974,36 @@
     },
     "identifiers": {},
     "version": ""
+  },
+  "PA26": {
+    "uri": "https://arxiv.org/abs/2604.14876",
+    "citation": {
+      "id": "PA26",
+      "type": "article",
+      "title": "Regret Tail Characterization of Optimal Bandit Algorithms with Generic Rewards",
+      "author": [
+        {
+          "family": "Panda",
+          "given": "Subhodip"
+        },
+        {
+          "family": "Agrawal",
+          "given": "Shubhada"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2604.14876"
+    },
+    "version": "v1"
   },
   "PMM25": {
     "uri": "https://proceedings.mlr.press/v304/prevost26a.html",

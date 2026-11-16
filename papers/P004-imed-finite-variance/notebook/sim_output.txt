@@ -1,0 +1,39 @@
+# python imed_sim.py q runs nmax seed (run 2026-11-16)
+
+## python imed_sim.py 3 3000 10000 3
+q=3.0 pi=0.1 mu*=0.7500 Dinf(delta0,mu*)=1.3863 runs=3000
+n=    1000  log n/D=    4.98  mean N2=      5.15  se=     0.07  median=     5.0  q90=      5.0  max=      155  frac(N2>n/10)=0.000
+n=   10000  log n/D=    6.64  mean N2=      6.46  se=     0.07  median=     6.0  q90=      6.0  max=      155  frac(N2>n/10)=0.000
+
+## python imed_sim.py 2 3000 10000 2
+q=2.0 pi=0.1 mu*=0.7000 Dinf(delta0,mu*)=1.2040 runs=3000
+n=    1000  log n/D=    5.74  mean N2=      7.57  se=     0.27  median=     5.0  q90=      9.0  max=      508  frac(N2>n/10)=0.004
+n=   10000  log n/D=    7.65  mean N2=     10.00  se=     0.79  median=     7.0  q90=      9.0  max=     1954  frac(N2>n/10)=0.001
+
+## python imed_sim.py 1.5 3000 10000 1
+q=1.5 pi=0.1 mu*=0.6000 Dinf(delta0,mu*)=0.9163 runs=3000
+n=    1000  log n/D=    7.54  mean N2=     27.52  se=     1.50  median=     7.0  q90=     39.0  max=      901  frac(N2>n/10)=0.053
+n=   10000  log n/D=   10.05  mean N2=     82.69  se=     8.85  median=     9.0  q90=     45.0  max=     7360  frac(N2>n/10)=0.016
+
+## python imed_sim.py 3 200 100000 5
+q=3.0 pi=0.1 mu*=0.7500 Dinf(delta0,mu*)=1.3863 runs=200
+n=    1000  log n/D=    4.98  mean N2=      4.87  se=     0.09  median=     5.0  q90=      6.0  max=       14  frac(N2>n/10)=0.000
+n=   10000  log n/D=    6.64  mean N2=      6.18  se=     0.07  median=     6.0  q90=      6.0  max=       14  frac(N2>n/10)=0.000
+n=  100000  log n/D=    8.30  mean N2=      7.17  se=     0.05  median=     7.0  q90=      7.0  max=       14  frac(N2>n/10)=0.000
+
+## python imed_sim.py 2 200 100000 6
+q=2.0 pi=0.1 mu*=0.7000 Dinf(delta0,mu*)=1.2040 runs=200
+n=    1000  log n/D=    5.74  mean N2=      7.41  se=     0.96  median=     5.0  q90=      9.0  max=      175  frac(N2>n/10)=0.005
+n=   10000  log n/D=    7.65  mean N2=      8.88  se=     0.94  median=     7.0  q90=      9.0  max=      175  frac(N2>n/10)=0.000
+n=  100000  log n/D=    9.56  mean N2=      9.94  se=     0.93  median=     8.0  q90=      9.0  max=      175  frac(N2>n/10)=0.000
+
+## python imed_sim.py 1.5 200 100000 4
+q=1.5 pi=0.1 mu*=0.6000 Dinf(delta0,mu*)=0.9163 runs=200
+n=    1000  log n/D=    7.54  mean N2=     43.80  se=     8.85  median=     7.0  q90=     72.1  max=      991  frac(N2>n/10)=0.080
+n=   10000  log n/D=   10.05  mean N2=    112.87  se=    37.24  median=     9.0  q90=     77.7  max=     5929  frac(N2>n/10)=0.030
+n=  100000  log n/D=   12.56  mean N2=    135.58  se=    55.53  median=    11.0  q90=     77.7  max=    10189  frac(N2>n/10)=0.005
+
+## python klinf_ucb_sim.py 1.5 500 10000 7 (run 2026-11-16, revision round 2)
+KLinf-UCB q=1.5 pi=0.1 mu*=0.6000 Dinf(delta0,mu*)=0.9163 runs=500
+n=    1000  log n/D=    7.54  mean N2=      8.42  se=     0.04  median=     8.0  q90=      9.0  max=       11  frac(N2>n/10)=0.000
+n=   10000  log n/D=   10.05  mean N2=     14.14  se=     0.03  median=    14.0  q90=     15.0  max=       16  frac(N2>n/10)=0.000

@@ -1,0 +1,6 @@
+roadmap = "StochasticBandits"
+kind = "internal"
+directions = ["D9"]
+authors = ["claude-opus-5-5"]
+version = 1
+depends_on = []

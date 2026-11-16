@@ -1,0 +1,2475 @@
+% Incognita paper P004. Written from templates/paper/paper.tex (AGENTS.md, section 5; docs/writing.md,
+% sections 2-2a, the owner's house style). Two builds of one source (AGENTS.md 5.2), after
+% `python3 scripts/certify.py bib` (papers/library.bib):
+%   reader:    latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex
+%   blueprint: latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint
+%                -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex
+% Blueprint conventions: every node has a \label (def:, lem:, prop:, thm:, cor:, cite:); statements
+% start with \uses when they use definitions; every proof starts with an exhaustive \uses; a proof away
+% from its statement has \proves. What serves only the referees or the owner is in DOSSIER.md. Never
+% write \lean, \leanok or \mathlibok in this file.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[round]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+
+% ---------------------------------------------------------------- macros (\newcommand only)
+% Each symbol has one meaning in the whole paper.
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+% Navigation (house style): an anchor \dt{s:...} at each definition, a macro per symbol linking to it.
+\newcommand{\dt}[1]{\hypertarget{#1}{}}
+\newcommand{\sy}[2]{{\hyperlink{#1}{#2}}}
+\newcommand{\term}[2]{\hyperlink{#1}{#2}}
+\newcommand{\imed}{\hyperref[alg:imed]{\texttt{IMED}}}
+\newcommand{\Sm}{\sy{s:S}{\mathcal{S}}}
+\newcommand{\Mm}{\sy{s:M}{\mathcal{M}}}
+\newcommand{\mean}{\sy{s:mean}{m}}
+\newcommand{\arms}{\sy{s:arms}{\alpha}}
+\newcommand{\Karms}{\sy{s:K}{K}}
+\newcommand{\marm}{\sy{s:ma}{m}}
+\newcommand{\ms}{\sy{s:mstar}{m^{\star}}}
+\newcommand{\gap}{\sy{s:gap}{\Delta}}
+\newcommand{\KL}{\sy{s:KL}{\mathrm{KL}}}
+\newcommand{\Kinf}{\sy{s:kinf}{\mathcal{K}_{\inf}}}
+\newcommand{\hP}{\sy{s:hP}{\hat{P}}}
+\newcommand{\bx}{\sy{s:barx}{\bar{x}}}
+\newcommand{\bX}{\sy{s:barx}{\bar{X}}}
+\newcommand{\Xs}{\sy{s:X}{X}}
+\newcommand{\Useed}{\sy{s:U}{U}}
+\newcommand{\Ap}{\sy{s:A}{A}}
+\newcommand{\Ob}{\sy{s:O}{O}}
+\newcommand{\Np}{\sy{s:N}{N}}
+\newcommand{\Reg}{\sy{s:R}{R}}
+\newcommand{\hnu}{\sy{s:hnu}{\hat{\nu}}}
+\newcommand{\hm}{\sy{s:hm}{\hat{m}}}
+\newcommand{\hnut}{\sy{s:hnut}{\hat{\nu}}}
+\newcommand{\hmt}{\sy{s:hmt}{\hat{m}}}
+\newcommand{\hms}{\sy{s:hms}{\hat{m}^{\star}}}
+\newcommand{\Dv}{\sy{s:D}{D}}
+\newcommand{\Ix}{\sy{s:I}{I}}
+\newcommand{\Is}{\sy{s:Is}{I^{\star}}}
+\newcommand{\ws}{\sy{s:w}{w}}
+\newcommand{\Gam}{\sy{s:Gamma}{\Gamma}}
+\newcommand{\lst}{\sy{s:lst}{\lambda^{\star}}}
+\newcommand{\Lt}{\sy{s:Lt}{\tilde{\Lambda}}}
+\newcommand{\Ki}{\sy{s:Ki}{\mathcal{K}}}
+\newcommand{\Pq}{\sy{s:Pq}{P}}
+\newcommand{\kl}{\sy{s:kl}{\mathrm{kl}}}
+\newcommand{\lmax}{\sy{s:lmax}{\bar{\lambda}}}
+\newcommand{\ui}{\sy{s:ui}{u}}
+\newcommand{\MT}{\sy{s:MT}{M}}
+\newcommand{\TA}{\sy{s:TA}{\mathsf{A}}}
+\newcommand{\TB}{\sy{s:TB}{\mathsf{B}}}
+\newcommand{\TC}{\sy{s:TC}{\mathsf{C}}}
+
+\title{Finite variance suffices for the asymptotic optimality of IMED on semi-bounded rewards}
+\author{Claude Opus 5.5, Incognita agents\thanks{Written by AI agents of the Incognita project
+  (\url{https://github.com/prevostad/Incognita}) and refereed by two AI agents; its certification
+  is under the date.}}
+\date{2026-11-16}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study stochastic multi-armed bandits with semi-bounded rewards: every arm has a law on
+$(-\infty,1]$ with a finite mean, and the learner knows no lower bound on the rewards and no
+moment. The IMED algorithm was known to attain the Burnetas--Katehakis lower bound in this model
+when one optimal arm has a moment generating function near the origin, and it was conjectured that
+finite moments of order $2+p$ suffice. We prove that, when the best mean is below $1$, a finite
+variance of one optimal arm suffices, with only finite means for the other arms: for every
+suboptimal arm $i$, $\limsup_{T}\E N_i(T)/\log T\le 1/\mathcal{K}_{\inf}(\nu_i,m^{\star})$, as a
+consequence of a finite-time bound. Hence IMED is consistent and asymptotically optimal on the
+semi-bounded laws with a finite moment of order $r$, other than the point mass at $1$, for every
+$r\ge 2$. On the scale of power-law lower tails, the exponent two is the threshold: if the lower
+tail of the optimal arm is at least $\kappa y^{-q}$ with $1<q<2$, IMED pulls a deterministic
+suboptimal arm at least of order $T^{2-q}$ times, so it is not consistent; for tails of order
+$y^{-2}$, it misses the lower-bound constant by at least $\kappa/(4e)$.
+\end{abstract}
+
+% ================================================================ main text
+\section{Introduction}\label{sec:intro}
+
+In the stochastic multi-armed bandit problem, a learner pulls one of $K$ arms at each round and
+observes a reward drawn independently from the law of that arm. It wants to pull the suboptimal
+arms, those whose mean is not the largest, as rarely as possible. When the learner knows a model
+$\mathcal D$ that contains the law of every arm, \citet{LR85} and \citet{BK96} showed that every
+algorithm that is consistent on $\mathcal D^K$ pulls each suboptimal arm $i$, in expectation over
+$T$ rounds, at least
+\begin{equation}\label{eq:intro-lb}
+  (1-o(1))\frac{\log T}{\mathcal K_{\inf}(\nu_i,m^\star;\mathcal D)}\quad\text{times},\qquad
+  \mathcal K_{\inf}(P,\mu;\mathcal D):=\inf\{\mathrm{KL}(P,Q):Q\in\mathcal D,\ m(Q)>\mu\},
+\end{equation}
+where $\nu_i$ is the law of arm $i$, $m^\star$ the best mean and $m(Q)$ the mean of $Q$ (we use the
+form of \citet[Theorem~1]{GMS19}). When an algorithm is consistent on a model and its counts
+satisfy the matching upper bound on every instance, we say that it is asymptotically optimal on that
+model; the phrase is only a shorthand for this pair of bounds.
+
+This paper is about the \emph{semi-bounded} model: the laws on $(-\infty,1]$ with a finite mean.
+The rewards are bounded above by a known value, normalised to $1$, but no lower bound is known; a
+reward may be the opposite of a delay or of a loss that has no known cap
+\citep[Section~1.2]{HT15}. \citet{HT15} showed that $\mathcal K_{\inf}$ has a one-dimensional dual on
+this model, and introduced the Indexed Minimum Empirical Divergence algorithm (\texttt{IMED}), which
+pulls an arm minimising $N_a\mathcal K_{\inf}(\hat\nu_a,\hat m^\star)+\log N_a$, where $N_a$ is the
+number of pulls of arm $a$, $\hat\nu_a$ its empirical law and $\hat m^\star$ the largest empirical
+mean. They proved that \texttt{IMED} is asymptotically optimal on this model when the best mean is
+below $1$ and \emph{one optimal arm has a moment generating function near the origin}
+\citep[Theorem~3 and Corollary~4]{HT15}; for a law on $(-\infty,1]$, this is an exponential moment
+of the lower tail. They conjectured that finite moments of order $2+p$ should suffice, and left the
+question open \citep[Section~9]{HT15}.
+
+We answer this question in both directions. If the best mean $m^\star$ is below $1$ and one optimal
+arm has a finite variance, with only finite means for the other arms, then \texttt{IMED} satisfies,
+for every suboptimal arm $i$,
+\begin{equation}\label{eq:intro-main}
+  \limsup_{T\to\infty}\frac{\E N_i(T)}{\log T}\le\frac{1}{\mathcal K_{\inf}(\nu_i,m^\star)},
+\end{equation}
+as a consequence of a finite-time bound; with the lower bound \eqref{eq:intro-lb}, \texttt{IMED} is
+asymptotically optimal on the semi-bounded laws with a finite moment of order $r$, other than the
+point mass at $1$, for every $r\ge2$. Conversely, on the scale of power-law lower tails, the
+exponent two cannot be lowered: if the lower tail of the optimal arm is at least $\kappa y^{-q}$ with
+$1<q<2$, \texttt{IMED} pulls a deterministic suboptimal arm at least of order $T^{2-q}$ times, and for
+tails of order $y^{-2}$ the $\liminf$ of $\E N_i(T)/\log T$ exceeds the lower-bound constant by at least
+$\kappa/(4e)$.
+
+The analysis of \citet{HT15} bounds the rounds at which every empirical mean is low by a \emph{sum}
+over the sample sizes of the optimal arm, whose expectation is infinite without a third moment. We
+count the same rounds by a \emph{supremum}, and bound its expectation under a finite variance by a
+one-big-jump decomposition of the dual of $\mathcal K_{\inf}$. The negative result comes from the
+reference level of \texttt{IMED}, an empirical mean: one large negative reward of the optimal arm
+hands the lead to a suboptimal arm for a number of rounds linear in that reward.
+
+\paragraph{Our contributions} We summarise our main contributions below.
+\begin{enumerate}[label=(\roman*),leftmargin=2.2em]
+  \item \emph{Regret upper bound under a finite variance.} A finite-time bound on the expected
+    number of pulls of each suboptimal arm by \texttt{IMED}, when one optimal arm has a finite
+    variance and the other arms a finite mean (Theorem~\ref{thm:main}).
+  \item \emph{Asymptotic optimality.} \texttt{IMED} is consistent and attains the lower-bound
+    constant on the semi-bounded laws with a finite moment of order $r$, other than the point mass
+    at $1$, for every $r\ge2$; this contains the class of the conjecture of \citet{HT15}
+    (Corollary~\ref{cor:optimal}).
+  \item \emph{Lower bounds for heavier lower tails.} With a lower tail $\kappa y^{-q}$, $1<q<2$,
+    \texttt{IMED} is not consistent; with a tail of order $y^{-2}$, it misses the lower-bound
+    constant (Theorem~\ref{thm:counter}, Corollary~\ref{cor:pareto}).
+  \item \emph{Tools.} A pathwise count of the rounds at which every empirical mean is low by a
+    supremum over the sample sizes of one arm (Lemma~\ref{lem:sup}); the finiteness of the
+    expectation of that supremum under a finite variance (Proposition~\ref{prop:key}); the equality
+    of $\mathcal K_{\inf}$ on the semi-bounded laws and on those with a finite moment of order $r$
+    (Lemma~\ref{lem:class}).
+  \item \emph{Examples.} An explicit instance satisfying the hypotheses of Theorem~\ref{thm:main}
+    and not those of \citet[Theorem~3]{HT15}, the degenerate cases, and simulations of the three
+    regimes (Section~\ref{sec:examples}).
+\end{enumerate}
+
+\paragraph{Outline} Section~\ref{sec:related} discusses related work. Section~\ref{sec:setting}
+formalises the setting. Section~\ref{sec:algorithm} recalls \texttt{IMED} and fixes its convention
+for empirical leaders. Section~\ref{sec:upper} states the regret upper bound,
+Section~\ref{sec:optimal} the asymptotic optimality, and Section~\ref{sec:counter} the lower bounds
+for heavier tails. Section~\ref{sec:overview} explains how the proofs work,
+Section~\ref{sec:examples} gives examples and simulations, and Section~\ref{sec:open} concludes and
+states open questions. The proofs are in the appendices.
+
+% ----------------------------------------------------------------
+\section{Related work and context}\label{sec:related}
+
+Table~\ref{tab:comparison} compares the bounds closest to ours. We discuss each line of work below.
+
+\paragraph{Asymptotic optimality in stochastic bandits} The lower bound \eqref{eq:intro-lb} is due to
+\citet{LR85} for one-parameter families and to \citet{BK96} for general models. We use the form of
+\citet[Theorem~1]{GMS19}, for learners that are uniformly fast convergent on the model, recalled as
+Theorem~\ref{cite:GMS19-thm1}; the textbook \citet[Chapter~16]{LS} gives its form for consistent
+learners.
+
+\paragraph{Semi-bounded rewards and IMED} For laws with a bounded support, \citet{HT10} introduced
+DMED and the dual formula of $\mathcal K_{\inf}$. \citet{HT15} extended the dual formula to the
+semi-bounded model \citep[Theorem~2]{HT15}, introduced \texttt{IMED}, and proved a finite-time bound
+when one optimal arm $j$ has a moment generating function near $0$ \citep[Theorem~3]{HT15},
+recalled as Theorem~\ref{cite:HT15-thm3}. They deduce a remainder $O((\log T)^{10/11})$
+\citep[Corollary~4]{HT15}, and a remainder $O(1)$ when every arm has a moment generating function
+\citep[Theorem~5]{HT15}.
+
+\paragraph{Heavy-tailed bandits} \citet[Theorem~1]{BCL13} obtain a logarithmic regret for
+Robust-UCB with a known bound on a moment of order $1+\varepsilon$, with a constant polynomial in the
+ratio of that bound to the gaps, not $1/\mathcal K_{\inf}$. \citet[Corollary~2]{AJK21} prove that
+KLinf-UCB is asymptotically optimal on the class of laws on $\R$ with $\E|X|^{1+\varepsilon}\le B$,
+for known $\varepsilon$ and $B$. \citet[Section~4.4]{BSH23} prove that MED, a randomised relative of
+\texttt{IMED}, is asymptotically optimal on the laws with $\E h(|X|)<B$ (and a little more), for a
+convex function $h$ growing faster than $|x|^{1+\eta}$ and a bound $B$, both known to the learner;
+a known bound on the variance is an example.
+
+\paragraph{Optimality from generic concentration assumptions} \citet[Theorem~3.1]{PA26} prove that
+KLinf-UCB, with an exploration function $\log t+2\log\log t+g(N_a)$, satisfies
+$\limsup_T\E N_a(T)/\log T\le1/\mathrm{KL}_{\inf}(\nu_a,\mu_1)$ on every class of laws whose
+empirical $\mathrm{KL}_{\inf}$ satisfies two assumptions: a time-uniform bound on its upper
+deviations at the mean, with $g(n)=C_1\log(1+n)+C_2$ \citep[Assumption~2.3]{PA26}, and an
+exponential bound, quadratic in the deviation, on its lower deviations at a level above the mean
+\citep[Assumption~2.4]{PA26}. They check them for bounded supports and for known moment bounds;
+semi-bounded laws are not treated. We check them on the semi-bounded laws with a finite mean
+(Lemma~\ref{lem:pa-assumptions}, and the paragraph ``Another algorithm'' of
+Section~\ref{sec:counter}).
+
+\paragraph{Closest related work} \citet[Theorem~3]{HT15} is the closest result: same model, same
+algorithm, same criterion. Its last term depends on Cram\'er's rate function of the lower tail of
+the empirical mean of arm $j$, which is positive only under an exponential moment; for a lower tail
+of Pareto type the bound is infinite, so it does not give \eqref{eq:intro-main}. Its proof cannot be
+adapted by changing a concentration inequality: it bounds the rounds at which every empirical mean is
+low by a sum over the sample sizes of the optimal arm, and the expectation of that sum is infinite
+unless the optimal arm has a finite third moment (Section~\ref{sec:overview-mgf}).
+\citet[Corollary~2]{AJK21} is a different model (two-sided laws, a known moment bound), with a
+different constant and an algorithm that uses the bound; it says nothing about \texttt{IMED}, which
+knows no moment. \citet[Section~4.4]{BSH23} likewise assume a known moment bound and analyse MED,
+not \texttt{IMED}. \citet[Theorem~1]{BCL13} does not give a constant $1/\mathcal K_{\inf}$.
+\citet[Theorem~3.1]{PA26} is about KLinf-UCB, which inverts $\mathcal K_{\inf}$ to compute an upper
+confidence bound, and its assumptions are not checked in that paper for semi-bounded laws; it says
+nothing about \texttt{IMED}.
+
+\paragraph{Gap with the literature} We found no published analysis of \texttt{IMED} that attains the
+constant of \eqref{eq:intro-lb} on semi-bounded laws without an exponential moment, and no result
+on \texttt{IMED} under polynomial lower tails. For another algorithm, KLinf-UCB, the general theorem
+of \citet[Theorem~3.1]{PA26} reduces the question to two concentration assumptions, which no
+published work checks on semi-bounded laws; Lemma~\ref{lem:pa-assumptions} checks them with a
+finite mean only, by the published method of \citet[Proposition~5]{AJK21} (see also
+\citealp[Appendix~A.1]{PA26}) in a one-dimensional, semi-bounded form. The decomposition of the count of a suboptimal arm, the counting lemma for the
+minimal index, the dual formula, the bound on the deviations of the suboptimal arm and the grid on
+the dual variable come from \citet{HT15}. What is new is to apply their counting lemma once, at a
+random level, so that a supremum replaces a sum; the bound on the expectation of that supremum by
+big negative jumps and a good part, a split classical for sums of heavy-tailed variables (see also
+\citealp{FN71,Nag79}), here inside the dual product of $\mathcal K_{\inf}$, where one big jump costs a
+linear factor and the second moment enters in one term only; and the frozen-index argument behind
+the lower bounds. Appendix~\ref{sec:attribution} credits each technique.
+
+\begin{table}[t]
+\centering
+\caption{Bounds for semi-bounded or heavy-tailed rewards. ``Both'': the upper bound matches the
+lower bound of the same model at first order. $\mathcal K_{\inf}$ is taken in the model of the row.}
+\label{tab:comparison}
+\small
+\begin{tabular}{@{}p{0.43\textwidth}p{0.43\textwidth}l@{}}
+\toprule
+Reference: setting and assumptions & Algorithm: bound & Both \\
+\midrule
+\citet[Thm.~3, Cor.~4]{HT15}: laws on $(-\infty,1]$, $m^\star<1$, an exponential moment for one optimal
+arm & \texttt{IMED}: $\E N_i(T)\le\log T/\mathcal K_{\inf}(\nu_i,m^\star)+O((\log T)^{10/11})$ & yes \\
+\citet[Thm.~5]{HT15}: same, an exponential moment for every arm & \texttt{IMED}: regret
+$\sum_i\Delta_i\log T/\mathcal K_{\inf}(\nu_i,m^\star)+O(1)$ & yes \\
+\citet[Cor.~2]{AJK21}: laws on $\R$ with $\E|X|^{1+\varepsilon}\le B$, with $\varepsilon$ and $B$
+known & KLinf-UCB with a parameter $\tilde\varepsilon\ge0$:
+$\limsup_T\E N_i(T)/\log T\le(1+\tilde\varepsilon)/\mathcal K_{\inf}(\nu_i,m^\star)$ & if $\tilde\varepsilon=0$ \\
+\citet[Sec.~4.4]{BSH23}: laws on $\R$ with $\E h(|X|)<B$, with $h$ and $B$ known & MED:
+asymptotically optimal on that class & yes \\
+\citet[Thm.~3.1]{PA26}: any class satisfying their Assumptions~2.3--2.4 (checked there for bounded
+supports and known moment bounds) & KLinf-UCB: $\limsup_T\E N_a(T)/\log T\le1/\mathrm{KL}_{\inf}(\nu_a,\mu_1)$
+& yes \\
+\citet[Thm.~1]{BCL13}: laws on $\R$, a known bound on $\E|X|^{1+\varepsilon}$ & Robust-UCB:
+logarithmic regret, constant not $1/\mathcal K_{\inf}$ & no \\
+Theorem~\ref{thm:main}, Corollary~\ref{cor:optimal}: laws on $(-\infty,1]$, $m^\star<1$, a finite
+variance for one optimal arm & \texttt{IMED}: $\limsup_T\E N_i(T)/\log T\le1/\mathcal K_{\inf}(\nu_i,m^\star)$, from a
+finite-time bound & yes \\
+Theorem~\ref{thm:counter}: two arms, lower tail of the optimal arm $\ge\kappa y^{-q}$, $1<q<2$ &
+\texttt{IMED}: $\E N_2(T)\ge cT^{2-q}$, not consistent & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ----------------------------------------------------------------
+\section{Problem formulation}\label{sec:setting}
+
+In this section we introduce the setting: first the classical stochastic bandit with a model of
+laws known to the \term{w:learner}{learner}, then what is specific to semi-bounded rewards.
+
+\subsection{Classical setting}
+
+A \term{w:learner}{learner} pulls one arm at each round and observes a reward drawn from the law of that arm, given
+the past. It knows a model $\mathcal D$, a set of laws that contains the law of every arm, and no
+horizon. The definitions below are the usual ones, written so that the samples of each arm form an
+i.i.d.\ sequence; the only objects specific to this paper are the classes of semi-bounded laws
+$\Sm$, $\Sm_r$ and $\Mm_r$, which we introduce with the \term{w:instance}{instances}.
+
+\begin{definition}[Semi-bounded laws and instances]\label{def:model}
+\dt{s:S}Let $\Sm$ be the set of probability laws $P$ on $\R$ with $P((-\infty,1])=1$ and
+$\E_P|X|<\infty$. \dt{s:mean}The mean of $P$ is $\mean(P)\coloneqq\E_PX$. \dt{s:M}For $r\ge1$, let
+\begin{equation*}
+  \Sm_r\coloneqq\{P\in\Sm:\E_P|X|^r<\infty\},\qquad\Mm_r\coloneqq\Sm_r\setminus\{\delta_1\},
+\end{equation*}
+where $\delta_x$ is the Dirac mass at $x$. \dt{s:arms}The arms form a finite set $\arms$.
+\dt{s:K}The number of arms is $\Karms\coloneqq|\arms|\ge2$. \dt{w:instance}An \emph{instance} is
+$\nu=(\nu_a)_{a\in\arms}\in\Sm^\arms$. \dt{s:ma}The mean of arm $a$ is $\marm_a\coloneqq \mean(\nu_a)$.
+\dt{s:mstar}The best mean is $\ms\coloneqq\max_a\marm_a$. \dt{s:gap}The gap of arm $a$ is
+$\gap_a\coloneqq\ms-\marm_a$. \dt{w:optimal}An arm is \emph{optimal} if $\gap_a=0$
+\dt{w:subopt}and \emph{suboptimal} if $\gap_a>0$. For a set $\mathcal D$ of laws, $\mathcal D^\arms$
+is the set of \term{w:instance}{instances} whose laws all belong to $\mathcal D$.
+\end{definition}
+
+\begin{definition}[The divergence $\Kinf$ and empirical laws]\label{def:kinf}
+\uses{def:model}
+\dt{s:KL}$\KL(P,Q)\coloneqq\int\log\frac{dP}{dQ}\,dP$ if $P$ is absolutely continuous with respect to $Q$,
+and $+\infty$ otherwise. For a set $\mathcal D$ of laws with finite means, a law $P$ and
+$\mu\in\R$,
+\begin{equation*}
+  \dt{s:kinf}\Kinf(P,\mu;\mathcal D)\coloneqq\inf\{\KL(P,Q):Q\in\mathcal D,\ \mean(Q)>\mu\}\in[0,\infty],
+  \qquad\inf\emptyset\coloneqq+\infty,
+\end{equation*}
+and $\Kinf(P,\mu)\coloneqq\Kinf(P,\mu;\Sm)$. \dt{s:hP}For reals $x_1,\dots,x_s$ ($s\ge1$), let
+$\hP[x_{1:s}]\coloneqq\frac1s\sum_{l=1}^s\delta_{x_l}$ be their empirical law. \dt{s:barx}Their mean
+is $\bx_s\coloneqq\frac1s\sum_{l=1}^sx_l$.
+\end{definition}
+
+\begin{definition}[Runs, learners and regret]\label{def:run}
+\uses{def:model, def:kinf}
+Fix an \term{w:instance}{instance} $\nu\in\Sm^\arms$. \dt{s:X}On a probability space $(\Omega,\mathcal F,\Prob)$, let
+$(\Xs_{a,s})_{a\in\arms,\,s\ge1}$ be independent random variables with $\Xs_{a,s}\sim\nu_a$,
+\dt{s:U}and let $\Useed$ be uniform on $[0,1]$ and independent of them. \dt{w:learner}A \emph{learner} is a
+sequence of measurable maps $(\pi_t)_{t\ge0}$. \dt{s:A}At round $t=0,1,2,\dots$ it pulls the arm
+\begin{equation*}
+  \Ap_t\coloneqq\pi_t(\Useed,\Ap_0,\Ob_0,\dots,\Ap_{t-1},\Ob_{t-1})\in\arms
+\end{equation*}
+\dt{s:O}and observes $\Ob_t\coloneqq \Xs_{\Ap_t,\Np_{\Ap_t}(t)+1}$, where
+\begin{equation*}
+  \dt{s:N}\Np_a(t)\coloneqq|\{u<t:\Ap_u=a\}|
+\end{equation*}
+is the number of pulls of arm $a$ before round $t$. The horizon $T\ge1$ consists of the rounds
+$0,\dots,T-1$, and $\Np_a(T)$ is the number of pulls of $a$ among them. The regret is
+\begin{equation*}
+  \dt{s:R}\Reg_T\coloneqq\sum_{a\in\arms}\gap_a\E \Np_a(T).
+\end{equation*}
+\dt{s:hnu}For an arm $a$ and $s\ge1$, $\hnu_{a,s}\coloneqq\hP[\Xs_{a,1:s}]$, \dt{s:hm}and $\hm_{a,s}$ is its mean.
+\end{definition}
+
+Given the past, $\Ob_t$ has the law $\nu_{\Ap_t}$: this is the usual bandit model, written so that
+the samples of each arm form an i.i.d.\ sequence. \dt{w:anytime}Every \term{w:learner}{learner} here is
+\emph{anytime}: it does not know $T$.
+
+\begin{definition}[Consistency]\label{def:classes}
+\uses{def:model, def:run}
+Let $\mathcal D\subseteq\Sm$. \dt{w:consistent}A \term{w:learner}{learner} is \emph{consistent} on $\mathcal D$ if $\Reg_T=o(T^p)$ for
+every $p>0$ and every $\nu\in\mathcal D^\arms$ \citep[Definition~16.1]{LS}. \dt{w:ufc}It is \emph{uniformly fast
+convergent} on $\mathcal D$ if $\E \Np_a(T)=o(T^p)$ for every $p\in(0,1]$, every $\nu\in\mathcal D^\arms$
+and every \term{w:subopt}{suboptimal} arm $a$ \citep[Definition~1]{GMS19}.
+\end{definition}
+
+A \term{w:consistent}{consistent} \term{w:learner}{learner} is \term{w:ufc}{uniformly fast convergent}, because $\gap_a\E \Np_a(T)\le \Reg_T$ and
+$\gap_a>0$ for a \term{w:subopt}{suboptimal} arm.
+
+\subsection{Semi-bounded rewards}
+
+A law of $\Sm$ with mean $1$ is $\delta_1$, so
+\begin{equation*}
+  \ms<1\quad\text{if and only if no arm has the law }\delta_1;
+\end{equation*}
+in particular every \term{w:instance}{instance} of $\Mm_r^\arms$ has $\ms<1$.
+
+The inequality $\mean(Q)>\mu$ in Definition~\ref{def:kinf} is strict. For $\mu\ge1$ no law of $\Sm$ has a
+mean above $\mu$, so $\Kinf(P,\mu)=+\infty$. For $\mu<1$ and $P\in\Sm$, \citet{HT15} proved the dual
+formula
+\begin{equation}\label{eq:dual}
+  \Kinf(P,\mu)=\max_{0\le\lambda\le1/(1-\mu)}\E_P\big[\log\big(1-\lambda(X-\mu)\big)\big]
+\end{equation}
+(Lemma~\ref{cite:HT15-thm2}). The properties of $\Kinf$ that we use are collected in
+Appendix~\ref{sec:dual}.
+
+\paragraph{Notational convention} Rounds are numbered from $0$, and $\Np_a(T)$ counts the pulls in
+the rounds $0,\dots,T-1$. $\log$ is the natural logarithm; $x^\pm\coloneqq\max\{\pm x,0\}$;
+$\ind\{E\}=\ind_E$ is the indicator of $E$; $\lfloor x\rfloor$ is the integer part; $\E_P$ and
+$\Prob_P$ refer to a generic $X\sim P$. Appendix~\ref{sec:notation} lists the symbols.
+
+% ----------------------------------------------------------------
+\section{The algorithm IMED}\label{sec:algorithm}
+
+In this section we recall \imed{}, then fix the one convention we add: the index of an
+\term{w:leader}{empirical leader} when an arm has observed only the reward $1$.
+
+\subsection{IMED in the classical setting}
+
+For a model with a known support, \citet{HT10} and \citet[Algorithm~1]{HT15} compare each arm with
+the largest empirical mean through the divergence $\Kinf$. After $n$ pulls of arm $a$, with empirical
+law $\hat\nu$, and with the largest empirical mean $\hat m^\star$, the index of \citet{HT15} is
+\begin{equation*}
+  n\,\Kinf(\hat\nu,\hat m^\star)+\log n,
+\end{equation*}
+and \imed{} pulls an arm whose index is minimal. Unlike an upper confidence bound, this index
+needs no inversion of $\Kinf$, and for $\hat m^\star<1$ it is a one-dimensional concave maximisation by
+\eqref{eq:dual}.
+
+\subsection{IMED on semi-bounded rewards}
+
+We use the same index, with one convention: the divergence term of an \term{w:leader}{empirical leader} is $0$.
+
+\begin{definition}[IMED]\label{def:imed}
+\uses{def:model, def:kinf, def:run}
+\imed{} is the \term{w:learner}{learner} of Algorithm~\ref{alg:imed}. At rounds $t<\Karms$ it pulls each arm once. At a
+round $t\ge \Karms$, every arm has $\Np_a(t)\ge1$; \dt{s:hmt}let $\hmt_a(t)\coloneqq\hm_{a,\Np_a(t)}$,
+\dt{s:hnut}$\hnut_a(t)\coloneqq\hnu_{a,\Np_a(t)}$ \dt{s:hms}and $\hms(t)\coloneqq\max_{a\in\arms}\hmt_a(t)$.
+\dt{w:leader}An arm with $\hmt_a(t)=\hms(t)$ is an \emph{empirical leader}. \dt{s:D}Let
+\[
+  \Dv_a(t)\coloneqq\begin{cases}0&\text{if $a$ is an \term{w:leader}{empirical leader},}\\
+  \Kinf(\hnut_a(t),\hms(t))&\text{otherwise.}\end{cases}
+\]
+\dt{s:I}The index of arm $a$ is
+\begin{equation}\label{eq:index}
+  \Ix_a(t)\coloneqq \Np_a(t)\Dv_a(t)+\log \Np_a(t)\in[0,\infty],
+\end{equation}
+\dt{s:Is}and the minimal index is $\Is(t)\coloneqq\min_a\Ix_a(t)$. \imed{} pulls an arm $\Ap_t$ with
+$\Ix_{\Ap_t}(t)=\Is(t)$. \dt{w:tie}A \emph{tie rule} chooses among the minimisers, and the order of the
+first $\Karms$ rounds, as a measurable function of $\Useed$ and of the past; every result below holds for every
+\term{w:tie}{tie rule}.
+\end{definition}
+
+Intuitively, the term $\Np_a(t)\Dv_a(t)$ is large when the samples of arm $a$ are unlikely under every
+law whose mean exceeds the best empirical mean, and the term $\log \Np_a(t)$ grows with the count and
+forces the exploration of the other arms.
+
+When $\hms(t)<1$, the convention changes nothing: \imed{} is then the algorithm of
+\citet[Algorithm~1]{HT15}. The case $\hms(t)=1$, and why the convention matters there, is
+discussed in Section~\ref{sec:upper-ht15}.
+
+\begin{algorithm}[t]
+\caption{\texttt{IMED} (Indexed Minimum Empirical Divergence)}\label{alg:imed}
+\begin{algorithmic}[1]
+\Require the arm set $\arms$; no horizon, no bound on the rewards other than $1$, no moment
+\For{$t=0,1,\dots,\Karms-1$}
+  \State pull each arm once, in an order given by the \term{w:tie}{tie rule}
+\EndFor
+\For{$t=\Karms,\Karms+1,\dots$}
+  \State $\hmt_a(t)\gets\hm_{a,\Np_a(t)}$ and $\hnut_a(t)\gets\hnu_{a,\Np_a(t)}$ for every arm $a$;
+    $\hms(t)\gets\max_a\hmt_a(t)$
+  \State $\Dv_a(t)\gets0$ if $\hmt_a(t)=\hms(t)$, else $\Dv_a(t)\gets\Kinf(\hnut_a(t),\hms(t))$
+  \State $\Ix_a(t)\gets \Np_a(t)\Dv_a(t)+\log \Np_a(t)$
+  \State pull $\Ap_t\in\argmin_a\Ix_a(t)$, chosen by the \term{w:tie}{tie rule}
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+
+% ----------------------------------------------------------------
+\section{Regret upper bound under a finite variance}\label{sec:upper}
+
+In this section we state our finite-time bound, then recall the bound of \citet{HT15} under an
+exponential moment and compare the two. Both have the same first-order term; they differ in the term
+that counts the rounds at which the \term{w:optimal}{optimal} arm looks bad.
+
+\subsection{The bound under a finite variance}
+
+Our bound uses the rate of a Chernoff bound for the \term{w:subopt}{suboptimal} arm, at a maximiser of the dual
+formula~\eqref{eq:dual}, and the expected supremum of an index-like functional of the
+\term{w:optimal}{optimal} arm's samples.
+
+\begin{definition}[Rate of a suboptimal arm]\label{def:rate}
+\uses{def:model, def:kinf, lem:optimizer}
+Let $P\in\Sm$ and $\mean(P)<\mu<1$. The map $\lambda\mapsto\E_P\log(1-\lambda(X-\mu))$ attains its
+maximum on $[0,1/(1-\mu)]$ (Lemma~\ref{lem:optimizer}); \dt{s:lst}let $\lst(P,\mu)$ be a maximiser,
+fixed once and for all. For $u\in\R$, let
+\begin{equation*}
+  \dt{s:Lt}\Lt(P,\mu,u)\coloneqq\sup_{\eta\in[-1,0]}\Big(\eta u-\log\E_P\big[\big(1-\lst(P,\mu)(X-\mu)\big)^{\eta}\big]\Big).
+\end{equation*}
+\dt{s:Ki}For an \term{w:instance}{instance} with $\ms<1$, a \term{w:subopt}{suboptimal} arm $i$ and $\delta>0$, let
+$\Ki_i\coloneqq\Kinf(\nu_i,\ms)$ and $\Lt_i(\delta)\coloneqq\Lt(\nu_i,\ms,\Ki_i-\delta/(1-\ms))$.
+\end{definition}
+
+\begin{definition}[Deviation functional of the optimal arm]\label{def:dev}
+\uses{def:model, def:kinf}
+For $\mu\in\R$, $s\ge1$ and a sequence $x=(x_1,x_2,\dots)$ of reals in $(-\infty,1]$, let
+\begin{equation*}
+  \dt{s:w}\ws_s(x;\mu)\coloneqq s\exp\big(s\Kinf(\hP[x_{1:s}],\mu)\big)\,\ind\{\bx_s\le\mu\}\in[0,\infty],
+\end{equation*}
+with $\exp(+\infty)\coloneqq+\infty$ and $0\cdot\infty\coloneqq0$. For $P\in\Sm$, let
+\begin{equation*}
+  \dt{s:Gamma}\Gam(P,\mu)\coloneqq\E\Big[\sup_{s\ge1}\ws_s(X;\mu)\Big]\in[0,\infty],
+\end{equation*}
+where $X=(X_1,X_2,\dots)$ is an i.i.d.\ sequence of law $P$.
+\end{definition}
+
+The map $x_{1:s}\mapsto\Kinf(\hP[x_{1:s}],\mu)$ is Borel (Lemma~\ref{lem:dualfacts}(c), \emph{empirical
+dual}), so $\Gam$ is well defined. Note that $\log \ws_s(x;\mu)$ is the index \eqref{eq:index} of an arm
+with the samples $x_{1:s}$, computed at the reference level $\mu$ instead of $\hms(t)$.
+
+We obtain the following guarantee for \imed{}.
+
+\begin{theorem}[IMED under a finite variance of one optimal arm]\label{thm:main}
+\uses{def:model, def:kinf, def:run, def:imed, def:dev, def:rate}
+Let $\nu\in\Sm^\arms$ be an \term{w:instance}{instance} with $\ms<1$, and let $j$ be an \term{w:optimal}{optimal} arm with
+$\nu_j\in\Sm_2$. Let $i$ be a \term{w:subopt}{suboptimal} arm. Then $0<\Ki_i<\infty$. Let
+$\delta\in(0,(1-\ms)\Ki_i/2)$. Then $\Lt_i(\delta)>0$ and $\Gam(\nu_j,\ms-\delta)<\infty$, and
+\imed{}, with any \term{w:tie}{tie rule}, satisfies for every $T\ge1$
+\[
+  \E \Np_i(T)\le1+\frac{\log T}{\Ki_i-2\delta/(1-\ms)}+\frac{1}{1-e^{-\Lt_i(\delta)}}
+  +\Gam(\nu_j,\ms-\delta).
+\]
+\end{theorem}
+
+(See the proof in Appendix~\ref{sec:proof-main}.)
+
+\paragraph{Nature of the constants} The first three terms are explicit. The rate $\Lt_i(\delta)$
+depends only on $(\nu_i,\ms,\delta)$ and uses no moment of $\nu_i$ beyond its mean
+(Lemma~\ref{lem:subopt}). The last term depends only on $(\nu_j,\delta)$. Inequality~\eqref{eq:gammabound}
+of Appendix~\ref{sec:proof-key} bounds it by an explicit expression in $\delta$, $1-\ms+\delta$, the
+first and second moments of $(X-\ms+\delta)^-$ and the second moment of $X-\ms+\delta$ under
+$\nu_j$, and an exponent $\gamma\in(1,2]$ with
+\begin{equation*}
+  \E_{\nu_j}\Big[\Big(\frac{1-X}{1-\ms+\delta}\Big)^\gamma\Big]\le1.
+\end{equation*}
+Such a $\gamma$ exists (Lemma~\ref{lem:moments}), but it is not explicit in general. We do not track
+the dependence on $\delta$ as $\delta\to0$.
+
+\paragraph{The range of $\delta$} The admissible $\delta$ satisfy $\delta<\gap_i/2$, because
+\begin{equation*}
+  (1-\ms)\Ki_i\le\gap_i
+\end{equation*}
+(Lemmas~\ref{lem:dualfacts}(b) and~\ref{lem:shift} at the levels $\marm_i$ and $\ms$). Unlike in
+Theorem~\ref{cite:HT15-thm3}, where $\delta<\min_{i'}\gap_{i'}/2$, the range involves arm $i$ only: it
+is the range on which the second term is finite and positive.
+
+\paragraph{Scope} Theorem~\ref{thm:main} is a first-order result: optimising $\delta$ gives a
+remainder $o(\log T)$ without a rate, whereas \citet[Corollary~4]{HT15} gives $O((\log T)^{10/11})$
+under an exponential moment. A finite variance is sufficient, not necessary: Theorem~\ref{thm:counter}
+shows that it cannot be replaced by a lower moment for power-law tails, but laws with an infinite
+variance and a tail lighter than $y^{-2}$ (for example $\Prob(X\le-y)$ of order $1/(y^2\log y)$) are
+covered by neither theorem. The assumption $\ms<1$ cannot be dropped: if an \term{w:optimal}{optimal} arm has the law
+$\delta_1$, every non-leader has an infinite index. Only \imed{} is analysed.
+
+\subsection{Comparison with the bound under an exponential moment}\label{sec:upper-ht15}
+
+We now recall the finite-time bound of \citet{HT15}, of which Theorem~\ref{thm:main} keeps the first
+two terms. \citet{HT15} write $\mathcal A$ for the set of all laws on $(-\infty,1]$, $F$ for a law, $\mathrm
+E(F)$ for its mean, $D(F\|G)$ for $\KL(F,G)$, $D_{\inf}(F,\mu;\mathcal A)$ for
+$\inf\{D(F\|G):G\in\mathcal A,\ \mathrm E(G)>\mu\}$, $\nu$ for the dual variable $\lambda$,
+$L_{\max}(F,\mu)$ for the right-hand side of~\eqref{eq:dual}, $T_i(n)$ for $\Np_i(T)$ (pulls in the
+first $n=T$ rounds), $\mu_i$, $\mu^*$ for $\marm_i$, $\ms$, $\mathcal I_{\mathrm{opt}}$ for the set of optimal
+arms, $\nu_i^*$ for $\lst(\nu_i,\ms)$, and $\lambda_{i,\mu}$ for $\gamma_{i,\mu}$ below (with $P=\nu_i$, the
+supremum of the exponents $\gamma$ with $\phi(\gamma)\le1$ in Lemma~\ref{lem:moments}, \emph{moments
+of the dual statistic}: the letter $\gamma$ always denotes such an exponent). A law
+of $(-\infty,1]$ with mean above $\mu$ has a finite mean, so $D_{\inf}(P,\mu;\mathcal A)=\Kinf(P,\mu)$
+for $P\in\Sm$.
+
+
+% Verbatim: literature/notes/HT15.md, (4)-(6) and Theorem 3.
+\begin{theorem}[{From \citet[Theorem~3]{HT15}}]\label{cite:HT15-thm3}
+\uses{def:model, def:kinf, def:run, def:imed, def:rate}
+For an arm $a$ and $\mu<1$, let $\gamma_{a,\mu}\coloneqq\sup\{\gamma\in\R\cup\{\infty\}:
+\E_{\nu_a}[((1-X)/(1-\mu))^\gamma]\le1\}$ and $\Lambda_a^*(x)\coloneqq\sup_{\eta\in\R}\{\eta x-\log
+\E_{\nu_a}[e^{\eta X}]\}$; for a suboptimal arm $i$, let
+$\Lt_i^*(x)\coloneqq\sup_{\eta\in\R}\{\eta x-\log\E_{\nu_i}[(1-\lst(\nu_i,\ms)(X-\ms))^\eta]\}$.
+Let $\nu\in\Sm^\arms$ with $\ms<1$, and assume that $\E_{\nu_j}[e^{\eta X}]<\infty$ for every $\eta$ in
+a neighbourhood of $0$, for some \term{w:optimal}{optimal} arm $j$. Then, for every fixed
+$0<\delta<\min_{i':\gap_{i'}>0}\gap_{i'}/2$, every \term{w:subopt}{suboptimal} arm $i$ and every $T\ge1$, \imed{}
+satisfies
+\begin{align*}
+  \E \Np_i(T)\le{}&\frac{\log T}{\Ki_i-\frac{2\delta}{1-\ms}}+\frac{1}{1-e^{-\Lt_i^*(\Ki_i-\frac{\delta}{1-\ms})}}\\
+  &+\min_{j'\text{ optimal}}\frac{6e}{(1-1/\gamma_{j',\ms-\delta})\big(1-e^{-(1-1/\gamma_{j',\ms-\delta})\Lambda_{j'}^*(\ms-\delta)}\big)^3}.
+\end{align*}
+\end{theorem}
+
+\citet{HT15} state it for their Algorithm~1 with an arbitrary \term{w:tie}{tie rule}. \imed{} of
+Definition~\ref{def:imed} is that algorithm with one choice when every index of
+\citet[Algorithm~1]{HT15} is infinite (the remark below), so this restatement is a special
+case of theirs.
+
+\begin{remark}[Relation to the algorithm of \citet{HT15}]
+If $\hms(t)<1$, then $\Kinf(\hnut_a(t),\hms(t))=0$ for an \term{w:leader}{empirical leader} $a$
+(Lemma~\ref{lem:dualfacts}(b), \emph{zero at or above the mean}), so $\Ix_a(t)$ is the index of
+\citet[Algorithm~1]{HT15}. If $\hms(t)=1$ (an arm has observed only the reward $1$), their
+formula gives $+\infty$ to every arm, since no law of $\Sm$ has a mean above $1$, and
+Definition~\ref{def:imed} pulls an \term{w:leader}{empirical leader}: one admissible choice of their arbitrary tie
+rule. The choice matters. The proof of \citet[Theorem~3]{HT15} uses that a leader's index is at most
+the logarithm of the round, and a rule that pulls a \term{w:subopt}{suboptimal} arm whenever every index is infinite
+pulls it at every round with positive probability if an \term{w:optimal}{optimal} arm has an atom at $1$ (its first
+reward may be $1$, after which its empirical law never changes).
+\end{remark}
+
+\paragraph{The difference is the last term} The logarithmic term and the term
+in $\Lt_i(\delta)$ are those of Theorem~\ref{cite:HT15-thm3}, with the supremum in the rate restricted
+to $\eta\in[-1,0]$; the additional $1$ counts the first pull. The difference is the last term. In
+Theorem~\ref{cite:HT15-thm3} it is a function of Cram\'er's rate $\Lambda_j^*(\ms-\delta)$ of the lower
+tail of the empirical mean of arm $j$, which is positive only if
+\begin{equation*}
+  \E_{\nu_j}e^{-\eta X}<\infty\quad\text{for some }\eta>0.
+\end{equation*}
+Here it is $\Gam(\nu_j,\ms-\delta)$, finite as soon as $\nu_j$ has a finite variance
+(Proposition~\ref{prop:key}). By Lemma~\ref{lem:sup}, $\Gam(\nu_j,\ms-\delta)$ bounds the expected
+number of rounds at which the \term{w:subopt}{suboptimal} arm $i$ is pulled while every empirical mean is at most
+$\ms-\delta$: it is the price of an \term{w:optimal}{optimal} arm that looks bad. As $T\to\infty$ with $\delta$ fixed, the
+term $\log T/(\Ki_i-2\delta/(1-\ms))$ dominates.
+
+% ----------------------------------------------------------------
+\section{Asymptotic optimality}\label{sec:optimal}
+
+In this section we first recall the lower bound for \term{w:ufc}{uniformly fast convergent} \term{w:learner}{learners}, then show
+that \imed{} attains it on the semi-bounded laws with a finite moment of order $r\ge2$.
+
+\subsection{Lower bound in the classical setting}
+
+\citet{GMS19} write $\underline\nu$ for an \term{w:instance}{instance}, $\psi$ for a \term{w:learner}{learner}, $N_{\psi,a}(T)$ for
+$\Np_a(T)$ (pulls at the rounds $1,\dots,T$, the same count as ours), $\mu^\star$ for $\ms$, $\ln$ for
+$\log$ and $\Kinf(\nu_a,x,\mathcal D)$ for $\Kinf(\nu_a,x;\mathcal D)$, defined with the same strict
+inequality; uniform fast convergence is \citet[Definition~1]{GMS19}, as in
+Definition~\ref{def:classes}.
+
+% Verbatim: literature/notes/GMS19.md, Theorem 1.
+\begin{theorem}[{From \citet[Theorem~1]{GMS19}}]\label{cite:GMS19-thm1}
+\uses{def:model, def:kinf, def:run, def:classes}
+Let $\mathcal D$ be a set of laws on $\R$ with finite means, and let a \term{w:learner}{learner} be uniformly fast
+convergent on $\mathcal D$. Then for every $\nu\in\mathcal D^\arms$ and every \term{w:subopt}{suboptimal} arm $a$,
+$\liminf_{T\to\infty}\E \Np_a(T)/\log T\ge1/\Kinf(\nu_a,\ms;\mathcal D)$.
+\end{theorem}
+
+\subsection{Asymptotic optimality of IMED}
+
+\begin{corollary}[Asymptotic optimality]\label{cor:optimal}
+\uses{def:model, def:kinf, def:run, def:classes, def:imed, thm:main}
+Consider \imed{} with any \term{w:tie}{tie rule}.
+\begin{enumerate}[label=(\alph*)]
+\item Under the assumptions of Theorem~\ref{thm:main}, \imed{} satisfies
+  \[
+    \limsup_{T\to\infty}\frac{\E \Np_i(T)}{\log T}\le\frac{1}{\Kinf(\nu_i,\ms)}.
+  \]
+\item Let $r\ge2$. Every \term{w:instance}{instance} of $\Mm_r^\arms$ has $\ms<1$, and \imed{} is \term{w:consistent}{consistent} and
+  \term{w:ufc}{uniformly fast convergent} on $\Mm_r$. For every $\nu\in\Mm_r^\arms$ and every \term{w:subopt}{suboptimal} arm
+  $i$,
+  \[
+    \lim_{T\to\infty}\frac{\E \Np_i(T)}{\log T}=\frac{1}{\Kinf(\nu_i,\ms)}=\frac{1}{\Kinf(\nu_i,\ms;\Mm_r)},
+  \]
+  and every \term{w:learner}{learner} that is \term{w:ufc}{uniformly fast convergent} on $\Mm_r$ (in particular every \term{w:consistent}{consistent}
+  one) satisfies $\liminf_{T\to\infty}\E \Np_i(T)/\log T\ge1/\Kinf(\nu_i,\ms;\Mm_r)$. Hence
+  $\lim_T\Reg_T/\log T=\sum_{i:\gap_i>0}\gap_i/\Kinf(\nu_i,\ms)$ for \imed{}, the smallest possible
+  $\liminf_T\Reg_T/\log T$ for a \term{w:learner}{learner} \term{w:ufc}{uniformly fast convergent} on $\Mm_r$.
+\end{enumerate}
+\end{corollary}
+
+(See the proof in Appendix~\ref{sec:proof-optimal}.)
+
+\paragraph{Comparison with the lower bound} Item (b) pairs the upper bound of Theorem~\ref{thm:main}
+with the lower bound of Theorem~\ref{cite:GMS19-thm1} in the same class, the \term{w:learner}{learners} uniformly fast
+convergent on $\Mm_r$: the first-order constant $\sum_{i:\gap_i>0}\gap_i/\Kinf(\nu_i,\ms)$ cannot be
+improved, and \imed{} attains it on every \term{w:instance}{instance} of $\Mm_r^\arms$. The case $r=2+p$ is the class of
+the conjecture of \citet[Section~9]{HT15}. The law $\delta_1$ is excluded because an \term{w:instance}{instance} with an
+arm $\delta_1$ has $\ms=1$. The equality of the two divergences in (b) is Lemma~\ref{lem:class}: the
+lower-bound constant does not depend on the moment class.
+
+% ----------------------------------------------------------------
+\section{Lower bounds for heavier lower tails}\label{sec:counter}
+
+In this section we show that a finite variance cannot be replaced by a lower moment on the scale of
+power-law lower tails: with a tail $\kappa y^{-q}$, $1<q<2$, \imed{} is not \term{w:consistent}{consistent}, and with
+a tail of order $y^{-2}$ it misses the lower-bound constant.
+
+\begin{theorem}[Heavier lower tails: IMED fails]\label{thm:counter}
+\uses{def:model, def:kinf, def:run, def:imed}
+Let $\arms=\{1,2\}$, $\nu_2=\delta_0$, and $\nu_1=P\in\Sm$ with $\mean(P)\in(0,1)$, so that arm $1$ is
+optimal and arm $2$ \term{w:subopt}{suboptimal}. For $X\sim P$, let $Y\coloneqq-X$. Consider \imed{} with any \term{w:tie}{tie rule}.
+\begin{enumerate}[label=(\roman*)]
+\item If there are $q\in(1,2)$, $\kappa>0$ and $y_0>0$ with $\Prob(Y\ge y)\ge\kappa y^{-q}$ for
+  every $y\ge y_0$, then there is $T_0$, depending on $P$, such that for every $T\ge T_0$,
+  \[
+    \E \Np_2(T)\ge\frac{\kappa\,2^q}{64\,e^q}\,T^{2-q}.
+  \]
+\item If there are $0<\kappa\le\kappa'$ and $y_0>0$ with
+  $\kappa y^{-2}\le\Prob(Y\ge y)\le\kappa'y^{-2}$ for every $y\ge y_0$, then
+  \[
+    \liminf_{T\to\infty}\frac{\E \Np_2(T)}{\log T}\ge\frac{1}{\log(1/(1-\mean(P)))}+\frac{\kappa}{4e},
+    \qquad\text{where }\ \Kinf(\delta_0,\mean(P))=\log\frac{1}{1-\mean(P)}.
+  \]
+\end{enumerate}
+\end{theorem}
+
+(See the proof in Appendix~\ref{sec:proofs-counter}.) For $Y$ with a finite mean, the hypothesis of
+(i) implies that $\E|X|^r=\infty$ for $r\ge q$; it allows $\E|X|^r<\infty$ for every $r<q$.
+
+\begin{corollary}[Pareto lower tails]\label{cor:pareto}
+\uses{def:model, def:kinf, def:run, def:classes, def:imed, thm:counter, cite:GMS19-thm1}
+For $q>1$ and $0<\varpi<(q-1)/(2q-1)$, let $V$ satisfy $\Prob(V\ge v)=v^{-q}$ for $v\ge1$, and let
+\dt{s:Pq}$\Pq_{q,\varpi}$ be the law of $X$ equal to $1$ with probability $1-\varpi$ and to $-V$ with probability
+$\varpi$. Then $\Pq_{q,\varpi}\in\Sm$, $\mean(\Pq_{q,\varpi})=1-\varpi(2q-1)/(q-1)\in(0,1)$, and $\E|X|^r<\infty$ if and
+only if $r<q$. Consider \imed{} on the \term{w:instance}{instance} $(\nu_1,\nu_2)=(\Pq_{q,\varpi},\delta_0)$, and let
+$m\coloneqq \mean(\Pq_{q,\varpi})$.
+\begin{enumerate}[label=(\alph*)]
+\item If $1<q<2$, then $\Reg_T\ge m\varpi2^qe^{-q}T^{2-q}/64$ for every large $T$. Hence, for every
+  $p\in(0,1)$, \imed{} is not \term{w:consistent}{consistent} on $\Sm_{1+p}$ with two arms: take $q\in(1+p,2)$.
+\item If $q=2$, then $\liminf_T\Reg_T/\log T\ge m\big(1/\log\frac1{1-m}+\varpi/(4e)\big)$. Let
+  $\mathcal C\subseteq\Sm$ contain $\Pq_{2,\varpi}$ and every law supported by $\{0,1\}$ (for example
+  $\mathcal C=\bigcap_{r<2}\Sm_r$). Then $\Kinf(\delta_0,m;\mathcal C)=\log\frac{1}{1-m}$, and \imed{}
+  satisfies $\liminf_T\E \Np_2(T)/\log T\ge1/\Kinf(\delta_0,m;\mathcal C)+\varpi/(4e)$. So, at this
+  \term{w:instance}{instance} of $\mathcal C^{\{1,2\}}$, the $\liminf$ of \imed{} exceeds by at least $\varpi/(4e)$ the
+  constant that Theorem~\ref{cite:GMS19-thm1} gives for every \term{w:learner}{learner} \term{w:ufc}{uniformly fast convergent} on
+  $\mathcal C$.
+\end{enumerate}
+\end{corollary}
+
+(See the proof in Appendix~\ref{sec:proofs-counter}.)
+
+\paragraph{The threshold, and what is not claimed} Let the optimal arm have a lower tail
+$\Prob(X\le-y)$ of order $y^{-q}$, with $q>1$ for a finite mean. If $q>2$, the variance is finite and
+Theorem~\ref{thm:main} applies. If $q=2$, \imed{} does not attain the lower-bound constant
+(Theorem~\ref{thm:counter}(ii)); we do not know whether its regret is still of order $\log T$. If
+$q<2$, \imed{} is not \term{w:consistent}{consistent}. So, on the scale of power-law tails, the exponent two is the
+threshold. This does not make a finite variance necessary in general: the tails between $y^{-2}$ and
+the square-integrable ones are open (Open question~\ref{oq:boundary}). Nor does it say that fewer
+moments make the problem harder: the lower-bound constant $\log(1/(1-m))$ of
+Corollary~\ref{cor:pareto}(b) is the same in every class containing the laws on $\{0,1\}$. The
+failure is a property of \imed{}, as the next paragraph indicates.
+
+\paragraph{Another algorithm} \citet[Theorem~3.1]{PA26} prove that KLinf-UCB satisfies
+$\limsup_T\E\Np_i(T)/\log T\le1/\mathrm{KL}_{\inf}(\nu_i,\ms)$ on every class of laws that satisfies
+their Assumptions~2.3 and~2.4, where $\mathrm{KL}_{\inf}$ is taken over the class, with the
+inequality $\mean(Q)\ge\mu$. Lemma~\ref{lem:pa-assumptions} (\emph{concentration with a finite mean
+only}) shows that the class $\Mm_1=\Sm\setminus\{\delta_1\}$ satisfies both with a finite mean only:
+over $\Mm_1$, their $\mathrm{KL}_{\inf}$ is $\Kinf$ (part (c)); Assumption~2.3 holds with
+$g(n)=\log(1+n)+C_2$ for every $C_2>0$ (part (a)); Assumption~2.4 holds at every level in
+$(\mean(P),1)$ (part (b)). Assumption~2.4 is stated there at every level above the mean, and fails on
+$\Mm_1$ at the levels $\mu\ge1$, where both divergences are infinite (as it does for laws on $[a,b]$
+at the levels above $b$, one of their examples); the proof of \citet[Theorem~3.1]{PA26} uses it at
+the best mean only, which is below $1$ on $\Mm_1^\arms$. So their theorem indicates that KLinf-UCB,
+computed with $\Kinf$, attains the constant $1/\Kinf(\nu_i,\ms)$ on every \term{w:instance}{instance} of
+$\Mm_1^\arms$, with no moment condition, at the price of inverting $\Kinf$ at each round. We have not
+checked their proof line by line, and we state this as a reduction, not as a theorem;
+Open question~\ref{oq:finite-mean} asks for an index policy of the type of \imed{} with the same
+property.
+
+\paragraph{The mechanism} \imed{} compares each arm with the largest \emph{empirical mean}.
+One negative reward $-y$ of the \term{w:optimal}{optimal} arm, with $y$ larger than the sum of its other rewards, puts
+its empirical mean below $0$: the deterministic arm becomes the \term{w:leader}{empirical leader}, with index
+$\log \Np_2$, while the index of the \term{w:optimal}{optimal} arm stays frozen at a value of at least $\log(y/e)$
+(Lemma~\ref{lem:jump}). The \term{w:subopt}{suboptimal} arm is then pulled until $\Np_2$ reaches $y/e$. Under a tail
+$y^{-q}$, a reward of order $T$ occurs among the first $T/4$ pulls of the \term{w:optimal}{optimal} arm with probability
+of order $T^{1-q}$, and costs of order $T$ pulls: this gives (i). For $q=2$, the jumps of size
+$y\approx s$ at the $s$-th pull add up to an extra term of order $\log T$: this gives (ii).
+
+
+% ----------------------------------------------------------------
+\section{How the proofs work}\label{sec:overview}
+
+In this section we give the architecture of the proofs: the decomposition of \citet{HT15}
+(Section~\ref{sec:overview-decomp}), where their argument needs an exponential moment
+(Section~\ref{sec:overview-mgf}), the two new steps (Section~\ref{sec:overview-new}), how the pieces give
+Theorem~\ref{thm:main} (Section~\ref{sec:overview-combine}) and the mechanism of
+Theorem~\ref{thm:counter} (Section~\ref{sec:overview-counter}).
+
+\subsection{The decomposition}\label{sec:overview-decomp}
+
+Fix a \term{w:subopt}{suboptimal} arm $i$, an \term{w:optimal}{optimal} arm $j$ with a finite variance, $\delta$ as in
+Theorem~\ref{thm:main}, and the level $\mu\coloneqq\ms-\delta$. After the first $\Karms$ rounds, a pull of
+$i$ happens either while every empirical mean is at most $\mu$, or while some empirical mean exceeds
+$\mu$:
+\begin{equation}\label{eq:decomp}
+  \Np_i(T)\le1+\underbrace{\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)\le\mu\}}_{\TA}
+  +\underbrace{\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)>\mu\}}_{\TB}
+\end{equation}
+(Lemma~\ref{lem:decomp}). In $\TB$, the reference level of \imed{} is above $\mu$, so a pull of $i$
+requires its empirical law to be close to a law of mean at least $\mu$; this costs $\log T/\Ki_i$
+pulls at first order and uses no moment (Lemmas~\ref{lem:termB} and~\ref{lem:termC}). The term $\TA$
+counts the rounds at which the \term{w:optimal}{optimal} arms look bad. It is the only place where the tails of the
+\term{w:optimal}{optimal} arm matter (Lemma~\ref{lem:termA}).
+
+\subsection{Where the exponential moment enters the analysis of \texorpdfstring{\citet{HT15}}{Honda and Takemura (2015)}}\label{sec:overview-mgf}
+
+\citet[(25)--(26)]{HT15} bound $\TA$ by splitting it according to the value $s$ of $\Np_j(t)$ and
+applying their counting lemma (Lemma~\ref{lem:sup}(a) below) once for each $s$. This gives the sum
+\begin{equation*}
+  \sum_{s\ge1}\ws_s(\Xs_{j,\cdot};\mu),\qquad\text{where }\Xs_{j,\cdot}\coloneqq(\Xs_{j,1},\Xs_{j,2},\dots).
+\end{equation*}
+They bound the expectation of each term by \citet[Proposition~11]{HT15}, in which the probability
+that $\hm_{j,s}\le\mu$ is bounded by Cram\'er's bound $e^{-s\Lambda_j^*(\mu)}$; its rate is positive
+only under an exponential moment of the lower tail. Replacing Cram\'er's bound by a polynomial one does
+not help, because the sum itself has an infinite expectation for many laws with a finite variance.
+
+\begin{lemma}[A summed bound needs three moments]\label{lem:three-moments}
+\uses{def:model, def:kinf, def:dev}
+Let $P\in\Sm$, $\mu<\mean(P)$, and let $X=(X_1,X_2,\dots)$ be i.i.d.\ of law $P$ with
+$\E[(X_1^-)^3]=\infty$. Then
+\[
+  \sum_{s\ge1}\E\,\ws_s(X;\mu)\ge\sum_{s\ge1}s\,\Prob(\bX_s\le\mu)=\infty.
+\]
+\end{lemma}
+
+(See the proof in Appendix~\ref{sec:proof-three}.) This is the necessity half of a one-sided form of
+the theorem of Baum and Katz on convergence rates in the law of large numbers. For one-sided theorems
+of this kind, see also \citet{CL75}, the work that \citet[Section~9]{HT15} cite for the moments of
+order $2+p$ of their conjecture, and \citet{BK65} for the two-sided theorem. With
+$P=\Pq_{q,\varpi}$ of Corollary~\ref{cor:pareto} and $2<q\le3$, the variance is finite and the summed
+bound is infinite.
+
+
+\subsection{The two new steps}\label{sec:overview-new}
+
+The first step counts the same rounds by a supremum over $s$ instead of a sum.
+
+\begin{lemma}[Counting the rounds at which every empirical mean is low]\label{lem:sup}
+\uses{def:model, def:kinf, def:run, def:imed, def:dev}
+Let $\nu\in\Sm^\arms$ and consider \imed{} with any \term{w:tie}{tie rule}. Then, for every outcome:
+\begin{enumerate}[label=(\alph*)]
+\item for every arm $i$ and every $x\in\R$,
+  $|\{t\ge \Karms:\Ap_t=i,\ \Is(t)\le x\}|\le e^x$;
+\item for all arms $i,j$ and every $\mu\in\R$,
+  $|\{t\ge \Karms:\Ap_t=i,\ \hms(t)\le\mu\}|\le\sup_{s\ge1}\ws_s(\Xs_{j,\cdot};\mu)$.
+\end{enumerate}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-sup}.) Part~(a) is \citet[Lemma~13]{HT15}.
+\citet{HT15} apply it once for each value $s$ of $\Np_j(t)$, which counts every round once for each $s$
+and gives a sum. Part~(b) applies it once, at the random level
+\begin{equation*}
+  M\coloneqq\sup\big\{s\Kinf(\hnu_{j,s},\mu)+\log s:\ s\ge1,\ \hm_{j,s}\le\mu\big\},
+\end{equation*}
+which gives the supremum. The second step bounds the expectation of that supremum.
+
+\begin{proposition}[Key deviation bound]\label{prop:key}
+\uses{def:model, def:kinf, def:dev}
+Let $P\in\Sm_2$ and $\mu<\mean(P)$. Then $\Gam(P,\mu)<\infty$. An explicit upper bound is
+\eqref{eq:gammabound} in Appendix~\ref{sec:proof-key}.
+\end{proposition}
+
+(See the proof in Appendix~\ref{sec:proof-key}.)
+
+\paragraph{Why the variance enters, and only once} Let $X_1,X_2,\dots$ be i.i.d.\ of law $P$,
+$Z_l\coloneqq X_l-\mu$ and $Y_l\coloneqq Z_l^-$. By the dual formula~\eqref{eq:dual},
+\begin{equation*}
+  \exp\big(s\Kinf(\hP[X_{1:s}],\mu)\big)=\max_{0\le\lambda\le1/(1-\mu)}\prod_{l=1}^s(1-\lambda Z_l).
+\end{equation*}
+A negative sample $Z_l=-y$ contributes the factor $1+\lambda y$, which is \emph{linear} in $y$:
+the Cram\'er bound on the empirical mean would make it exponential. Split the indices $l\le s$ into
+the \emph{big jumps}, with $Y_l>\beta s$ for a small constant $\beta$, and the \emph{good part}.
+If the good part has a sum of at least $s\delta/2$, where $\delta\coloneqq \mean(P)-\mu$, and there is one
+big jump $l^\star$, then the maximum above is at most $2Y_{l^\star}/(s\delta)$
+(Lemma~\ref{lem:goodpart}), so $\ws_s\le2Y_{l^\star}/\delta$. A given big jump at index $l$ can
+matter only for $s$ with $\beta s<Y_l$ and $s\ge l$, so it contributes to $\sup_s\ws_s$ at most
+$\frac2\delta Y_l\ind\{Y_l>\beta l\}$, and
+\begin{equation*}
+  \E\sum_{l\ge1}\frac2\delta Y_l\ind\{Y_l>\beta l\}\le\frac{2\E Y_1^2}{\beta\delta}.
+\end{equation*}
+This is the only term in which the second moment is indispensable. The other cases are summed
+over $s$: several big jumps (independence gives a factor $(\E[Y_1\ind\{Y_1>\beta s\}])^2$, summable in
+$s$ under a finite variance), many big jumps (Chebyshev's inequality and a H\"older bound with an
+exponent $\gamma>1$, Lemma~\ref{lem:moments}), and a good part that is too small (Bennett's
+inequality, Lemma~\ref{lem:bennett}). Splitting a sum of heavy-tailed variables into its large
+summands and a truncated rest is classical in the large deviations of such sums (see also
+\citealp{FN71,Nag79}); what is specific here is the dual product, in which one big jump costs a
+factor linear in its size.
+
+\paragraph{Relation with the last exit time} Since $\Kinf\ge0$, the functional of
+Definition~\ref{def:dev} satisfies $\ws_s(X;\mu)\ge s\,\ind\{\bX_s\le\mu\}$, so
+\begin{equation*}
+  \sup_{s\ge1}\ws_s(X;\mu)\ge L\coloneqq\sup\{s\ge1:\bX_s\le\mu\}\qquad(\sup\emptyset\coloneqq0),
+\end{equation*}
+the last time at which the random walk $\sum_{l\le s}(X_l-\mu)$, of positive drift, is at most $0$.
+The moments of such last exit times are classical, and a finite second moment of the negative part of
+the steps is the condition for $\E L<\infty$ (see also \citealp{CL75,Jan86}); for a law on
+$(-\infty,1]$ it is a finite variance. So Proposition~\ref{prop:key} can be read as an extension of
+$\E L<\infty$, but not as a corollary of it: $\ws_s$ exceeds $s$ by the factor
+$\exp(s\Kinf(\hP[X_{1:s}],\mu))$, which one big jump makes of the order of the jump, and the proof
+must control this factor.
+
+\subsection{How the pieces give Theorem~\ref{thm:main}}\label{sec:overview-combine}
+
+The two terms of \eqref{eq:decomp} are controlled separately, each by one lemma of
+Appendix~\ref{sec:proof-main}.
+\begin{itemize}[leftmargin=*]
+  \item $\TA$: by Lemma~\ref{lem:sup}(b), $\TA\le\sup_{s\ge1}\ws_s(\Xs_{j,\cdot};\mu)$ on every run, so
+    $\E\TA\le\Gam(\nu_j,\mu)$, finite by Proposition~\ref{prop:key} (Lemma~\ref{lem:termA}).
+  \item $\TB$: at a round counted in $\TB$, the index of an \term{w:leader}{empirical leader} is at most $\log T$,
+    which forces $\Np_i(t)\Kinf(\hnut_i(t),\mu)\le\log T$. Moving the level from $\mu$ to $\ms$ costs
+    $\delta/(1-\ms)$ (Lemma~\ref{lem:shift}), so $\TB$ is at most $\log T/(\Ki_i-2\delta/(1-\ms))$ plus
+    a count $\TC$ of the sample sizes at which the empirical divergence of arm $i$ at the level $\ms$ is
+    abnormally small (Lemma~\ref{lem:termB}); a Chernoff bound at the dual maximiser bounds $\E\TC$
+    without any moment of $\nu_i$ (Lemma~\ref{lem:termC}).
+\end{itemize}
+Adding the bounds gives Theorem~\ref{thm:main}.
+
+\paragraph{Where the difficulty lies} The term $\TB$ is classical. The difficulty is $\TA$ under a
+finite variance only: the summed bound of \citet{HT15} is infinite without a third moment
+(Lemma~\ref{lem:three-moments}), and the supremum of Lemma~\ref{lem:sup}(b) is useful only
+because its expectation can be bounded directly, by the one-big-jump decomposition of
+Proposition~\ref{prop:key}. That proposition is the longest proof of the paper.
+
+\subsection{The mechanism of Theorem~\ref{thm:counter}}\label{sec:overview-counter}
+
+The lower bounds rest on one inequality: after a negative reward $-y$ at the $s$-th pull of the
+\term{w:optimal}{optimal} arm, its index at the reference level $0$ is at least $\log(y/e)$, whatever its other
+rewards (Lemma~\ref{lem:jump}).
+
+\paragraph{Frozen index} In Theorem~\ref{thm:counter}, suppose that the $s$-th pull of arm $1$
+returns $-Y_s$ with $Y_s\ge s-1$. The empirical mean of arm $1$ is then at most $0$, so arm $2$
+($\delta_0$) is an \term{w:leader}{empirical leader} with index $\log \Np_2$, and the reference level is $0$. As long
+as arm $1$ is not pulled, its index stays at its value, at least $\log(Y_s/e)$ by
+Lemma~\ref{lem:jump}. Hence arm $2$ is pulled at every round until $\Np_2\ge Y_s/e$, whatever the tie
+rule. Since the $s$-th reward of arm $1$ is independent of the time of the $s$-th pull, the
+expected excess of $\Np_2$ is a sum over $s$ of tail integrals of $Y$. For (i), one jump $Y_s\ge eT/2$
+among the first $T/4$ pulls of arm $1$ occurs with probability of order $T\Prob(Y\ge eT/2)$ and
+costs $T/2$ pulls. For (ii), the jumps $Y_s\ge s-1$ contribute
+$\sum_s\int_{s-1}^{T}\Prob(Y\ge y)\,dy\approx\kappa\log T$ up to a constant factor, on top of the
+$\log T/\log(1/(1-\mean(P)))$ pulls that \imed{} always spends on a point mass (Lemma~\ref{lem:explore}).
+The proofs are in Appendix~\ref{sec:proofs-counter}.
+
+\paragraph{Map of the appendices} Appendix~\ref{sec:cited} recalls the dual formula of
+\citet{HT15}. Appendix~\ref{sec:dual} proves the properties of $\Kinf$ that we use (monotonicity, dual
+maximiser, level shift, deviations of a \term{w:subopt}{suboptimal} arm, independence of the moment class,
+and the concentration used for KLinf-UCB).
+Appendix~\ref{sec:proof-main} proves Theorem~\ref{thm:main} (the decomposition, one lemma per term,
+and Lemma~\ref{lem:sup}), Appendix~\ref{sec:proof-key} Proposition~\ref{prop:key},
+Appendix~\ref{sec:proof-three} Lemma~\ref{lem:three-moments}, Appendix~\ref{sec:proof-optimal} Corollary~\ref{cor:optimal}, and Appendix~\ref{sec:proofs-counter}
+Theorem~\ref{thm:counter} and Corollary~\ref{cor:pareto}. Appendix~\ref{sec:attribution} gives the
+sources of the techniques and Appendix~\ref{sec:notation} the notation.
+
+% ----------------------------------------------------------------
+\section{Examples and simulations}\label{sec:examples}
+
+In this section we give an \term{w:instance}{instance} satisfying all the hypotheses of Theorem~\ref{thm:main} and none
+of those of Theorem~\ref{cite:HT15-thm3}, the degenerate cases, and simulations of the three regimes.
+
+\begin{example}[A Pareto lower tail with a finite variance]
+Take two arms, $\nu_1=\Pq_{3,1/10}$ of Corollary~\ref{cor:pareto} (the reward is $1$ with probability
+$0.9$ and $-V$ with probability $0.1$, where $\Prob(V\ge v)=v^{-3}$ for $v\ge1$) and
+$\nu_2=\delta_0$. Then $\marm_1=1-0.1\cdot5/2=0.75$, $\gap_2=0.75$, $\E X^2<\infty$ under $\nu_1$,
+and $\E_{\nu_1}e^{-\eta X}=\infty$ for every $\eta>0$. So arm $1$ is the only \term{w:optimal}{optimal} arm and it has
+no moment generating function near $0$: \citet[Theorem~3]{HT15} does not apply, while
+Theorem~\ref{thm:main} does. By Lemma~\ref{lem:dualfacts}(d), $\Kinf(\delta_0,0.75)=\log4\approx1.386$,
+and Corollary~\ref{cor:optimal} gives $\E \Np_2(T)/\log T\to1/\log4\approx0.721$. The \term{w:instance}{instance} belongs
+to $\Mm_r^{\{1,2\}}$ for every $r\in[2,3)$.
+\end{example}
+
+\paragraph{Degenerate cases}
+\begin{itemize}[leftmargin=*]
+\item \emph{Bounded supports.} If every arm has a law on $[a,1]$, all moments are finite and
+  Theorem~\ref{thm:main} applies with any \term{w:optimal}{optimal} arm; its first order is that of
+  \citet[Corollary~4]{HT15}.
+\item \emph{Two Bernoulli arms} with means $p_2<p_1<1$. For $p<\mu<1$, the dual~\eqref{eq:dual} of
+  the Bernoulli law of mean $p$ is maximised at $\lambda=(\mu-p)/(\mu(1-\mu))$, which gives
+  \dt{s:kl}$\Kinf(\cdot,\mu)=\kl(p,\mu)\coloneqq p\log\frac p\mu+(1-p)\log\frac{1-p}{1-\mu}$. So
+  Corollary~\ref{cor:optimal} gives $\E \Np_2(T)/\log T\to1/\kl(p_2,p_1)$, the Lai--Robbins constant
+  of the Bernoulli model.
+\item \emph{Several \term{w:optimal}{optimal} arms.} One \term{w:optimal}{optimal} arm with a finite variance suffices: the others may
+  have any law of $\Sm$, for instance a lower tail $y^{-3/2}$. Theorem~\ref{thm:counter} does not
+  contradict this, because $\hms(t)\ge\hmt_j(t)$ for the \term{w:optimal}{optimal} arm $j$ with a finite
+  variance, so an outlier of another \term{w:optimal}{optimal} arm does not lower the reference level.
+\item \emph{A deterministic \term{w:optimal}{optimal} arm.} If $\nu_j=\delta_{\ms}$, then $\bx_s=\ms>\mu$ for every
+  sample of arm $j$, so $\Gam(\delta_{\ms},\ms-\delta)=0$.
+\item \emph{Atoms at $1$.} If an arm has observed only the reward $1$, \imed{} pulls an empirical
+  leader (Definition~\ref{def:imed} and the remark of Section~\ref{sec:upper-ht15}); the \term{w:instance}{instances} of
+  Corollary~\ref{cor:pareto} have such an atom.
+\end{itemize}
+
+\paragraph{Setup of the simulations} We simulate \imed{} on the instances $(\Pq_{q,1/10},\delta_0)$ of
+Corollary~\ref{cor:pareto} for $q\in\{3,2,1.5\}$, with means $\marm_1=0.75$, $0.7$ and $0.6$. Arm $1$
+is pulled first, ties are broken in favour of arm $1$, and each run of pulls of arm $2$ during
+which the index of arm $1$ is frozen is simulated in one step (this is exact, since only $\Np_2$
+changes during such a run). For $T\in\{10^3,10^4\}$ we use $3000$ independent runs, and for
+$T=10^5$ another $200$ runs. On the instance $q=1.5$ we also run KLinf-UCB
+\citep[Section~3]{PA26}, the algorithm of the paragraph ``Another algorithm'' of
+Section~\ref{sec:counter}, with the exploration function $\log t+2\log\log t+\log(1+\Np_a(t))+1$
+and $\Kinf$ computed by the dual formula~\eqref{eq:dual}, for $500$ runs up to $T=10^4$.
+Table~\ref{tab:sim} reports the results. The scripts (\texttt{imed\_sim.py},
+\texttt{klinf\_ucb\_sim.py}) and their output, with the command line and the seed of each
+campaign, are in the directory \texttt{notebook} of this paper in the repository; running
+\texttt{python imed\_sim.py q runs T seed} (or \texttt{klinf\_ucb\_sim.py}) with the recorded
+arguments reproduces each row.
+
+\begin{table}[t]
+\centering
+\caption{\texttt{IMED} on $(P_{q,1/10},\delta_0)$: mean of $N_2(T)$ (standard error), median, $90\%$
+quantile, maximum, and fraction of runs with $N_2(T)>T/10$; $3000$ runs for $T\le10^4$, $200$ runs
+for $T=10^5$. Last two rows: KLinf-UCB on $(P_{1.5,1/10},\delta_0)$, $500$ runs.}\label{tab:sim}
+\small
+\begin{tabular}{@{}rrrrrrrr@{}}
+\toprule
+$q$ & $T$ & $\log T/\Kinf(\delta_0,\marm_1)$ & mean (s.e.) & median & $90\%$ & max & fraction \\
+\midrule
+$3$ & $10^3$ & $4.98$ & $5.15$ $(0.07)$ & $5$ & $5$ & $155$ & $0$ \\
+$3$ & $10^4$ & $6.64$ & $6.46$ $(0.07)$ & $6$ & $6$ & $155$ & $0$ \\
+$3$ & $10^5$ & $8.30$ & $7.17$ $(0.05)$ & $7$ & $7$ & $14$ & $0$ \\
+\midrule
+$2$ & $10^3$ & $5.74$ & $7.57$ $(0.27)$ & $5$ & $9$ & $508$ & $0.004$ \\
+$2$ & $10^4$ & $7.65$ & $10.00$ $(0.79)$ & $7$ & $9$ & $1954$ & $0.001$ \\
+$2$ & $10^5$ & $9.56$ & $9.94$ $(0.93)$ & $8$ & $9$ & $175$ & $0$ \\
+\midrule
+$1.5$ & $10^3$ & $7.54$ & $27.5$ $(1.5)$ & $7$ & $39$ & $901$ & $0.053$ \\
+$1.5$ & $10^4$ & $10.05$ & $82.7$ $(8.9)$ & $9$ & $45$ & $7360$ & $0.016$ \\
+$1.5$ & $10^5$ & $12.56$ & $135.6$ $(55.5)$ & $11$ & $78$ & $10189$ & $0.005$ \\
+\midrule
+\multicolumn{8}{@{}l}{KLinf-UCB} \\
+$1.5$ & $10^3$ & $7.54$ & $8.42$ $(0.04)$ & $8$ & $9$ & $11$ & $0$ \\
+$1.5$ & $10^4$ & $10.05$ & $14.14$ $(0.03)$ & $14$ & $15$ & $16$ & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation of Table~\ref{tab:sim}} The three regimes of Theorems~\ref{thm:main}
+and~\ref{thm:counter} are visible.
+\begin{itemize}[leftmargin=*]
+\item $q=3$ (finite variance): the mean of $\Np_2(T)$ is close to $\log T/\Kinf(\delta_0,\marm_1)$, and
+  below it for $T\ge10^4$, as Corollary~\ref{cor:optimal} allows at first order.
+\item $q=1.5$: the median follows $\log T/\Kinf$, but the mean is far above it, carried by rare runs
+  in which one negative reward of arm $1$ hands the lead to arm $2$. From $T=10^3$ to $T=10^4$, the
+  mean is multiplied by $3.0$ and the fraction of runs with $\Np_2(T)>T/10$ by $0.30$, against
+  $\sqrt{10}\approx3.16$ and $1/\sqrt{10}\approx0.32$ for the orders $T^{2-q}$ and $T^{1-q}$ of the
+  mechanism of Theorem~\ref{thm:counter}(i).
+\item $q=2$: the mean exceeds $\log T/\Kinf$ by $1.8\pm0.3$ and $2.4\pm0.8$ at $T=10^3$ and $10^4$.
+  Theorem~\ref{thm:counter}(ii) gives an asymptotic excess of at least $\frac{\varpi}{4e}\log T$, about
+  $0.06$ and $0.09$ at these horizons, much smaller than the observed one.
+\item KLinf-UCB at $q=1.5$: no run shows the failure of \imed{}; the maximum of $\Np_2(T)$ is $16$ at
+  $T=10^4$, against $7360$ for \imed{}. One negative reward barely moves its upper confidence bound,
+  which is not an empirical mean. Its mean is above $\log T/\Kinf$ at these horizons, which the
+  terms $2\log\log t+\log(1+\Np_a(t))+1$ of its exploration function, beyond $\log t$, can explain.
+\end{itemize}
+These are light Monte Carlo experiments: they illustrate the mechanism and prove nothing.
+
+% ----------------------------------------------------------------
+\section{Conclusion and open questions}\label{sec:open}
+
+On semi-bounded rewards with a best mean below $1$, a finite variance of one \term{w:optimal}{optimal} arm suffices for
+\imed{} to attain the Burnetas--Katehakis constant $1/\Kinf(\nu_i,\ms)$ for every \term{w:subopt}{suboptimal} arm,
+with a finite-time bound, and \imed{} is asymptotically optimal on the laws with a finite moment
+of order $r$, for every $r\ge2$. On the scale of power-law lower tails the exponent two is the
+threshold for \imed{}: below it, \imed{} is not \term{w:consistent}{consistent}, and at it, \imed{} misses the
+lower-bound constant. The limitations are the absence of a rate for the second-order term, the gap
+between the square-integrable tails and the tails of order $y^{-2}$, and the restriction to
+\imed{}, whose reference level, an empirical mean, is what fails under heavy tails (KLinf-UCB does
+not have this weakness, by the paragraph ``Another algorithm'' of Section~\ref{sec:counter}); the
+questions below start from them.
+
+Each question below is stated with its class and criterion, and says where the method of this paper
+stops; each could be the main result of a next paper.
+
+\begin{openquestion}[The exact boundary for IMED]\label{oq:boundary}
+\extends{D9}
+Let $P\in\Sm$ with $\mean(P)\in(0,1)$, let $\bar F(y)\coloneqq\Prob_P(X<-y)$, and run \imed{} on the
+\term{w:instance}{instance} $(P,\delta_0)$; let $d^\star\coloneqq\log(1/(1-\mean(P)))$. (a) Does $\lim_T\E \Np_2(T)/\log T=1/d^\star$
+hold whenever $\int_1^Ty\bar F(y)\,dy=o(\log T)$, for example when $\bar F(y)$ is of order
+$1/(y^2\log y)$, where the variance is infinite? (b) If $y^2\bar F(y)\to\kappa>0$, does
+$\E \Np_2(T)/\log T$ converge, and is its limit $1/d^\star+2\kappa/(e\,\mean(P)^2)$? A heuristic count of the frozen-index
+mechanism (a jump $Y$ at the $s$-th pull costs about $Y/(e\,\mean(P))$ pulls of arm $2$ when $Y\gg s$)
+gives this constant; Theorem~\ref{thm:counter}(ii) proves only the excess $\kappa/(4e)$. The method
+stops in Proposition~\ref{prop:key}, whose one-jump term uses $\E Y^2$: a version truncated at the
+horizon would require the other terms, in particular the H\"older step of Lemma~\ref{lem:moments}, to
+be redone with constants uniform in $T$.
+\end{openquestion}
+
+\begin{openquestion}[An index of the type of IMED that needs only finite means]\label{oq:finite-mean}
+\extends{D9}
+For an arm $a$ and a round $t\ge\Karms$, let $n\coloneqq\Np_a(t)$ and
+\begin{equation*}
+  \rho_a(t)\coloneqq\frac1n\sum_{l\le n}\max\{\Xs_{a,l},-\sqrt n\},
+\end{equation*}
+the empirical mean of the rewards of arm $a$ truncated below at $-\sqrt n$: one outlier moves it by at
+most $(1+\sqrt n)/n$. Let \texttt{IMED}-$\rho$ be the \term{w:learner}{learner} of
+Definition~\ref{def:imed} in which $\hmt_a(t)$ is replaced by $\rho_a(t)$, both in the reference level
+$\hms(t)$ and in the definition of the \term{w:leader}{empirical leaders}. Is \texttt{IMED}-$\rho$
+\term{w:ufc}{uniformly fast convergent} on $\Mm_1=\Sm\setminus\{\delta_1\}$, and does it satisfy
+$\limsup_T\E \Np_i(T)/\log T\le1/\Kinf(\nu_i,\ms)$ for every $\nu\in\Mm_1^\arms$ and every
+\term{w:subopt}{suboptimal} arm $i$? By Lemma~\ref{lem:class} and Theorem~\ref{cite:GMS19-thm1}, this is the
+lower-bound constant on $\Mm_1$. Theorem~\ref{thm:counter} rules out \imed{} itself. For KLinf-UCB,
+the paragraph ``Another algorithm'' of Section~\ref{sec:counter} reduces the same property to
+\citet[Theorem~3.1]{PA26}; KLinf-UCB inverts $\Kinf$: for each arm at each round, it computes
+the largest level $\mu$ with $\Np_a(t)\Kinf(\hnut_a(t),\mu)$ below a threshold of order $\log t$. The index of \texttt{IMED}-$\rho$
+evaluates $\Kinf$ at one given level per arm, with no inversion, and the question is whether it keeps
+the constant. (A reference level defined by an inversion, such as
+$\sup\{\mu<1:\Np_a(t)\Kinf(\hnut_a(t),\mu)\le1\}$, would cost one inversion per arm and per round, as
+KLinf-UCB does.) A robust estimate of the mean as the reference of a policy of the minimum empirical
+divergence type has a precedent: \citet[Remark~1 and Appendix~B.4]{BSH23} allow a truncated mean in
+MED, for laws with a known bound on a moment of order $1+\varepsilon$; here no moment bound is known
+and only the lower tail is truncated. The method of this paper stops at
+Proposition~\ref{prop:key}, which needs a finite variance to bound the rounds at which the reference
+level is low. Lemma~\ref{lem:sup}(b) transfers with the event that the truncated mean of the first
+$s$ rewards of arm $j$ is at most $\mu$ in place of $\{\hm_{j,s}\le\mu\}$, but on that event the empirical law of the \term{w:optimal}{optimal} arm may still
+contain outliers, and a bound on the expectation of the supremum of Lemma~\ref{lem:sup}(b) over that
+event is what is missing.
+\end{openquestion}
+
+\begin{openquestion}[The second-order term under a finite variance]\label{oq:second-order}
+\extends{D9}
+Under the assumptions of Theorem~\ref{thm:main}, is
+$\E \Np_i(T)-\log T/\Kinf(\nu_i,\ms)=O(1)$, as \citet[Theorem~5]{HT15} proves when every arm has a
+moment generating function near $0$? Or at least $O((\log T)^{\omega})$ for an explicit $\omega<1$,
+as \citet[Corollary~4]{HT15} gives with $\omega=10/11$ under an exponential moment of one \term{w:optimal}{optimal} arm?
+Theorem~\ref{thm:main} gives only $o(\log T)$: optimising $\delta$ requires the dependence of
+$\Gam(\nu_j,\ms-\delta)$ on $\delta$, which goes through the exponent $\gamma$ of
+Lemma~\ref{lem:moments} (with $\gamma-1$ of order $\delta$) and the parameters of
+\eqref{eq:gammabound}, and that of $\Lt_i(\delta)$, neither of which we tracked.
+\end{openquestion}
+
+\begin{openquestion}[Non-parametric Thompson sampling on semi-bounded laws]\label{oq:thompson}
+\extends{D10}
+The non-parametric Thompson sampling of \citet[Section~3]{RH20} draws, for each arm,
+a Dirichlet-weighted average of its rewards and of the point $1$, and is defined on
+$(-\infty,1]$ as well. Is it asymptotically optimal on $\Mm_2^\arms$, in the sense of
+Corollary~\ref{cor:optimal}(b)? Is it inconsistent on \term{w:instance}{instances} like those of
+Theorem~\ref{thm:counter}(i), with a lower tail $y^{-q}$, $1<q<2$? Its sampled values of the optimal
+arm are also moved by one large negative reward, but by a random weight instead of $1/N$, so the
+mechanism of Lemma~\ref{lem:jump} does not transfer directly.
+\end{openquestion}
+
+
+% ================================================================ appendices
+\appendix
+
+\section{Useful lemmas}\label{sec:cited}
+
+In this section we present the result from another paper that our proofs use: the dual formula of
+$\Kinf$ on semi-bounded laws (Lemma~\ref{cite:HT15-thm2}), used throughout. Two other published
+results are recalled in the main text: the finite-time bound of \citet{HT15}
+(Theorem~\ref{cite:HT15-thm3}), which we compare with and do not use, and the lower bound of
+\citet{GMS19} (Theorem~\ref{cite:GMS19-thm1}), used in Corollaries~\ref{cor:optimal}
+and~\ref{cor:pareto}; the notation of \citet{HT15} is listed before Theorem~\ref{cite:HT15-thm3}. We
+also use by name a few textbook facts: the inequalities of Markov, Chebyshev, Jensen, H\"older and
+Bonferroni, Doob's maximal inequality for nonnegative supermartingales, monotone and dominated
+convergence, Fatou's lemma, and the weak and strong laws of large numbers.
+
+\citet{HT15} write $\mathcal A$ for the set of all laws on $(-\infty,1]$, $F$ for a law, $\mathrm
+E(F)$ for its mean, $D_{\inf}(F,\mu;\mathcal A)$ for $\inf\{D(F\|G):G\in\mathcal A,\ \mathrm
+E(G)>\mu\}$, which is $\Kinf(F,\mu)$ when $F\in\Sm$, $\nu$ for the dual variable $\lambda$, and
+$L_{\max}(F,\mu)$ for the right-hand side below.
+
+% Verbatim: literature/notes/HT15.md, Theorem 2.
+\begin{lemma}[{From \citet[Theorem~2(ii)]{HT15}}]\label{cite:HT15-thm2}
+\uses{def:model, def:kinf}
+For every $P\in\Sm$ and every $\mu<1$,
+$\Kinf(P,\mu)=\max_{0\le\lambda\le1/(1-\mu)}\E_P[\log(1-\lambda(X-\mu))]$.
+\end{lemma}
+
+\section{Properties of \texorpdfstring{$\mathcal{K}_{\inf}$}{Kinf} on semi-bounded laws}\label{sec:dual}
+
+This appendix derives from the dual formula (Lemma~\ref{cite:HT15-thm2}) the properties of $\Kinf$
+used in the proofs. They are ordered by use; the table says where each one serves.
+
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.4\textwidth}p{0.54\textwidth}@{}}
+\toprule
+Lemma & Used in \\
+\midrule
+\ref{lem:dualfacts} (elementary properties) & the remark of Section~\ref{sec:upper-ht15}, Lemmas~\ref{lem:sup}, \ref{lem:termB}, \ref{lem:jump}, \ref{lem:class}, \ref{lem:explore}, \ref{lem:moments}, Theorem~\ref{thm:counter}, Corollary~\ref{cor:pareto}, Proposition~\ref{prop:key} \\
+\ref{lem:optimizer} (dual maximiser) & Definition~\ref{def:rate}, Theorem~\ref{thm:main}, Lemmas~\ref{lem:termB}, \ref{lem:termC}, \ref{lem:subopt}, \ref{lem:class} \\
+\ref{lem:shift} (shifting the level) & Lemma~\ref{lem:termB} \\
+\ref{lem:subopt} (deviations of a \term{w:subopt}{suboptimal} arm) & Lemma~\ref{lem:termC} \\
+\ref{lem:class} (independence of the moment class) & Corollary~\ref{cor:optimal} \\
+\ref{lem:pa-assumptions} (concentration with a finite mean only) & the paragraph ``Another algorithm'' of Section~\ref{sec:counter}, Open question~\ref{oq:finite-mean} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lemma}[Elementary properties]\label{lem:dualfacts}
+\uses{def:model, def:kinf}
+Let $P\in\Sm$.
+\begin{enumerate}[label=(\alph*)]
+\item (Monotonicity in the level.) If $\mu'\le\mu$, then $\Kinf(P,\mu')\le\Kinf(P,\mu)$.
+\item (Zero at or above the mean.) If $\mean(P)>\mu$, or if $\mean(P)=\mu<1$, then $\Kinf(P,\mu)=0$. If
+  $\mu\ge1$, then $\Kinf(P,\mu)=+\infty$.
+\item (Empirical dual.) Let $\mu<1$, $s\ge1$ and $x_1,\dots,x_s\le1$. Then
+  \[
+    \exp\big(s\Kinf(\hP[x_{1:s}],\mu)\big)=\max_{0\le\lambda\le1/(1-\mu)}\prod_{l=1}^s\big(1-\lambda(x_l-\mu)\big).
+  \]
+  For every $\mu\in\R$, the map $x_{1:s}\mapsto\Kinf(\hP[x_{1:s}],\mu)$ is Borel on $(-\infty,1]^s$.
+\item (Point mass.) $\Kinf(\delta_0,\mu)=\log\frac1{1-\mu}$ for $\mu\in[0,1)$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\uses{def:model, def:kinf, cite:HT15-thm2}
+(a) If $\mu'\le\mu$, every law with mean above $\mu$ has mean above $\mu'$, so the infimum
+defining $\Kinf(P,\mu')$ is over a larger set.
+
+(b) If $\mean(P)>\mu$, take $Q=P$: $\KL(P,P)=0$. If $\mean(P)=\mu<1$, let $\varepsilon\in(0,1)$ and
+$Q_\varepsilon\coloneqq(1-\varepsilon)P+\varepsilon\delta_1\in\Sm$. Its mean is
+$\mu+\varepsilon(1-\mu)>\mu$, and $dP/dQ_\varepsilon\le1/(1-\varepsilon)$, so
+$\KL(P,Q_\varepsilon)\le\log\frac1{1-\varepsilon}$, which tends to $0$. If $\mu\ge1$, no law of $\Sm$
+has a mean above $\mu$, and $\inf\emptyset=+\infty$.
+
+(c) The empirical law $\hP\coloneqq\hP[x_{1:s}]$ belongs to $\Sm$, and
+$\E_{\hP}\log(1-\lambda(X-\mu))=\frac1s\log\prod_l(1-\lambda(x_l-\mu))$, with $\log0\coloneqq-\infty$.
+Lemma~\ref{cite:HT15-thm2} and the monotonicity of $\exp$ (with $\exp(-\infty)\coloneqq0$) give the
+identity. For measurability: if $\mu\ge1$ the map is the constant $+\infty$ by (b). If $\mu<1$,
+the product is a polynomial in $\lambda$ whose coefficients are polynomials in $x_{1:s}$, so its
+maximum over $[0,1/(1-\mu)]$ equals its supremum over the countable set of rational $\lambda$ in that
+interval together with $1/(1-\mu)$; this is a Borel function of $x_{1:s}$, and so is its logarithm
+divided by $s$.
+
+(d) By Lemma~\ref{cite:HT15-thm2}, $\Kinf(\delta_0,\mu)=\max_{0\le\lambda\le1/(1-\mu)}\log(1+\lambda\mu)$.
+For $\mu\ge0$ the function is nondecreasing in $\lambda$, so the maximum is at $1/(1-\mu)$, where it
+equals $\log(1+\mu/(1-\mu))=\log\frac1{1-\mu}$.
+\end{proof}
+
+\begin{lemma}[The dual maximiser]\label{lem:optimizer}
+\uses{def:model, def:kinf}
+Let $P\in\Sm$ and $\mean(P)<\mu<1$; let \dt{s:lmax}$\lmax\coloneqq1/(1-\mu)$ and
+$L(\lambda)\coloneqq\E_P\log(1-\lambda(X-\mu))$ for $\lambda\in[0,\lmax]$. Then:
+\begin{enumerate}[label=(\alph*)]
+\item $L$ is well defined with values in $[-\infty,\infty)$, finite on $[0,\lmax)$, concave, and
+  continuous on $[0,\lmax]$ as a map into $[-\infty,\infty)$; it attains its maximum, and
+  $\max L=\Kinf(P,\mu)\in(0,\infty)$;
+\item every maximiser $\lambda^\star$ satisfies $\lambda^\star>0$ and
+  $\E_P\big[1/(1-\lambda^\star(X-\mu))\big]\le1$, with $1/0\coloneqq+\infty$; in particular
+  $1-\lambda^\star(X-\mu)>0$ almost surely. If $\lambda^\star<\lmax$, the expectation equals $1$.
+\item for every maximiser $\lambda^\star$, the variable $V\coloneqq\log(1-\lambda^\star(X-\mu))$, for
+  $X\sim P$, satisfies $\E e^{-V}\le1$, is integrable, and $\E V=\Kinf(P,\mu)$.
+\end{enumerate}
+\end{lemma}
+
+\emph{Role.} It defines $\lst(P,\mu)$ in Definition~\ref{def:rate}, gives
+$0<\Ki_i<\infty$ in the proof of Theorem~\ref{thm:main} (Appendix~\ref{sec:proof-main}), and gives the integrability that
+Lemmas~\ref{lem:subopt} and~\ref{lem:class} need.
+
+\begin{proof}
+\uses{def:model, def:kinf, cite:HT15-thm2}
+\emph{Setting.} Fix $P$ and $\mu$; write $Z\coloneqq X-\mu$ for $X\sim P$, so $Z\le1-\mu=1/\lmax$
+and $\E Z=\mean(P)-\mu<0$. \emph{Goal.} (a), (b) and (c).
+
+\emph{Step 1: values and concavity.} For $\lambda\in[0,\lmax]$ and $z\le1/\lmax$, the factor
+$1-\lambda z$ is nonnegative, and $\log(1-\lambda z)\le\log(1+\lmax|z|)\le\lmax|z|$, which is
+integrable. So $L(\lambda)\in[-\infty,\infty)$ is well defined. For $\lambda<\lmax$,
+$1-\lambda z\ge1-\lambda/\lmax>0$, so the integrand is bounded below and $L(\lambda)$ is finite. Each
+$\lambda\mapsto\log(1-\lambda z)$ is concave, hence so is $L$.
+
+\emph{Step 2: continuity and attainment.} As $\lambda\uparrow\lmax$, the integrand increases on
+$\{Z\le0\}$ (where it is nonnegative) and decreases on $\{Z>0\}$ (where it is nonpositive and equal
+to $0$ at $\lambda=0$). Monotone convergence on each part gives $L(\lambda)\to L(\lmax)$. On the open
+interval $(0,\lmax)$, $L$ is concave and finite, hence continuous. At $\lambda=0$: for
+$\lambda\in(0,\lmax/2]$ and $z\le1/\lmax$,
+\begin{equation*}
+  |\log(1-\lambda z)|\le2\lambda|z|,
+\end{equation*}
+since if $z\le0$, $0\le\log(1+\lambda|z|)\le\lambda|z|$, and if $z>0$, $\lambda z\le1/2$ and
+$0\le-\log(1-\lambda z)\le\lambda z/(1-\lambda z)\le2\lambda z$. Hence
+$|L(\lambda)|\le2\lambda\E|Z|\to0=L(0)$ as $\lambda\downarrow0$. So $L$ is continuous on the compact
+$[0,\lmax]$ into $[-\infty,\infty)$, bounded above by $\E\log(1+\lmax|Z|)<\infty$, and attains its
+maximum. By Lemma~\ref{cite:HT15-thm2}, $\max L=\Kinf(P,\mu)<\infty$.
+
+\emph{Step 3: the maximum is positive and $\lambda^\star>0$.} By the bound of Step 2,
+$|\log(1-\lambda z)|/\lambda\le2|z|$ for $\lambda\in(0,\lmax/2]$ and $z\le1/\lmax$. By
+dominated convergence, $L(\lambda)/\lambda\to-\E Z=\mu-\mean(P)>0$ as $\lambda\downarrow0$. Hence
+$L(\lambda)>0=L(0)$ for small $\lambda>0$: the maximum is positive, and $0$ is not a maximiser.
+
+\emph{Step 4: the derivative.} For $\lambda$ in a compact subinterval $[\lambda_1,\lambda_2]$ of
+$(0,\lmax)$, $|\partial_\lambda\log(1-\lambda z)|=|z|/(1-\lambda z)$ is at most $1/\lambda_1$ if
+$z\le0$ and at most $1/(\lmax(1-\lambda_2/\lmax))$ if $z>0$. Differentiation under the expectation
+gives, for $\lambda\in(0,\lmax)$,
+\[
+  L'(\lambda)=\E\Big[\frac{-Z}{1-\lambda Z}\Big]=\frac1\lambda\Big(1-\E\Big[\frac{1}{1-\lambda Z}\Big]\Big).
+\]
+
+\emph{Step 5: the first-order condition.} Let $\lambda^\star$ be a maximiser; $\lambda^\star>0$ by
+Step 3. If $\lambda^\star<\lmax$, then $L'(\lambda^\star)=0$, so $\E[1/(1-\lambda^\star Z)]=1$. If
+$\lambda^\star=\lmax$, the concave function $L$ is nondecreasing on $[0,\lmax]$, so $L'\ge0$ on
+$(0,\lmax)$, that is $\E[1/(1-\lambda Z)]\le1$ for every $\lambda<\lmax$. The integrands are
+nonnegative and converge to $1/(1-\lmax Z)\in[0,\infty]$ as $\lambda\uparrow\lmax$, so Fatou's lemma
+gives $\E[1/(1-\lmax Z)]\le1$. In both cases the expectation is finite, so $1-\lambda^\star Z>0$
+almost surely.
+
+\emph{Step 6: (c).} Let $V\coloneqq\log(1-\lambda^\star Z)$. By (b), $\E e^{-V}=\E[1/(1-\lambda^\star Z)]\le1$.
+Since $\lambda^\star\le\lmax$ and $Z\le1/\lmax$, $V^+\le\log(1+\lambda^\star|Z|)\le\lambda^\star|Z|$, which is
+integrable because $P$ has a finite mean; and $V^-\le e^{V^-}\le1+e^{-V}$, which is integrable. So
+$V$ is integrable and $\E V=L(\lambda^\star)=\max L=\Kinf(P,\mu)$ by (a).
+\end{proof}
+
+\begin{lemma}[Shifting the level]\label{lem:shift}
+\uses{def:model, def:kinf}
+Let $Q\in\Sm$ and $\mu'<\mu<1$. Then
+$\Kinf(Q,\mu)\le\Kinf(Q,\mu')+\log\frac{1-\mu'}{1-\mu}\le\Kinf(Q,\mu')+\frac{\mu-\mu'}{1-\mu}$.
+\end{lemma}
+
+\emph{Role.} In Lemma~\ref{lem:termB}, it moves the level of the \term{w:subopt}{suboptimal} arm from
+$\ms-\delta$ to $\ms$; it replaces \citet[Lemma~7]{HT15} by a direct comparison of the duals.
+
+\begin{proof}
+\uses{def:model, def:kinf, cite:HT15-thm2}
+\emph{Setting.} Fix $Q$, $\mu'<\mu<1$, and let $\rho\coloneqq(1-\mu)/(1-\mu')\in(0,1)$.
+\emph{Goal.} Compare the duals at the two levels.
+
+Let $\lambda\in[0,1/(1-\mu)]$ and $\lambda'\coloneqq\rho\lambda\in[0,1/(1-\mu')]$. For $x\le1$, let
+$u\coloneqq1-x\ge0$ and $A\coloneqq1-\lambda(1-\mu)\in[0,1]$. Then
+\[
+  1-\lambda(x-\mu)=A+\lambda u,\qquad1-\lambda'(x-\mu')=1-\lambda(1-\mu)+\rho\lambda u=A+\rho\lambda u.
+\]
+Since $\rho A\le A$, we get $\rho(A+\lambda u)\le A+\rho\lambda u$, that is
+\[
+  \log(1-\lambda(x-\mu))\le\log(1-\lambda'(x-\mu'))+\log\frac1\rho.
+\]
+Integrating against $Q$ and using Lemma~\ref{cite:HT15-thm2} at the level $\mu'$,
+$\E_Q\log(1-\lambda(X-\mu))\le\Kinf(Q,\mu')+\log\frac1\rho$. Maximising over $\lambda$ and using
+Lemma~\ref{cite:HT15-thm2} at the level $\mu$ gives the first inequality. The second is
+$\log(1+v)\le v$ with $v\coloneqq(\mu-\mu')/(1-\mu)=1/\rho-1$.
+\end{proof}
+
+\begin{lemma}[Deviations of a suboptimal arm need no moment]\label{lem:subopt}
+\uses{def:model, def:kinf, def:rate}
+Let $P\in\Sm$ with $\mean(P)<\mu<1$, $s\ge1$, and let $\hP_s$ be the empirical law of $X_1,\dots,X_s$,
+i.i.d.\ of law $P$. Then, for every $u\in\R$,
+$\Prob\big(\Kinf(\hP_s,\mu)\le u\big)\le e^{-s\Lt(P,\mu,u)}$. Moreover $\Lt(P,\mu,u)>0$ for every
+$u<\Kinf(P,\mu)$.
+\end{lemma}
+
+\emph{Role.} The probability bound of Lemma~\ref{lem:termC}, in the proof of Theorem~\ref{thm:main}. It is
+\citet[Proposition~10]{HT15}, with the Chernoff parameter restricted to $[-1,0]$, proved here from
+the first-order condition of Lemma~\ref{lem:optimizer} only.
+
+\begin{proof}
+\uses{def:model, def:kinf, def:rate, cite:HT15-thm2, lem:optimizer}
+\emph{Setting.} Fix $P$, $\mu$, $s$; let $\lambda^\star\coloneqq\lst(P,\mu)$,
+$V_l\coloneqq\log(1-\lambda^\star(X_l-\mu))\in[-\infty,\infty)$ and, for $\eta\in[-1,0]$,
+$\psi(\eta)\coloneqq\log\E e^{\eta V_1}$. \emph{Goal.} The Chernoff bound and the positivity of the
+rate.
+
+\emph{Step 1: the moments of $e^{-V}$.} By Lemma~\ref{lem:optimizer}(b), $\E e^{-V_1}\le1$; in
+particular $V_1>-\infty$ almost surely and $\psi(0)=0$. For $\eta\in[-1,0]$, Jensen's inequality for
+the concave map $y\mapsto y^{-\eta}$ gives
+\[
+  \E e^{\eta V_1}=\E\big[(e^{-V_1})^{-\eta}\big]\le(\E e^{-V_1})^{-\eta}\le1,
+\]
+so $\psi\le0$ on $[-1,0]$.
+
+\emph{Step 2: the Chernoff bound.} By Lemma~\ref{cite:HT15-thm2} applied to $\hP_s$, every $\lambda$
+gives a lower bound, so $\Kinf(\hP_s,\mu)\ge\frac1s\sum_{l\le s}V_l$. For $\eta\in[-1,0)$, Markov's
+inequality and independence give
+\[
+  \Prob\Big(\frac1s\sum_{l\le s}V_l\le u\Big)=\Prob\Big(e^{\eta\sum_lV_l}\ge e^{\eta su}\Big)\le e^{-\eta su}\,
+  e^{s\psi(\eta)}=e^{-s(\eta u-\psi(\eta))}.
+\]
+For $\eta=0$ the bound $e^{0}=1$ is trivial. Taking the infimum over $\eta\in[-1,0]$ gives the
+first claim.
+
+\emph{Step 3: $\E V_1=\Kinf(P,\mu)$ and $V_1$ is integrable.} This is Lemma~\ref{lem:optimizer}(c).
+Moreover $\E e^{V_1^-}\le1+\E e^{-V_1}\le2$.
+
+\emph{Step 4: positivity.} For $\eta\in[-1/2,0)$, $|e^{\eta V_1}-1|/|\eta|\le|V_1|e^{V_1^-/2}$, by
+$|e^x-1|\le|x|e^{x^+}$. The right-hand side is integrable: it equals $V_1^+$ where $V_1\ge0$, and is at
+most $(2/e)e^{V_1^-}$ where $V_1<0$. By dominated convergence,
+$(\E e^{\eta V_1}-1)/\eta\to\E V_1$ as $\eta\uparrow0$, hence $\psi(\eta)/\eta\to\E V_1$. Let
+$u<\Kinf(P,\mu)=\E V_1$. Then
+\[
+  \eta u-\psi(\eta)=\eta\Big(u-\frac{\psi(\eta)}{\eta}\Big),
+\]
+and for $\eta<0$ close to $0$ the factor $u-\psi(\eta)/\eta$ is negative. Hence $\eta u-\psi(\eta)>0$
+for such $\eta$, and $\Lt(P,\mu,u)>0$.
+\end{proof}
+
+\begin{lemma}[The constant does not depend on the moment class]\label{lem:class}
+\uses{def:model, def:kinf}
+Let $r\ge1$, $P\in\Mm_r$ and $\mu<1$. Then $\Kinf(P,\mu;\Mm_r)=\Kinf(P,\mu)$.
+\end{lemma}
+
+\emph{Role.} In Corollary~\ref{cor:optimal}(b), it identifies the lower-bound constant on $\Mm_r$
+with the upper bound of Theorem~\ref{thm:main}.
+
+\begin{proof}
+\uses{def:model, def:kinf, cite:HT15-thm2, lem:dualfacts, lem:optimizer}
+\emph{Idea.} Since $\Mm_r\subseteq\Sm$, only $\le$ needs a proof. We exhibit laws of $\Mm_r$ with
+mean above $\mu$ whose divergence from $P$ approaches $\Kinf(P,\mu)$: the optimal law $G^\star$ of
+the proof of \citet[Theorem~2]{HT15}, mixed with a small mass at $1$. Its density with respect to
+$P$ is at most $1$ below $\mu$, so it keeps the moment of order $r$.
+
+\emph{Setting.} Fix $r$, $P$, $\mu$. \emph{Goal.} For every $\varepsilon\in(0,1)$, a law
+$G_\varepsilon\in\Mm_r$ with $\mean(G_\varepsilon)>\mu$ and
+$\KL(P,G_\varepsilon)\le\Kinf(P,\mu)+\log\frac1{1-\varepsilon}$.
+
+\emph{Step 1: the case $\mean(P)\ge\mu$.} Here $\Kinf(P,\mu)=0$ by Lemma~\ref{lem:dualfacts}(b), since
+$\mean(P)<1$ ($P\ne\delta_1$). Let $G_\varepsilon\coloneqq(1-\varepsilon)P+\varepsilon\delta_1$. It is
+a law on $(-\infty,1]$ with a finite moment of order $r$ and mean
+$\mean(P)+\varepsilon(1-\mean(P))>\mu$; it is not $\delta_1$; and $\KL(P,G_\varepsilon)\le\log\frac1{1-\varepsilon}$
+because $dP/dG_\varepsilon\le1/(1-\varepsilon)$.
+
+\emph{Step 2: the law $G^\star$ when $\mean(P)<\mu$.} Let $\lambda^\star$ be a maximiser from
+Lemma~\ref{lem:optimizer}, $g(x)\coloneqq1/(1-\lambda^\star(x-\mu))\in(0,\infty]$ for $x\le1$, and
+$c\coloneqq\E_Pg(X)\le1$ (Lemma~\ref{lem:optimizer}(b)). Let
+\[
+  G^\star\coloneqq g\cdot P+(1-c)\,\delta_1,
+\]
+a probability measure on $(-\infty,1]$. If $c<1$, then $\lambda^\star=\lmax$ by
+Lemma~\ref{lem:optimizer}(b), and $P(\{1\})=0$ because $g(1)=+\infty$ there while $\E_Pg<\infty$.
+
+\emph{Step 3: the mean of $G^\star$ is $\mu$.} Where $g$ is finite,
+$(x-\mu)g(x)=(g(x)-1)/\lambda^\star$, because $g(x)(1-\lambda^\star(x-\mu))=1$. This function is
+$P$-integrable (it is bounded by $1/\lambda^\star$ below $\mu$ and by $(1-\mu)g$ above $\mu$), so
+\[
+  \int(x-\mu)\,dG^\star(x)=\frac{c-1}{\lambda^\star}+(1-c)(1-\mu)=(1-c)\Big(1-\mu-\frac1{\lambda^\star}\Big)=0,
+\]
+since either $c=1$, or $\lambda^\star=\lmax=1/(1-\mu)$.
+
+\emph{Step 4: the divergence.} The measure $(1-c)\delta_1$ is carried by a $P$-null set when $c<1$
+(Step 2), and $g>0$, so $P$ is absolutely continuous with respect to $G^\star$ with
+$dP/dG^\star=1/g$ $P$-almost surely. Hence, by Lemma~\ref{lem:optimizer}(a),
+\[
+  \KL(P,G^\star)=\E_P\log\frac1{g(X)}=\E_P\log(1-\lambda^\star(X-\mu))=\Kinf(P,\mu).
+\]
+
+\emph{Step 5: the moment of order $r$.} On $\{x\le\mu\}$, $g(x)=1/(1+\lambda^\star(\mu-x))\le1$. On
+$\{\mu<x\le1\}$, $|x|\le\max\{1,|\mu|\}$. Since $\int_{\{x>\mu\}}g\,dP\le c$,
+\[
+  \int|x|^r\,dG^\star\le\E_P|X|^r+\max\{1,|\mu|^r\}\,c+(1-c)\le\E_P|X|^r+\max\{1,|\mu|^r\}<\infty.
+\]
+
+\emph{Step 6: mixing with $\delta_1$.} Let $G_\varepsilon\coloneqq(1-\varepsilon)G^\star+\varepsilon\delta_1$.
+It is a law on $(-\infty,1]$ with a finite moment of order $r$, its mean is
+$\mu+\varepsilon(1-\mu)>\mu$, so it is not $\delta_1$ and belongs to $\Mm_r$, and
+$dP/dG_\varepsilon\le(1-\varepsilon)^{-1}dP/dG^\star$, so
+$\KL(P,G_\varepsilon)\le\Kinf(P,\mu)+\log\frac1{1-\varepsilon}$ by Step 4.
+
+\emph{Step 7: conclusion.} In both cases, $\Kinf(P,\mu;\Mm_r)\le\Kinf(P,\mu)+\log\frac1{1-\varepsilon}$
+for every $\varepsilon\in(0,1)$; letting $\varepsilon\to0$ gives the claim.
+\end{proof}
+
+\begin{lemma}[Concentration with a finite mean only]\label{lem:pa-assumptions}
+\uses{def:model, def:kinf, def:rate}
+Let $P\in\Mm_1$, let $X_1,X_2,\dots$ be i.i.d.\ of law $P$, and let $\hP_n\coloneqq\hP[X_{1:n}]$.
+\begin{enumerate}[label=(\alph*)]
+\item (Upper deviations at the mean, uniformly in time.) For every $x\in\R$,
+  \[
+    \Prob\big(\exists n\ge1:\ n\Kinf(\hP_n,\mean(P))-\log(n+1)\ge x\big)\le e^{-x}.
+  \]
+\item (Lower deviations above the mean.) Let $\mean(P)<\mu<1$, $\lambda^\star\coloneqq\lst(P,\mu)$,
+  $V\coloneqq\log(1-\lambda^\star(X_1-\mu))$ and $C\coloneqq\E\big[V^2e^{V^-/2}\big]$. Then
+  $0<C<\infty$, and for every $n\ge1$ and every $d\in(0,C/2]$,
+  \[
+    \Prob\big(\Kinf(\hP_n,\mu)\le\Kinf(P,\mu)-d\big)\le\exp\Big(-\frac{n\,d^2}{2C}\Big).
+  \]
+\item (The non-strict inequality.) For every $Q\in\Sm$ and every $\mu\in\R$,
+  \[
+    \Kinf(Q,\mu)=\inf\{\KL(Q,G):\ G\in\Mm_1,\ \mean(G)\ge\mu\}.
+  \]
+\end{enumerate}
+\end{lemma}
+
+\emph{Role.} In the paragraph ``Another algorithm'' of Section~\ref{sec:counter}: (c) identifies the
+divergence of \citet{PA26} over the class $\Mm_1$ with $\Kinf$, and (a) and (b) are their
+Assumptions~2.3 (with $g(n)=\log(1+n)+C_2$, $C_2>0$) and~2.4 (with $c_\nu=1/(2C)$, $d_0=C/2$, at the
+levels below $1$). It is not used in the proofs of the other results.
+
+\begin{proof}
+\uses{def:model, def:kinf, def:rate, lem:dualfacts, lem:optimizer, lem:subopt}
+\emph{Idea.} By the dual formula, $\exp(n\Kinf(\hP_n,\mean(P)))$ is the maximum over the dual variable
+of products that are nonnegative martingales of mean $1$ under a finite mean only. Their average over
+the dual variable is again such a martingale, and it is at least the maximum divided by $n+1$ (the
+bound of universal portfolios), so Doob's maximal inequality gives (a). This is the method of
+\citet[Proposition~5, proof in Appendix~B.4.1]{AJK21}, for laws on $\R$ with a known bound on a
+moment of order $1+\varepsilon$: a uniform mixture over the two dual variables, a factor
+$2\log(1+n)+1$ between the logarithms of the maximum and of the mixture (their Lemma~17), and
+Ville's inequality. \citet[Appendix~A.1]{PA26} state that the same argument, with the dual of
+\citet{HT10}, gives Assumption~2.3 for laws on a bounded interval, with $g(n)=\log(1+n)+1$. What (a)
+adds is the semi-bounded case: only an upper bound on the rewards and a finite mean are needed, the
+mixture is over one dual variable, and the factor is computed exactly, which gives $\log(n+1)$.
+Part (b) is the Chernoff bound
+of Lemma~\ref{lem:subopt}, whose rate is quadratic near the mean. Part (c) moves mass to $1$ or away
+from it.
+
+\emph{Setting.} Let $m\coloneqq\mean(P)<1$ (since $P\ne\delta_1$) and
+$R_l\coloneqq(1-X_l)/(1-m)\ge0$, so $\E R_l=1$. \emph{Goal.} (a), (b), (c).
+
+\emph{Step 1: (a), the products.} For $\theta\in[0,1]$ and $\lambda\coloneqq\theta/(1-m)$,
+\[
+  1-\lambda(X_l-m)=(1-\theta)+\theta R_l\ge0 .
+\]
+Let $W_n(\theta)\coloneqq\prod_{l\le n}\big((1-\theta)+\theta R_l\big)$. By
+Lemma~\ref{lem:dualfacts}(c) (\emph{empirical dual}) at the level $m<1$,
+\[
+  \exp\big(n\Kinf(\hP_n,m)\big)=\max_{\theta\in[0,1]}W_n(\theta).
+\]
+
+\emph{Step 2: (a), the mixture is a martingale.} Let $M_0\coloneqq1$ and
+$M_n\coloneqq\int_0^1W_n(\theta)\,d\theta$; $(\theta,\omega)\mapsto W_n(\theta)$ is a polynomial in
+$\theta$ with measurable coefficients. Let $\mathcal F_n\coloneqq\sigma(X_1,\dots,X_n)$ and
+$A\in\mathcal F_{n-1}$. For every $\theta$, $W_n(\theta)=W_{n-1}(\theta)\big((1-\theta)+\theta R_n\big)$
+with $R_n$ independent of $\mathcal F_{n-1}$ and $\E[(1-\theta)+\theta R_n]=1$, so
+$\E[W_n(\theta)\ind_A]=\E[W_{n-1}(\theta)\ind_A]$. By Tonelli's theorem,
+\[
+  \E[M_n\ind_A]=\int_0^1\E[W_n(\theta)\ind_A]\,d\theta=\int_0^1\E[W_{n-1}(\theta)\ind_A]\,d\theta=\E[M_{n-1}\ind_A].
+\]
+So $(M_n)_{n\ge0}$ is a nonnegative martingale with $M_0=1$.
+
+\emph{Step 3: (a), maximum against mixture.} Fix the outcome and $n$, and let $\theta^\star$ maximise the
+continuous function $W_n$ on $[0,1]$. For $\theta\in[\theta^\star,1]$, write
+$\theta=(1-\alpha)\theta^\star+\alpha\cdot1$ with $\alpha\coloneqq(\theta-\theta^\star)/(1-\theta^\star)\in[0,1]$
+(when $\theta^\star<1$); for $\theta\in[0,\theta^\star]$, write $\theta=(1-\alpha)\theta^\star+\alpha\cdot0$
+with $\alpha\coloneqq(\theta^\star-\theta)/\theta^\star\in[0,1]$ (when $\theta^\star>0$). Each factor of
+$W_n$ is affine in $\theta$ and nonnegative at $\theta=0$ and $\theta=1$, so
+\[
+  (1-\theta)+\theta R_l\ge(1-\alpha)\big((1-\theta^\star)+\theta^\star R_l\big),
+  \qquad\text{hence}\qquad W_n(\theta)\ge(1-\alpha)^nW_n(\theta^\star).
+\]
+Integrating over the two intervals,
+\begin{align*}
+  M_n&\ge W_n(\theta^\star)\Big(\int_{\theta^\star}^1\Big(1-\frac{\theta-\theta^\star}{1-\theta^\star}\Big)^nd\theta
+  +\int_0^{\theta^\star}\Big(1-\frac{\theta^\star-\theta}{\theta^\star}\Big)^nd\theta\Big)\\
+  &=W_n(\theta^\star)\Big(\frac{1-\theta^\star}{n+1}+\frac{\theta^\star}{n+1}\Big)=\frac{W_n(\theta^\star)}{n+1},
+\end{align*}
+where an integral over an interval of length $0$ is $0$.
+
+\emph{Step 4: (a), conclusion.} If $x<0$ the bound exceeds $1$. Let $x\ge0$. By Steps 1 and 3,
+$n\Kinf(\hP_n,m)-\log(n+1)\ge x$ implies $M_n\ge e^x$. Doob's maximal inequality for the nonnegative
+martingale $(M_n)$ gives $\Prob(\max_{n\le N}M_n\ge e^x)\le e^{-x}\E M_0=e^{-x}$ for every $N$, and
+letting $N\to\infty$ gives (a).
+
+\emph{Step 5: (b), the constant $C$.} By Lemma~\ref{lem:optimizer}(c),
+$\E e^{-V}\le1$, $V$ is integrable and $\E V=\Kinf(P,\mu)$, which is positive by
+Lemma~\ref{lem:optimizer}(a). On $\{V\ge0\}$, $V\le\log(1+\lambda^\star|X_1-\mu|)\le(\lambda^\star|X_1-\mu|)^{1/2}$,
+because $\log(1+t^2)\le t$ for $t\ge0$; so $V^2\le\lambda^\star|X_1-\mu|$, which is integrable. On
+$\{V<0\}$, $V^2e^{V^-/2}\le(16/e^2)e^{V^-}=(16/e^2)e^{-V}$, because $v^2e^{-v/2}\le16/e^2$ for $v\ge0$.
+Hence $C\le\lambda^\star\E|X_1-\mu|+16/e^2<\infty$. If $C=0$, then $V=0$ almost surely and
+$\Kinf(P,\mu)=\E V=0$, a contradiction; so $C>0$.
+
+\emph{Step 6: (b), a quadratic bound on the log-moment.} For $y\in\R$, Taylor's formula gives
+$e^y\le1+y+\frac{y^2}{2}e^{y^+}$. For $\eta\in[-1/2,0]$ and $y=\eta V$, $(\eta V)^+=|\eta|V^-\le V^-/2$, so
+\[
+  \E e^{\eta V}\le1+\eta\Kinf(P,\mu)+\frac{\eta^2C}{2},
+  \qquad\text{hence}\qquad
+  \log\E e^{\eta V}\le\eta\Kinf(P,\mu)+\frac{\eta^2C}{2},
+\]
+by $\log(1+z)\le z$.
+
+\emph{Step 7: (b), conclusion.} Let $d\in(0,C/2]$, $u\coloneqq\Kinf(P,\mu)-d$ and
+$\eta\coloneqq-d/C\in[-1/2,0)$. In the rate of Definition~\ref{def:rate}, $\E_P[(1-\lst(P,\mu)(X-\mu))^\eta]=\E e^{\eta V}$, so by Step 6
+\[
+  \Lt(P,\mu,u)\ge\eta u-\log\E e^{\eta V}\ge-\eta d-\frac{\eta^2C}{2}=\frac{d^2}{C}-\frac{d^2}{2C}=\frac{d^2}{2C}.
+\]
+Lemma~\ref{lem:subopt} with $s=n$ gives $\Prob(\Kinf(\hP_n,\mu)\le u)\le e^{-n\Lt(P,\mu,u)}\le e^{-nd^2/(2C)}$.
+
+\emph{Step 8: (c).} Let $\Kinf^{\ge}(Q,\mu)$ be the right-hand side. If $\mu\ge1$, both sides are
+$+\infty$: no law of $\Mm_1$ has a mean at least $1$, and Lemma~\ref{lem:dualfacts}(b) applies. Let
+$\mu<1$. First, $\Kinf(Q,\mu)\le\Kinf^{\ge}(Q,\mu)$: for $G\in\Mm_1$ with $\mean(G)\ge\mu$ and
+$\varepsilon\in(0,1)$, the law $G_\varepsilon\coloneqq(1-\varepsilon)G+\varepsilon\delta_1$ belongs to
+$\Sm$, has the mean $\mean(G)+\varepsilon(1-\mean(G))>\mu$ because $\mean(G)<1$, and satisfies
+$\KL(Q,G_\varepsilon)\le\KL(Q,G)+\log\frac1{1-\varepsilon}$ because $dG_\varepsilon\ge(1-\varepsilon)dG$;
+let $\varepsilon\to0$. Second, $\Kinf^{\ge}(Q,\mu)\le\Kinf(Q,\mu)$: let $G\in\Sm$ with $\mean(G)>\mu$
+and $\KL(Q,G)<\infty$. If $G\ne\delta_1$, then $G\in\Mm_1$ and $\mean(G)\ge\mu$. If $G=\delta_1$, then
+$Q=\delta_1$, and for $\varepsilon\in(0,\min\{1,1-\mu\})$ the law $(1-\varepsilon)\delta_1+\varepsilon\delta_0\in\Mm_1$
+has the mean $1-\varepsilon\ge\mu$ and the divergence $\log\frac1{1-\varepsilon}$ from $Q$, which tends to
+$0=\KL(Q,G)$. Taking the infimum over $G$ gives the inequality.
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{Proof of Theorem~\ref{thm:main}}\label{sec:proof-main}
+
+Throughout this appendix, $\nu\in\Sm^\arms$ is an \term{w:instance}{instance} with $\ms<1$, $j$ an \term{w:optimal}{optimal} arm with
+$\nu_j\in\Sm_2$, $i$ a \term{w:subopt}{suboptimal} arm, $\delta\in(0,(1-\ms)\Ki_i/2)$, $T\ge1$, and \imed{} is run with any
+\term{w:tie}{tie rule}. We use the level
+\begin{equation*}
+  \mu\coloneqq\ms-\delta.
+\end{equation*}
+It is below $\marm_j=\ms$, so that the \term{w:optimal}{optimal} arm $j$ has a mean above $\mu$ and
+Proposition~\ref{prop:key} applies to it; and it is close to $\ms$, so that moving the level of arm $i$
+from $\mu$ to $\ms$ costs only $\delta/(1-\ms)$ (Lemma~\ref{lem:shift}). Since $\marm_i<\ms<1$,
+Lemma~\ref{lem:optimizer}(a) (\emph{the dual maximiser}) gives $0<\Ki_i<\infty$. \dt{s:ui}The level of
+the deviations of arm $i$ is
+\begin{equation}\label{eq:ui}
+  \ui_i\coloneqq\Ki_i-\frac{\delta}{1-\ms}.
+\end{equation}
+\dt{s:MT}The number of pulls of arm $i$ paid at first order is
+\begin{equation}\label{eq:MT}
+  \MT_T\coloneqq\frac{\log T}{\Ki_i-2\delta/(1-\ms)}.
+\end{equation}
+Since $0<\delta<(1-\ms)\Ki_i/2$, we have $\Ki_i/2<\ui_i<\Ki_i$, $\Ki_i-2\delta/(1-\ms)>0$ and $\MT_T\ge0$.
+We will often use the fundamental inequality of index policies: for every arm $a$ and every $s\ge1$,
+since $\Np_a(t)=s$ and $\Ap_t=a$ imply $\Np_a(t+1)=s+1$,
+\begin{equation}\label{eq:fundamental}
+  \sum_{t\ge0}\ind\{\Ap_t=a,\ \Np_a(t)=s\}\le1.
+\end{equation}
+
+To prove Theorem~\ref{thm:main} we use the following decomposition.
+
+\begin{lemma}[Decomposition]\label{lem:decomp}
+\uses{def:model, def:run, def:imed}
+Let $\nu\in\Sm^\arms$, let $i$ be an arm, $\mu\in\R$ and $T\ge1$, and consider \imed{} with any \term{w:tie}{tie rule}.
+Then on every run,
+\dt{s:TA}\dt{s:TB}
+\begin{equation*}
+  \Np_i(T)\le1+\underbrace{\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)\le\mu\}}_{\TA}
+  +\underbrace{\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)>\mu\}}_{\TB}.
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-decomp}.)
+
+From this decomposition we use the following lemmas to control each term.
+
+\begin{lemma}[The rounds at which every empirical mean is low]\label{lem:termA}
+\uses{def:model, def:kinf, def:run, def:imed, def:dev, lem:decomp}
+Let $\nu\in\Sm^\arms$, let $i,j$ be arms, $\mu\in\R$ and $T\ge1$, and consider \imed{} with any \term{w:tie}{tie rule}.
+Then, with $\TA$ as in Lemma~\ref{lem:decomp}, on every run
+\begin{equation*}
+  \TA\le\sup_{s\ge1}\ws_s(\Xs_{j,\cdot};\mu),\qquad\text{hence}\qquad\E\TA\le\Gam(\nu_j,\mu).
+\end{equation*}
+If moreover $\nu_j\in\Sm_2$ and $\mu<\marm_j$, then $\Gam(\nu_j,\mu)<\infty$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-termA}.) This is the new step:
+\citet[(25)--(26)]{HT15} bound the same term by a sum over the sample sizes of arm $j$, whose
+expectation is infinite without a third moment (Lemma~\ref{lem:three-moments});
+Lemma~\ref{lem:sup}(b) counts it by a supremum, and Proposition~\ref{prop:key} bounds the expectation
+of that supremum under a finite variance.
+
+\begin{lemma}[The rounds at which some empirical mean is high]\label{lem:termB}
+\uses{def:model, def:kinf, def:run, def:imed, def:rate, lem:decomp}
+Let $\nu\in\Sm^\arms$ with $\ms<1$, let $i$ be a \term{w:subopt}{suboptimal} arm, $\delta\in(0,(1-\ms)\Ki_i/2)$,
+$\mu\coloneqq\ms-\delta$ and $T\ge1$, and let $\ui_i$ and $\MT_T$ be given by \eqref{eq:ui}
+and~\eqref{eq:MT}. Consider \imed{} with any \term{w:tie}{tie rule}. Then, with $\TB$ as in Lemma~\ref{lem:decomp}, on
+every run
+\dt{s:TC}
+\begin{equation*}
+  \TB\le\sum_{s\ge1}\ind\big\{s\Kinf(\hnu_{i,s},\mu)\le\log T\big\}
+  \le \MT_T+\underbrace{\sum_{s\ge1}\ind\big\{\Kinf(\hnu_{i,s},\ms)\le \ui_i\big\}}_{\TC}.
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-termB}.) This is the classical argument for the
+\term{w:subopt}{suboptimal} arm, as in the proof of \citet[Theorem~3]{HT15}; the only change is the level shift of
+Lemma~\ref{lem:shift}, a direct comparison of the duals that replaces \citet[Lemma~7]{HT15}.
+
+\begin{lemma}[The deviations of the suboptimal arm]\label{lem:termC}
+\uses{def:model, def:kinf, def:run, def:rate, lem:termB}
+Under the hypotheses of Lemma~\ref{lem:termB}, $\Lt_i(\delta)>0$ and
+\begin{equation*}
+  \E\TC\le\frac{1}{1-e^{-\Lt_i(\delta)}}.
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-termC}.) This is \citet[Proposition~10]{HT15}, as in
+the classical proof; no contribution here, except that Lemma~\ref{lem:subopt} restricts the Chernoff
+parameter to $[-1,0]$ and needs no moment of $\nu_i$ beyond its mean.
+
+From these lemmas the proof of the theorem is short.
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{def:model, def:kinf, def:run, def:imed, def:dev, def:rate, lem:optimizer, lem:decomp, lem:termA, lem:termB, lem:termC}
+\emph{The constants.} Since $\marm_i<\ms<1$, Lemma~\ref{lem:optimizer}(a) gives $0<\Ki_i<\infty$. By
+Lemma~\ref{lem:termC}, $\Lt_i(\delta)>0$. Since $\nu_j\in\Sm_2$ and $\mu=\ms-\delta<\ms=\marm_j$,
+Lemma~\ref{lem:termA} gives $\Gam(\nu_j,\ms-\delta)<\infty$.
+
+\emph{The bound.} Taking expectations in Lemma~\ref{lem:decomp} at the level $\mu=\ms-\delta$, then
+using Lemmas~\ref{lem:termA}, \ref{lem:termB} and~\ref{lem:termC} in turn, we get
+\begin{align*}
+  \E \Np_i(T)&\le1+\E\TA+\E\TB\\
+  &\le1+\Gam(\nu_j,\ms-\delta)+\MT_T+\E\TC\\
+  &\le1+\frac{\log T}{\Ki_i-2\delta/(1-\ms)}+\frac{1}{1-e^{-\Lt_i(\delta)}}+\Gam(\nu_j,\ms-\delta),
+\end{align*}
+where the last line uses the definition~\eqref{eq:MT} of $\MT_T$. This is the bound of
+Theorem~\ref{thm:main}.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:decomp}}\label{sec:proof-lem-decomp}
+
+\begin{proof}
+\proves{lem:decomp}
+\uses{def:model, def:run, def:imed}
+By Definition~\ref{def:imed}, \imed{} pulls each arm once in the rounds $0,\dots,\Karms-1$. If $T\le \Karms$, arm
+$i$ is pulled at most once before round $T$ and both sums are empty, so $\Np_i(T)\le1$. Otherwise,
+since $\hms(t)$ is defined for every $t\ge \Karms$, we split each indicator according to the event
+$\{\hms(t)\le\mu\}$:
+\begin{align*}
+  \Np_i(T)&=\sum_{t=0}^{\Karms-1}\ind\{\Ap_t=i\}+\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i\}\\
+  &=1+\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)\le\mu\}+\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)>\mu\}.
+\end{align*}
+This is the claim.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:sup}}\label{sec:proof-lem-sup}
+
+\begin{proof}
+\proves{lem:sup}
+\uses{def:model, def:kinf, def:run, def:imed, def:dev, lem:dualfacts}
+\emph{Setting.} Fix an outcome, arms $i,j$ and reals $x,\mu$. \emph{Goal.} The two counting
+bounds.
+
+\emph{Step 1: part (a).} Let $t\ge \Karms$ be a round with $\Ap_t=i$. Since $\Dv_i(t)\ge0$,
+\[
+  \Is(t)=\Ix_i(t)\ge\log \Np_i(t).
+\]
+The counts $\Np_i(t)$ at the successive rounds $t$ with $\Ap_t=i$ are distinct positive integers.
+Hence the rounds counted in (a) have distinct values $\Np_i(t)\in\{n\ge1:\log n\le x\}$, a set with
+at most $e^x$ elements. This proves (a).
+
+\emph{Step 2: a random level.} Let
+\[
+  M\coloneqq\sup\big\{s\Kinf(\hnu_{j,s},\mu)+\log s:\ s\ge1,\ \hm_{j,s}\le\mu\big\}\in[-\infty,\infty],
+\]
+with $\sup\emptyset\coloneqq-\infty$. By Definition~\ref{def:dev}, $e^M=\sup_{s\ge1}\ws_s(\Xs_{j,\cdot};\mu)$, with
+$e^{-\infty}\coloneqq0$ and $e^{+\infty}\coloneqq+\infty$.
+
+\emph{Step 3: every counted round has $\Is(t)\le M$.} Let $t\ge \Karms$ with $\Ap_t=i$ and
+$\hms(t)\le\mu$, and let $s\coloneqq \Np_j(t)\ge1$. Then $\hm_{j,s}=\hmt_j(t)\le\hms(t)\le\mu$,
+so $s$ enters the supremum defining $M$. Moreover $\Dv_j(t)\le\Kinf(\hnu_{j,s},\hms(t))$: the
+two are equal if $j$ is not an \term{w:leader}{empirical leader}, and $\Dv_j(t)=0$ otherwise. Therefore
+\begin{align*}
+  \Is(t)\le \Ix_j(t)&=s\Dv_j(t)+\log s\\
+  &\le s\Kinf(\hnu_{j,s},\hms(t))+\log s&&\text{(the comparison of $\Dv_j(t)$ above)}\\
+  &\le s\Kinf(\hnu_{j,s},\mu)+\log s\le M&&\text{(Lemma~\ref{lem:dualfacts}(a), since $\hms(t)\le\mu$).}
+\end{align*}
+Hence every round counted in (b) is counted in (a) with $x=M$.
+
+\emph{Step 4: conclusion.} If $M=-\infty$, Step 3 shows that no round is counted in (b). If
+$M=+\infty$, (b) is trivial. Otherwise, part (a) holds pathwise for every real $x$, hence for the
+random value $x=M$, and the count in (b) is at most $e^M=\sup_s\ws_s(\Xs_{j,\cdot};\mu)$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:termA}}\label{sec:proof-lem-termA}
+
+\begin{proof}
+\proves{lem:termA}
+\uses{def:model, def:kinf, def:run, def:imed, def:dev, lem:decomp, lem:sup, prop:key}
+Let us look at $\TA$. Each of its rounds $t$ satisfies $t\ge \Karms$, $\Ap_t=i$ and $\hms(t)\le\mu$, so
+\begin{align*}
+  \TA&=\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \hms(t)\le\mu\}\\
+  &\le|\{t\ge \Karms:\Ap_t=i,\ \hms(t)\le\mu\}|\\
+  &\le\sup_{s\ge1}\ws_s(\Xs_{j,\cdot};\mu)&&\text{(Lemma~\ref{lem:sup}(b))}.
+\end{align*}
+Now the sequence $\Xs_{j,\cdot}=(\Xs_{j,1},\Xs_{j,2},\dots)$ is i.i.d.\ of law $\nu_j$
+(Definition~\ref{def:run}), so by Definition~\ref{def:dev} the expectation of the right-hand side is
+$\Gam(\nu_j,\mu)$. This gives $\E\TA\le\Gam(\nu_j,\mu)$. Finally, if $\nu_j\in\Sm_2$ and
+$\mu<\marm_j=\mean(\nu_j)$, Proposition~\ref{prop:key} (\emph{the key deviation bound}) gives
+$\Gam(\nu_j,\mu)<\infty$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:termB}}\label{sec:proof-lem-termB}
+
+\begin{proof}
+\proves{lem:termB}
+\uses{def:model, def:kinf, def:run, def:imed, def:rate, lem:decomp, lem:dualfacts, lem:optimizer, lem:shift}
+\emph{Idea.} At a round counted in $\TB$, the index of an \term{w:leader}{empirical leader} is at most $\log T$, which
+forces the empirical divergence of arm $i$ at the level $\mu$ below $\log T/\Np_i(t)$; the counts of
+distinct rounds are distinct, and moving the level from $\mu$ to $\ms$ costs $\delta/(1-\ms)$.
+
+\emph{Step 1: each counted round has a small divergence.} Let $\Karms\le t\le T-1$ with $\Ap_t=i$ and
+$\hms(t)>\mu$, and let $s\coloneqq \Np_i(t)\ge1$. Let $a$ be an \term{w:leader}{empirical leader} at round $t$. By
+Definition~\ref{def:imed} its divergence term is $\Dv_a(t)=0$, so its index is
+$\Ix_a(t)=\log \Np_a(t)\le\log t\le\log T$, and $\Ix_i(t)=\Is(t)\le\log T$. We show that
+$s\Kinf(\hnu_{i,s},\mu)\le\log T$. If $i$ is an \term{w:leader}{empirical leader}, then $\hm_{i,s}=\hms(t)>\mu$, so
+$\Kinf(\hnu_{i,s},\mu)=0$ by Lemma~\ref{lem:dualfacts}(b) (\emph{zero at or above the mean}). Otherwise
+$\Dv_i(t)=\Kinf(\hnu_{i,s},\hms(t))\ge\Kinf(\hnu_{i,s},\mu)$ by Lemma~\ref{lem:dualfacts}(a)
+(\emph{monotonicity in the level}), and, since $\log s\ge0$,
+\begin{equation*}
+  s\Kinf(\hnu_{i,s},\mu)\le s\Dv_i(t)\le \Ix_i(t)\le\log T.
+\end{equation*}
+
+\emph{Step 2: the first inequality.} By Step 1, and since $\hnut_i(t)=\hnu_{i,\Np_i(t)}$ with $\Np_i(t)\ge1$
+for $t\ge \Karms$, we get for every round $t\in\{\Karms,\dots,T-1\}$
+\begin{align*}
+  \ind\{\Ap_t=i,\ \hms(t)>\mu\}
+  &\le\ind\big\{\Ap_t=i,\ \Np_i(t)\Kinf(\hnu_{i,\Np_i(t)},\mu)\le\log T\big\}\\
+  &=\sum_{s\ge1}\ind\{\Ap_t=i,\ \Np_i(t)=s\}\,\ind\big\{s\Kinf(\hnu_{i,s},\mu)\le\log T\big\}.
+\end{align*}
+Summing over $t$ and using the fundamental inequality~\eqref{eq:fundamental},
+\begin{align*}
+  \TB&\le\sum_{s\ge1}\ind\big\{s\Kinf(\hnu_{i,s},\mu)\le\log T\big\}\sum_{t=\Karms}^{T-1}\ind\{\Ap_t=i,\ \Np_i(t)=s\}\\
+  &\le\sum_{s\ge1}\ind\big\{s\Kinf(\hnu_{i,s},\mu)\le\log T\big\}.
+\end{align*}
+
+\emph{Step 3: move the level to $\ms$.} By Lemma~\ref{lem:shift} (\emph{shifting the level}) with the
+levels $\mu<\ms<1$, for every $s\ge1$,
+\begin{equation*}
+  \Kinf(\hnu_{i,s},\ms)\le\Kinf(\hnu_{i,s},\mu)+\frac{\delta}{1-\ms}.
+\end{equation*}
+Since $\Ki_i-2\delta/(1-\ms)>0$, an integer $s\ge \MT_T$ satisfies $s(\Ki_i-2\delta/(1-\ms))\ge\log T$, that
+is $\log T/s\le\Ki_i-2\delta/(1-\ms)$. Then we split according to the event $\{s<\MT_T\}$:
+\begin{align*}
+  \ind\big\{s\Kinf(\hnu_{i,s},\mu)\le\log T\big\}
+  &\le\ind\{s<\MT_T\}+\ind\Big\{s\ge \MT_T,\ \Kinf(\hnu_{i,s},\mu)\le\frac{\log T}{s}\Big\}\\
+  &\le\ind\{s<\MT_T\}+\ind\Big\{s\ge \MT_T,\ \Kinf(\hnu_{i,s},\ms)\le\frac{\log T}{s}+\frac{\delta}{1-\ms}\Big\}\\
+  &\le\ind\{s<\MT_T\}+\ind\Big\{\Kinf(\hnu_{i,s},\ms)\le\Ki_i-\frac{2\delta}{1-\ms}+\frac{\delta}{1-\ms}\Big\}\\
+  &=\ind\{s<\MT_T\}+\ind\big\{\Kinf(\hnu_{i,s},\ms)\le \ui_i\big\},
+\end{align*}
+by the definition~\eqref{eq:ui} of $\ui_i$.
+
+\emph{Step 4: conclusion.} There are at most $\MT_T$ integers $s\ge1$ with $s<\MT_T$. Summing the last
+display over $s\ge1$ and using Step 2 gives $\TB\le \MT_T+\TC$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:termC}}\label{sec:proof-lem-termC}
+
+\begin{proof}
+\proves{lem:termC}
+\uses{def:model, def:kinf, def:run, def:rate, lem:termB, lem:optimizer, lem:subopt}
+Since $\marm_i<\ms<1$, Lemma~\ref{lem:optimizer}(a) gives $0<\Ki_i<\infty$, and $\ui_i<\Ki_i$ because
+$\delta>0$. The rewards $\Xs_{i,1},\Xs_{i,2},\dots$ are independent of law $\nu_i$, and $\hnu_{i,s}$ is their
+empirical law after $s$ samples (Definition~\ref{def:run}). Lemma~\ref{lem:subopt} (\emph{deviations of
+a \term{w:subopt}{suboptimal} arm need no moment}) with $P=\nu_i$, the level $\ms\in(\marm_i,1)$ and $u=\ui_i<\Ki_i$ gives
+$\Lt(\nu_i,\ms,\ui_i)>0$, that is $\Lt_i(\delta)>0$ by Definition~\ref{def:rate}, and for every $s\ge1$
+\begin{equation*}
+  \Prob\big(\Kinf(\hnu_{i,s},\ms)\le \ui_i\big)\le e^{-s\Lt_i(\delta)}.
+\end{equation*}
+Finally, by monotone convergence,
+\begin{equation*}
+  \E\TC=\sum_{s\ge1}\Prob\big(\Kinf(\hnu_{i,s},\ms)\le \ui_i\big)\le\sum_{s\ge1}e^{-s\Lt_i(\delta)}
+  =\frac{e^{-\Lt_i(\delta)}}{1-e^{-\Lt_i(\delta)}}\le\frac{1}{1-e^{-\Lt_i(\delta)}}.
+\end{equation*}
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{Proof of Proposition~\ref{prop:key}}\label{sec:proof-key}
+
+In this appendix we prove that $\Gam(P,\mu)<\infty$ for $P\in\Sm_2$ and $\mu<\mean(P)$, with the explicit
+bound~\eqref{eq:gammabound}.
+
+\paragraph{Skeleton} To prove Proposition~\ref{prop:key} we use the decomposition \eqref{eq:split}
+below. For each sample size $s$, the indices $l\le s$ are split into big jumps
+($Y_l>\beta s$) and a good part, and $\Omega$ into five events according to the number $K_s$ of big
+jumps and the sum $G_s$ of the good part. The supremum over $s$ is bounded by the supremum of the
+one-jump terms plus the sum over $s$ of the other terms:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lp{0.3\textwidth}p{0.25\textwidth}p{0.3\textwidth}@{}}
+\toprule
+Event & Meaning & Bound on its contribution & Tool \\
+\midrule
+$E5_s$ & no big jump, good part $\ge s\delta/2$ & $0$ & the empirical mean exceeds $\mu$ \\
+$E4_s$ & one big jump, good part $\ge s\delta/2$ & $2w/(\beta\delta)$ for the supremum & Lemma~\ref{lem:goodpart}; second moment \\
+$E3_s$ & $2$ to $k_0-1$ big jumps, good part $\ge s\delta/2$ & $C_2w^2/\beta^2$ for the sum & Lemma~\ref{lem:goodpart}; independence \\
+$E1_s$ & at least $k_0$ big jumps & polynomial in $s_3$ & Chebyshev, Lemma~\ref{lem:moments} \\
+$E2_s$ & fewer than $k_0$ big jumps, good part $<s\delta/2$ & polynomial in $s_1$ & Lemma~\ref{lem:bennett}, Lemma~\ref{lem:moments} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Lemmas, by the question they answer} \emph{How large can the dual statistic be?}
+Lemma~\ref{lem:grid} reduces the maximum over $\lambda$ to a grid, and Lemma~\ref{lem:moments}
+bounds its moments of order $\gamma\ge1$. \emph{How large is it when the good part is large?}
+Lemma~\ref{lem:goodpart}. \emph{How likely is a small good part?} Bennett's inequality,
+Lemma~\ref{lem:bennett}.
+
+\begin{lemma}[Bennett's inequality, in the form used]\label{lem:bennett}
+Let $\xi_1,\dots,\xi_s$ be independent centred random variables with $\xi_l\le b$ almost surely for
+some $b>0$, and $\sum_l\E\xi_l^2\le V$ for some $V>0$. Then, for every $x>0$,
+$\Prob\big(\sum_l\xi_l\ge x\big)\le\big(eV/(bx)\big)^{x/b}$.
+\end{lemma}
+
+\emph{Role.} The bound on $\Prob(E2_s)$ in Step 6 of the proof of Proposition~\ref{prop:key}.
+
+\begin{proof}
+\emph{Setting.} Let $\varphi(v)\coloneqq(e^v-1-v)/v^2$ for $v\ne0$ and $\varphi(0)\coloneqq1/2$.
+\emph{Goal.} A Chernoff bound with the variance.
+
+By Taylor's formula with integral remainder, $\varphi(v)=\int_0^1(1-\theta)e^{v\theta}\,d\theta$,
+which is nondecreasing in $v$. For $\eta>0$ and $\xi\le b$, this gives
+$e^{\eta\xi}=1+\eta\xi+\eta^2\xi^2\varphi(\eta\xi)\le1+\eta\xi+\eta^2\xi^2\varphi(\eta b)$. Taking
+expectations, with $\E\xi_l=0$ and $1+v\le e^v$,
+\[
+  \E e^{\eta\xi_l}\le1+\eta^2\E\xi_l^2\,\varphi(\eta b)\le\exp\Big(\frac{\E\xi_l^2}{b^2}\big(e^{\eta b}-1-\eta b\big)\Big).
+\]
+By independence and Markov's inequality,
+\[
+  \Prob\Big(\sum_l\xi_l\ge x\Big)\le\exp\Big(\frac V{b^2}\big(e^{\eta b}-1-\eta b\big)-\eta x\Big).
+\]
+Choose $\eta b\coloneqq\log(1+bx/V)$. The exponent becomes
+$\frac xb-\big(\frac V{b^2}+\frac xb\big)\log\big(1+\frac{bx}V\big)$, which is at most
+$\frac xb-\frac xb\log\frac{bx}{V}=\frac xb\log\frac{eV}{bx}$, because $\log(1+v)\ge\log v$ and
+$\frac V{b^2}\log(1+\frac{bx}{V})\ge0$. This is the claim.
+\end{proof}
+
+\begin{lemma}[A grid for the dual variable]\label{lem:grid}
+Let $c>0$, $s\ge1$, $z_1,\dots,z_s\le c$, $Q(\lambda)\coloneqq\prod_{l=1}^s(1-\lambda z_l)$ for
+$\lambda\in[0,1/c]$, and $\lambda_k\coloneqq k/(2cs)$ for $k=0,\dots,2s$. Then
+$\max_{\lambda\in[0,1/c]}Q(\lambda)\le e\max_{0\le k\le2s}Q(\lambda_k)$.
+\end{lemma}
+
+\emph{Role.} Lemma~\ref{lem:moments}(a); it is the grid of the proof of \citet[Proposition~11]{HT15}
+with mesh $1/(2cs)$.
+
+\begin{proof}
+\emph{Setting.} Let $\ell(\lambda)\coloneqq s^{-1}\log Q(\lambda)$, with values in
+$[-\infty,\infty)$ and $\log0\coloneqq-\infty$. \emph{Goal.} $s\ell(\lambda)\le\max_ks\ell(\lambda_k)+1$ for every
+$\lambda\in[0,1/c]$.
+
+\emph{Step 1: concavity and slope.} $\ell$ is concave on $[0,1/c]$ (a mean of concave functions
+with values in $[-\infty,\infty)$), finite and differentiable on $[0,1/c)$, where every factor is at least
+$1-\lambda c>0$, with $\ell'(\lambda)=-\frac1s\sum_lz_l/(1-\lambda z_l)$. At $\lambda_s=1/(2c)$, each
+term $-z/(1-z/(2c))=-2cz/(2c-z)$ lies in $[-2c,2c)$ for $z\le c$: it is below $2c$ if $z<0$ and at
+least $-2c\cdot c/(2c-c)=-2c$ if $0\le z\le c$. So $-2c\le\ell'(\lambda_s)<2c$.
+
+\emph{Step 2: $\lambda\le\lambda_s$.} Let $\lambda\in[\lambda_k,\lambda_{k+1}]$ with $k+1\le s$. Since
+$\ell'$ is nonincreasing, $\ell'(\lambda_{k+1})\ge\ell'(\lambda_s)\ge-2c$, and the tangent at
+$\lambda_{k+1}$ gives
+\[
+  \ell(\lambda)\le\ell(\lambda_{k+1})+\ell'(\lambda_{k+1})(\lambda-\lambda_{k+1})\le\ell(\lambda_{k+1})+2c\cdot\frac1{2cs}
+  =\ell(\lambda_{k+1})+\frac1s.
+\]
+
+\emph{Step 3: $\lambda\ge\lambda_s$.} Let $\lambda\in[\lambda_{k-1},\lambda_k]$ with $s+1\le k\le2s$.
+Then $\lambda_{k-1}<1/c$, so $\ell$ is differentiable there, $\ell'(\lambda_{k-1})\le\ell'(\lambda_s)<2c$,
+and the tangent at $\lambda_{k-1}$ (valid on $[0,1/c]$ by concavity) gives
+$\ell(\lambda)\le\ell(\lambda_{k-1})+2c\cdot\frac1{2cs}=\ell(\lambda_{k-1})+\frac1s$.
+
+\emph{Step 4: conclusion.} The intervals of Steps 2 and 3 cover $[0,1/c]$, so
+$s\ell(\lambda)\le\max_ks\ell(\lambda_k)+1$ for every $\lambda$; exponentiating gives the claim.
+\end{proof}
+
+\begin{lemma}[Moments of the dual statistic]\label{lem:moments}
+\uses{def:model, def:kinf}
+Let $P\in\Sm$ and $\mu<\mean(P)$; let $\hP_s$ be the empirical law of $X_1,\dots,X_s$, i.i.d.\ of law $P$,
+and $\phi(\gamma)\coloneqq\E_P[((1-X)/(1-\mu))^\gamma]\in[0,\infty]$ for $\gamma\ge1$.
+\begin{enumerate}[label=(\alph*)]
+\item For every $s\ge1$ and $\gamma\ge1$,
+  $\E\exp(\gamma s\Kinf(\hP_s,\mu))\le e^\gamma(2s+1)\max\{1,\phi(\gamma)\}^s$. In particular
+  $\E\exp(s\Kinf(\hP_s,\mu))\le e(2s+1)$.
+\item If $\E_P|X|^{\gamma_0}<\infty$ for some $\gamma_0>1$, there is $\gamma\in(1,\gamma_0]$ with
+  $\phi(\gamma)\le1$. For such $\gamma$, every $s\ge1$ and every event $E$,
+  \[
+    \E\big[s\exp(s\Kinf(\hP_s,\mu))\ind_E\big]\le e\,s\,(2s+1)^{1/\gamma}\,\Prob(E)^{1-1/\gamma}.
+  \]
+\end{enumerate}
+\end{lemma}
+
+\emph{Role.} The crude bounds for small $s$ and the H\"older bounds of Steps 5 and 6 of the proof of
+Proposition~\ref{prop:key}. Part (b) is the inequality $\lambda_\mu>1$ of
+\citet[Proposition~11(i)]{HT15}, which only needs a moment of order above $1$.
+
+\begin{proof}
+\uses{def:model, def:kinf, lem:dualfacts, lem:grid}
+\emph{Setting.} Let $Z_l\coloneqq X_l-\mu\le c\coloneqq1-\mu$ and $\lmax\coloneqq1/c$.
+\emph{Goal.} (a) and (b).
+
+\emph{Step 1: (a).} By Lemma~\ref{lem:dualfacts}(c) and Lemma~\ref{lem:grid},
+\[
+  \exp(\gamma s\Kinf(\hP_s,\mu))\le e^\gamma\max_{0\le k\le2s}\prod_l(1-\lambda_kZ_l)^\gamma\le
+  e^\gamma\sum_{k=0}^{2s}\prod_l(1-\lambda_kZ_l)^\gamma.
+\]
+By independence, $\E\prod_l(1-\lambda Z_l)^\gamma=f(\lambda)^s$ with
+$f(\lambda)\coloneqq\E(1-\lambda Z_1)^\gamma$. For $\gamma\ge1$, $\lambda\mapsto(1-\lambda z)^\gamma$ is
+convex on $[0,\lmax]$ (an increasing convex function of a nonnegative affine function), so $f$ is
+convex and $f(\lambda)\le\max\{f(0),f(\lmax)\}=\max\{1,\phi(\gamma)\}$, since
+$1-\lmax Z=(1-X)/(1-\mu)$. Summing over the $2s+1$ grid points gives (a). For $\gamma=1$,
+$\phi(1)=(1-\mean(P))/(1-\mu)<1$.
+
+\emph{Step 2: the exponent of (b).} For $u\ge0$ and $\gamma\in[1,\gamma_0]$,
+$u^\gamma\le1+u^{\gamma_0}$; with $u=1-X\le1+|X|$, the integrand of $\phi$ is dominated on
+$[1,\gamma_0]$ by an integrable function. By dominated convergence $\phi$ is finite and continuous on
+$[1,\gamma_0]$. Since $\phi(1)<1$, there is $\gamma\in(1,\gamma_0]$ with $\phi(\gamma)\le1$.
+
+\emph{Step 3: the H\"older bound.} For such $\gamma$, (a) gives $\E\exp(\gamma s\Kinf(\hP_s,\mu))\le e^\gamma(2s+1)$.
+By H\"older's inequality with the exponents $\gamma$ and $\gamma/(\gamma-1)$,
+\[
+  \E\big[s\exp(s\Kinf(\hP_s,\mu))\ind_E\big]\le s\big(e^\gamma(2s+1)\big)^{1/\gamma}\Prob(E)^{1-1/\gamma}
+  =e\,s\,(2s+1)^{1/\gamma}\Prob(E)^{1-1/\gamma}.
+\]
+\end{proof}
+
+\begin{lemma}[The dual statistic when the good part is large]\label{lem:goodpart}
+Let $c>0$, $s\ge1$, $z_1,\dots,z_s\le c$, and let $B\subseteq\{1,\dots,s\}$ be nonempty with
+$z_l<0$ for $l\in B$; let $k\coloneqq|B|$, and assume that $\sum_{l\notin B}z_l\ge h$ for some
+$h>0$. Then
+\[
+  \max_{\lambda\in[0,1/c]}\prod_{l=1}^s(1-\lambda z_l)\le\prod_{l\in B}\max\Big\{1,\frac{k|z_l|}{h}\Big\}.
+\]
+\end{lemma}
+
+\emph{Role.} Steps 3 and 4 of the proof of Proposition~\ref{prop:key}, with $h=s\delta/2$: one big
+jump $y$ multiplies the statistic by at most $2y/(s\delta)$.
+
+\begin{proof}
+\emph{Step 1: one variable.} For $y>0$ and $g>0$,
+$\sup_{\lambda\ge0}\big(\log(1+\lambda y)-\lambda g\big)\le\log\max\{1,y/g\}$. Indeed the derivative
+$y/(1+\lambda y)-g$ is decreasing in $\lambda$. If $y\le g$, it is at most $0$ and the supremum is
+the value $0$ at $\lambda=0$. If $y>g$, the maximum is at $\lambda=1/g-1/y$, with value
+$\log(y/g)-1+g/y\le\log(y/g)$.
+
+\emph{Step 2: $\lambda<1/c$.} Every factor with $l\notin B$ satisfies $1-\lambda z_l\ge1-\lambda c>0$
+and $\log(1-\lambda z_l)\le-\lambda z_l$. Hence
+\[
+  \log\prod_{l=1}^s(1-\lambda z_l)\le\sum_{l\in B}\log(1+\lambda|z_l|)-\lambda h
+  =\sum_{l\in B}\Big(\log(1+\lambda|z_l|)-\lambda\frac hk\Big)\le\sum_{l\in B}\log\max\Big\{1,\frac{k|z_l|}{h}\Big\},
+\]
+by Step 1 with $g=h/k$.
+
+\emph{Step 3: $\lambda=1/c$.} The product is a polynomial in $\lambda$, hence continuous on
+$[0,1/c]$, and the bound of Step 2 extends to $\lambda=1/c$.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:key}]
+\proves{prop:key}
+\uses{def:model, def:kinf, def:dev, lem:dualfacts, lem:bennett, lem:moments, lem:goodpart}
+\emph{Idea.} Split each sample of size $s$ into big negative jumps and a good part. With one big
+jump and a large good part, $\ws_s$ is at most a constant times that jump, and the supremum over $s$
+of these terms has expectation at most a constant times the second moment. Every other event has a
+probability small enough in $s$ to be summed after a H\"older bound.
+
+\emph{Setting.} Fix $P\in\Sm_2$ and $\mu<m\coloneqq \mean(P)$. Let $X_1,X_2,\dots$ be i.i.d.\ of law $P$,
+$Z_l\coloneqq X_l-\mu$, $Y_l\coloneqq Z_l^-$, $\delta\coloneqq m-\mu>0$, $c\coloneqq1-\mu>0$,
+$v\coloneqq\E Z_1^2$, $w\coloneqq\E Y_1^2$, $y_1\coloneqq\E Y_1$, $S_s\coloneqq\sum_{l\le s}Z_l$, and
+$W_s\coloneqq \ws_s(X;\mu)$. By Lemma~\ref{lem:dualfacts}(c),
+\[
+  W_s=s\max_{0\le\lambda\le1/c}\prod_{l\le s}(1-\lambda Z_l)\,\ind\{S_s\le0\}.
+\]
+\emph{Goal.} $\Gam(P,\mu)=\E\sup_{s\ge1}W_s\le$ the right-hand side of~\eqref{eq:gammabound}.
+
+Note that $v\ge(\E Z_1)^2=\delta^2>0$.
+
+\emph{Step 1: parameters.} Lemma~\ref{lem:moments}(b) with $\gamma_0=2$ gives $\gamma\in(1,2]$ with
+$\E_P[((1-X)/c)^\gamma]\le1$. Let $\theta\coloneqq1-1/\gamma\in(0,1/2]$, $k_0\coloneqq\lceil4/\theta\rceil\ge8$,
+$\beta\coloneqq\min\{1,\delta/(4k_0)\}$ and, for $s\ge1$, $e_s\coloneqq\E[Y_1\ind\{Y_1>\beta s\}]$. Then
+\begin{equation}\label{eq:es}
+  e_s\le y_1,\qquad e_s\le\frac{w}{\beta s},\qquad\sum_{s\ge1}e_s=\E\big[Y_1\,|\{s\ge1:\beta s<Y_1\}|\big]\le\frac{w}{\beta}.
+\end{equation}
+
+\emph{Step 2: big jumps, good part, and a partition.} For $s\ge1$, let
+$B_s\coloneqq\{l\le s:Y_l>\beta s\}$ (the big jumps), $K_s\coloneqq|B_s|$ and
+$G_s\coloneqq\sum_{l\le s,\,l\notin B_s}Z_l$ (the good part). Since $l\in B_s$ if and only if
+$Z_l<-\beta s$, we have $G_s=\sum_{l\le s}Z_l\ind\{Z_l\ge-\beta s\}$. The following events partition
+$\Omega$:
+\begin{align*}
+  E1_s&\coloneqq\{K_s\ge k_0\}, & E2_s&\coloneqq\{K_s<k_0,\ G_s<s\delta/2\},\\
+  E3_s&\coloneqq\{2\le K_s<k_0,\ G_s\ge s\delta/2\}, & E4_s&\coloneqq\{K_s=1,\ G_s\ge s\delta/2\},\\
+  E5_s&\coloneqq\{K_s=0,\ G_s\ge s\delta/2\}.
+\end{align*}
+On $E5_s$, $S_s=G_s>0$, so $W_s=0$. Since all terms are nonnegative,
+\begin{equation}\label{eq:split}
+  \sup_{s\ge1}W_s\le\sup_{s\ge1}W_s\ind_{E4_s}+\sum_{s\ge1}W_s\big(\ind_{E1_s}+\ind_{E2_s}+\ind_{E3_s}\big).
+\end{equation}
+
+\emph{Step 3: one big jump, where the second moment is used.} On $E4_s$, let $B_s=\{l^\star\}$. If
+$W_s>0$, then $S_s=G_s-Y_{l^\star}\le0$, so $Y_{l^\star}\ge G_s\ge s\delta/2$. Lemma~\ref{lem:goodpart}
+with $B=\{l^\star\}$ and $h=s\delta/2$ then gives
+\[
+  W_s\le s\max\Big\{1,\frac{2Y_{l^\star}}{s\delta}\Big\}=\frac{2Y_{l^\star}}{\delta}.
+\]
+Moreover $Y_{l^\star}>\beta s\ge\beta l^\star$, since $l^\star\le s$. Hence, for every $s$,
+$W_s\ind_{E4_s}\le\frac2\delta\sum_{l\ge1}Y_l\ind\{Y_l>\beta l\}$, and by~\eqref{eq:es}
+\[
+  \E\sup_{s\ge1}W_s\ind_{E4_s}\le\frac2\delta\sum_{l\ge1}e_l\le\frac{2w}{\beta\delta}.
+\]
+
+\emph{Step 4: two to $k_0-1$ big jumps.} Let
+\[
+  C_1\coloneqq\frac1\beta+\frac{2k_0}{\delta}\qquad\text{and}\qquad
+  C_2\coloneqq\frac{C_1^2}2+\sum_{k=3}^{k_0-1}\frac{C_1^ky_1^{k-2}}{k!}.
+\]
+On $E3_s$ with $K_s=k$, each $l\in B_s$ has $Y_l>\beta s$, so
+$\max\{1,2kY_l/(s\delta)\}\le C_1Y_l/s$. Lemma~\ref{lem:goodpart} with $h=s\delta/2$ gives
+$W_s\le s\prod_{l\in B_s}(C_1Y_l/s)$ on $E3_s$. Bounding the indicator of $\{B_s=B\}$ by
+$\prod_{l\in B}\ind\{Y_l>\beta s\}$ and summing over the subsets $B$ of size $k$, independence gives
+\[
+  \E[W_s\ind_{E3_s}]\le s\sum_{k=2}^{k_0-1}\binom sk\Big(\frac{C_1e_s}{s}\Big)^k
+  \le s\sum_{k=2}^{k_0-1}\frac{C_1^ke_s^k}{k!}\le C_2\,s\,e_s^2,
+\]
+using $\binom sk\le s^k/k!$ and $e_s\le y_1$. By~\eqref{eq:es}, $s\,e_s^2\le(w/\beta)e_s$, so
+$\sum_{s\ge1}\E[W_s\ind_{E3_s}]\le C_2w^2/\beta^2$.
+
+\emph{Step 5: many big jumps.} Let $s_3\coloneqq w/\beta^2$. By Chebyshev's inequality,
+$\Prob(Y_1>\beta s)\le w/(\beta s)^2$, so
+\[
+  \Prob(E1_s)\le\binom s{k_0}\Prob(Y_1>\beta s)^{k_0}\le\Big(\frac{s_3}{s}\Big)^{k_0}.
+\]
+For every $s$, Lemma~\ref{lem:moments}(a) gives $\E[W_s\ind_{E1_s}]\le\E W_s\le e\,s(2s+1)$. For
+$s\ge s_3$, Lemma~\ref{lem:moments}(b), $k_0\theta\ge4$ and $(2s+1)^{1/\gamma}\le3s$ give
+\[
+  \E[W_s\ind_{E1_s}]\le e\,s(2s+1)^{1/\gamma}\Big(\frac{s_3}{s}\Big)^{k_0\theta}\le3e\,s^2\Big(\frac{s_3}{s}\Big)^4=\frac{3e\,s_3^4}{s^2}.
+\]
+Since $\sum_{s\ge\max\{1,s_3\}}s^{-2}\le2/\max\{1,s_3\}$, the sum over $s\ge s_3$ is at most $6e\,s_3^3$
+(if $s_3<1$, use $s_3^4\le s_3^3$). Hence
+$\sum_s\E[W_s\ind_{E1_s}]\le e\sum_{1\le s<s_3}s(2s+1)+6e\,s_3^3$.
+
+\emph{Step 6: a small good part.} Write $G_s=\sum_{l\le s}Z_l^{(s)}$ with
+$Z_l^{(s)}\coloneqq Z_l\ind\{Z_l\ge-\beta s\}$; these are i.i.d.\ in $l$, with
+$\E Z_1^{(s)}=\delta+e_s\ge\delta$ and $\mathrm{Var}\,Z_1^{(s)}\le\E Z_1^2=v$. Let
+$\xi_l\coloneqq\E Z_1^{(s)}-Z_l^{(s)}$; they are centred, and $\xi_l\le c+\beta s\eqqcolon b_s$
+because $Z_l^{(s)}\ge-\beta s$ and $\E Z_1^{(s)}\le\E Z_1^+\le c$. On $\{G_s<s\delta/2\}$,
+$\sum_l\xi_l=s\E Z_1^{(s)}-G_s>s\delta/2$. Lemma~\ref{lem:bennett} with $V=sv$ and $x=s\delta/2$ gives
+\[
+  \Prob(E2_s)\le\Prob\big(G_s<s\delta/2\big)\le\Big(\frac{2ev}{\delta b_s}\Big)^{s\delta/(2b_s)}.
+\]
+Let $s_1\coloneqq\max\{c/\beta,\ 2ev/(\delta\beta)\}$. For $s\ge s_1$, $\beta s\le b_s\le2\beta s$, so the
+base is at most $2ev/(\delta\beta s)\le s_1/s\le1$ and the exponent is at least
+$\delta/(4\beta)\ge k_0$. Hence $\Prob(E2_s)\le(s_1/s)^{k_0}$, and, as in Step 5,
+$\E[W_s\ind_{E2_s}]\le3e\,s_1^4/s^2$ for $s\ge s_1$ and $\E[W_s\ind_{E2_s}]\le e\,s(2s+1)$ for every
+$s$. So $\sum_s\E[W_s\ind_{E2_s}]\le e\sum_{1\le s<s_1}s(2s+1)+6e\,s_1^3$.
+
+\emph{Step 7: conclusion.} Taking expectations in~\eqref{eq:split} and adding Steps 3--6,
+\begin{equation}\label{eq:gammabound}
+  \Gam(P,\mu)\le\frac{2w}{\beta\delta}+\frac{C_2w^2}{\beta^2}+e\sum_{1\le s<s_1}s(2s+1)+6e\,s_1^3
+  +e\sum_{1\le s<s_3}s(2s+1)+6e\,s_3^3<\infty,
+\end{equation}
+with $\delta=\mean(P)-\mu$, $c=1-\mu$, $v=\E_P(X-\mu)^2$, $w=\E_P((X-\mu)^-)^2$, $y_1=\E_P(X-\mu)^-$, the
+exponent $\gamma$ of Step 1, $k_0=\lceil4\gamma/(\gamma-1)\rceil$, $\beta=\min\{1,\delta/(4k_0)\}$,
+$C_1$ and $C_2$ of Step 4, $s_1=\max\{c/\beta,2ev/(\delta\beta)\}$ and $s_3=w/\beta^2$.
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{Proof of Lemma~\ref{lem:three-moments}}\label{sec:proof-three}
+
+\begin{proof}[Proof of Lemma~\ref{lem:three-moments}]
+\proves{lem:three-moments}
+\uses{def:model, def:kinf, def:dev}
+\emph{Idea.} One summand below $-2s\delta$ among the first $s$, with the others near their mean,
+puts the empirical mean below $\mu$; so $\Prob(\bX_s\le\mu)$ is at least of order
+$s\,\Prob(X_1^-\gtrsim s)$, and $\sum_s s\cdot s\,\Prob(X_1^-\gtrsim s)$ diverges without a third moment.
+
+The first inequality holds because $\Kinf\ge0$. Let $\delta\coloneqq \mean(P)-\mu$ and
+$Z_l\coloneqq X_l-\mu$. Fix $s\ge2$ and let $p_s\coloneqq\Prob(Z_1\le-2s\delta)$. For $l\le s$, the event
+$A_l\coloneqq\{Z_l\le-2s\delta\}\cap\{\sum_{r\le s,r\ne l}Z_r\le2s\delta\}$ is contained in
+$\{\sum_{r\le s}Z_r\le0\}=\{\bX_s\le\mu\}$. Let $q_s\coloneqq\Prob(\sum_{r=2}^sZ_r\le2s\delta)$; it tends
+to $1$ by the weak law of large numbers, since the sum has mean $(s-1)\delta$. By the
+Bonferroni inequality and independence,
+\[
+  \Prob(\bX_s\le\mu)\ge\sum_{l\le s}\Prob(A_l)-\sum_{l<l'\le s}\Prob(A_l\cap A_{l'})
+  \ge sp_sq_s-\frac{s^2p_s^2}{2}.
+\]
+Since $\E|Z_1|<\infty$, $sp_s\le\E[|Z_1|\ind\{|Z_1|\ge2s\delta\}]/(2\delta)\to0$. Hence
+$\Prob(\bX_s\le\mu)\ge sp_s/4$ for every large $s$. Finally
+$\sum_ss^2p_s=\sum_ss^2\Prob(Z_1^-\ge2s\delta)=\infty$ by comparison with
+$\int_0^\infty x^2\Prob(Z_1^-\ge2\delta(x+1))\,dx$, because $\E[(Z_1^-)^3]=\infty$.
+\end{proof}
+
+\section{Proof of Corollary~\ref{cor:optimal}}\label{sec:proof-optimal}
+
+In this appendix we deduce Corollary~\ref{cor:optimal} from Theorem~\ref{thm:main}, the lower bound of
+Theorem~\ref{cite:GMS19-thm1} and Lemma~\ref{lem:class} (\emph{the constant does not depend on the moment
+class}).
+
+\begin{proof}[Proof of Corollary~\ref{cor:optimal}]
+\proves{cor:optimal}
+\uses{def:model, def:kinf, def:run, def:classes, def:imed, thm:main, cite:GMS19-thm1, lem:class}
+(a) Fix $\delta$ as in Theorem~\ref{thm:main}. Dividing its bound by $\log T$ and letting
+$T\to\infty$ gives $\limsup_T\E \Np_i(T)/\log T\le1/(\Ki_i-2\delta/(1-\ms))$; letting $\delta\to0$
+gives (a).
+
+(b) Let $\nu\in\Mm_r^\arms$. No arm has the law $\delta_1$, so $\ms<1$ (Section~\ref{sec:setting}).
+Every \term{w:optimal}{optimal} arm $j$ has $\nu_j\in\Sm_r\subseteq\Sm_2$, since $|x|^2\le1+|x|^r$ for $r\ge2$. With a
+fixed $\delta$, Theorem~\ref{thm:main} gives $\E \Np_i(T)=O(\log T)$ for every \term{w:subopt}{suboptimal} arm $i$, so
+$\Reg_T=O(\log T)$: \imed{} is \term{w:consistent}{consistent} and \term{w:ufc}{uniformly fast convergent} on $\Mm_r$.
+Theorem~\ref{cite:GMS19-thm1} with $\mathcal D=\Mm_r$ gives, for every \term{w:learner}{learner} uniformly fast
+convergent on $\Mm_r$, $\liminf_T\E \Np_i(T)/\log T\ge1/\Kinf(\nu_i,\ms;\Mm_r)$. By
+Lemma~\ref{lem:class} (with $P=\nu_i\in\Mm_r$ and $\ms<1$),
+$\Kinf(\nu_i,\ms;\Mm_r)=\Kinf(\nu_i,\ms)$. Together with (a), the limit of $\E \Np_i(T)/\log T$
+exists for \imed{} and equals $1/\Kinf(\nu_i,\ms)$. Multiplying by $\gap_i$ and summing over the
+\term{w:subopt}{suboptimal} arms gives the statement on $\Reg_T$.
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{Proof of Theorem~\ref{thm:counter} and Corollary~\ref{cor:pareto}}\label{sec:proofs-counter}
+
+In this appendix we prove the lower bounds of Section~\ref{sec:counter}. The proof of
+Theorem~\ref{thm:counter} uses three lemmas: the index of the \term{w:optimal}{optimal} arm after a negative jump
+(Lemma~\ref{lem:jump}), \imed{} explores a point mass logarithmically often
+(Lemma~\ref{lem:explore}), and the maximum of nonnegative numbers is at least their sum minus the sum
+of their pairwise minima (Lemma~\ref{lem:pairs}). Its skeleton: the frozen-index inequality
+$\Np_2(T)\ge\max_sV_s$ (Step 2), a dichotomy on how often arm $1$ is pulled in the first half of the
+rounds (Step 3), then part (i) by Bonferroni's inequality (Step 4) and part (ii) by
+Lemmas~\ref{lem:explore} and~\ref{lem:pairs} (Step 5).
+
+\begin{lemma}[The index after a negative jump]\label{lem:jump}
+\uses{def:kinf}
+Let $s\ge1$, let $x_1,\dots,x_{s-1}\le1$ and $y\ge0$, and let $\hat Q$ be the empirical law of
+$(x_1,\dots,x_{s-1},-y)$. Then $s\Kinf(\hat Q,0)+\log s\ge\log y-1$, with $\log0\coloneqq-\infty$.
+\end{lemma}
+
+\emph{Role.} The frozen index in Step 2 of the proof of Theorem~\ref{thm:counter}.
+
+\begin{proof}
+\uses{def:kinf, lem:dualfacts}
+\emph{Setting.} Fix $s$, $x_{1:s-1}$ and $y>0$ (the case $y=0$ is trivial). \emph{Goal.} A lower
+bound on $s\Kinf(\hat Q,0)$, from one value of the dual variable in~\eqref{eq:dual}, whose range
+is $[0,1]$ at the level $0$.
+
+\emph{Step 1: $s=1$.} By Lemma~\ref{lem:dualfacts}(c),
+$\Kinf(\delta_{-y},0)=\max_{0\le\lambda\le1}\log(1+\lambda y)=\log(1+y)\ge\log y$.
+
+\emph{Step 2: $s\ge2$.} Take $\lambda\coloneqq1/s\le1/2$ in Lemma~\ref{lem:dualfacts}(c). For
+$z\in[0,1/2]$, $\log(1-z)\ge-z-z^2$, because the derivative of $\log(1-z)+z+z^2$ is
+$z(1-2z)/(1-z)\ge0$. Hence each $x_r\in[0,1]$ gives
+$\log(1-x_r/s)\ge-1/s-1/s^2$, and each $x_r<0$ gives $\log(1-x_r/s)>0$. Therefore
+\begin{align*}
+  s\Kinf(\hat Q,0)&\ge\sum_{r=1}^{s-1}\log\Big(1-\frac{x_r}{s}\Big)+\log\Big(1+\frac ys\Big)
+    &&\text{(the dual at $\lambda=1/s$)}\\
+  &\ge-(s-1)\Big(\frac1s+\frac1{s^2}\Big)+\log\Big(1+\frac ys\Big)&&\text{(the two cases above)}\\
+  &=-\Big(1-\frac1{s^2}\Big)+\log\Big(1+\frac ys\Big)\ge\log\Big(1+\frac ys\Big)-1.
+\end{align*}
+Adding $\log s$ and using $\log s+\log(1+y/s)=\log(s+y)\ge\log y$ gives the claim.
+\end{proof}
+
+\begin{lemma}[A point mass is explored logarithmically often]\label{lem:explore}
+\uses{def:model, def:kinf, def:run, def:imed}
+In the setting of Theorem~\ref{thm:counter}, with any $P\in\Sm$ such that $\mean(P)\in(0,1)$ and no
+assumption on its tail, almost surely
+\[
+  \liminf_{T\to\infty}\frac{\Np_2(T)}{\log T}\ge\frac{1}{\log(1/(1-\mean(P)))}.
+\]
+\end{lemma}
+
+\emph{Role.} The term $1/\log\frac1{1-\mean(P)}$ of Theorem~\ref{thm:counter}(ii).
+
+\begin{proof}
+\uses{def:model, def:kinf, def:run, def:imed, lem:dualfacts}
+\emph{Setting.} Let $d(x)\coloneqq\Kinf(\delta_0,x)$ for $x\ge0$; by Lemma~\ref{lem:dualfacts}(b)
+and (d), $d(x)=\log\frac1{1-x}$ on $[0,1)$ and $d(x)=+\infty$ on $[1,\infty)$, so $d$ is
+nondecreasing, and continuous on $[0,1)$. Let $d^\star\coloneqq d(\mean(P))\in(0,\infty)$.
+\emph{Goal.} $\liminf_T\Np_2(T)/\log T\ge1/d^\star$ almost surely.
+
+\emph{Step 1: the index of arm $2$.} At a round $t\ge2$, $\hms(t)=\max\{\hmt_1(t),0\}$. If
+$\hmt_1(t)\le0$, arm $2$ is an \term{w:leader}{empirical leader} and $\Dv_2(t)=0=d(0)=d(\hms(t))$. Otherwise
+$\Dv_2(t)=\Kinf(\delta_0,\hms(t))=d(\hms(t))$. So in all cases
+$\Ix_2(t)=\Np_2(t)\,d(\hms(t))+\log \Np_2(t)$.
+
+\emph{Step 2: the last pull of arm $1$.} Fix $T\ge4$. If arm $1$ is pulled at no round of
+$\{2,\dots,T-1\}$, then $\Np_2(T)=T-1$. Otherwise let $\ell$ be the last such round. Then
+$\Np_1(\ell)=\Np_1(T)-1\ge1$, $\Np_2(\ell)\le \Np_2(T)$, and $\Ix_1(\ell)\le \Ix_2(\ell)$ since $\Ap_\ell=1$. Since
+$\Ix_1(\ell)\ge\log \Np_1(\ell)$, and since $n\mapsto nd+\log n$ is nondecreasing for $d\ge0$,
+\[
+  \log(\Np_1(T)-1)\le \Np_2(T)\,d(\hms(\ell))+\log \Np_2(T).
+\]
+
+\emph{Step 3: when $\Np_2(T)\le T/2$.} Then $\Np_1(T)\ge T/2$, so $\Np_1(\ell)\ge T/2-1$ and
+$\hms(\ell)\le\bar m_T\coloneqq\sup_{s\ge T/2-1}\max\{\hm_{1,s},0\}$. As $d$ is nondecreasing,
+\[
+  \log(T/2-1)\le \Np_2(T)\,d(\bar m_T)+\log \Np_2(T).
+\]
+
+\emph{Step 4: conclusion.} By the strong law of large numbers, $\hm_{1,s}\to \mean(P)$ almost surely, so
+$\bar m_T\to \mean(P)\in(0,1)$; hence $\bar m_T\in(0,1)$ for large $T$ (in particular $d(\bar m_T)$ is
+finite, which excludes the case where every sample of arm $1$ equals $1$), and
+$d(\bar m_T)\to d^\star$. For such $T$, Steps 2 and 3 give: either $\Np_2(T)\ge\min\{T/2,(\log T)^2\}$,
+or $\log \Np_2(T)\le2\log\log T$ and then
+\[
+  \Np_2(T)\ge\frac{\log(T/2-1)-2\log\log T}{d(\bar m_T)}.
+\]
+Dividing by $\log T$ and letting $T\to\infty$ gives the claim.
+\end{proof}
+
+\begin{lemma}[Maximum from pairs]\label{lem:pairs}
+For $n\ge1$ and nonnegative reals $u_1,\dots,u_n$,
+$\max_ku_k\ge\sum_ku_k-\sum_{k<k'}\min\{u_k,u_{k'}\}$.
+\end{lemma}
+
+\emph{Role.} Step 5 of the proof of Theorem~\ref{thm:counter}.
+
+\begin{proof}
+Sort the numbers as $u_{(1)}\ge u_{(2)}\ge\dots\ge u_{(n)}$. The pairs whose smaller element is
+$u_{(k)}$ are $k-1$ in number, so
+$\sum_{k<k'}\min\{u_k,u_{k'}\}=\sum_{k=1}^n(k-1)u_{(k)}\ge\sum_{k\ge2}u_{(k)}=\sum_ku_k-\max_ku_k$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:counter}]
+\proves{thm:counter}
+\uses{def:model, def:kinf, def:run, def:imed, lem:dualfacts, lem:jump, lem:explore, lem:pairs}
+\emph{Idea.} After a large negative reward of arm $1$, its index is frozen at a value of at least
+$\log(Y_s/e)$ while arm $2$, the \term{w:leader}{empirical leader}, is pulled. The reward is independent of the
+time at which it is drawn, so the expected number of pulls of arm $2$ is bounded below by tail
+integrals of $Y$.
+
+\emph{Setting.} Fix $P$, a \term{w:tie}{tie rule} and $T\ge8$. Let $h\coloneqq\lfloor T/2\rfloor$ and
+$g\coloneqq\lfloor T/4\rfloor\ge T/8$. For $s\ge1$, let $\tau_s$ be the round of the $s$-th pull of
+arm $1$ ($\tau_s\coloneqq\infty$ if there is none) and $Y_s\coloneqq-\Xs_{1,s}$. \emph{Goal.} (i) and (ii).
+
+\emph{Step 1: independence.} For every round $u$, the event $\{\tau_s\le u\}$ is a function of $\Useed$
+and of $\Xs_{1,1},\dots,\Xs_{1,s-1}$. Indeed, replace $\Xs_{1,s'}$ by $0$ for every $s'\ge s$: the run of
+\imed{} with the same $\Useed$ is unchanged up to and including round $\tau_s$, because before that round
+the \term{w:learner}{learner} has observed only $\Xs_{1,1},\dots,\Xs_{1,s-1}$ from arm $1$ and the deterministic rewards
+of arm $2$. Hence $\{\tau_s\le u\}$ is independent of $Y_s$.
+
+\emph{Step 2: frozen index.} We show that, on $\{\tau_s<h,\ Y_s\ge s-1\}$,
+\begin{equation}\label{eq:frozen}
+  \Np_2(T)\ge\min\{Y_s/e,\ T/2\}.
+\end{equation}
+Let $t>\tau_s$ be a round such that arm $1$ has not been pulled in the rounds $\tau_s+1,\dots,t-1$.
+If $t=1$, then $\tau_s=0$ and round $1$ pulls arm $2$ by initialisation. If $t\ge2$, then
+$\Np_1(t)=s$ and
+\[
+  \hmt_1(t)=\hm_{1,s}=\frac1s\Big(\sum_{r<s}\Xs_{1,r}-Y_s\Big)\le\frac{s-1-Y_s}{s}\le0=\hmt_2(t),
+\]
+so $\hms(t)=0$ and arm $2$ is an \term{w:leader}{empirical leader} with $\Ix_2(t)=\log \Np_2(t)$. The empirical law
+of arm $1$ is that of $(\Xs_{1,1},\dots,\Xs_{1,s-1},-Y_s)$ with $Y_s\ge0$. By
+Lemma~\ref{lem:dualfacts}(b), $\Dv_1(t)=\Kinf(\hnu_{1,s},0)$ whether or not arm $1$ is also a leader.
+By Lemma~\ref{lem:jump},
+\[
+  \Ix_1(t)=s\Kinf(\hnu_{1,s},0)+\log s\ge\log(Y_s/e).
+\]
+Hence, if $\Np_2(t)<Y_s/e$, then $\Ix_2(t)<\Ix_1(t)$ and $\Ap_t=2$ whatever the \term{w:tie}{tie rule}. Let $t_0$ be the
+first round after $\tau_s$ at which arm $1$ is pulled. If $t_0<T$, then $t_0\ge2$ and
+$\Np_2(t_0)\ge Y_s/e$, so $\Np_2(T)\ge Y_s/e$. If $t_0\ge T$, every round of
+$\{\tau_s+1,\dots,T-1\}$ pulls arm $2$, so $\Np_2(T)\ge T-1-\tau_s\ge T-h\ge T/2$. This
+proves~\eqref{eq:frozen}. Consequently, with
+\[
+  V_s\coloneqq\ind\{\tau_s<h,\ Y_s\ge s-1\}\min\{Y_s/e,\ T/2\}\qquad\text{and}\qquad B_T\coloneqq\max_{1\le s\le g}V_s,
+\]
+we have $\Np_2(T)\ge B_T$.
+
+\emph{Step 3: a dichotomy.} Either $\Prob(\Np_2(h)>h/2)>1/2$, and then
+\[
+  \E \Np_2(T)\ge\E \Np_2(h)>\frac h4\ge\frac{T-1}{8};
+\]
+or $\Prob(\Np_1(h)\ge h/2)\ge1/2$, since $\Np_1(h)+\Np_2(h)=h$. In the second case, for every $s\le g$
+(so $s\le h/2$), $\{\Np_1(h)\ge h/2\}\subseteq\{\Np_1(h)\ge s\}=\{\tau_s<h\}$, so
+$\Prob(\tau_s<h)\ge1/2$.
+
+\emph{Step 4: part (i).} Let $p_T\coloneqq\Prob(Y\ge eT/2)$ and, for $s\le g$,
+$E_s\coloneqq\{\tau_s<h,\ Y_s\ge eT/2\}$. Since $s-1<T/4\le eT/2$, the event $E_s$ is contained in
+$\{\tau_s<h,\ Y_s\ge s-1\}$, and on it~\eqref{eq:frozen} gives $\Np_2(T)\ge T/2$. Place ourselves in
+the second case of Step 3. By Step 1, $\Prob(E_s)=\Prob(\tau_s<h)\,p_T\ge p_T/2$, and
+$\Prob(E_s\cap E_{s'})\le\Prob(Y_s\ge eT/2,\ Y_{s'}\ge eT/2)=p_T^2$ for $s\ne s'$. By the Bonferroni
+inequality,
+\[
+  \Prob\Big(\bigcup_{s\le g}E_s\Big)\ge\frac{gp_T}{2}-\frac{g^2p_T^2}{2}\ge\frac{gp_T}{4}\qquad\text{when }gp_T\le\frac12.
+\]
+Since $Y^+$ is integrable, $Tp_T\le\frac2e\E[Y^+\ind\{Y\ge eT/2\}]\to0$, so $gp_T\le1/2$ for large
+$T$. Then
+\[
+  \E \Np_2(T)\ge\frac T2\cdot\frac{gp_T}{4}\ge\frac{T^2p_T}{64}\ge\frac{\kappa\,2^q}{64\,e^q}T^{2-q},
+\]
+using $g\ge T/8$ and $p_T\ge\kappa(eT/2)^{-q}$ when $eT/2\ge y_0$. In the first case of Step 3,
+$\E \Np_2(T)\ge(T-1)/8$, which exceeds $\kappa2^qe^{-q}T^{2-q}/64$ for large $T$ because $2-q<1$.
+So (i) holds for every $T$ larger than a $T_0$ that depends on $\kappa$, $q$, $y_0$ and the rate at
+which $Tp_T\to0$.
+
+\emph{Step 5: part (ii).} Fix $\varepsilon\in(0,1)$ and let $d^\star\coloneqq\log\frac1{1-\mean(P)}$,
+$a_T\coloneqq(1-\varepsilon)\log T/d^\star$ and $G_T\coloneqq\{\Np_2(T)\ge a_T\}$.
+
+\emph{(5a) A pathwise split.} We claim
+\[
+  \Np_2(T)\ge a_T\ind_{G_T}+(B_T-a_T)^+.
+\]
+On $G_T$ with $B_T\le a_T$ the right-hand side is $a_T\le \Np_2(T)$; on $G_T$ with $B_T>a_T$ it is
+$B_T\le \Np_2(T)$; on $G_T^c$, $B_T\le \Np_2(T)<a_T$, so it is $0$. By Lemma~\ref{lem:explore}, almost
+surely $\Np_2(T)\ge a_T$ for every large $T$, so $\Prob(G_T)\to1$.
+
+\emph{(5b) The excess, by Lemma~\ref{lem:pairs}.} Let $s_0\coloneqq\lceil2ea_T\rceil+1$ and
+$U_s\coloneqq(V_s-a_T)^+$. For large $T$, $3\le s_0\le g$ and $s_0-1\ge y_0$. Since
+$(B_T-a_T)^+\ge\max_{s_0\le s\le g}U_s$, Lemma~\ref{lem:pairs} gives
+\[
+  \E(B_T-a_T)^+\ge\sum_{s=s_0}^g\E U_s-\sum_{s_0\le s<s'\le g}\E\min\{U_s,U_{s'}\}.
+\]
+
+\emph{(5c) The sum of the $\E U_s$.} Place ourselves in the second case of Step 3, and let
+$s_0\le s\le g$. On $\{Y_s\ge s-1\}$, $Y_s/e\ge(s_0-1)/e\ge2a_T$, and $T/2\ge2a_T$ for large $T$,
+so $V_s\ge2a_T$ wherever $V_s>0$ and $U_s\ge V_s/2\ge\frac1{2e}\min\{Y_s,T/2\}\ind\{\tau_s<h,\ Y_s\ge s-1\}$.
+By Step 1 and Step 3,
+\[
+  \E U_s\ge\frac1{4e}\,\E\big[\min\{Y,T/2\}\ind\{Y\ge s-1\}\big].
+\]
+For $0\le v\le N$, $\min\{Y,N\}\ind\{Y\ge v\}\ge(\min\{Y,N\}-v)^+=\int_v^N\ind\{Y>y\}\,dy$, so, with
+$v=s-1\ge y_0$ and $N=T/2\ge s-1$,
+\[
+  \E\big[\min\{Y,T/2\}\ind\{Y\ge s-1\}\big]\ge\int_{s-1}^{T/2}\Prob(Y\ge y)\,dy
+  \ge\kappa\Big(\frac{1}{s-1}-\frac2T\Big).
+\]
+Summing, with $\sum_{s=s_0}^g\frac1{s-1}\ge\log\frac{g}{s_0-1}$ and $\sum_{s\le g}\frac2T\le\frac12$,
+\[
+  \sum_{s=s_0}^g\E U_s\ge\frac{\kappa}{4e}\Big(\log\frac{g}{s_0-1}-\frac12\Big).
+\]
+
+\emph{(5d) The pairs.} For $s<s'$, $\min\{U_s,U_{s'}\}\le U_s\ind\{U_{s'}>0\}$, with
+$U_s\le Y_s\ind\{Y_s\ge s-1\}$ and $\{U_{s'}>0\}\subseteq\{Y_{s'}\ge s'-1\}$. The variables $Y_s$ and
+$Y_{s'}$ are independent. For $v\ge y_0$,
+$\E[Y\ind\{Y\ge v\}]=v\Prob(Y\ge v)+\int_v^\infty\Prob(Y>y)\,dy\le2\kappa'/v$ and
+$\Prob(Y\ge v)\le\kappa'/v^2$. Hence
+\[
+  \sum_{s_0\le s<s'}\E\min\{U_s,U_{s'}\}\le\sum_{s\ge s_0}\frac{2\kappa'}{s-1}\sum_{s'>s}\frac{\kappa'}{(s'-1)^2}
+  \le\sum_{s\ge s_0}\frac{2\kappa'^2}{(s-1)^2}\le\frac{2\kappa'^2}{s_0-2},
+\]
+which tends to $0$.
+
+\emph{(5e) Conclusion.} In the second case of Step 3, (5a)--(5d) give
+\[
+  \E \Np_2(T)\ge a_T\Prob(G_T)+\frac{\kappa}{4e}\Big(\log\frac{g}{s_0-1}-\frac12\Big)-\frac{2\kappa'^2}{s_0-2}.
+\]
+Since $g\ge T/8$ and $s_0=O(\log T)$, the right-hand side is
+$(1-\varepsilon)\frac{\log T}{d^\star}(1-o(1))+\frac{\kappa}{4e}\log T-O(\log\log T)$. In the first case
+of Step 3, $\E \Np_2(T)\ge(T-1)/8$, which is larger for large $T$. Hence
+$\liminf_T\E \Np_2(T)/\log T\ge(1-\varepsilon)/d^\star+\kappa/(4e)$; let $\varepsilon\to0$. Finally,
+$d^\star=\Kinf(\delta_0,\mean(P))$ by Lemma~\ref{lem:dualfacts}(d).
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:pareto}]
+\proves{cor:pareto}
+\uses{def:model, def:kinf, def:run, def:classes, def:imed, thm:counter, cite:GMS19-thm1, lem:dualfacts}
+\emph{Step 1: the law.} $\Pq_{q,\varpi}$ is a law on $(-\infty,1]$. Since $\E V=q/(q-1)$, its mean is
+$1-\varpi-\varpi q/(q-1)=1-\varpi(2q-1)/(q-1)$, which is in $(0,1)$ exactly when $0<\varpi<(q-1)/(2q-1)$. For
+$y\ge1$, $\Prob(-X\ge y)=\varpi\Prob(V\ge y)=\varpi y^{-q}$, and $\E|X|^r<\infty$ if and only if
+$\E V^r<\infty$, that is $r<q$.
+
+\emph{Step 2: (a).} Theorem~\ref{thm:counter}(i) applies with $\kappa=\varpi$ and $y_0=1$. The regret
+is $\Reg_T=\gap_2\E \Np_2(T)=m\,\E \Np_2(T)$. Given $p\in(0,1)$, choose $q\in(1+p,2)$: both
+$\Pq_{q,\varpi}$ and $\delta_0$ belong to $\Sm_{1+p}$, and $\Reg_T\ge cT^{2-q}$ for large $T$ with $c>0$, so
+$\Reg_T\ne o(T^{2-q})$ and \imed{} is not \term{w:consistent}{consistent} on $\Sm_{1+p}$.
+
+\emph{Step 3: (b).} Theorem~\ref{thm:counter}(ii) applies with $\kappa=\kappa'=\varpi$ and $y_0=1$, and
+gives the bound on $\liminf_T\E \Np_2(T)/\log T$, hence on $\Reg_T=m\,\E \Np_2(T)$. It remains to compute
+$\Kinf(\delta_0,m;\mathcal C)$. Since $\mathcal C\subseteq\Sm$, it is at least
+$\Kinf(\delta_0,m)=\log\frac1{1-m}$ (Lemma~\ref{lem:dualfacts}(d)). Conversely, for
+$\varepsilon\in(0,1-m)$, the law $Q_\varepsilon\coloneqq(1-m-\varepsilon)\delta_0+(m+\varepsilon)\delta_1$
+belongs to $\mathcal C$, has mean $m+\varepsilon>m$, and $\KL(\delta_0,Q_\varepsilon)=\log\frac1{1-m-\varepsilon}$,
+which tends to $\log\frac1{1-m}$. Hence $\Kinf(\delta_0,m;\mathcal C)=\log\frac1{1-m}$. The last
+sentence of (b) is then Theorem~\ref{cite:GMS19-thm1} with $\mathcal D=\mathcal C$, applied to the
+\term{w:instance}{instance} $(\Pq_{2,\varpi},\delta_0)\in\mathcal C^{\{1,2\}}$. The class $\bigcap_{r<2}\Sm_r$ contains
+$\Pq_{2,\varpi}$ by Step 1 and every law on $\{0,1\}$.
+\end{proof}
+
+\section{Sources of the techniques}\label{sec:attribution}
+
+For each technique of the proofs, where it is used and the earliest source we found.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.5\textwidth}p{0.44\textwidth}@{}}
+\toprule
+Technique (where) & Earliest source found \\
+\midrule
+The model of semi-bounded laws, \imed{}, the dual formula of $\Kinf$ (Definition~\ref{def:imed}, Lemma~\ref{cite:HT15-thm2}) & \citet[Algorithm~1, Theorem~2]{HT15}; the bounded-support dual: \citet{HT10} \\
+Counting lemma for the minimal index (Lemma~\ref{lem:sup}(a)) & \citet[Lemma~13]{HT15} \\
+Decomposition of the count at the level $\ms-\delta$ (Lemma~\ref{lem:decomp}, \eqref{eq:decomp}) & \citet[proof of Theorem~3, (29)]{HT15} \\
+Counting by a supremum at a random level (Lemmas~\ref{lem:sup}(b) and~\ref{lem:termA}) & new; \citet[(25)--(26)]{HT15} count by a sum \\
+Chernoff bound at the dual maximiser for a \term{w:subopt}{suboptimal} arm (Lemmas~\ref{lem:subopt} and~\ref{lem:termC}) & \citet[Proposition~10 and Lemma~6]{HT15} \\
+Level shift of $\Kinf$ (Lemmas~\ref{lem:shift} and~\ref{lem:termB}) & source not known; replaces \citet[Lemma~7]{HT15} \\
+Grid for the dual variable, convexity in $\lambda$ of $\E(1-\lambda Z)^\gamma$ (Lemmas~\ref{lem:grid}, \ref{lem:moments}) & \citet[proof of Proposition~11, (19)--(24)]{HT15} \\
+An exponent $\gamma>1$ with $\E((1-X)/(1-\mu))^\gamma\le1$ (Lemma~\ref{lem:moments}(b)) & \citet[Proposition~11(i)]{HT15}, there under an exponential moment \\
+Decomposition into big jumps and a good part (Proposition~\ref{prop:key}) & the split of a sum into its large summands and a truncated rest, classical in the large deviations of heavy-tailed sums (see also \citealp{FN71,Nag79}); new: its use inside the dual product of $\Kinf$, where one big jump costs a linear factor \\
+Comparison with the last exit time (the paragraph after Proposition~\ref{prop:key}) & see also \citet{CL75,Jan86} \\
+Bennett's inequality (Lemma~\ref{lem:bennett}) & \citet{B62} \\
+The optimal law $G^\star$ (Lemma~\ref{lem:class}) & \citet[proof of Theorem~2(ii)]{HT15} \\
+Lower bound for \term{w:ufc}{uniformly fast convergent} \term{w:learner}{learners} (Corollaries~\ref{cor:optimal}, \ref{cor:pareto}) & \citet[Theorem~1]{GMS19}; originally \citet{LR85} and \citet{BK96} \\
+Frozen index after a negative jump (Lemma~\ref{lem:jump}, Theorem~\ref{thm:counter}) & new \\
+Maximum from pairs (Lemma~\ref{lem:pairs}) & elementary; source not known \\
+The summed bound needs three moments (Lemma~\ref{lem:three-moments}) & necessity half of a one-sided Baum--Katz theorem; see also \citet{CL75}, cited for this point by \citet[Section~9]{HT15}, and \citet{BK65} for the two-sided theorem \\
+Mixture over the dual variable and maximal inequality (Lemma~\ref{lem:pa-assumptions}(a)) & \citet[Proposition~5, Appendix~B.4.1]{AJK21}, for a known moment bound (two dual variables); \citet[Appendix~A.1]{PA26}, for bounded supports; new: the semi-bounded case with a finite mean only, one dual variable and the exact factor $n+1$; the assumption it checks is \citet[Assumption~2.3]{PA26} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+\section{Notation}\label{sec:notation}
+
+Every symbol is a link to its definition.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.27\textwidth}p{0.47\textwidth}p{0.2\textwidth}@{}}
+\toprule
+Symbol & Meaning & Defined in \\
+\midrule
+$\Sm$, $\Sm_r$, $\Mm_r$ & laws on $(-\infty,1]$ with finite mean; with a finite moment of order $r$; the latter without $\delta_1$ & Definition~\ref{def:model} \\
+$\mean(P)$ & mean of a law $P$ & Definition~\ref{def:model} \\
+$\arms$, $\Karms$ & set of arms, its size & Definition~\ref{def:model} \\
+$\nu$, $\marm_a$, $\ms$, $\gap_a$ & \term{w:instance}{instance}, mean of arm $a$, best mean, gap & Definition~\ref{def:model} \\
+\term{w:optimal}{optimal}, \term{w:subopt}{suboptimal} & an arm with $\gap_a=0$; with $\gap_a>0$ & Definition~\ref{def:model} \\
+$\KL$, $\Kinf(P,\mu;\mathcal D)$, $\Kinf(P,\mu)$ & Kullback--Leibler divergence; its infimum over the laws of $\mathcal D$ (of $\Sm$) with mean $>\mu$ & Definition~\ref{def:kinf} \\
+$\hP[x_{1:s}]$, $\bx_s$ & empirical law and mean of $x_1,\dots,x_s$ & Definition~\ref{def:kinf} \\
+$\Xs_{a,s}$, $\Useed$ & $s$-th sample of arm $a$; random seed of the \term{w:learner}{learner} & Definition~\ref{def:run} \\
+\term{w:learner}{learner}, $\Ap_t$, $\Ob_t$ & sequence of maps; arm pulled and observation at round $t$ & Definition~\ref{def:run} \\
+$\Np_a(t)$, $\Reg_T$ & pulls of $a$ before round $t$; regret over the rounds $0,\dots,T-1$ & Definition~\ref{def:run} \\
+$\hnu_{a,s}$, $\hm_{a,s}$ & empirical law and mean of the first $s$ samples of arm $a$ & Definition~\ref{def:run} \\
+\term{w:anytime}{anytime} & not knowing the horizon & Section~\ref{sec:setting} \\
+\term{w:consistent}{consistent}, \term{w:ufc}{uniformly fast convergent} & classes of \term{w:learner}{learners} & Definition~\ref{def:classes} \\
+$\hmt_a(t)$, $\hnut_a(t)$, $\hms(t)$ & current empirical mean and law of $a$; largest empirical mean & Definition~\ref{def:imed} \\
+\term{w:leader}{empirical leader}, \term{w:tie}{tie rule} & an arm with $\hmt_a(t)=\hms(t)$; a measurable choice among minimisers & Definition~\ref{def:imed} \\
+$\Dv_a(t)$, $\Ix_a(t)$, $\Is(t)$ & divergence term, index of \imed{}, minimal index & Definition~\ref{def:imed} \\
+$\ws_s(x;\mu)$, $\Gam(P,\mu)$ & deviation functional of a sample; expectation of its supremum & Definition~\ref{def:dev} \\
+$\lst(P,\mu)$, $\Lt(P,\mu,u)$ & a dual maximiser; Chernoff rate of a \term{w:subopt}{suboptimal} arm & Definition~\ref{def:rate} \\
+$\Ki_i$, $\Lt_i(\delta)$ & $\Kinf(\nu_i,\ms)$; the rate at $u=\Ki_i-\delta/(1-\ms)$ & Definition~\ref{def:rate} \\
+$\Pq_{q,\varpi}$ & the law equal to $1$ with probability $1-\varpi$ and to minus a Pareto($q$) variable otherwise & Corollary~\ref{cor:pareto} \\
+$\kl$ & Bernoulli Kullback--Leibler divergence & Section~\ref{sec:examples} \\
+$\lmax$ & $1/(1-\mu)$ & Lemma~\ref{lem:optimizer} \\
+$\TA$, $\TB$, $\TC$ & the terms of the decomposition & Lemmas~\ref{lem:decomp}, \ref{lem:termB} \\
+$\ui_i$, $\MT_T$ & level of the deviations of arm $i$; pulls paid at first order & \eqref{eq:ui}, \eqref{eq:MT} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\bibliographystyle{plainnat}
+% refs: the works cited; ../../papers/library: the library's papers (generated; keys INC-P<nnn>).
+\bibliography{refs,../../papers/library}
+
+\end{document}
