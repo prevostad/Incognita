@@ -1,4 +1,29 @@
 {
+  "A22": {
+    "uri": "https://drive.google.com/file/d/1aJhgBRMcFqMXST3vovvs8a8EIKdWbJ-q/view",
+    "citation": {
+      "id": "A22",
+      "type": "thesis",
+      "title": "Bandits with Heavy Tails: Algorithms, Analysis and Optimality",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shubhada"
+        }
+      ],
+      "genre": "PhD thesis",
+      "publisher": "Tata Institute of Fundamental Research, Mumbai",
+      "issued": {
+        "date-parts": [
+          [
+            2022
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": "final version, December 2022"
+  },
   "AB09": {
     "uri": "",
     "citation": {
@@ -304,6 +329,39 @@
       "arxiv": "2306.09048"
     },
     "version": "v1"
+  },
+  "AKJ21": {
+    "uri": "https://proceedings.neurips.cc/paper/2021/hash/d69c7ebb6a253532b266151eac6591af-Abstract.html",
+    "citation": {
+      "id": "AKJ21",
+      "type": "paper-conference",
+      "title": "Optimal Best-Arm Identification Methods for Tail-Risk Measures",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "Shubhada"
+        },
+        {
+          "family": "Koolen",
+          "given": "Wouter M."
+        },
+        {
+          "family": "Juneja",
+          "given": "Sandeep"
+        }
+      ],
+      "container-title": "Advances in Neural Information Processing Systems 34 (NeurIPS 2021)",
+      "page": "25578-25590",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {},
+    "version": ""
   },
   "AMS09": {
     "uri": "https://doi.org/10.1016/j.tcs.2009.01.016",
@@ -1290,6 +1348,37 @@
       }
     },
     "identifiers": {},
+    "version": ""
+  },
+  "Cat12": {
+    "uri": "https://doi.org/10.1214/11-AIHP454",
+    "citation": {
+      "id": "Cat12",
+      "type": "article-journal",
+      "title": "Challenging the empirical mean and empirical variance: a deviation study",
+      "author": [
+        {
+          "family": "Catoni",
+          "given": "Olivier"
+        }
+      ],
+      "container-title": "Annales de l'Institut Henri Poincaré - Probabilités et Statistiques",
+      "volume": "48",
+      "issue": "4",
+      "page": "1148-1185",
+      "DOI": "10.1214/11-AIHP454",
+      "issued": {
+        "date-parts": [
+          [
+            2012
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1214/11-AIHP454",
+      "arxiv": "1009.2048"
+    },
     "version": ""
   },
   "Cov66": {
@@ -4013,6 +4102,34 @@
       "DOI": "10.1214/aop/1176994938"
     },
     "identifiers": {},
+    "version": ""
+  },
+  "O01": {
+    "uri": "https://doi.org/10.1201/9781420036152",
+    "citation": {
+      "id": "O01",
+      "type": "book",
+      "title": "Empirical Likelihood",
+      "author": [
+        {
+          "family": "Owen",
+          "given": "Art B."
+        }
+      ],
+      "publisher": "Chapman and Hall/CRC",
+      "collection-title": "Monographs on Statistics and Applied Probability",
+      "ISBN": "1584880716",
+      "issued": {
+        "date-parts": [
+          [
+            2001
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1201/9781420036152"
+    },
     "version": ""
   },
   "O88": {

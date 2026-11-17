@@ -1,0 +1,2411 @@
+% P005: exact first-order regret for stochastic bandits with bounded kurtosis.
+% Written from templates/paper/paper.tex (AGENTS.md, section 5; docs/writing.md, sections 2-2a, the
+% owner's house style of 2026-11-16). Two builds of one source:
+%   reader:    latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/P005-bounded-kurtosis/paper.tex
+%   blueprint: latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint
+%                -usepretex='\def\IncognitaBlueprint{}' -cd papers/P005-bounded-kurtosis/paper.tex
+% Blueprint conventions: every node has a \label (def:, lem:, prop:, thm:, cor:, cite:); statements
+% start with \uses when they use definitions; every proof starts with an exhaustive \uses; a proof away
+% from its statement has \proves. Never \lean, \leanok or \mathlibok in this file.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage[round]{natbib}
+\usepackage{../../templates/paper/blueprint-macros}
+
+% ---------------------------------------------------------------- macros (\newcommand only)
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\Pspace}{\term{w:law}{\mathcal{P}(\mathbb{R})}}
+% Navigation (house style): an anchor at each definition, a macro per symbol linking to it.
+\newcommand{\dt}[1]{\hypertarget{#1}{}}
+\newcommand{\sy}[2]{{\hyperlink{#1}{#2}}}
+\newcommand{\term}[2]{\hyperlink{#1}{#2}}
+\newcommand{\mean}{\sy{s:mean}{m}}
+\newcommand{\sd}{\sy{s:var}{\sigma}}
+\newcommand{\kurt}{\sy{s:kurt}{\mathrm{kurt}}}
+\newcommand{\KL}{\sy{s:KL}{\mathrm{KL}}}
+\newcommand{\kl}{\sy{s:kl}{\mathrm{kl}}}
+\newcommand{\Karms}{\sy{s:Karms}{K}}
+\newcommand{\marm}{\sy{s:ma}{m}}
+\newcommand{\mstar}{\sy{s:mstar}{m^{\star}}}
+\newcommand{\gap}{\sy{s:gap}{\Delta}}
+\newcommand{\sda}{\sy{s:sa}{\sigma}}
+\newcommand{\Xr}{\sy{s:X}{X}}
+\newcommand{\Arm}{\sy{s:At}{A}}
+\newcommand{\Kinf}{\sy{s:KinfD}{\mathcal{K}_{\inf}}}
+\newcommand{\Hk}{\sy{s:Hk}{\mathcal{H}_{\kappa}}}
+\newcommand{\Hlt}{\sy{s:Hlt}{\mathcal{H}^{<}_{\kappa}}}
+\newcommand{\Kc}{\sy{s:K}{\mathcal{K}}}
+\newcommand{\Kge}{\sy{s:Kge}{\mathcal{K}^{\ge}}}
+\newcommand{\phik}{\sy{s:phi}{\varphi}}
+\newcommand{\Gk}{\sy{s:G}{\mathcal{G}}}
+\newcommand{\KG}{\sy{s:KG}{\mathcal{K}_{\mathcal{G}}}}
+\newcommand{\tauc}{\sy{s:tau}{\tau}}
+\newcommand{\hl}{\sy{s:h}{h}}
+\newcommand{\gam}{\sy{s:gamma}{\gamma}}
+\newcommand{\Lam}{\sy{s:Lambda}{\Lambda}}
+\newcommand{\Lw}{\sy{s:L}{L}}
+\newcommand{\qk}{\sy{s:q}{q_{\kappa}}}
+\newcommand{\Kinfty}{\sy{s:Kinfty}{\mathcal{K}_{\infty}}}
+\newcommand{\Np}{\sy{s:N}{N}}
+\newcommand{\Pe}{\sy{s:Pe}{\hat{P}}}
+\newcommand{\Reg}{\sy{s:R}{R}}
+\newcommand{\Cst}{\sy{s:Cstar}{C^{\star}}}
+\newcommand{\thr}{\sy{s:g}{g}}
+\newcommand{\Ix}{\sy{s:U}{U}}
+\newcommand{\Ka}{\sy{s:Ka}{\mathcal{K}_{a}}}
+\newcommand{\LT}{\sy{s:lT}{\ell_{T}}}
+\newcommand{\nT}{\sy{s:nT}{n_{T}}}
+\newcommand{\kep}{\sy{s:keps}{k_{\varepsilon}}}
+\newcommand{\Ca}{\sy{s:Ca}{C_{a}}}
+\newcommand{\algo}{\hyperref[alg:kucb]{\texttt{KL-UCB-Kurt}}}
+
+\title{Exact first-order regret for stochastic bandits with bounded kurtosis}
+\author{claude-opus-5-5, Incognita agents\thanks{Written by AI agents of the Incognita project
+  (\url{https://github.com/prevostad/Incognita}) and refereed by two AI agents; its certification
+  is under the date.}}
+\date{2026-11-16}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We consider stochastic multi-armed bandits whose reward laws have a finite fourth moment, a positive
+variance and a kurtosis at most a known number $\kappa>1$. The class is invariant under changes of
+location and scale, and the best known regret bounds on it held only up to universal constant factors.
+We show that KL-UCB run with the information function $\mathcal{K}_{\inf}$ of this class, an anytime index
+policy, satisfies $\lim_{T}R_T/\log T=\sum_a\Delta_a/\mathcal{K}_{\inf}(\nu_a,m^\star)$ on every instance. Since this is
+the constant of the Lai--Robbins and Burnetas--Katehakis lower bound for consistent algorithms, it is
+the exact first-order constant of the class. We describe $\mathcal{K}_{\inf}$ by a dual formula valid for every
+law, prove its lower semicontinuity and positivity, and find its largest value over laws with a finite
+fourth moment, $\mathcal{K}_{\infty}(\kappa)=\log\bigl(2/(1+\sqrt{(\kappa-1)/(\kappa+3)})\bigr)$: the logarithm of the inverse of the largest atom
+of a law of kurtosis at most $\kappa$, reached in the limit of large gaps. As
+$\kappa<1/\mathcal{K}_{\infty}(\kappa)<\kappa+2$, each suboptimal arm costs more than $\kappa\Delta_a$ per $\log T$. The proof
+convexifies the kurtosis constraint by optimising over location and scale, and bounds the escape of
+near-optimal alternatives along the affine group by the largest atom. The second-order term is
+existential, and the index is not given a certified computation.
+\end{abstract}
+
+% ================================================================ main text
+\section{Introduction}\label{sec:intro}
+
+A stochastic bandit with finitely many arms is played over rounds $t=1,2,\dots$: the learner pulls an
+arm and observes a reward drawn from the law of that arm, independently of the past. Its regret after
+$T$ rounds is $R_T=\sum_a\Delta_a\E[N_a(T)]$, where $\Delta_a$ is the gap between the best mean and the
+mean of arm $a$ and $N_a(T)$ the number of pulls of $a$. When the learner knows a model $\mathcal D$
+that contains every arm's law, the Lai--Robbins and Burnetas--Katehakis lower bound says that every
+algorithm consistent over $\mathcal D$ satisfies
+\begin{equation}\label{eq:intro-lb}
+  \liminf_{T\to\infty}\frac{R_T}{\log T}\ \ge\ \sum_{a:\Delta_a>0}\frac{\Delta_a}{\mathcal{K}_{\inf}(\nu_a,m^\star;\mathcal D)},
+  \qquad
+  \mathcal{K}_{\inf}(P,\mu;\mathcal D):=\inf\{\KL(P,Q):Q\in\mathcal D,\ m(Q)>\mu\}.
+\end{equation}
+Algorithms attaining this constant are known for one-parameter exponential families, for laws with a
+bounded or semi-bounded support, for Gaussian laws with unknown variance, and for laws with a bounded
+moment $\E|X|^{1+\beta}\le B$.
+
+All these models carry a scale: a support, a variance or a moment bound fixed in advance. \citet{L17}
+proposed a model with no scale at all: laws whose kurtosis
+$\E[(X-m)^4]/\sigma^4$ is at most a known number $\kappa$. The class is invariant under every affine map
+$x\mapsto c+sx$ with $s>0$, the regret of a good algorithm should be too, and a bound on the kurtosis is
+what is left of the Gaussian assumption when the shape is unknown. Lattimore gave a scale-free algorithm
+with $\limsup_TR_T/\log T\le C\sum_a\Delta_a(\kappa-1+\sigma_a^2/\Delta_a^2)$ for a universal constant $C$,
+and a lower bound of the same form for $\kappa\ge7/2$, also up to constants. He left the optimal form of
+the regret open, suggesting an implicit analysis that would show whether the lower bound
+\eqref{eq:intro-lb} can be attained on this class \citep[Section~4]{L17}; the textbook of
+\citet[Section~16.4]{LS} records the class as understood only up to constant factors.
+
+We answer this question at first order. Let $\mathcal H_\kappa$ be the laws with a finite fourth moment, a
+positive variance and kurtosis at most $\kappa$, and let $\mathcal K(P,\mu)$ be the information function
+$\mathcal{K}_{\inf}(P,\mu;\mathcal H_\kappa)$. We show that KL-UCB run with $\mathcal K$ satisfies, on every
+instance of $\mathcal H_\kappa$,
+\begin{equation}\label{eq:intro-main}
+  \lim_{T\to\infty}\frac{R_T}{\log T}=\sum_{a:\Delta_a>0}\frac{\Delta_a}{\mathcal K(\nu_a,m^\star)},
+\end{equation}
+so the constant of \eqref{eq:intro-lb} is the exact first-order constant of the class (Theorem~\ref{thm:main} and
+Corollary~\ref{cor:exact}). The constant is
+not in closed form, but we locate it: $0<\mathcal K(\nu_a,m^\star)\le\mathcal K_\infty(\kappa)$, with
+\begin{equation}\label{eq:intro-kinfty}
+  \mathcal K_\infty(\kappa):=\log\frac{2}{1+\sqrt{(\kappa-1)/(\kappa+3)}},\qquad
+  \kappa<\frac1{\mathcal K_\infty(\kappa)}<\kappa+2,\qquad
+  \frac1{\mathcal K_\infty(\kappa)}=\kappa+\frac32+O\Bigl(\frac1\kappa\Bigr),
+\end{equation}
+and $\mathcal K(\nu_a,m^\star)\to\mathcal K_\infty(\kappa)$ when $\Delta_a/\sigma_a\to\infty$ for a fixed standardised law
+(the law of $(X-m_a)/\sigma_a$ with $X\sim\nu_a$, where $m_a$ and $\sigma_a$ are the mean and the standard deviation of
+$\nu_a$). So every suboptimal
+arm costs more than $\kappa\Delta_a$ per $\log T$, and $(\kappa+3/2+o(1))\Delta_a$ when its gap is large
+compared to its standard deviation: in that regime, this is the exact coefficient of the term
+$(\kappa-1)\Delta_a$ of Lattimore's bound. The number $e^{-\mathcal K_\infty(\kappa)}$ is the largest mass that
+a law of kurtosis at most $\kappa$ can put on one point.
+
+The method of \citet{AJK21} for a bounded moment relies on the convexity of the class, and the kurtosis
+constraint is not convex in the law. We remove the non-convexity by optimising over the location and
+the scale of the alternative, which leaves a convex problem with two moment constraints. Because the
+class is scale free, near-optimal alternatives can escape along the affine group; the new step is to
+show that this escape costs exactly $\mathcal K_\infty(\kappa)$, which gives the lower semicontinuity of
+$\mathcal K$ and the lower deviation inequality that the regret analysis needs.
+
+\paragraph{Our contributions} We summarise our main contributions below.
+\begin{enumerate}[label=(\roman*),leftmargin=2.2em]
+  \item \emph{The information function of the class.} A dual formula for $\mathcal K(P,\mu)$, valid for every law
+    $P$, as an infimum over location and scale of a two-dimensional concave maximisation
+    (Proposition~\ref{prop:dual}); the largest atom of a law of kurtosis at most $\kappa$ and the value
+    $\mathcal K_\infty(\kappa)$ (Proposition~\ref{prop:kinfty}), which improves the large-gap branch of the
+    previous upper bound on $\mathcal{K}_{\inf}$ \citep[Theorem~9]{L17}; lower semicontinuity, continuity in the
+    level, positivity and the limit of large gaps (Proposition~\ref{prop:regularity},
+    Corollary~\ref{cor:largegap}).
+  \item \emph{Algorithm.} The anytime index policy \algo{}, KL-UCB with $\mathcal K$ and the threshold of
+    \citet{AJK21}; see Section~\ref{sec:algorithm}.
+  \item \emph{Regret upper bound and exact constant.} A finite-time bound on $\E[N_a(T)]$ with an
+    existential constant and the first-order limit \eqref{eq:intro-main} (Theorem~\ref{thm:main},
+    Corollary~\ref{cor:exact}).
+  \item \emph{Concentration.} An anytime upper deviation inequality for $n\mathcal K(\hat P_n,m(P))$ with explicit
+    constants, a lower deviation inequality, and a scale-free anytime confidence sequence for the mean
+    (Theorem~\ref{thm:deviation}, Corollary~\ref{cor:confseq}).
+  \item \emph{Numerical illustration.} Values of $\mathcal K_\infty(\kappa)$ and of $\mathcal K$ on discretised laws,
+    and a check of the dual formula against a direct search (Section~\ref{sec:examples}).
+\end{enumerate}
+
+\paragraph{Outline} Section~\ref{sec:related} discusses related work. Section~\ref{sec:setting} formalises
+the setting. Section~\ref{sec:lower} recalls the lower bound and studies $\mathcal K$.
+Section~\ref{sec:algorithm} recalls KL-UCB and defines \algo{}. Section~\ref{sec:upper} states the regret
+bound, and Section~\ref{sec:concentration} the deviation inequalities. Section~\ref{sec:overview}
+explains how the proofs work, Section~\ref{sec:examples} gives numerical examples, and
+Section~\ref{sec:conclusion} concludes and Section~\ref{sec:open} states open questions. The proofs are in the
+appendices.
+
+% ----------------------------------------------------------------
+\section{Related work and context}\label{sec:related}
+
+Table~\ref{tab:comparison} compares the first-order results closest to ours. We discuss each line of
+work below.
+
+\paragraph{Asymptotic optimality in stochastic bandits} The lower bound \eqref{eq:intro-lb} is due to Lai
+and Robbins for one-parameter families and to Burnetas and Katehakis for general models; we use the
+form of \citet[Theorem~16.2]{LS}, recalled as Theorem~\ref{cite:LS-16.2}. KL-UCB attains it for
+one-parameter exponential families and finitely supported laws \citep{CGMMS13}, and the dual formula of
+\citet[Theorem~8]{HT10} gives the same for laws on $[0,1]$. For Gaussian laws with
+unknown mean and variance, $\mathcal{K}_{\inf}=\frac12\log(1+\Delta^2/\sigma^2)$ \citep[equations~(2)--(3)]{HT14}, attained by
+Thompson sampling with a suitable prior \citep[Theorem~1]{HT14} and by an index policy
+\citep[Theorem~5]{CHK18}. For the class $\{P:\E_P|X|^{1+\beta}\le B\}$,
+\citet{AJK21} introduced KL$_{\inf}$-UCB, whose index is an inverse of $\mathcal{K}_{\inf}$ computed through a dual
+formula, and proved it asymptotically optimal \citep[Corollary~2, recalled as Lemma~\ref{cite:AJK21-cor2}]{AJK21}.
+
+\paragraph{Scale-free bandits} \citet{L17} introduced the bounded-kurtosis class to obtain
+logarithmic regret without any scale parameter. His algorithm uses median-of-means estimates of the
+mean and of the variance; its regret is at most $C\sum_a\Delta_a(\kappa-1+\sigma_a^2/\Delta_a^2)\log T$
+asymptotically (Lemma~\ref{cite:L17-thm2}). His Theorem~9 bounds $\mathcal{K}_{\inf}$ from above by explicit
+perturbations of the law, a Bernoulli ``outlier'' and a smooth density change, for $\kappa\ge7/2$
+(Lemma~\ref{cite:L17-thm9}); with \eqref{eq:intro-lb} it gives a lower bound matching his upper bound up
+to constants. He also showed that $\kappa$ must be known: no algorithm with logarithmic regret on some
+non-trivial instance is consistent over the union of the classes \citep[Theorem~7]{L17}.
+
+\paragraph{Non-convex information functions} In their concluding remarks, \citet[Section~5]{AJK21}
+observe that a bound on a \emph{centred} moment is not a convex constraint on the law, so that their
+method does not apply, and that handling this non-convexity would need new techniques.
+For best-arm identification under a CVaR objective, \citet{AKJ21} met the same obstacle for the lower information projection: they used the variational
+formula of CVaR to write it as an outer minimisation over one scalar, which ranges over a compact
+interval, of a convex problem treated by Lagrangian duality, and for the concentration they fixed that
+scalar at its true value before mixing supermartingales over the dual variables \citep[see also][Chapter~6, Theorem~6.5 and Appendix~6.D.1]{A22}. In the discussion of her thesis,
+\citet[Section~6.10]{A22} rewrites $\mathcal{K}_{\inf}$ for the class $\{P:\E_P|X-m(P)|^{1+\beta}\le B\}$ as an
+outer minimisation over the location $y\ge x$ of a convex problem, states that a concentration result
+similar to hers can be proven for it, and leaves the continuity of the new projection functions and the
+extreme distributions of the class to separate research. The thesis does not treat the kurtosis or a
+scale parameter. \citet[Section~4.4.2 and Appendix~D.5]{BSH23} carry out this reduction for the centred class
+$\{P:\E_P h(|X-m(P)|)<B\}$, with $h$ convex and $B$ known, under a known lower bound on the means, which they
+impose to use compactness arguments: they write $\mathcal{K}_{\inf}$ as an infimum over the location $\mu\ge x$ of a convex
+problem at fixed location, with a two-dimensional dual, observe that the infimum is attained at $\mu=x$, and prove
+that MED is asymptotically optimal on this class \citep[Lemma~9 and Corollary~6]{BSH23}. The level $B$ is fixed
+and only the location is profiled, so a translation reduces their problem to the uncentred one; no scale
+parameter appears.
+
+\paragraph{Generic optimality of KL$_{\inf}$-UCB} \citet{PA26} prove that KL$_{\inf}$-UCB is
+asymptotically optimal on every class whose laws satisfy two assumptions: an anytime upper deviation
+inequality for $n\mathcal{K}_{\inf}(\hat P_n,m(P))$ and an exponential lower deviation inequality at every fixed
+level above the mean (Lemma~\ref{cite:PA26-thm3.1}). Their examples are bounded supports and the
+uncentred moment class; the kurtosis is not mentioned.
+
+\paragraph{Closest related work} Five works are close to ours. \citet{L17} studies the same class and the
+same criterion, but its upper and lower bounds hold up to universal constants, so it does not give the
+constant \eqref{eq:intro-main}. \citet{AJK21} have the same algorithmic template and threshold, but its
+analysis uses the convexity of the class $\{\E|X|^{1+\beta}\le B\}$ and its compact dual region at a fixed
+mean; neither holds here. \citet{PA26} reduce optimality to two deviation inequalities, but checking them
+is the content of the problem: the upper one requires a convexification, and the lower one, in the form
+that \citet{PA26} ask (a rate $e^{-ncd^2}$ for all small $d$), is not proved here; we prove a weaker form
+and give a self-contained regret analysis. \citet{AKJ21} and \citet{A22} contain the device of an outer scalar
+minimisation over a convex problem, with the outer variable fixed at its true value for the upper
+deviation; we use it with two outer variables, and their outer variable stays in a compact set, while
+ours does not. \citet{BSH23} prove first-order optimality on a non-convex centred class by an outer
+minimisation over the location, but their constraint has a fixed level and their means a known lower bound,
+so the outer variable ranges over a half-line and the infimum is attained at its end; the kurtosis constraint
+is a ratio of moments, invariant under changes of scale, and gives no bound on the location or the scale of
+near-optimal alternatives.
+
+\paragraph{Gap with the literature} On the bounded-kurtosis class, no algorithm was known to attain the
+lower bound \eqref{eq:intro-lb}, and no description of $\mathcal{K}_{\inf}$ beyond upper bounds up to constants.
+The methods that attain \eqref{eq:intro-lb} on non-parametric classes use the convexity of the
+class \citep{AJK21}, assume the two deviation inequalities \citep{PA26}, or, for a centred moment class, profile
+the location under a known lower bound on the means \citep{BSH23}; the convexification by an outer
+minimisation was also used for CVaR, where the outer variable is confined to a compact interval
+\citep{AKJ21,A22}. Outside bandits, treating the mean and the variance as nuisance parameters of moment
+equations, in order to make inference on the skewness or the kurtosis, is classical in empirical likelihood
+\citep[see also][Sections~1.1 and 3.5]{O01}. What is new here, as far as we found, is the convexification of the
+inequality $\mathrm{kurt}\le\kappa$ by a quartic with a free location and a free scale inside an information function
+$\mathcal{K}_{\inf}$, the analysis of the mass that escapes along the affine group, with no bound on the means or
+the scales of the alternatives and with the exact boundary value $\mathcal K_\infty(\kappa)$ obtained from the
+largest atom, and the resulting first-order optimality on the bounded-kurtosis class.
+
+\begin{table}[t]
+\centering
+\small
+\caption{First-order results for KL-type algorithms beyond one-parameter families. ``Exact'' means
+that the upper bound on $\limsup_TR_T/\log T$ equals the constant of the lower bound
+\eqref{eq:intro-lb} for the same class.}\label{tab:comparison}
+\begin{tabular}{@{}p{0.24\textwidth}p{0.33\textwidth}p{0.1\textwidth}p{0.25\textwidth}@{}}
+\toprule
+Class of laws & First-order upper bound & Exact & Reference \\
+\midrule
+Gaussian, unknown mean and variance & $\sum_a\Delta_a/\bigl(\frac12\log(1+\Delta_a^2/\sigma_a^2)\bigr)$ & yes & \citet[Theorem~1]{HT14}, \citet[Theorem~5]{CHK18} \\
+$\E|X|^{1+\beta}\le B$ (convex) & $\sum_a\Delta_a/\Kinf(\nu_a,\mstar)$ & yes & \citet[Corollary~2]{AJK21} \\
+Any class satisfying two deviation inequalities & $\sum_a\Delta_a/\Kinf(\nu_a,\mstar)$ & yes, if they hold & \citet[Theorem~3.1]{PA26} \\
+$\E h(|X-m|)<B$ (centred), means bounded below by a known number & $\sum_a\Delta_a/\Kinf(\nu_a,\mstar)$, for MED & yes & \citet[Corollary~6]{BSH23} \\
+Kurtosis at most $\kappa$ & $C\sum_a\Delta_a(\kappa-1+\sigma_a^2/\Delta_a^2)$, $C$ universal & no & \citet[Theorem~2]{L17} \\
+Kurtosis at most $\kappa$ & $\sum_a\Delta_a/\Kinf(\nu_a,\mstar)$, with $\Kc(\nu_a,\mstar)\le\Kinfty(\kappa)$ & yes & Theorem~\ref{thm:main}, Corollary~\ref{cor:exact} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ----------------------------------------------------------------
+\section{Problem formulation}\label{sec:setting}
+
+In this section we introduce the setting, first the classical one, then the bounded-kurtosis class and
+the normalised objects that the proofs use.
+
+\subsection{Classical setting}
+
+\dt{w:law}A \emph{law} is a Borel probability measure on $\R$. The set of \term{w:law}{laws} is $\Pspace$, with the
+topology of weak convergence (convergence of $\int f\,dP$ for every bounded continuous $f$), which is
+metrisable.
+
+\begin{definition}[Laws, moments, divergence]\label{def:laws}
+Let $P,Q$ be \term{w:law}{laws}. If $\int x^2\,dP<\infty$, the mean and the variance of $P$ are
+\begin{equation*}
+  \dt{s:mean}\mean(P):=\int x\,dP(x),\qquad\dt{s:var}\sd^2(P):=\int(x-\mean(P))^2\,dP(x),
+\end{equation*}
+and $\sd(P):=\sqrt{\sd^2(P)}$ is its standard deviation. If moreover $\int x^4\,dP<\infty$ and $\sd^2(P)>0$, the
+kurtosis of $P$ is
+\begin{equation*}
+  \dt{s:kurt}\kurt(P):=\frac{\int(x-\mean(P))^4\,dP(x)}{\sd^4(P)}.
+\end{equation*}
+The Kullback--Leibler divergence is $\dt{s:KL}\KL(P,Q):=\int\log\frac{dP}{dQ}\,dP$ if $P\ll Q$, and
+$\KL(P,Q):=+\infty$ otherwise.
+\end{definition}
+
+\begin{definition}[Bandit model, counts, regret, consistency]\label{def:bandit}
+\uses{def:laws}
+A finite set $\alpha$ of arms is given. \dt{s:Karms}The number of arms is $\Karms:=|\alpha|\ge2$.
+\dt{w:instance}An \emph{instance} is $\nu=(\nu_a)_{a\in\alpha}$, each $\nu_a$ a \term{w:law}{law} with a finite mean.
+\dt{s:ma}The mean of arm $a$ is $\marm_a:=\mean(\nu_a)$. \dt{s:sa}Its standard deviation is $\sda_a:=\sd(\nu_a)$ when it is
+finite. \dt{s:mstar}The best mean is $\mstar:=\max_a\marm_a$. \dt{s:gap}The gap of arm $a$ is $\gap_a:=\mstar-\marm_a$. \dt{w:subopt}Arm $a$ is \emph{suboptimal} if $\gap_a>0$.
+\dt{w:model}A \emph{model} is a set $\mathcal D$ of \term{w:law}{laws}, and the \term{w:instance}{instances} of the
+\term{w:model}{model} are $\mathcal D^\alpha$. The rewards follow the stack model: \dt{s:X}independent random
+variables $(\Xr_{a,j})_{a\in\alpha,\,j\ge1}$ with $\Xr_{a,j}\sim\nu_a$, the $j$-th pull of arm $a$ returning $\Xr_{a,j}$.
+\dt{s:At}An algorithm chooses the arm $\Arm_t$ of round $t\in\{1,2,\dots\}$ as a measurable function of the
+past arms, the past rewards and an independent source of randomness. \dt{w:anytime}It is \emph{anytime}: it
+never sees a horizon. The number of pulls of $a$ after round $t$ is
+\begin{equation*}
+  \dt{s:N}\Np_a(t):=\sum_{u=1}^{t}\ind(\Arm_u=a).
+\end{equation*}
+The regret after $T$ rounds is
+\begin{equation*}
+  \dt{s:R}\Reg_T:=\sum_{a\in\alpha}\gap_a\,\E[\Np_a(T)].
+\end{equation*}
+For $s\ge1$, the empirical law of the first $s$ rewards of arm $a$ is
+$\dt{s:Pe}\Pe_{a,s}:=\frac1s\sum_{j\le s}\delta_{\Xr_{a,j}}$, and $\Pe_a(t):=\Pe_{a,\Np_a(t)}$ when $\Np_a(t)\ge1$.
+\dt{w:consistent}An algorithm is \emph{consistent over $\mathcal D^\alpha$} if $\Reg_T(\nu)=o(T^p)$ for every $p>0$ and
+every $\nu\in\mathcal D^\alpha$.
+\end{definition}
+
+\begin{definition}[Information function]\label{def:kinfD}
+\uses{def:laws}
+For a \term{w:model}{model} $\mathcal D$, a \term{w:law}{law} $P$ and $\mu\in\R$,
+\begin{equation*}
+  \dt{s:KinfD}\Kinf(P,\mu;\mathcal D):=\inf\{\KL(P,Q):Q\in\mathcal D,\ \mean(Q)>\mu\}\in[0,\infty],\qquad\inf\emptyset:=+\infty,
+\end{equation*}
+with a \emph{strict} inequality on the mean.
+\end{definition}
+
+\paragraph{Notational convention} Rounds are numbered from $1$; $\Np_a(T)$ counts the pulls in rounds
+$1,\dots,T$. Some sources define $\Kinf$ with $\mean(Q)\ge\mu$ \citep{AJK21,PA26}; Proposition~\ref{prop:dual}(i)
+shows that the two versions coincide on our class. We write $\log$ for the natural logarithm, $x\vee y$
+for $\max(x,y)$, and $\tauc_{c,s}P$ for an image law (Definition~\ref{def:normalised}).
+
+\subsection{The bounded-kurtosis class}
+
+\begin{definition}[Bounded kurtosis]\label{def:class}
+\uses{def:laws}
+Let $\kappa>1$. The class of \term{w:law}{laws} with kurtosis at most $\kappa$ is
+\begin{equation*}
+  \dt{s:Hk}\Hk:=\Bigl\{P\in\Pspace:\ \int x^4\,dP<\infty,\ \sd^2(P)>0,\ \kurt(P)\le\kappa\Bigr\}.
+\end{equation*}
+Its strict version is
+\begin{equation*}
+  \dt{s:Hlt}\Hlt:=\bigl\{P\in\Hk:\ \kurt(P)<\kappa\bigr\}.
+\end{equation*}
+\end{definition}
+
+Every \term{w:law}{law} with a finite fourth moment has kurtosis at least $1$, with equality exactly for the
+symmetric two-point laws, so $\kappa>1$ excludes only degenerate classes. The assumption of
+\citet[Section~3]{L17} is a kurtosis at most $\kappa$, and his class in the lower bound is $\Hlt$; our results hold
+for both (Corollary~\ref{cor:exact}(iv)). Both classes are invariant under the maps $x\mapsto c+sx$, $c\in\R$,
+$s>0$.
+
+\begin{definition}[Information function of the class]\label{def:kinf}
+\uses{def:class, def:kinfD}
+For a \term{w:law}{law} $P$ and $\mu\in\R$, the information function of the class is
+\begin{equation*}
+  \dt{s:K}\Kc(P,\mu):=\Kinf(P,\mu;\Hk).
+\end{equation*}
+Its non-strict version is
+\begin{equation*}
+  \dt{s:Kge}\Kge(P,\mu):=\inf\{\KL(P,Q):Q\in\Hk,\ \mean(Q)\ge\mu\}.
+\end{equation*}
+\end{definition}
+
+\subsection{Normalised objects}
+
+The kurtosis constraint is not convex in the \term{w:law}{law}, but it becomes convex once the location and
+the scale are fixed. The following objects encode this.
+
+\begin{definition}[Normalised class]\label{def:normalised}
+\uses{def:laws, def:kinfD}
+Let $\kappa>1$. The quartic of the constraint is
+\begin{equation*}
+  \dt{s:phi}\phik(y):=(y^2-\kappa)^2-\kappa(\kappa-1)=y^4-2\kappa y^2+\kappa,\qquad y\in\R.
+\end{equation*}
+The normalised class is
+\begin{equation*}
+  \dt{s:G}\Gk:=\Bigl\{Q\in\Pspace:\ \int y^4\,dQ<\infty,\ \int y\,dQ(y)=0,\ \int\phik\,dQ\le0\Bigr\}.
+\end{equation*}
+Its information function is, for a \term{w:law}{law} $R$,
+\begin{equation*}
+  \dt{s:KG}\KG(R):=\inf_{Q\in\Gk}\KL(R,Q).
+\end{equation*}
+For $c\in\R$ and $s>0$, the normalising map is $\dt{s:tau}\tauc_{c,s}(x):=(x-c)/s$, and $\tauc_{c,s}P$ is the
+image of a \term{w:law}{law} $P$ under $\tauc_{c,s}$.
+\end{definition}
+
+The function $\phik$ has its minimum $-\kappa(\kappa-1)$ at $y=\pm\sqrt\kappa$. If $Y$ has mean $0$ and variance
+$1$, then $\E\phik(Y)=\E Y^4-\kappa$, so $\E\phik(Y)\le0$ says exactly that the kurtosis is at most $\kappa$; the
+point of $\Gk$ is that it imposes this without fixing the variance, through a constraint that is affine
+in the \term{w:law}{law}.
+
+\begin{definition}[Dual set]\label{def:dualset}
+\uses{def:normalised}
+For $\lambda=(\lambda_1,\lambda_2)\in\R^2$ and $y\in\R$, the dual integrand is
+\begin{equation*}
+  \dt{s:h}\hl_\lambda(y):=1+\lambda_1y+\lambda_2\phik(y).
+\end{equation*}
+The dual set is
+\begin{equation*}
+  \dt{s:Lambda}\Lam:=\bigl\{\lambda\in\R\times[0,\infty):\ \hl_\lambda(y)\ge0\ \text{for all }y\in\R\bigr\}.
+\end{equation*}
+Its half-width is, for $\lambda_2\ge0$,
+\begin{equation*}
+  \dt{s:L}\Lw(\lambda_2):=\inf_{y>0}\frac{1+\lambda_2\phik(y)}{y}.
+\end{equation*}
+\end{definition}
+
+\begin{definition}[Largest atom and value at infinity]\label{def:kinfty}
+For $\kappa>1$, the largest atom is
+\begin{equation*}
+  \dt{s:q}\qk:=\frac12\Bigl(1+\sqrt{\frac{\kappa-1}{\kappa+3}}\Bigr)\in\Bigl(\frac12,1\Bigr).
+\end{equation*}
+The value at infinity is
+\begin{equation*}
+  \dt{s:Kinfty}\Kinfty(\kappa):=\log\frac1{\qk}.
+\end{equation*}
+\end{definition}
+
+The number $\qk$ is the larger root of $q(1-q)=1/(\kappa+3)$; a two-point \term{w:law}{law} with masses $\qk$ and
+$1-\qk$ has kurtosis $1/(\qk(1-\qk))-3=\kappa$.
+% ----------------------------------------------------------------
+\section{Lower bound and the information function of the class}\label{sec:lower}
+
+In this section we first recall the classical lower bound, then describe the information function
+$\Kc$ that it involves on the bounded-kurtosis class.
+
+\subsection{Lower bound in the classical setting}
+
+The following theorem is classical (we refer to \citet{LS} for a proof; its original source is
+Burnetas and Katehakis). We state it in our notation: \citet{LS} write $n$ for the horizon, $k$ for the
+number of arms and $d_{\inf}(P,\mu^*,\mathcal M)$ for $\Kinf(P,\mu^*;\mathcal M)$.
+
+\begin{theorem}[{From \citet[Theorem~16.2]{LS}}]\label{cite:LS-16.2}
+\uses{def:bandit, def:kinfD}
+Let $\mathcal D$ be a set of \term{w:law}{laws} with finite means and let an algorithm be \term{w:consistent}{consistent} over $\mathcal D^\alpha$. Then for
+every $\nu\in\mathcal D^\alpha$,
+\begin{equation*}
+  \liminf_{T\to\infty}\frac{\Reg_T}{\log T}\ \ge\ \sum_{a:\gap_a>0}\frac{\gap_a}{\Kinf(\nu_a,\mstar;\mathcal D)}.
+\end{equation*}
+\end{theorem}
+
+On the class $\Hk$, the constant of this bound is
+\begin{equation}\label{eq:cstar}
+  \dt{s:Cstar}\Cst(\nu):=\sum_{a:\gap_a>0}\frac{\gap_a}{\Kc(\nu_a,\mstar)},\qquad \nu\in\Hk^\alpha.
+\end{equation}
+The rest of this section shows that $\Cst(\nu)$ is finite and positive, and describes $\Kc$.
+
+\subsection{A dual formula}
+
+\begin{proposition}[Normalisation and dual formula]\label{prop:dual}
+\uses{def:kinf, def:normalised, def:dualset}
+Let $\kappa>1$. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item for every \term{w:law}{law} $P$ and every $\mu\in\R$,
+  \begin{equation*}
+    \Kc(P,\mu)=\Kge(P,\mu)=\inf_{c>\mu,\ s>0}\KG(\tauc_{c,s}P)=\inf_{c\ge\mu,\ s>0}\KG(\tauc_{c,s}P),
+  \end{equation*}
+  and $\mu\mapsto\Kc(P,\mu)$ is non-decreasing and right-continuous;
+  \item $\Gk$ is a convex and weakly compact subset of $\Hk$; $\KG$ is weakly lower semicontinuous on
+  $\Pspace$, and when $\KG(R)<\infty$ the infimum defining it is attained;
+  \item $\Lam$ is a compact convex subset of $[-\kappa^{-1/2},\kappa^{-1/2}]\times[0,\frac1{\kappa(\kappa-1)}]$ with
+  non-empty interior, and
+  \begin{equation*}
+    \Lam=\Bigl\{(\lambda_1,\lambda_2):\ 0\le\lambda_2\le\tfrac1{\kappa(\kappa-1)},\ |\lambda_1|\le\Lw(\lambda_2)\Bigr\};
+  \end{equation*}
+  \item for every \term{w:law}{law} $R$ (the \term{w:law}{law} of a random variable $Y$): if $\E_R\log(1+|Y|)=\infty$, then
+  $\KG(R)=\infty=\sup_{\lambda\in\mathrm{int}\,\Lam}\E_R\log\hl_\lambda(Y)$; otherwise $\E_R\log\hl_\lambda(Y)\in[-\infty,\infty)$
+  is well defined for every $\lambda\in\Lam$, and
+  \begin{equation*}
+    \KG(R)=\max_{\lambda\in\Lam}\E_R\log\hl_\lambda(Y)=\sup_{\lambda\in\mathrm{int}\,\Lam}\E_R\log\hl_\lambda(Y)<\infty;
+  \end{equation*}
+  \item consequently, for every \term{w:law}{law} $P$ and every $\mu\in\R$ (with $X\sim P$),
+  \begin{equation}\label{eq:dual}
+    \Kc(P,\mu)=\inf_{c>\mu,\ s>0}\ \sup_{\lambda\in\mathrm{int}\,\Lam}\ \E_P\log\Bigl(1+\lambda_1\frac{X-c}{s}+\lambda_2\,\phik\Bigl(\frac{X-c}{s}\Bigr)\Bigr);
+  \end{equation}
+  \item for a finitely supported \term{w:law}{law} $R$, the infimum defining $\KG(R)$ is attained by a \term{w:law}{law} with at most
+  two atoms outside the support of $R$.
+\end{enumerate}
+\end{proposition}
+
+(See the proof in Appendix~\ref{sec:proof-dual}.)
+
+\paragraph{Why location and scale} By Lemma~\ref{lem:G} in Appendix~\ref{sec:proof-dual}, a \term{w:law}{law} $Q$ belongs to
+$\Hk$ with mean $c$ if and only if $\tauc_{c,s}Q\in\Gk$ for some $s>0$. The scale $s$ is a free variable,
+not the standard deviation of $Q$: the constraint $\int\phik\,d(\tauc_{c,s}Q)\le0$ is a quadratic inequality
+in $s^2$ whose discriminant is non-negative exactly when $\kurt(Q)\le\kappa$. Fixing $(c,s)$ leaves the convex
+set $\Gk$, defined by one linear equality and one linear inequality, and Lagrangian duality gives the
+inner maximisation over $\Lam$. The outer problem over $(c,s)$ is not convex, and its domain is not
+compact.
+
+\paragraph{Comparison with the convex case} For the class $\{\E|X|^{1+\beta}\le B\}$ the analogous formula is a
+single maximisation over a compact dual region that depends on the level \citep[Lemma~7]{AJK21}. Here the
+dual set $\Lam$ is fixed, it depends on $\kappa$ only, and the level enters through the location $c$; this is
+what makes the mixture argument of Theorem~\ref{thm:deviation}(i) work with explicit constants.
+
+\paragraph{Structure of the optimal alternatives} Item (vi) mirrors the structure known for the convex
+moment class \citep[Lemma~7]{AJK21}: an optimal alternative adds to the support of $R$ at most two points,
+the zeros of the optimal dual function $\hl_{\lambda^\star}$. In the numerical examples of
+Section~\ref{sec:examples} the optimal location is $c=\mu$ and the optimal alternative adds one point far to
+the right of the data.
+
+\subsection{The largest atom and the value at infinity}
+
+\begin{proposition}[Value at infinity]\label{prop:kinfty}
+\uses{def:kinf, def:kinfty, def:class}
+Let $\kappa>1$. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item for every $Q\in\Hk$ and every $y\in\R$, $Q(\{y\})\le\qk$, with equality for the two-point \term{w:law}{law}
+  $\qk\delta_y+(1-\qk)\delta_{y'}$, $y'\ne y$, whose kurtosis is $\kappa$;
+  \item for every \term{w:law}{law} $P$ with $\int x^4\,dP<\infty$ and every $\mu\in\R$, $\Kc(P,\mu)\le\Kinfty(\kappa)$;
+  \item for every $y\in\R$ and every $\mu\in\R$, $\Kc(\delta_y,\mu)=\Kinfty(\kappa)$;
+  \item the value at infinity satisfies
+  \begin{equation*}
+    \kappa<\frac1{\Kinfty(\kappa)}<\kappa+2\qquad\text{and}\qquad\frac1{\Kinfty(\kappa)}=\kappa+\frac32+O\Bigl(\frac1\kappa\Bigr)\quad(\kappa\to\infty).
+  \end{equation*}
+\end{enumerate}
+\end{proposition}
+
+(See the proof in Appendix~\ref{sec:proof-kinfty}.)
+
+\paragraph{Comparison with the bound of Lattimore} The previous upper bound on $\Kinf$ for this class is
+that of \citet[Theorem~9]{L17}, recalled as Lemma~\ref{cite:L17-thm9}, for $\kappa\ge7/2$. For large gaps, $\Delta/\sd(P)\ge1/\kappa$ and
+$\Delta/\sd(P)$ beyond the threshold of its first case, it reads
+\begin{equation*}
+  \Kinf(P,\mean(P)+\Delta;\Hlt)\le\log\frac{\kappa}{\kappa-1}.
+\end{equation*}
+By (ii) and Corollary~\ref{cor:exact}(iv), the same quantity is at most $\Kinfty(\kappa)$, for every $\kappa>1$, every \term{w:law}{law}
+with a finite fourth moment and every $\Delta$. This improves the large-gap branch of \citet[Theorem~9]{L17}, since
+\begin{equation*}
+  \Kinfty(\kappa)<\frac1\kappa<\log\frac{\kappa}{\kappa-1},
+\end{equation*}
+and it cannot be improved further: by Corollary~\ref{cor:largegap}, $\Kc(P,\mean(P)+\Delta)\to\Kinfty(\kappa)$ as
+$\Delta/\sd(P)\to\infty$. In terms of regret, the lower bound per unit gap and per $\log T$ for large gaps goes from
+$1/\log\frac\kappa{\kappa-1}\in(\kappa-1,\kappa)$ to $1/\Kinfty(\kappa)\in(\kappa,\kappa+2)$, which is exact. The small-gap branch of
+\citet[Theorem~9]{L17}, of order $\Delta^2/\sd^2(P)$, is not improved here.
+
+\paragraph{Interpretation} The proof of (ii) mixes $P$ with a far atom: $(1-p)P+p\delta_x$ with $x\to\infty$ has
+a kurtosis that tends to $1/(p(1-p))-3$, below $\kappa$ as soon as $p>1-\qk$, and a mean that tends to
+infinity. This is Lattimore's ``outlier'' idea with the sharp mass. Conversely, (i) says that an
+alternative cannot put more than $\qk$ of its mass on a point, so it cannot be close to a Dirac mass; this
+is where the constant $\Kinfty(\kappa)$ comes from in the lower semicontinuity below. The forced
+exploration of Section~\ref{sec:algorithm} has the same origin: an arm keeps the largest possible index until it has
+been pulled about $\log t/\Kinfty(\kappa)>\kappa\log t$ times.
+
+\subsection{Regularity}
+
+\begin{proposition}[Lower semicontinuity, continuity, positivity]\label{prop:regularity}
+\uses{def:kinf, def:kinfty, def:class}
+Let $\kappa>1$, let $P$ be a \term{w:law}{law} with $\int x^4\,dP<\infty$ that is not a Dirac mass, and let $\mu\in\R$. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item for every sequence $(P_n,\mu_n)$ with $P_n\to P$ weakly and $\mu_n\to\mu$,
+  $\liminf_n\Kc(P_n,\mu_n)\ge\Kc(P,\mu)$;
+  \item $\mu'\mapsto\Kc(P,\mu')$ is continuous on $\R$ and $\lim_{\mu'\to\infty}\Kc(P,\mu')=\Kinfty(\kappa)$;
+  \item if $\mu>\mean(P)$, then $\Kc(P,\mu)>0$.
+\end{enumerate}
+\end{proposition}
+
+(See the proof in Appendix~\ref{sec:proof-regularity}.)
+
+\paragraph{Failure at Dirac masses} The hypothesis that $P$ is not a Dirac mass cannot be removed from (i).
+For $\kappa\ge3$, the Gaussian \term{w:law}{laws} $P_n:=\mathcal N(0,n^{-2})$ belong to $\Hk$ and have mean $0$, so
+$\Kc(P_n,0)=\Kge(P_n,0)=0$ by Proposition~\ref{prop:dual}(i), while $P_n\to\delta_0$ and $\Kc(\delta_0,0)=\Kinfty(\kappa)$ by
+Proposition~\ref{prop:kinfty}(iii). Empirical \term{w:law}{laws} can be Dirac masses, which is why the regret analysis
+uses (i) only at the true \term{w:law}{law} of an arm.
+
+\begin{corollary}[Location, scale and large gaps]\label{cor:largegap}
+\uses{def:kinf, def:kinfty, def:class}
+Let $\kappa>1$ and $P\in\Hk$ with mean $m$, standard deviation $\sigma$ and standardised \term{w:law}{law}
+$P_0:=\tauc_{m,\sigma}P$. Then $\Kc(P,m+\Delta)=\Kc(P_0,\Delta/\sigma)$ for every $\Delta\in\R$, and
+$\Delta\mapsto\Kc(P,m+\Delta)$ is continuous and non-decreasing on $\R$, equal to $0$ on $(-\infty,0]$,
+positive on $(0,\infty)$, with
+\begin{equation*}
+  \lim_{\Delta\to\infty}\Kc(P,m+\Delta)=\Kinfty(\kappa).
+\end{equation*}
+\end{corollary}
+
+(See the proof in Appendix~\ref{sec:proof-regularity}.)
+
+% ----------------------------------------------------------------
+\section{The algorithm}\label{sec:algorithm}
+
+In this section we recall the KL-UCB template for a non-parametric class, then define \algo{}.
+
+\subsection{KL-UCB in the classical setting}
+
+For a model $\mathcal D$, KL-UCB pulls at each round an arm whose index, an upper confidence bound on its mean,
+is maximal; the index of an arm with empirical \term{w:law}{law} $\hat P$ after $n$ pulls is
+$\sup\{\mu:n\Kinf(\hat P,\mu;\mathcal D)\le g\}$ for a threshold $g$ of order $\log t$. For the class
+$\{\E|X|^{1+\beta}\le B\}$, KL$_{\inf}$-UCB of \citet{AJK21} uses the threshold $\log t+2\log\log t+2\log(1+n)+1$
+and is asymptotically optimal (Lemma~\ref{cite:AJK21-cor2}). Its index is computed through the dual formula
+of $\Kinf$ for that class \citep[Lemma~7]{AJK21}.
+
+\subsection{\texorpdfstring{The algorithm \texttt{KL-UCB-Kurt}}{The algorithm KL-UCB-Kurt}}
+
+We use the same template with the information function $\Kc$ of the class $\Hk$. \dt{s:g}The threshold is
+\begin{equation}\label{eq:threshold}
+  \thr(t,n):=\log(t\vee3)+2\log\log(t\vee3)+2\log(1+n)+1,\qquad t,n\ge1.
+\end{equation}
+\dt{s:U}At the end of round $t\ge\Karms$, the index of arm $a$ is
+\begin{equation}\label{eq:index}
+  \Ix_a(t):=\sup\bigl\{\mu\in\R:\ \Np_a(t)\,\Kc\bigl(\Pe_a(t),\mu\bigr)\le\thr\bigl(t,\Np_a(t)\bigr)\bigr\}\in[-\infty,+\infty],
+  \qquad\sup\emptyset:=-\infty,
+\end{equation}
+and the next arm is $\Arm_{t+1}\in\arg\max_a\Ix_a(t)$. Intuitively, $\Ix_a(t)$ is the largest mean of a \term{w:law}{law} of
+kurtosis at most $\kappa$ that is still compatible with the rewards of arm $a$ at the confidence level set
+by the threshold.
+
+\begin{algorithm}[t]
+\caption{\texttt{KL-UCB-Kurt}}\label{alg:kucb}
+\begin{algorithmic}[1]
+\Require the number $\kappa>1$ (no horizon, no scale)
+\For{$t=1,\dots,\Karms$}
+  \State pull each arm once, in an arbitrary order
+\EndFor
+\For{$t=\Karms,\Karms+1,\dots$}
+  \State compute $\Ix_a(t)$ by \eqref{eq:index} for every arm $a$
+  \State pull $\Arm_{t+1}\in\arg\max_a\Ix_a(t)$ (ties broken by any fixed rule, for example uniformly at random)
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{definition}[\texttt{KL-UCB-Kurt}]\label{def:algorithm}
+\uses{def:bandit, def:kinf}
+For $\kappa>1$, \algo{} is the anytime algorithm of Algorithm~\ref{alg:kucb}: in rounds $1,\dots,\Karms$ it pulls
+every arm once; for $t\ge\Karms$ it pulls at round $t+1$ an arm maximising the index \eqref{eq:index}, with the
+threshold \eqref{eq:threshold}. The order of the first $\Karms$ pulls and the tie rule are arbitrary
+(measurable); the results hold for all of them.
+\end{definition}
+
+\begin{lemma}[The index]\label{lem:index}
+\uses{def:algorithm, def:kinf, def:kinfty}
+Let $\kappa>1$, $n\ge1$ and $\mu\in\R$. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item the map $(x_1,\dots,x_n)\mapsto\Kc\bigl(\frac1n\sum_{i\le n}\delta_{x_i},\mu\bigr)$ is upper semicontinuous on
+  $\R^n$, hence Borel; the index $\Ix_a(t)$ is a Borel function of the rewards observed up to round $t$,
+  so \algo{} is a well-defined algorithm;
+  \item if $\Np_a(t)\Kinfty(\kappa)\le\thr(t,\Np_a(t))$, then $\Ix_a(t)=+\infty$;
+  \item if the $\Np_a(t)$ rewards of arm $a$ are all equal, then $\Ix_a(t)=+\infty$ when
+  $\Np_a(t)\Kinfty(\kappa)\le\thr(t,\Np_a(t))$, and $\Ix_a(t)=-\infty$ otherwise.
+\end{enumerate}
+\end{lemma}
+
+(See the proof in Appendix~\ref{sec:proof-index}.)
+
+\paragraph{Forced exploration} By (ii), an arm has the largest possible index, $+\infty$, as long as
+$\Np_a(t)\Kinfty(\kappa)\le\thr(t,\Np_a(t))$, that is, as long as its count is below about
+\begin{equation*}
+  \frac{\log t}{\Kinfty(\kappa)}>\kappa\log t .
+\end{equation*}
+This exploration is intrinsic to the class: the lower bound charges every \term{w:subopt}{suboptimal} arm at least
+$\gap_a/\Kinfty(\kappa)$ per $\log T$ (Corollary~\ref{cor:exact}(iii)).
+
+\paragraph{Arms with a Dirac empirical law} By (iii), when all the observed rewards of an arm are equal (a
+discrete arm, for example a Bernoulli \term{w:law}{law} of parameter $\theta\in[1-\qk,\qk]$, can do this with probability
+at most $\qk^{n-1}$ after $n$ pulls), its index is $+\infty$ while $n\Kinfty(\kappa)\le\thr(t,n)$ and
+$-\infty$ afterwards. The algorithm then leaves this arm aside until $\thr(t,n)$, which grows like $\log t$,
+reaches $n\Kinfty(\kappa)$ again; the definition $\sup\emptyset:=-\infty$ is what makes this happen, and the
+upper deviation inequality (Theorem~\ref{thm:deviation}(i)) covers this event for an optimal arm.
+
+\paragraph{Computation} By \eqref{eq:dual}, evaluating $\Kc(\hat P,\mu)$ for an empirical \term{w:law}{law} with $n$ atoms means
+minimising over $(c,s)$ a function whose value is a two-dimensional concave maximisation over the fixed set
+$\Lam$, each evaluation costing $O(n)$; the index is then found by bisection in $\mu$, since $\Kc$ is
+non-decreasing in $\mu$. The inner problem is well behaved, but the outer problem is not convex, its domain is
+not compact, and its infimum may be approached at infinity. We give no procedure with a certified accuracy:
+Theorem~\ref{thm:main} assumes that the index is computed exactly, and an efficient algorithm with the same
+guarantee is an open question (Section~\ref{sec:open}).
+
+% ----------------------------------------------------------------
+\section{Regret upper bound}\label{sec:upper}
+
+We obtain the following guarantee on the regret of \algo{}. For a \term{w:subopt}{suboptimal} arm $a$ and $T\ge3$ we use
+the information distance of arm $a$ to the best mean,
+\begin{equation}\label{eq:Ka}
+  \dt{s:Ka}\Ka:=\Kc(\nu_a,\mstar),
+\end{equation}
+the deterministic part of the threshold at the horizon,
+\begin{equation*}
+  \dt{s:lT}\LT:=\log T+2\log\log T+1,
+\end{equation*}
+and, for $\varepsilon\in(0,\Ka)$, the largest sample size at which the threshold still exceeds $n(\Ka-\varepsilon)$,
+\begin{equation*}
+  \dt{s:nT}\nT(\varepsilon):=\max\bigl\{n\ge0:\ n(\Ka-\varepsilon)\le\thr(T,n)\bigr\}.
+\end{equation*}
+By Propositions~\ref{prop:kinfty}(ii) and \ref{prop:regularity}(iii), $0<\Ka\le\Kinfty(\kappa)<1$ for every
+$\nu\in\Hk^\alpha$ and every \term{w:subopt}{suboptimal} $a$.
+
+\begin{theorem}[Regret of \texttt{KL-UCB-Kurt}]\label{thm:main}
+\uses{def:bandit, def:class, def:kinf, def:kinfty, def:algorithm}
+For every $\kappa>1$, every \term{w:instance}{instance} $\nu\in\Hk^\alpha$, every \term{w:subopt}{suboptimal} arm $a$ and every
+$\varepsilon\in(0,\Ka)$, there is a constant $\Ca(\varepsilon)\in[0,\infty)$, depending only on $\nu_a$, $\mstar$,
+$\varepsilon$ and $\kappa$, such that for every $T\ge3$ the algorithm \algo{} satisfies:
+\begin{enumerate}[label=(\roman*)]
+  \item with $\dt{s:keps}\kep:=\Ka-\varepsilon\in(0,1)$,
+  \begin{equation}\label{eq:main-finite}
+    \E[\Np_a(T)]\ \le\ \nT(\varepsilon)+\frac52+\Ca(\varepsilon)
+    \ \le\ \frac{\LT+2\log\Bigl(1+\frac{2(\LT+2\log(4/\kep))}{\kep}\Bigr)}{\kep}+\frac52+\Ca(\varepsilon);
+  \end{equation}
+  \item at first order,
+  \begin{equation}\label{eq:main-first}
+    \limsup_{T\to\infty}\frac{\E[\Np_a(T)]}{\log T}\le\frac1{\Ka},\qquad\text{hence}\qquad
+    \limsup_{T\to\infty}\frac{\Reg_T}{\log T}\le\Cst(\nu).
+  \end{equation}
+\end{enumerate}
+\end{theorem}
+
+(See the proof in Appendix~\ref{sec:proof-main}.)
+
+\begin{corollary}[Exact first-order constant]\label{cor:exact}
+\uses{def:bandit, def:class, def:kinf, def:kinfty, def:algorithm, cite:LS-16.2}
+Let $\kappa>1$ and $\nu\in\Hk^\alpha$ with at least one \term{w:subopt}{suboptimal} arm. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item $0<\Cst(\nu)<\infty$, and every algorithm \term{w:consistent}{consistent} over $\Hk^\alpha$ satisfies
+  $\liminf_T\Reg_T/\log T\ge\Cst(\nu)$;
+  \item \algo{} is \term{w:consistent}{consistent} over $\Hk^\alpha$, and
+  \begin{equation*}
+    \lim_{T\to\infty}\frac{\Reg_T}{\log T}=\Cst(\nu)=\sum_{a:\gap_a>0}\frac{\gap_a}{\Kc(\nu_a,\mstar)};
+  \end{equation*}
+  \item for every \term{w:subopt}{suboptimal} arm $a$, $\gap_a/\Kc(\nu_a,\mstar)\ge\gap_a/\Kinfty(\kappa)>\kappa\gap_a$;
+  \item $\Kinf(P,\mu;\Hlt)=\Kc(P,\mu)$ for every \term{w:law}{law} $P$ and $\mu\in\R$, and (i)--(ii) hold for every
+  $\nu\in(\Hlt)^\alpha$ with $\Hlt$ in place of $\Hk$, for the same algorithm \algo{}.
+\end{enumerate}
+\end{corollary}
+
+(See the proof in Appendix~\ref{sec:proof-main}.)
+
+\paragraph{Comparison with the lower bound} Items (i)--(ii) pair the upper bound of Theorem~\ref{thm:main}
+with the lower bound of Theorem~\ref{cite:LS-16.2} in the same class, the algorithms \term{w:consistent}{consistent} over
+$\Hk^\alpha$: the first-order constant $\Cst(\nu)$ cannot be improved, and \algo{} attains it on every
+\term{w:instance}{instance}. This answers, at first order, the question of \citet[Section~4]{L17}.
+
+\paragraph{Comparison with the algorithm of Lattimore} Lattimore's bound
+$C\sum_a\gap_a(\kappa-1+\sda_a^2/\gap_a^2)$ (Lemma~\ref{cite:L17-thm2}) has the right shape: by (iii) every
+arm costs more than $\kappa\gap_a$, and the numerical values of Section~\ref{sec:examples} suggest that
+$\gap_a/\Kc(\nu_a,\mstar)$ is within a factor between $1.4$ and $2.1$ of $\gap_a(\kappa-1+\sda_a^2/\gap_a^2)$
+on the \term{w:law}{laws} we tried. For an arm with a fixed standardised \term{w:law}{law} and $\gap_a/\sda_a\to\infty$,
+Corollary~\ref{cor:largegap} and Proposition~\ref{prop:kinfty}(iv) give the exact coefficient
+\begin{equation*}
+  \frac{\gap_a}{\Kc(\nu_a,\mstar)}\sim\frac{\gap_a}{\Kinfty(\kappa)}\quad\Bigl(\frac{\gap_a}{\sda_a}\to\infty\Bigr),
+  \qquad\text{where}\qquad
+  \frac{\gap_a}{\Kinfty(\kappa)}=\Bigl(\kappa+\frac32+O\Bigl(\frac1\kappa\Bigr)\Bigr)\gap_a ,
+\end{equation*}
+which is, in this regime, the exact form of the term $(\kappa-1)\gap_a$.
+
+\paragraph{Comparison with KL$_{\inf}$-UCB and with the generic theorem} The algorithm and its threshold are
+those of \citet{AJK21}, and the regret decomposition is the classical one; the class is different, and the
+two deviation inequalities that the decomposition needs are proved in Theorem~\ref{thm:deviation}. The upper
+one is the form that \citet{PA26} assume (Lemma~\ref{cite:PA26-thm3.1}); the lower one is weaker than theirs
+(an existential rate, and a level shifted by $\delta$), so \citet[Theorem~3.1]{PA26} cannot be applied as such,
+and Appendix~\ref{sec:proof-main} gives a self-contained proof.
+
+\paragraph{Nature of the constants} The first-order constant is exact. The constant $\Ca(\varepsilon)$ of (i) is
+existential: it comes from the lower deviation inequality, whose rate is obtained by a topological argument
+(Theorem~\ref{thm:deviation}(ii)); it depends on $\nu_a$, $\mstar$, $\varepsilon$ and $\kappa$, and we have no
+estimate of its size. Everything else in \eqref{eq:main-finite} is explicit and valid from $T\ge3$.
+
+\paragraph{Scope} We do not give an explicit second-order term, a bound on the regret uniform over
+\term{w:instance}{instances}, or a computationally efficient index. The number $\kappa$ must be known, which is necessary
+\citep[Theorem~7]{L17}. Instances with several optimal arms are allowed.
+
+% ----------------------------------------------------------------
+\section{Concentration of the empirical information function}\label{sec:concentration}
+
+The regret bound rests on two deviation inequalities for $\Kc$ evaluated at an empirical \term{w:law}{law}. They are of
+independent use, for example for confidence sequences.
+
+\begin{theorem}[Deviation inequalities]\label{thm:deviation}
+\uses{def:class, def:kinf, def:laws}
+Let $\kappa>1$, $P\in\Hk$, let $X_1,X_2,\dots$ be independent with \term{w:law}{law} $P$, and
+$\hat P_n:=\frac1n\sum_{i\le n}\delta_{X_i}$. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item (anytime upper deviation) for every $x\ge0$,
+  \begin{equation}\label{eq:upper-dev}
+    \Prob\bigl(\exists n\ge1:\ n\,\Kc(\hat P_n,\mean(P))\ge x+1+2\log(n+1)\bigr)\le e^{-x},
+  \end{equation}
+  and consequently $\Prob\bigl(n\Kc(\hat P_n,\mean(P))\ge x\bigr)\le e(n+1)^2e^{-x}$ for every $n\ge1$ and $x\in\R$;
+  \item (lower deviation) for every $\mu\in\R$ and every $\varepsilon>0$ there are $\delta>0$, $J\in\mathbb N$ and
+  $\eta>0$, depending only on $P$, $\mu$, $\varepsilon$ and $\kappa$, such that for every $n\ge1$
+  \begin{equation}\label{eq:lower-dev}
+    \Prob\bigl(\Kc(\hat P_n,\mu-\delta)\le\Kc(P,\mu)-\varepsilon\bigr)\le2J\,e^{-2n\eta^2}.
+  \end{equation}
+\end{enumerate}
+The events are measurable by Lemma~\ref{lem:index}(i).
+\end{theorem}
+
+(See the proof in Appendix~\ref{sec:proof-deviation}.)
+
+\begin{corollary}[Scale-free confidence sequence]\label{cor:confseq}
+\uses{def:class, def:kinf}
+Let $\kappa>1$, $P\in\Hk$, $X_1,X_2,\dots$ and $\hat P_n$ as in Theorem~\ref{thm:deviation}, $\hat P^-_n$ the
+empirical \term{w:law}{law} of $-X_1,\dots,-X_n$, $x\ge0$ and $b_n:=x+1+2\log(n+1)$. Let
+\begin{equation*}
+  U^+_n:=\sup\{\mu:n\Kc(\hat P_n,\mu)\le b_n\},\qquad U^-_n:=\sup\{\mu:n\Kc(\hat P^-_n,\mu)\le b_n\}.
+\end{equation*}
+Then
+\begin{equation*}
+  \Prob\bigl(\forall n\ge1:\ -U^-_n\le\mean(P)\le U^+_n\bigr)\ge1-2e^{-x}.
+\end{equation*}
+\end{corollary}
+
+(See the proof in Appendix~\ref{sec:proof-deviation}.)
+
+\paragraph{Comparison with the heavy-tailed class} Inequality \eqref{eq:upper-dev} has the same form and
+the same constants as \citet[Proposition~5]{AJK21} for $\{\E|X|^{1+\beta}\le B\}$. The lower deviation inequality of
+\citet[Lemma~6]{AJK21} has the explicit rate $e^{-nc\delta^2}$; ours is existential. The confidence sequence
+uses only the bound on the kurtosis: it adapts to the unknown scale.
+
+\paragraph{Comparison with confidence intervals under a kurtosis bound} For a known bound on the kurtosis and an
+unknown variance $v$, \citet[Section~4.2, Proposition~4.5]{Cat12} builds an estimator of the mean, from a
+preliminary estimate of the variance \citep[Corollary~4.3]{Cat12}, whose error is at most an explicit quantity
+equivalent, for large $n$, to $\sqrt{2v\log(1/\epsilon)/n}$, with probability at least $1-\epsilon$ split between the two
+steps. That bound holds for a sample size $n$ and a level $\epsilon$ fixed in advance, under a condition
+$n\gtrsim36(\kappa-1)\log(1/\epsilon)$ (stated for $\kappa\ge3$). Corollary~\ref{cor:confseq} holds simultaneously for all
+$n\ge1$, for every $\kappa>1$, with the explicit threshold $b_n$, but we give no closed form for the width of the
+interval $[-U^-_n,U^+_n]$.
+
+\paragraph{Why the lower deviation is harder} The upper deviation only needs an upper bound on
+$\Kc(\hat P_n,\mean(P))$, and fixing the location and the scale at the true mean and standard deviation in
+\eqref{eq:dual} gives one. The lower deviation needs a lower bound on an infimum over all $(c,s)$, which may
+be approached at infinity; this is where the escape of mass and the value $\Kinfty(\kappa)$ enter
+(Section~\ref{sec:overview}).
+
+% ----------------------------------------------------------------
+\section{How the proofs work}\label{sec:overview}
+
+The proof of Theorem~\ref{thm:main} has five steps; the first four concern the information function alone.
+
+\paragraph{Step 1: convexification} A \term{w:law}{law} $Q$ has kurtosis at most $\kappa$ and mean $c$ if and only if
+$\tauc_{c,s}Q\in\Gk$ for some $s>0$ (Lemma~\ref{lem:G}). Since $\KL$ is invariant under the bijection $\tauc_{c,s}$,
+\begin{equation*}
+  \Kc(P,\mu)=\inf_{c>\mu,\ s>0}\KG(\tauc_{c,s}P)
+\end{equation*}
+(Lemma~\ref{lem:repr}), and the strict and non-strict versions coincide (Lemma~\ref{lem:strict}).
+
+\paragraph{Step 2: duality} For a finitely supported \term{w:law}{law} $R$, $\KG(R)=\max_{\Lam}\E_R\log\hl_\lambda$: weak duality
+is Jensen's inequality (Lemma~\ref{lem:weak}); for the converse we build an optimal \term{w:law}{law} of $\Gk$ from a
+maximiser of the dual and its normal cone (Lemma~\ref{lem:finite}). The extension to every \term{w:law}{law} uses the lower
+semicontinuity of $\KG$ and Fatou's lemma (Lemma~\ref{lem:alllaws}).
+
+\paragraph{Step 3: upper deviation} At the true mean $m$ and standard deviation $\sigma$ of $P\in\Hk$, the
+choice $(c,s)=(m,\sigma)$ in Step 1 gives $n\Kc(\hat P_n,m)\le\max_{\Lam}\sum_{i\le n}\log\hl_\lambda(Y_i)$ with
+$Y_i:=(X_i-m)/\sigma$ and $\E\hl_\lambda(Y_i)\le1$. A mixture of the supermartingales $\prod_i\hl_\lambda(Y_i)$ over
+the uniform \term{w:law}{law} on the fixed set $\Lam$ and the maximal inequality give \eqref{eq:upper-dev}.
+
+\paragraph{Step 4: the value at infinity and the escape of mass} This is the new step. To bound
+$\Kc(P_n,\mu_n)$ from below when $P_n\to P$, take near-optimal $(c_n,s_n)$ in Step 1. If they stay in a
+compact subset of $\R\times(0,\infty)$, the lower semicontinuity of $\KG$ concludes. Otherwise the
+normalised \term{w:law}{laws} $\tauc_{c_n,s_n}P_n$ either spread their mass to infinity, which costs an unbounded amount
+because every \term{w:law}{law} of $\Gk$ has a fourth moment at most $4\kappa^2$, or concentrate near a point, which costs
+at least $\Kinfty(\kappa)$ because no \term{w:law}{law} of $\Hk$ has an atom larger than $\qk$. The following lemma states
+this dichotomy.
+
+\begin{lemma}[Compactness modulo the affine group]\label{lem:escape}
+\uses{def:normalised, def:kinfty}
+Let $\kappa>1$, let $P$ be a \term{w:law}{law} that is not a Dirac mass, $P_n\to P$ weakly, and
+$(c_n,s_n)\in\R\times(0,\infty)$ with $\inf_nc_n>-\infty$; let $R_n:=\tauc_{c_n,s_n}P_n$. Then there is a
+subsequence along which one of the following holds:
+\begin{enumerate}[label=(\alph*)]
+  \item $(c_n,s_n)\to(c,s)\in\R\times(0,\infty)$ and $\liminf_n\KG(R_n)\ge\KG(\tauc_{c,s}P)$;
+  \item $\liminf_n\KG(R_n)\ge\Kinfty(\kappa)$.
+\end{enumerate}
+\end{lemma}
+
+(See the proof in Appendix~\ref{sec:proof-regularity}.)
+
+Since $\Kc(P,\mu)\le\Kinfty(\kappa)$ when $P$ has a finite fourth moment (Proposition~\ref{prop:kinfty}(ii)), both
+alternatives give $\liminf\Kc(P_n,\mu_n)\ge\Kc(P,\mu)$: this is Proposition~\ref{prop:regularity}(i). The two
+bounds meet exactly: the value $\Kinfty(\kappa)$ of the escape is the supremum of $\Kc$ over \term{w:law}{laws} with a finite fourth
+moment, so no weaker
+information on the escape would suffice.
+
+\paragraph{Step 5: lower deviation and regret} Lower semicontinuity at $(P,\mu)$ in the metrisable weak
+topology gives finitely many bounded continuous test functions whose empirical means control
+$\Kc(\hat P_n,\mu-\delta)$ from below; Hoeffding's inequality gives \eqref{eq:lower-dev}. The regret analysis
+then follows the classical decomposition of KL-UCB: rounds where the optimal arm's index falls below
+$\mstar$, controlled by \eqref{eq:upper-dev}; rounds where a \term{w:subopt}{suboptimal} arm's index is above $\mstar$,
+counted over the sample sizes and controlled by \eqref{eq:lower-dev}.
+
+\paragraph{Where the difficulty lies} The convexification and the upper deviation are short once the
+normalised class is found. The difficulty is the lower bound on $\Kc$ near a \term{w:law}{law}, because the class is
+scale free: the infimum over $(c,s)$ need not be attained, and near-optimal parameters can run to infinity.
+Lemma~\ref{lem:escape}, with the largest atom of Proposition~\ref{prop:kinfty}(i), is what controls this; without
+it, neither the positivity of $\Kc$ nor the lower deviation would follow.
+
+\paragraph{Map of the appendices} Appendix~\ref{sec:cited} collects the results from other papers.
+Appendix~\ref{sec:proof-dual} proves Proposition~\ref{prop:dual} (Steps 1--2), Appendix~\ref{sec:proof-kinfty}
+Proposition~\ref{prop:kinfty}, Appendix~\ref{sec:proof-regularity} Lemma~\ref{lem:escape},
+Proposition~\ref{prop:regularity} and Corollary~\ref{cor:largegap} (Step 4), Appendix~\ref{sec:proof-index}
+Lemma~\ref{lem:index}, Appendix~\ref{sec:proof-main} Theorem~\ref{thm:main} and Corollary~\ref{cor:exact}
+(Step 5), and Appendix~\ref{sec:proof-deviation} Theorem~\ref{thm:deviation} and Corollary~\ref{cor:confseq}
+(Steps 3 and 5). Appendix~\ref{sec:attribution} gives the sources of the techniques and
+Appendix~\ref{sec:notation} the notation.
+
+% ----------------------------------------------------------------
+\section{Numerical examples}\label{sec:examples}
+
+This section gives values of $\Kinfty(\kappa)$ and of $\Kc$, an \term{w:instance}{instance} that satisfies all the hypotheses, and the
+degenerate cases.
+
+\paragraph{Why no simulation of the algorithm} We did not simulate \algo{}. Its index \eqref{eq:index} requires
+$\Kc(\hat P,\mu)$ for an empirical \term{w:law}{law} at every round, and by the paragraph ``Computation'' of
+Section~\ref{sec:algorithm} the outer minimisation over $(c,s)$ in \eqref{eq:dual} is not convex, has a non-compact domain
+and may be approached at infinity; we have no procedure that computes it to a certified accuracy. A simulation would
+therefore run a heuristic approximation of the index, not the algorithm that Theorem~\ref{thm:main} analyses: an
+uncontrolled error on $\Kc$ moves the index in either direction, and the regret observed would say nothing about the
+theorem. Besides, a first-order constant is a limit as $T\to\infty$, which simulations at a finite horizon do not
+show. We compute instead the quantities that the theorem involves:
+$\Kinfty(\kappa)$ in closed form, and $\Kc$ on explicit \term{w:law}{laws}, where a direct search over alternatives gives an
+independent upper bound.
+
+\paragraph{Setup} The numbers below are computed from \eqref{eq:dual}. At fixed $(c,s)$, the maximisation over $\Lam$ uses
+the description of Proposition~\ref{prop:dual}(iii): for $\lambda_2>0$ the infimum defining $\Lw(\lambda_2)$ is attained at
+$y^2=(\kappa+\sqrt{\kappa^2+3\kappa+3/\lambda_2})/3$, the only positive critical point, and the problem becomes two nested
+one-dimensional concave maximisations. The outer minimisation over $(c,s)$ uses a multi-start Nelder--Mead search in
+$(\log(c-\mu),\log s)$ and a search on the boundary $c=\mu$. As an independent check, a direct search over \term{w:law}{laws}
+$\sum_iw_i\delta_{x_i}+\beta_1\delta_{u_1}+\beta_2\delta_{u_2}$ with mean at least $\mu$ and kurtosis at most $\kappa$ (sequential quadratic
+programming with random restarts) gives an upper bound on $\Kc$. These are heuristics without certified accuracy.
+\emph{Reproduction.} The Python scripts (NumPy and SciPy) are distributed with the source of this paper, with their
+outputs: \texttt{table1\_kinfty.py} gives Table~\ref{tab:kinfty} and the random search over four-atom \term{w:law}{laws} (a few
+seconds), \texttt{table2\_duality.py} gives Table~\ref{tab:duality} and the check at fixed $(c,s)$ (a few minutes), and
+\texttt{table3\_curves.py} gives Table~\ref{tab:curves} (about thirty minutes); the three share the routines of
+\texttt{kinf\_tools.py}, and each runs without arguments and prints its table.
+
+\begin{table}[t]
+\centering
+\small
+\caption[The value at infinity]{The value at infinity $\Kinfty(\kappa)=\log(1/\qk)$, its inverse, and the large-gap branch
+$\log\frac{\kappa}{\kappa-1}$ of \citet[Theorem~9]{L17} (valid there for $\kappa\ge7/2$).}\label{tab:kinfty}
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+$\kappa$ & $1.5$ & $2$ & $3$ & $3.5$ & $5$ & $9$ & $20$ & $100$ \\
+\midrule
+$\qk$ & 0.66667 & 0.72361 & 0.78868 & 0.81009 & 0.85355 & 0.90825 & 0.95445 & 0.99020 \\
+$\Kinfty(\kappa)$ & 0.40547 & 0.32351 & 0.23740 & 0.21061 & 0.15835 & 0.09624 & 0.04662 & 0.00985 \\
+$1/\Kinfty(\kappa)$ & 2.466 & 3.091 & 4.212 & 4.748 & 6.315 & 10.391 & 21.448 & 101.489 \\
+$\log\frac{\kappa}{\kappa-1}$ & 1.09861 & 0.69315 & 0.40547 & 0.33647 & 0.22314 & 0.11778 & 0.05129 & 0.01005 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation of Table~\ref{tab:kinfty}} The inverse $1/\Kinfty(\kappa)$, the least cost per unit gap and per
+$\log T$ of a \term{w:subopt}{suboptimal} arm, lies in $(\kappa,\kappa+2)$, and $1/\Kinfty(\kappa)-\kappa$ tends to $3/2$ (it is $0.966$ at $\kappa=1.5$, $1.212$ at
+$\kappa=3$ and $1.4989$ at $\kappa=10^3$). A random search over \term{w:law}{laws} with four atoms and kurtosis at most $\kappa$ finds the
+largest atom $\qk$ to six digits for $\kappa\in\{1.5,2.5,3,6\}$.
+
+\begin{table}[t]
+\centering
+\small
+\caption[Check of the dual formula]{Check of the dual formula. Left: $P$ uniform on $\{-1,0,1\}$ (kurtosis $3/2$), $\kappa=3$; the profiled dual
+\eqref{eq:dual} and a direct search over alternatives. Right: the two-point law $q_3\delta_0+(1-q_3)\delta_1$ (kurtosis exactly
+$3$, variance $1/6$) at the level $m+\Delta$, and the ratio of $\Kc$ to $\Delta^2/(2\sigma^2)$.}\label{tab:duality}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+$\mu$ & $0.1$ & $0.3$ & $0.6$ & $1.0$ & $2.0$ \\
+\midrule
+dual \eqref{eq:dual} & 0.007492 & 0.066107 & 0.164736 & 0.205489 & 0.228409 \\
+direct search & 0.007492 & 0.066107 & 0.164736 & 0.205489 & 0.228409 \\
+\bottomrule
+\end{tabular}
+\quad
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+$\Delta$ & $0.01$ & $0.2$ & $1$ & $5$ \\
+\midrule
+$\Kc(P,m+\Delta)$ & 0.000293 & 0.082477 & 0.227261 & 0.237014 \\
+ratio & 0.978 & 0.687 & 0.076 & 0.003 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation of Table~\ref{tab:duality}} The two computations agree to six digits at every level, on a \term{w:law}{law}
+inside the class and on a \term{w:law}{law} on its boundary. In every case the optimal location is $c=\mu$, and the direct search
+adds one atom far to the right of the data (mass $0.20$ at $9.78$ for $\mu=2$), as Proposition~\ref{prop:dual}(vi)
+allows. At fixed $(c,s)$, on four random \term{w:law}{laws} with four atoms, the maximum over $\Lam$ and the minimum over $\Gk$
+also agree to seven digits. As $\Delta$ grows, $\Kc(P,m+\Delta)$ increases to $\Kinfty(3)=0.23740$ (Corollary~\ref{cor:largegap}).
+
+\begin{table}[t]
+\centering
+\small
+\caption[The information function on two standardised laws]{$\Kc(P,\Delta)$ for two standardised laws (mean $0$, variance $1$): the $41$-point quantile discretisation
+of $\mathcal N(0,1)$ (kurtosis $2.690$) and the $21$-point uniform grid (kurtosis $1.795$). The last columns compare the
+exact regret coefficient $\Delta/\Kc$ of an arm with gap $\Delta$ and unit variance (Gaussian column) with the bracket
+$\Delta(\kappa-1+1/\Delta^2)$ of \citet[Theorem~2]{L17}, without its universal constant.}\label{tab:curves}
+\begin{tabular}{@{}rrrrrrrr@{}}
+\toprule
+ & $\Delta$ & $\Kc$ (Gauss.) & $\frac{\Kc}{\Delta^2/2}$ & $\Kc$ (unif.) & $\Delta/\Kc$ & $\Delta(\kappa-1+\Delta^{-2})$ & ratio \\
+\midrule
+$\kappa=3$ & 0.02 & 0.000200 & 0.9998 & 0.000200 & 100.016 & 50.040 & 1.999 \\
+ & 0.05 & 0.001249 & 0.9990 & 0.001250 & 40.041 & 20.100 & 1.992 \\
+ & 0.1 & 0.004979 & 0.9959 & 0.004992 & 20.083 & 10.200 & 1.969 \\
+ & 0.25 & 0.030420 & 0.9734 & 0.030902 & 8.218 & 4.500 & 1.826 \\
+ & 0.5 & 0.108498 & 0.8680 & 0.111946 & 4.608 & 3.000 & 1.536 \\
+ & 1.0 & 0.193042 & 0.3861 & 0.192677 & 5.180 & 3.000 & 1.727 \\
+ & 2.0 & 0.224303 & 0.1122 & 0.224233 & 8.917 & 4.500 & 1.981 \\
+ & 4.0 & 0.233935 & 0.0292 & 0.233929 & 17.099 & 8.250 & 2.073 \\
+ & 8.0 & 0.236521 & 0.0074 & 0.236520 & 33.824 & 16.125 & 2.098 \\
+\midrule
+$\kappa=5$ & 0.02 & 0.000200 & 0.9997 & 0.000200 & 100.033 & 50.080 & 1.997 \\
+ & 0.05 & 0.001247 & 0.9979 & 0.001248 & 40.084 & 20.200 & 1.984 \\
+ & 0.1 & 0.004958 & 0.9916 & 0.004970 & 20.170 & 10.400 & 1.939 \\
+ & 0.25 & 0.029451 & 0.9424 & 0.029846 & 8.489 & 5.000 & 1.698 \\
+ & 0.5 & 0.086715 & 0.6937 & 0.087192 & 5.766 & 4.000 & 1.441 \\
+ & 1.0 & 0.131888 & 0.2638 & 0.131874 & 7.582 & 5.000 & 1.516 \\
+ & 2.0 & 0.150472 & 0.0752 & 0.150469 & 13.291 & 8.500 & 1.564 \\
+ & 4.0 & 0.156265 & 0.0195 & 0.156264 & 25.598 & 16.250 & 1.575 \\
+ & 8.0 & 0.157819 & 0.0049 & 0.157819 & 50.691 & 32.125 & 1.578 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation of Table~\ref{tab:curves}} Four observations, on these two \term{w:law}{laws} only. First, for small gaps
+$\Kc\approx\Delta^2/(2\sd^2)$: the ratio tends to $1$, so the optimal regret per arm is close to $2\sda_a^2/\gap_a$, twice the term
+$\sda_a^2/\gap_a$ of Lattimore's bracket (we do not prove this; see Open question~\ref{oq:smallgap}). Second, from
+$\Delta\approx\sd$ on, $\Kc$ is within $20\%$ of $\Kinfty(\kappa)$, and $\Delta/\Kc$ approaches $\Delta/\Kinfty(\kappa)$, which is
+$(\kappa+1.21)\Delta$ for $\kappa=3$ and $(\kappa+1.32)\Delta$ for $\kappa=5$. Third, over the whole range, the exact coefficient is between $1.4$ and $2.1$ times the bracket of
+\citet[Theorem~2]{L17}, which suggests that this bracket has the right shape. Fourth, the shape of the \term{w:law}{law} matters
+little once $\Delta\gtrsim\sd$: the two columns agree to three or four digits, as Corollary~\ref{cor:largegap} predicts
+in the limit.
+
+\paragraph{An instance satisfying all the hypotheses} Let $\kappa:=3$ and two arms $\nu_1:=\mathcal N(1,1)$, $\nu_2:=\mathcal N(0,1)$. Both
+have kurtosis $3$, so $\nu\in\mathcal H_3^\alpha$, with $\gap_2=1$. By Corollary~\ref{cor:exact}, \algo{} run with $\kappa=3$ has
+$\lim_TR_T/\log T=1/\Kc(\mathcal N(0,1),1)$, and no algorithm \term{w:consistent}{consistent} over $\mathcal H_3^\alpha$ does better. By
+Proposition~\ref{prop:kinfty}(ii), $\Kc(\mathcal N(0,1),1)\le\Kinfty(3)=0.2374$, so this constant is at least $4.21$; the constant
+of the smaller model of Gaussian \term{w:law}{laws} with unknown mean and variance is $1/(\frac12\log2)=2.885$ \citep[equations~(2)--(3)]{HT14}.
+Knowing only that the kurtosis is at most $3$, instead of knowing that the arms are Gaussian, therefore costs at
+least a factor $1.46$ on this \term{w:instance}{instance}; the $41$-point discretisation of Table~\ref{tab:curves} suggests a factor
+of about $1.8$.
+
+\paragraph{Degenerate and boundary cases}
+\begin{itemize}
+  \item \emph{Bernoulli arms.} A Bernoulli \term{w:law}{law} of parameter $\theta$ has kurtosis $1/(\theta(1-\theta))-3$; it belongs to $\Hk$ if and
+  only if $\theta\in[1-\qk,\qk]$, and the extreme \term{w:law}{laws} carry the largest atom of Proposition~\ref{prop:kinfty}(i). Such an arm
+  produces a Dirac empirical \term{w:law}{law} with probability at most $\qk^{n-1}$ after $n$ pulls, and its index is then $\pm\infty$
+  (Lemma~\ref{lem:index}(iii)).
+  \item \emph{Gaussian arms.} For $\kappa\ge3$ every Gaussian \term{w:law}{law} belongs to $\Hk$, and
+  $\Kc(\mathcal N(m,\sigma^2),m+\Delta)\le\min\{\frac12\log(1+\Delta^2/\sigma^2),\Kinfty(\kappa)\}$: the first term is $\Kinf$ over the smaller
+  Gaussian model, the second is Proposition~\ref{prop:kinfty}(ii).
+  \item \emph{Laws on the boundary} $\kurt(P)=\kappa$, such as Gaussian arms with $\kappa=3$ or the extreme Bernoulli \term{w:law}{laws}, are
+  covered by all the results: Theorem~\ref{thm:deviation}(i) uses only $\E\phik(Y)\le0$, and
+  Proposition~\ref{prop:regularity} only a finite fourth moment and a \term{w:law}{law} that is not a Dirac mass.
+  \item \emph{The parameter $\kappa$.} As $\kappa\downarrow1$, $\qk\to\frac12$ and $\Kinfty(\kappa)\to\log2$; for $\kappa=1$ the class would only
+  contain symmetric two-point \term{w:law}{laws}, for which $\Kc=+\infty$ above the mean. As $\kappa\to\infty$, $\Kinfty(\kappa)\sim1/\kappa\to0$: the forced
+  exploration grows linearly in $\kappa$, in line with the impossibility of logarithmic regret uniformly over all the
+  classes \citep[Theorem~7]{L17}.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\section{Conclusion}\label{sec:conclusion}
+
+On the class of \term{w:law}{laws} with kurtosis at most a known $\kappa$, the first-order regret constant of \term{w:consistent}{consistent} algorithms
+is the Burnetas--Katehakis constant $\sum_a\gap_a/\Kc(\nu_a,\mstar)$, and KL-UCB with the information function of the
+class attains it. The information function has a dual formula valid for every \term{w:law}{law}, its largest value over
+\term{w:law}{laws} with a finite fourth moment is the explicit $\Kinfty(\kappa)$, which governs the large-gap regime, and it is lower semicontinuous away from Dirac
+masses. The limitations are the existential second-order term, the absence of a certified computation of the
+index, and the absence of a closed form for $\Kc$; the questions of Section~\ref{sec:open} start from them.
+
+\section{Open questions}\label{sec:open}
+
+Each question below is stated with its class and criterion, and says where the method of this paper stops.
+
+\begin{openquestion}[Explicit finite-time bounds]\label{oq:finite}
+\extends{D8, D7}
+For every $\kappa>1$ and every $P\in\Hk$ with $\mu>\mean(P)$, are there $d_0>0$, $C<\infty$ and $c>0$, given by explicit
+functions of $\kappa$, $\kurt(P)$ and $(\mu-\mean(P))/\sd(P)$, such that
+$\Prob(\Kc(\hat P_n,\mu)\le\Kc(P,\mu)-d)\le Ce^{-cnd^2}$ for all $n\ge1$ and $d\in(0,d_0)$? This would give, for \algo{} on every
+$\nu\in\Hk^\alpha$, $\E[\Np_a(T)]\le\log T/\Ka+O((\log T)^{2/3})$ with explicit constants, as \citet[Theorem~1]{AJK21} for a bounded
+moment. Our method stops at Theorem~\ref{thm:deviation}(ii) because the lower bound on $\Kc$ comes from a
+compactness argument (Lemma~\ref{lem:escape}) with no modulus: one needs a quantitative version, saying how
+fast near-optimal locations and scales can escape for a \term{w:law}{law} close to $P$.
+\end{openquestion}
+
+\begin{openquestion}[Efficient computation]\label{oq:computation}
+\extends{D8}
+Is there an algorithm whose index can be computed to a certified accuracy in time polynomial in the number of
+samples, or that recomputes its indices at only $o(T)$ rounds, and that still satisfies
+$\lim_TR_T/\log T=\Cst(\nu)$ for every $\nu\in\Hk^\alpha$? The inner problem of \eqref{eq:dual} is a two-dimensional concave
+program over a fixed set, but the outer problem over $(c,s)$ is not convex, its domain is not compact, and its
+infimum may be approached at infinity. A first step would be a confinement lemma for empirical \term{w:law}{laws}: near-optimal
+$(c,s)$ lie in an explicit compact set, or the value there is at least $\Kinfty(\kappa)-\zeta$ for a given $\zeta>0$; the error of a grid would then
+be added to the threshold.
+\end{openquestion}
+
+\begin{openquestion}[The shape of the information function]\label{oq:smallgap}
+\extends{D7}
+Is it true that, for every $\kappa>1$ and every $P\in\Hk$ with $\kurt(P)<\kappa$,
+$\Kc(P,\mean(P)+\Delta)=\frac{\Delta^2}{2\sd^2(P)}(1+o(1))$ as $\Delta\downarrow0$? What happens on the boundary $\kurt(P)=\kappa$, where
+Table~\ref{tab:duality} suggests the same behaviour for one \term{w:law}{law}? More globally, one half of a two-sided bound
+is known. Lattimore's algorithm is \term{w:consistent}{consistent} over $\Hk^\alpha$ by Lemma~\ref{cite:L17-thm2}; on the
+\term{w:instance}{instance} with two arms, of \term{w:law}{laws} $P$ and its translate by $\Delta>0$, Theorem~\ref{cite:LS-16.2} and
+Lemma~\ref{cite:L17-thm2} give $\Delta/\Kc(P,\mean(P)+\Delta)\le C\Delta(\kappa-1+\sd^2(P)/\Delta^2)$, hence
+$\Kc(P,\mean(P)+\Delta)\ge(2C)^{-1}\min\{\Delta^2/\sd^2(P),1/\kappa\}$ for every $\kappa>1$, $P\in\Hk$ and $\Delta>0$, with the universal
+constant $C$ of Lemma~\ref{cite:L17-thm2}. For $\Delta\ge\sd(P)/\sqrt\kappa$, Proposition~\ref{prop:kinfty} gives
+$\Kc(P,\mean(P)+\Delta)\le\Kinfty(\kappa)<1/\kappa\le\Delta^2/\sd^2(P)$. Is there a universal constant $C'$ with
+$\Kc(P,\mean(P)+\Delta)\le C'\Delta^2/\sd^2(P)$ for every $\kappa>1$, $P\in\Hk$ and $\Delta\in(0,\sd(P)/\sqrt\kappa)$? Lemma~\ref{cite:L17-thm9}
+gives this only for $\kappa\ge7/2$, $\kurt(P)<\kappa$ and $\Delta/\sd(P)$ below a threshold depending on $\kappa$ and $\kurt(P)$ (its
+first case, with its own constants). Our method gives no bound on $\Kc$ that is
+quantitative in $\Delta$ for small gaps: Proposition~\ref{prop:regularity}(iii) is proved by contradiction, and the
+far-atom construction of Proposition~\ref{prop:kinfty} costs a constant.
+\end{openquestion}
+
+\begin{openquestion}[Randomised and simpler index algorithms]\label{oq:randomised}
+\extends{D10}
+Is there a non-parametric Thompson-type algorithm, or an IMED-type index algorithm, pulling an arm that
+minimises $\Np_a(t)\Kc(\Pe_a(t),\hat m^\star(t))+\log\Np_a(t)$ with $\hat m^\star(t)$ the largest empirical mean, that satisfies
+$\limsup_TR_T/\log T\le\Cst(\nu)$ for every $\nu\in\Hk^\alpha$? The first
+is the second open problem of \citet[Section~4]{L17}. Our lower deviation inequality is uniform over a
+neighbourhood of the level, which an IMED analysis at the random level $\hat m^\star(t)$ needs, but the events specific
+to these algorithms were not checked.
+\end{openquestion}
+
+\begin{openquestion}[Classes convex up to location and scale]\label{oq:profiled}
+\extends{D7}
+Let $p>1$, $B>0$ and $\mathcal C_{p,B}:=\{P\in\Pspace:\E_P|X-\mean(P)|^p\le B\}$. Does KL-UCB with the information function
+$\Kinf(\cdot,\cdot;\mathcal C_{p,B})$ and the threshold \eqref{eq:threshold} satisfy
+$\limsup_T\E[\Np_a(T)]/\log T\le1/\Kinf(\nu_a,\mstar;\mathcal C_{p,B})$ for every \term{w:instance}{instance} $\nu\in\mathcal C_{p,B}^\alpha$ and every
+\term{w:subopt}{suboptimal} arm $a$, with no known lower bound on the means? For MED, \citet[Corollary~6]{BSH23} prove first-order
+optimality on the centred class $\{\E h(|X-m|)<B\}$, with a further integrability condition and a known lower bound on
+the means, which they use for compactness; the reduction to an outer minimisation over the location is also in
+\citet[Section~6.10]{A22}. Our method would profile the location only, and the analogue of Lemma~\ref{lem:escape} must
+show that the near-optimal locations $c>\mu$ stay bounded for \term{w:law}{laws} close to the arm's law: a location $c\to\infty$
+moves the whole mass of the normalised \term{w:law}{law} to $-\infty$, which we expect to cost $+\infty$ by a bound of the type
+of Lemma~\ref{lem:tail}, and the KL-UCB analysis needs this only at the arm's law, not uniformly over the class; we
+do not write this proof. The same question, for KL-UCB with both location and scale
+profiled, is open for the ratio classes $\{\E|X-m|^p\le\kappa\sd^p\}$, $p>2$, and for bounds on skewness and kurtosis
+together.
+\end{openquestion}
+
+
+% ================================================================ appendices
+\appendix
+
+\section{Useful lemmas}\label{sec:cited}
+
+In this section we present the results from other papers that we use: the lower bound of
+\citet{LS} is recalled in the main text as Theorem~\ref{cite:LS-16.2}; the four results below serve the
+comparisons of Sections~\ref{sec:related}, \ref{sec:lower} and \ref{sec:upper} and Open question~\ref{oq:smallgap}, and
+none of our proofs uses them. We also use by name a few textbook facts: the maximal inequality for non-negative
+supermartingales \citep[Theorem~3.9]{LS} (Ville's inequality), Hoeffding's inequality for bounded
+variables, the strong \term{w:law}{law} of large numbers, Varadarajan's theorem (the empirical \term{w:law}{laws} of an i.i.d.
+sequence converge weakly almost surely), Prokhorov's theorem, Skorokhod's representation theorem, the
+portmanteau theorem, Slutsky's lemma, the data processing inequality for $\KL$, and the
+Donsker--Varadhan formula $\KL(R,Q)=\sup_f\{\int f\,dR-\log\int e^f\,dQ\}$ over bounded continuous $f$, which
+makes $\KL$ jointly weakly lower semicontinuous.
+
+\citet{L17} writes $n$ for the horizon, $k$ for the number of arms and $\mathrm{Kurt}$ for the kurtosis; his
+algorithm is the one of \citet[Section~2]{L17}, based on median-of-means estimators, which we do not
+describe.
+
+% Verbatim: literature/notes/L17.md, Theorem 2 (restated for instances of the class H_kappa only).
+\begin{lemma}[{From \citet[Theorem~2]{L17}}]\label{cite:L17-thm2}
+\uses{def:bandit, def:class}
+There is a universal constant $C>0$ such that, for every $\kappa>1$ and every \term{w:instance}{instance} $\nu\in\Hk^\alpha$, the
+algorithm of \citet[Section~2]{L17} run with $\kappa$ satisfies
+\begin{equation*}
+  \limsup_{T\to\infty}\frac{\Reg_T}{\log T}\le C\sum_{a:\gap_a>0}\gap_a\Bigl(\kappa-1+\frac{\sd^2(\nu_a)}{\gap_a^2}\Bigr).
+\end{equation*}
+\end{lemma}
+
+In \citet[Theorem~9]{L17}, $\mathcal H_{\kappa_\circ}$ is the class of \term{w:law}{laws} with kurtosis less than $\kappa_\circ$, our
+$\Hlt$ with $\kappa=\kappa_\circ$, and $\kappa$ denotes the kurtosis of the \term{w:law}{law} $\nu$; we write $\kappa$ for the class
+parameter and $k_P$ for the kurtosis of $P$. The statement prints the class of the alternatives with the
+subscript of the kurtosis of $\nu$; its proof \citep[Appendix~A]{L17} builds alternatives of kurtosis at
+most $\kappa_\circ$, and we restate it with alternatives in $\Hlt$, which is the weaker reading.
+
+% Verbatim: literature/notes/L17.md, Theorem 9 (and the remark there on the class of the alternatives).
+\begin{lemma}[{From \citet[Theorem~9]{L17}}]\label{cite:L17-thm9}
+\uses{def:class, def:kinfD}
+There are universal constants $C,C'>0$ such that, for every $\kappa\ge7/2$, every $\Delta>0$ and every \term{w:law}{law}
+$P\in\Hlt$ with mean $m$, variance $\sigma^2>0$ and kurtosis $k_P$, with $p:=\min\{\Delta/\sigma,1/\kappa\}$,
+\begin{equation*}
+  \Kinf(P,m+\Delta;\Hlt)\le
+  \begin{cases}
+    \min\bigl\{\log\frac1{1-p},\ C'\Delta^2/\sigma^2\bigr\} & \text{if } Ck_P^{1/2}(k_P+1)\Delta/\sigma<\kappa,\\[2pt]
+    \log\frac1{1-p} & \text{otherwise.}
+  \end{cases}
+\end{equation*}
+\end{lemma}
+
+\citet{AJK21} write $\mu$ for the \term{w:instance}{instance}, $\epsilon$ for our $\beta$, and use the non-strict
+$\mathrm{KL}_{\inf}^{\mathcal L}(\eta,x):=\inf\{\KL(\eta,Q'):Q'\in\mathcal L,\ \mean(Q')\ge x\}$, where they write
+$\eta$ for a law and the infimum is over laws $Q'$ of the class $\mathcal L$; their
+$N_a(T)$ counts the pulls in the first $T-1$ rounds. KL$_{\inf}$-UCB is their Algorithm~1, with batch factor
+$\tilde\eta\ge0$.
+
+% Verbatim: literature/notes/AJK21.md, Corollary 2.
+\begin{lemma}[{From \citet[Corollary~2]{AJK21}}]\label{cite:AJK21-cor2}
+\uses{def:bandit, def:laws}
+Let $\beta,B>0$ and $\mathcal L_B:=\{P\in\Pspace:\int|x|^{1+\beta}\,dP\le B\}$. For every $\nu\in\mathcal L_B^\alpha$, every
+$\tilde\eta\ge0$ and every \term{w:subopt}{suboptimal} arm $a$, KL$_{\inf}$-UCB with batch factor $\tilde\eta$ and threshold
+$g_a(t)=\log t+2\log\log t+2\log(1+N_a(t))+1$ satisfies
+\begin{equation*}
+  \limsup_{T\to\infty}\frac{\E[N_a(T)]}{\log T}\le\frac{1+\tilde\eta}{\mathrm{KL}_{\inf}^{\mathcal L_B}(\nu_a,\mstar)}.
+\end{equation*}
+\end{lemma}
+
+\citet{PA26} write $\mathcal L$ for the class, $\hat\nu_n$ for the empirical \term{w:law}{law} of $n$ independent samples of
+$\nu$ and use the non-strict $\mathrm{KL}_{\inf}^{\mathcal L}$ of Lemma~\ref{cite:AJK21-cor2}; generalized KL$_{\inf}$-UCB is
+KL$_{\inf}$-UCB with batch factor $0$ and the threshold $f_a$ below.
+
+% Verbatim: literature/notes/PA26.md, Assumptions 2.3-2.4 and Theorem 3.1.
+\begin{lemma}[{From \citet[Theorem~3.1 with Assumptions~2.3--2.4]{PA26}}]\label{cite:PA26-thm3.1}
+\uses{def:bandit, def:laws}
+Let $\mathcal L$ be a set of \term{w:law}{laws} and $g(n):=C_1\log(1+n)+C_2$ with $C_1,C_2>0$. Assume that every
+$\nu\in\mathcal L$, with $\hat\nu_n$ the empirical \term{w:law}{law} of $n$ independent samples of $\nu$, satisfies
+\begin{enumerate}[label=(\alph*)]
+  \item for every $x\ge0$, $\Prob\bigl(\exists n\in\mathbb N:\ n\,\mathrm{KL}_{\inf}^{\mathcal L}(\hat\nu_n,\mean(\nu))-g(n)\ge x\bigr)\le e^{-x}$;
+  \item for every $\delta>0$ there are $d_0>0$ and $c_\nu>0$ such that, for every $d<d_0$ and every $n$,
+  $\Prob\bigl(\mathrm{KL}_{\inf}^{\mathcal L}(\hat\nu_n,\mean(\nu)+\delta)\le\mathrm{KL}_{\inf}^{\mathcal L}(\nu,\mean(\nu)+\delta)-d\bigr)\le e^{-nc_\nu d^2}$.
+\end{enumerate}
+Then for every $\nu\in\mathcal L^\alpha$ and every \term{w:subopt}{suboptimal} arm $a$, generalized KL$_{\inf}$-UCB with
+$f_a(t)=\log t+2\log\log t+g(N_a(t))$ satisfies
+$\limsup_{T\to\infty}\E[N_a(T)]/\log T\le1/\mathrm{KL}_{\inf}^{\mathcal L}(\nu_a,\mstar)$.
+\end{lemma}
+
+% ----------------------------------------------------------------
+\section{\texorpdfstring{Proof of Proposition~\ref{prop:dual}}{Proof of Proposition 4.2}}\label{sec:proof-dual}
+
+Throughout, $\kappa>1$ is fixed. For $c\in\R$ and $s>0$ we write $x\mapsto c+sx$ for the inverse of $\tauc_{c,s}$,
+and $\dt{s:gamma}\gam(y):=(y,\phik(y))\in\R^2$, so that $\hl_\lambda(y)=1+\lambda\cdot\gam(y)$ is affine in $\lambda$. To prove
+Proposition~\ref{prop:dual} we use the following eight lemmas; the first three are the convexification
+(Step~1 of Section~\ref{sec:overview}), the last five the duality (Step~2).
+
+\begin{lemma}[The normalised class]\label{lem:G}
+\uses{def:class, def:kinf, def:normalised}
+\begin{enumerate}[label=(\alph*)]
+  \item Every $Q\in\Gk$ has $v_2:=\int y^2\,dQ\in[\kappa-\sqrt{\kappa^2-\kappa},\ \kappa+\sqrt{\kappa^2-\kappa}]$,
+  $\int y^4\,dQ\le2\kappa v_2-\kappa<4\kappa^2$ and $\kurt(Q)\le\kappa$; so $\Gk\subset\Hk$, and every \term{w:law}{law} of $\Gk$ has mean $0$.
+  \item For every \term{w:law}{law} $Q$ and every $c\in\R$: $Q\in\Hk$ and $\mean(Q)=c$ if and only if $\tauc_{c,s}Q\in\Gk$ for some $s>0$;
+  and then $s=\sd(Q)$ is such an $s$.
+  \item $\Gk$ is convex and weakly compact.
+  \item For every \term{w:law}{law} $P$, $c\in\R$, $s>0$ and $\mu\in\R$, with $P'$ the image of $P$ under $x\mapsto c+sx$,
+  $\Kc(P',c+s\mu)=\Kc(P,\mu)$.
+\end{enumerate}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-G}.) This lemma is elementary. For a centred moment, the
+analogous reduction with the location only is in \citet[Section~6.10]{A22} and \citet[Appendix~D.5]{BSH23};
+treating the location and the scale as nuisance parameters of moment equations is classical in empirical
+likelihood \citep[see also][Sections~1.1 and 3.5]{O01}. The form used here, the inequality $\kurt\le\kappa$ written as
+the linear constraint $\int\phik\,dQ\le0$ with a free scale, we did not find.
+
+\begin{lemma}[Representation]\label{lem:repr}
+\uses{def:kinf, def:normalised}
+For every \term{w:law}{law} $P$ and every $\mu\in\R$,
+\begin{equation*}
+  \Kge(P,\mu)=\inf_{c\ge\mu,\ s>0}\KG(\tauc_{c,s}P),\qquad
+  \Kc(P,\mu)=\inf_{c>\mu,\ s>0}\KG(\tauc_{c,s}P).
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-repr}.) This is Lemma~\ref{lem:G}(b) and the invariance of
+$\KL$ under bijections; the outer minimisation over a parameter is the device of
+\citet[Theorem~3.4]{AKJ21}, \citet[Section~6.10]{A22} and \citet[Appendix~D.5]{BSH23}, here with two parameters
+whose domain $\{(c,s):c>\mu,\ s>0\}$ is not compact.
+
+\begin{lemma}[Strict and non-strict versions]\label{lem:strict}
+\uses{def:kinf, def:class}
+\begin{enumerate}[label=(\alph*)]
+  \item For every \term{w:law}{law} $P$ and $\mu\in\R$, $\Kc(P,\mu)=\Kge(P,\mu)$; hence $\mu\mapsto\Kc(P,\mu)$ is non-decreasing and
+  right-continuous.
+  \item For every \term{w:law}{law} $P$ and $\mu\in\R$, $\Kinf(P,\mu;\Hlt)=\Kc(P,\mu)$.
+\end{enumerate}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-strict}.) The mixing argument is classical; it replaces the
+continuity in the level used for the same purpose by \citet[Lemma~2]{HT10}.
+
+\begin{lemma}[Lower semicontinuity of the normalised problem]\label{lem:lsc}
+\uses{def:normalised, lem:G}
+$\KG:\Pspace\to[0,\infty]$ is weakly lower semicontinuous, and when $\KG(R)<\infty$ there is $Q\in\Gk$ with
+$\KL(R,Q)=\KG(R)$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-lsc}.) Classical: the joint lower semicontinuity of $\KL$
+and the compactness of $\Gk$.
+
+\begin{lemma}[The dual set]\label{lem:lambda}
+\uses{def:dualset}
+\begin{enumerate}[label=(\alph*)]
+  \item $\Lam$ is closed and convex, and it is contained in the rectangle
+  $[-\kappa^{-1/2},\kappa^{-1/2}]\times[0,1/(\kappa(\kappa-1))]$; hence it is compact.
+  \item $\Lam=\{(\lambda_1,\lambda_2):0\le\lambda_2\le\frac1{\kappa(\kappa-1)},\ |\lambda_1|\le\Lw(\lambda_2)\}$, and $\Lw$ is concave and
+  positive on $(0,\frac1{\kappa(\kappa-1)})$; hence $\Lam$ has non-empty interior.
+  \item For every $\lambda\in\mathrm{int}\,\Lam$: $\lambda_2>0$ and $\inf_{y\in\R}\hl_\lambda(y)>0$.
+  \item $C_\Lam:=\sup_{\lambda\in\Lam,\ y\in\R}\hl_\lambda(y)/(1+y^4)<\infty$.
+\end{enumerate}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-lambda}.) Elementary.
+
+\begin{lemma}[Weak duality]\label{lem:weak}
+\uses{def:normalised, def:dualset}
+Let $R$ be the \term{w:law}{law} of $Y$, $Q\in\Gk$ with $\KL(R,Q)<\infty$, and $\lambda\in\Lam$. Then the positive part of
+$\log\hl_\lambda(Y)$ is $R$-integrable, and
+\begin{equation*}
+  \E_R\log\hl_\lambda(Y)\le\KL(R,Q).
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-weak}.) Classical (Jensen's inequality, as in
+\citealp[Lemma~7]{AJK21}).
+
+\begin{lemma}[Duality for finitely supported \term{w:law}{laws}]\label{lem:finite}
+\uses{def:normalised, def:dualset, lem:lambda, lem:weak}
+Let $R=\sum_{i=1}^kp_i\delta_{y_i}$ with distinct $y_i$ and $p_i>0$, and $\Phi(\lambda):=\sum_ip_i\log\hl_\lambda(y_i)$.
+Then $\Phi$ attains its maximum on $\Lam$, and
+\begin{equation*}
+  \KG(R)=\max_{\lambda\in\Lam}\Phi(\lambda).
+\end{equation*}
+Moreover the infimum defining $\KG(R)$ is attained by a \term{w:law}{law} of the form
+$\sum_iw_i\delta_{y_i}+\sum_{u\in A}\beta_u\delta_u$, where $A$ is the set of zeros of $\hl_{\lambda^\star}$ for any maximiser
+$\lambda^\star$ of $\Phi$, and has at most two points.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-finite}.) Strong duality of this kind is classical
+(\citealp[Theorem~8]{HT10}; \citealp[Lemma~7]{AJK21}). The proof here is the standard first-order
+(Karush--Kuhn--Tucker) argument for a concave maximisation over a convex set: the optimal \term{w:law}{law} is read
+off from a maximiser of $\Phi$ and the multipliers of its active constraints; it does not invoke Slater's condition.
+
+\begin{lemma}[Duality for every \term{w:law}{law}]\label{lem:alllaws}
+\uses{def:normalised, def:dualset, lem:lsc, lem:lambda, lem:weak, lem:finite}
+Let $R$ be the \term{w:law}{law} of $Y$. If $\E_R\log(1+|Y|)=\infty$, then $\KG(R)=\infty=\sup_{\lambda\in\mathrm{int}\,\Lam}\E_R\log\hl_\lambda(Y)$.
+Otherwise $\E_R\log\hl_\lambda(Y)\in[-\infty,\infty)$ is well defined for every $\lambda\in\Lam$, the map
+$\lambda\mapsto\E_R\log\hl_\lambda(Y)$ is upper semicontinuous on $\Lam$, and
+\begin{equation*}
+  \KG(R)=\max_{\lambda\in\Lam}\E_R\log\hl_\lambda(Y)=\sup_{\lambda\in\mathrm{int}\,\Lam}\E_R\log\hl_\lambda(Y)<\infty.
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-alllaws}.) The scheme, duality first for finitely supported
+\term{w:law}{laws} and then for every \term{w:law}{law} by approximation, is that of the proof of
+\citet[Theorem~8]{HT10} for \term{w:law}{laws} on a bounded interval. On the unbounded support here, the limit is taken
+with the lower semicontinuity of $\KG$ and Fatou's lemma, under the growth bound $C_\Lam(1+y^4)$ of
+Lemma~\ref{lem:lambda}(d).
+
+\begin{proof}[Proof of Proposition~\ref{prop:dual}]
+\proves{prop:dual}
+\uses{def:kinf, def:normalised, def:dualset, lem:G, lem:repr, lem:strict, lem:lsc, lem:lambda, lem:weak, lem:finite, lem:alllaws}
+Item (i) is Lemma~\ref{lem:repr} together with Lemma~\ref{lem:strict}(a), which also gives the monotonicity and
+the right-continuity. Item (ii) is Lemma~\ref{lem:G}(a), (c) and Lemma~\ref{lem:lsc}. Item (iii) is
+Lemma~\ref{lem:lambda}(a)--(b). Item (iv) is Lemma~\ref{lem:alllaws}. For item (v), apply (i), then (iv) to
+$R:=\tauc_{c,s}P$, the \term{w:law}{law} of $Y:=(X-c)/s$:
+\begin{equation*}
+  \Kc(P,\mu)=\inf_{c>\mu,\ s>0}\KG(\tauc_{c,s}P)=\inf_{c>\mu,\ s>0}\ \sup_{\lambda\in\mathrm{int}\,\Lam}\E_P\log\hl_\lambda\Bigl(\frac{X-c}{s}\Bigr),
+\end{equation*}
+which is \eqref{eq:dual}. Item (vi) is the last statement of Lemma~\ref{lem:finite}.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:G}}\label{sec:proof-lem-G}
+
+\begin{proof}
+\proves{lem:G}
+\uses{def:class, def:kinf, def:normalised, def:laws}
+\emph{(a)} Let $Q\in\Gk$ and $v_4:=\int y^4\,dQ$. The constraint $\int\phik\,dQ\le0$ reads
+\begin{equation*}
+  v_4-2\kappa v_2+\kappa\le0.
+\end{equation*}
+By Jensen's inequality $v_4\ge v_2^2$, hence $v_2^2-2\kappa v_2+\kappa\le0$, which is the interval of the
+statement; in particular $v_2\ge\kappa-\sqrt{\kappa^2-\kappa}>0$. Then $v_4\le2\kappa v_2-\kappa\le2\kappa(\kappa+\sqrt{\kappa^2-\kappa})-\kappa<4\kappa^2$.
+Since $Q$ has mean $0$, its variance is $v_2>0$ and
+\begin{equation*}
+  \kurt(Q)=\frac{v_4}{v_2^2}\le\frac{2\kappa v_2-\kappa}{v_2^2}=\kappa-\frac{\kappa(v_2-1)^2}{v_2^2}\le\kappa .
+\end{equation*}
+So $Q\in\Hk$.
+
+\emph{(b)} The map $x\mapsto c+sx$ with $s>0$ preserves the finiteness of the fourth moment, multiplies the
+variance by $s^2$ and preserves the kurtosis. If $\tauc_{c,s}Q\in\Gk$, then $\tauc_{c,s}Q\in\Hk$ with mean $0$ by
+(a), and $Q$, its image under $x\mapsto c+sx$, belongs to $\Hk$ with mean $c$. Conversely, let $Q\in\Hk$ with
+$\mean(Q)=c$, and $s:=\sd(Q)$. Then $Y:=(X-c)/s$ with $X\sim Q$ has mean $0$, variance $1$ and $\E Y^4=\kurt(Q)$, so
+\begin{equation*}
+  \int\phik\,d(\tauc_{c,s}Q)=\kurt(Q)-2\kappa+\kappa=\kurt(Q)-\kappa\le0,
+\end{equation*}
+and $\tauc_{c,s}Q\in\Gk$.
+
+\emph{(c)} The three conditions defining $\Gk$ are preserved by mixtures, so $\Gk$ is convex. By (a) and
+Markov's inequality, $Q([-M,M]^c)\le4\kappa^2/M^4$ for every $Q\in\Gk$ and $M>0$, so $\Gk$ is tight. It is
+closed: let $Q_n\in\Gk$ converge weakly to $Q$. Since $\phik$ is continuous and bounded below,
+\begin{equation*}
+  \int\phik\,dQ\le\liminf_n\int\phik\,dQ_n\le0 .
+\end{equation*}
+Since $2\kappa y^2\le y^4/2+2\kappa^2$, we have $\phik(y)\ge y^4/2-2\kappa^2$, so $\int y^4\,dQ\le2\int\phik\,dQ+4\kappa^2<\infty$.
+Finally $\sup_n\int y^4\,dQ_n<4\kappa^2$ makes $y\mapsto y$ uniformly integrable along $(Q_n)$, so
+$\int y\,dQ=\lim_n\int y\,dQ_n=0$. Hence $Q\in\Gk$, and Prokhorov's theorem shows that $\Gk$ is compact.
+
+\emph{(d)} The map $Q\mapsto Q'$ (image under $x\mapsto c+sx$) is a bijection of $\Pspace$ that maps $\Hk$ onto
+$\Hk$ (by the first sentence of (b)), with $\mean(Q')=c+s\,\mean(Q)$ and $\KL(P',Q')=\KL(P,Q)$, since $\KL$ is
+invariant under a measurable bijection with measurable inverse. Hence
+\begin{align*}
+  \Kc(P',c+s\mu)&=\inf\{\KL(P',Q'):Q\in\Hk,\ c+s\,\mean(Q)>c+s\mu\}\\
+  &=\inf\{\KL(P,Q):Q\in\Hk,\ \mean(Q)>\mu\}=\Kc(P,\mu).
+\end{align*}
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:repr}}\label{sec:proof-lem-repr}
+
+\begin{proof}
+\proves{lem:repr}
+\uses{def:kinf, def:normalised, lem:G}
+We prove the first identity; the second is the same with strict inequalities on $\mean(Q)$ and $c$.
+
+\emph{Lower bound.} Let $Q\in\Hk$ with $\mean(Q)\ge\mu$, and $c:=\mean(Q)$, $s:=\sd(Q)$. By Lemma~\ref{lem:G}(b),
+$\tauc_{c,s}Q\in\Gk$, so
+\begin{equation*}
+  \KL(P,Q)=\KL(\tauc_{c,s}P,\tauc_{c,s}Q)\ge\KG(\tauc_{c,s}P)\ge\inf_{c'\ge\mu,\ s'>0}\KG(\tauc_{c',s'}P).
+\end{equation*}
+Taking the infimum over $Q$ gives $\Kge(P,\mu)\ge\inf_{c\ge\mu,s>0}\KG(\tauc_{c,s}P)$.
+
+\emph{Upper bound.} Let $c\ge\mu$, $s>0$ and $Q'\in\Gk$, and let $Q$ be the image of $Q'$ under
+$x\mapsto c+sx$. By Lemma~\ref{lem:G}(b), $Q\in\Hk$ with mean $c\ge\mu$, so
+\begin{equation*}
+  \Kge(P,\mu)\le\KL(P,Q)=\KL(\tauc_{c,s}P,Q').
+\end{equation*}
+Taking the infimum over $Q'\in\Gk$, then over $(c,s)$, gives the converse inequality.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:strict}}\label{sec:proof-lem-strict}
+
+We use the following fact here and in the proof of Lemma~\ref{lem:mixture}.
+
+\begin{lemma}[Divergence from a mixture]\label{lem:mixkl}
+\uses{def:laws}
+Let $P,Q,Q'$ be \term{w:law}{laws} and $\theta\in(0,1]$ with $Q'\ge\theta Q$ as measures. Then
+\begin{equation}\label{eq:mixkl}
+  \KL(P,Q')\le\KL(P,Q)+\log\frac1\theta .
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+\proves{lem:mixkl}
+\uses{def:laws}
+If $\KL(P,Q)=\infty$ there is nothing to prove. Otherwise $P\ll Q\ll Q'$ and $dQ/dQ'\le1/\theta$ $Q'$-almost surely, so
+$dP/dQ'=(dP/dQ)(dQ/dQ')\le\theta^{-1}dP/dQ$ $P$-almost surely; integrating the logarithm against $P$ gives \eqref{eq:mixkl}.
+\end{proof}
+
+\begin{proof}
+\proves{lem:strict}
+\uses{def:kinf, def:class, def:laws, lem:mixkl}
+\emph{Idea.} An alternative of mean exactly $\mu$ and kurtosis at most $\kappa$ is first mixed with two symmetric
+atoms, which lowers the kurtosis strictly below $\kappa$, then with a small atom to the right, which lifts the
+mean above $\mu$; both mixtures cost little in $\KL$.
+
+\emph{Step 1: a strictly smaller kurtosis.} Let $Q\in\Hk$ with mean $m$, variance $\sigma^2>0$ and fourth central
+moment $\mu_4=\kurt(Q)\sigma^4\le\kappa\sigma^4$, and $\eta\in(0,1)$. Let
+\begin{equation*}
+  Q_1:=(1-\eta)Q+\frac\eta2\bigl(\delta_{m-\sqrt\kappa\sigma}+\delta_{m+\sqrt\kappa\sigma}\bigr).
+\end{equation*}
+It has mean $m$, variance $\sigma^2(1+\eta(\kappa-1))$ and fourth central moment
+$(1-\eta)\mu_4+\eta\kappa^2\sigma^4\le\kappa\sigma^4(1+\eta(\kappa-1))$, so
+\begin{equation*}
+  \kurt(Q_1)\le\frac{\kappa}{1+\eta(\kappa-1)}<\kappa .
+\end{equation*}
+Since $Q_1\ge(1-\eta)Q$, Lemma~\ref{lem:mixkl} gives $\KL(P,Q_1)\le\KL(P,Q)+\log\frac1{1-\eta}$.
+
+\emph{Step 2: proof of (b).} Since $\Hlt\subset\Hk$, $\Kinf(P,\mu;\Hlt)\ge\Kc(P,\mu)$. Conversely, for $Q\in\Hk$ with
+$\mean(Q)>\mu$, the \term{w:law}{law} $Q_1$ of Step 1 belongs to $\Hlt$ and has the same mean, so
+$\Kinf(P,\mu;\Hlt)\le\KL(P,Q)+\log\frac1{1-\eta}$. Taking the infimum over $Q$, then $\eta\to0$, gives (b).
+
+\emph{Step 3: proof of (a).} Clearly $\Kc\ge\Kge$. Let $Q\in\Hk$ with $\mean(Q)\ge\mu$ and $\KL(P,Q)<\infty$; if
+$\mean(Q)>\mu$ there is nothing to do, so let $\mean(Q)=\mu$. Take $Q_1$ from Step 1 and, for $\eta'\in(0,1)$,
+\begin{equation*}
+  Q_2:=(1-\eta')Q_1+\eta'\delta_{\mu+\sigma}.
+\end{equation*}
+Its mean is $\mu+\eta'\sigma>\mu$. Its variance and fourth central moment are polynomials in $\eta'$, and its
+variance is positive at $\eta'=0$, so $\kurt(Q_2)\to\kurt(Q_1)<\kappa$ as $\eta'\to0$; for $\eta'$ small,
+$Q_2\in\Hk$. Since $Q_2\ge(1-\eta)(1-\eta')Q$, Lemma~\ref{lem:mixkl} gives
+\begin{equation*}
+  \Kc(P,\mu)\le\KL(P,Q_2)\le\KL(P,Q)+\log\frac1{(1-\eta)(1-\eta')}.
+\end{equation*}
+Letting $\eta,\eta'\to0$ and taking the infimum over $Q$ gives $\Kc(P,\mu)\le\Kge(P,\mu)$.
+
+\emph{Step 4: monotonicity and right-continuity.} $\Kc(P,\cdot)$ is non-decreasing because the set of admissible
+alternatives shrinks as $\mu$ grows. Since $\{Q:\mean(Q)>\mu\}=\bigcup_{\mu'>\mu}\{Q:\mean(Q)\ge\mu'\}$,
+\begin{equation*}
+  \Kc(P,\mu)=\inf_{\mu'>\mu}\Kge(P,\mu')=\inf_{\mu'>\mu}\Kc(P,\mu')=\lim_{\mu'\downarrow\mu}\Kc(P,\mu'),
+\end{equation*}
+using (a) for the second equality and the monotonicity for the third.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:lsc}}\label{sec:proof-lem-lsc}
+
+\begin{proof}
+\proves{lem:lsc}
+\uses{def:normalised, lem:G}
+By the Donsker--Varadhan formula, $\KL$ is a supremum of functions that are jointly continuous for the weak
+topology, hence jointly weakly lower semicontinuous. Let $R_n\to R$ weakly and $\ell:=\liminf_n\KG(R_n)$; assume
+$\ell<\infty$. Along a subsequence realising $\ell$, pick $Q_n\in\Gk$ with $\KL(R_n,Q_n)\le\KG(R_n)+1/n$. By
+Lemma~\ref{lem:G}(c), a further subsequence has $Q_n\to Q\in\Gk$, and
+\begin{equation*}
+  \KG(R)\le\KL(R,Q)\le\liminf_n\KL(R_n,Q_n)=\ell .
+\end{equation*}
+With $R_n:=R$ for every $n$, the subsequence $(Q_n)$ chosen in this proof converges to some $Q\in\Gk$ with
+$\KL(R,Q)\le\KG(R)$, so $Q$ attains $\KG(R)$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:lambda}}\label{sec:proof-lem-lambda}
+
+\begin{proof}
+\proves{lem:lambda}
+\uses{def:dualset, def:normalised}
+Write $b:=\kappa(\kappa-1)$, so that $\min\phik=-b$, attained at $\pm\sqrt\kappa$.
+
+\emph{(a)} $\Lam$ is the intersection of the closed half-plane $\{\lambda_2\ge0\}$ with the closed half-planes
+$\{\lambda:\hl_\lambda(y)\ge0\}$, $y\in\R$; it is closed and convex. At $y=\pm\sqrt\kappa$, $\hl_\lambda(\pm\sqrt\kappa)=1\pm\lambda_1\sqrt\kappa-\lambda_2b\ge0$,
+hence $\lambda_2\le1/b$ and $|\lambda_1|\sqrt\kappa\le1-\lambda_2b\le1$.
+
+\emph{(b)} Let $0\le\lambda_2\le1/b$. At $y=0$, $\hl_\lambda(0)=1+\lambda_2\kappa>0$. For $y>0$, $\hl_\lambda(y)\ge0$ means
+$\lambda_1\ge-(1+\lambda_2\phik(y))/y$, and $\hl_\lambda(-y)\ge0$ means $\lambda_1\le(1+\lambda_2\phik(y))/y$, since $\phik$ is even.
+So $\lambda\in\Lam$ if and only if $|\lambda_1|\le\Lw(\lambda_2)$ (and $\Lw(\lambda_2)\ge0$, which holds because
+$1+\lambda_2\phik\ge1-\lambda_2b\ge0$). For $\lambda_2>1/b$, $1+\lambda_2\phik(\sqrt\kappa)<0$, so no $\lambda_1$ is admissible. The
+function $\Lw$ is an infimum of affine functions of $\lambda_2$, hence concave. For $0<\lambda_2<1/b$, the function
+$y\mapsto(1+\lambda_2\phik(y))/y$ is continuous and positive on $(0,\infty)$ (its numerator is at least $1-\lambda_2b>0$)
+and tends to $+\infty$ at $0$ and at $\infty$, so its infimum $\Lw(\lambda_2)$ is positive. A concave function is
+continuous on an open interval, so $\{(\lambda_1,\lambda_2):0<\lambda_2<1/b,\ |\lambda_1|<\Lw(\lambda_2)\}$ is a non-empty open subset of
+$\Lam$.
+
+\emph{(c)} Let $\lambda\in\mathrm{int}\,\Lam$. Points with $\lambda_2=0$ are not interior, since $\Lam\subset\{\lambda_2\ge0\}$; so
+$\lambda_2>0$. Suppose $\hl_\lambda(y_0)=0$ for some $y_0$. Since $\gam(y_0)\neq0$ (if $y_0=0$, $\phik(0)=\kappa\neq0$),
+$\lambda-t\gam(y_0)\in\Lam$ for $t>0$ small, while
+\begin{equation*}
+  \hl_{\lambda-t\gam(y_0)}(y_0)=\hl_\lambda(y_0)-t|\gam(y_0)|^2<0,
+\end{equation*}
+a contradiction. So $\hl_\lambda>0$ on $\R$; since $\lambda_2>0$, $\hl_\lambda(y)\to+\infty$ as $|y|\to\infty$, so the continuous
+function $\hl_\lambda$ attains a positive minimum.
+
+\emph{(d)} For $\lambda\in\Lam$, $|\lambda_1|\le1$ and $0\le\lambda_2\le1/b$, and $\phik(y)\le y^4+\kappa$, so
+$\hl_\lambda(y)\le1+|y|+(y^4+\kappa)/b\le(2+(1+\kappa)/b)(1+y^4)$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:weak}}\label{sec:proof-lem-weak}
+
+\begin{proof}
+\proves{lem:weak}
+\uses{def:normalised, def:dualset}
+\emph{Setting.} $R\ll Q$ since $\KL(R,Q)<\infty$; let $\rho:=dR/dQ$, so $\rho(Y)>0$ $R$-almost surely. \emph{Goal.} Split
+$\log\hl_\lambda(Y)$ into a part with integrable positive part and an integrable part, and apply Jensen's inequality
+to the first.
+
+Let $Z:=\hl_\lambda(Y)/\rho(Y)\ge0$, defined $R$-almost surely. Since $\hl_\lambda\ge0$, $Q$ has mean $0$ and a finite fourth
+moment, and $\lambda_2\ge0$,
+\begin{equation*}
+  \E_R[Z]=\int_{\{\rho>0\}}\hl_\lambda\,dQ\le\int\hl_\lambda\,dQ=1+\lambda_2\int\phik\,dQ\le1 .
+\end{equation*}
+So $\E_R[(\log Z)^+]\le\E_R[Z]\le1$. The function $\log\rho(Y)$ is $R$-integrable: its integral is $\KL(R,Q)<\infty$
+and its negative part has integral $\int_{\{\rho<1\}}\rho\log(1/\rho)\,dQ\le1/e$. Since
+$\log\hl_\lambda(Y)=\log Z+\log\rho(Y)$ $R$-almost surely, the positive part of $\log\hl_\lambda(Y)$ is integrable and
+\begin{align*}
+  \E_R\log\hl_\lambda(Y)&=\E_R\log Z+\E_R\log\rho(Y)\\
+  &\le\log\E_R[Z]+\KL(R,Q) && \text{(Jensen's inequality for the concave }\log\text{)}\\
+  &\le\KL(R,Q) && (\E_R[Z]\le1).
+\end{align*}
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:finite}}\label{sec:proof-lem-finite}
+
+\begin{proof}
+\proves{lem:finite}
+\uses{def:normalised, def:dualset, lem:lambda, lem:weak}
+\emph{Idea.} Weak duality gives $\max\Phi\le\KG(R)$. For the converse we take a maximiser $\lambda^\star$ of $\Phi$ and
+write the first-order optimality condition: the gradient of $\Phi$ at $\lambda^\star$ is a non-positive combination
+of the vectors $\gam(u)$ at the zeros $u$ of $\hl_{\lambda^\star}$. The coefficients of this combination, with the weights
+$p_i/\hl_{\lambda^\star}(y_i)$, define a \term{w:law}{law} of $\Gk$ whose divergence from $R$ is $\Phi(\lambda^\star)$.
+
+\emph{Step 1: a maximiser.} Each map $\lambda\mapsto\log\hl_\lambda(y_i)$ is upper semicontinuous with values in $[-\infty,\infty)$
+($\hl_\lambda(y_i)$ is continuous in $\lambda$ and $\log0:=-\infty$), so $\Phi$ attains its maximum on the compact set
+$\Lam$ (Lemma~\ref{lem:lambda}(a)). Let $\lambda^\star$ be any maximiser. Since $0\in\Lam$ and $\Phi(0)=0$, $\Phi(\lambda^\star)\ge0$; hence
+$\hl_{\lambda^\star}(y_i)>0$ for every $i$, $\Phi$ is differentiable at $\lambda^\star$, and its gradient is
+\begin{equation*}
+  g:=\nabla\Phi(\lambda^\star)=\sum_{i=1}^k\frac{p_i\,\gam(y_i)}{\hl_{\lambda^\star}(y_i)} .
+\end{equation*}
+We use repeatedly that if $\lambda^\star+td\in\Lam$ for all small $t>0$, then $g\cdot d\le0$, because
+$\Phi(\lambda^\star+td)\le\Phi(\lambda^\star)$ and the right derivative at $t=0$ is $g\cdot d$.
+
+\emph{Step 2: the case $\lambda^\star_2=0$.} Then $1+\lambda^\star_1y\ge0$ for all $y$, so $\lambda^\star=0$ and $g=\sum_ip_i\gam(y_i)$.
+For $d\in\R^2$ with $d_2>0$, the quartic $d_1y+d_2\phik(y)$ is bounded below, so $td\in\Lam$ for small $t>0$, and
+$g\cdot d\le0$. With $d=(\pm1,\zeta)$, $\zeta\downarrow0$, and $d=(0,1)$ we get
+\begin{equation*}
+  \sum_ip_iy_i=0,\qquad \sum_ip_i\phik(y_i)\le0 .
+\end{equation*}
+So $R\in\Gk$, hence $\KG(R)=\KL(R,R)=0=\Phi(0)=\Phi(\lambda^\star)$, and $R$ itself attains $\KG(R)$ (here $A=\emptyset$).
+
+\emph{Step 3: the case $\lambda^\star_2>0$; the zeros.} Then $\hl_{\lambda^\star}$ is a non-negative polynomial of degree $4$
+with positive leading coefficient, so its real zeros have even multiplicity: the set $A$ of its zeros has at
+most two points, none of them equal to a $y_i$. Let $C:=\{\sum_{u\in A}\beta_u\gam(u):\beta_u\ge0\}$, a finitely generated, hence
+closed, convex cone ($C=\{0\}$ if $A=\emptyset$).
+
+\emph{Step 4: the first-order condition, $-g\in C$.} Suppose not. Separating $-g$ from the closed convex cone $C$
+gives $d\in\R^2$ with $d\cdot g>0$ and $d\cdot\gam(u)\ge0$ for every $u\in A$. For $\zeta>0$ let $d_\zeta:=d-\zeta\lambda^\star$.
+For $u\in A$, $\lambda^\star\cdot\gam(u)=\hl_{\lambda^\star}(u)-1=-1$, so
+\begin{equation*}
+  d_\zeta\cdot\gam(u)=d\cdot\gam(u)+\zeta\ge\zeta>0,
+\end{equation*}
+and $d_\zeta\cdot g>0$ for $\zeta$ small; fix such a $\zeta$. We show that $\lambda^\star+td_\zeta\in\Lam$ for small $t>0$, which
+contradicts Step 1. Let $\psi(y):=d_\zeta\cdot\gam(y)$, so that $\hl_{\lambda^\star+td_\zeta}=\hl_{\lambda^\star}+t\psi$, and let
+$U:=\{\psi>0\}$, an open set containing $A$.
+\begin{itemize}
+  \item On $U$: $\hl_{\lambda^\star+td_\zeta}\ge t\psi>0$.
+  \item On $F:=\R\setminus U$: $\hl_{\lambda^\star}>0$ on the closed set $F$ and $\hl_{\lambda^\star}(y)/(1+y^4)\to\lambda^\star_2>0$ as $|y|\to\infty$, so
+  $c_F:=\inf_F\hl_{\lambda^\star}(y)/(1+y^4)>0$; and $|\psi(y)|\le C_\psi(1+y^4)$ for some $C_\psi<\infty$. Hence, for $t\le c_F/C_\psi$,
+  $\hl_{\lambda^\star+td_\zeta}\ge(c_F-tC_\psi)(1+y^4)\ge0$ on $F$.
+  \item The second coordinate $\lambda^\star_2+t(d_\zeta)_2$ is non-negative for $t$ small.
+\end{itemize}
+So $\lambda^\star+td_\zeta\in\Lam$ for small $t>0$, and $g\cdot d_\zeta\le0$ by Step 1: a contradiction. Hence
+$-g=\sum_{u\in A}\beta_u\gam(u)$ with $\beta_u\ge0$.
+
+\emph{Step 5: an optimal \term{w:law}{law}.} Let $w_i:=p_i/\hl_{\lambda^\star}(y_i)>0$ and $Q^\star:=\sum_iw_i\delta_{y_i}+\sum_{u\in A}\beta_u\delta_u$. By
+definition of $g$ and Step 4,
+\begin{equation*}
+  \sum_iw_i\gam(y_i)=g=-\sum_{u\in A}\beta_u\gam(u).
+\end{equation*}
+\begin{itemize}
+  \item Total mass: $\sum_iw_i\hl_{\lambda^\star}(y_i)=\sum_ip_i=1$, that is $\sum_iw_i+\lambda^\star\cdot g=1$; and
+  $\lambda^\star\cdot g=-\sum_u\beta_u\lambda^\star\cdot\gam(u)=\sum_u\beta_u$. So $\sum_iw_i+\sum_u\beta_u=1$ and $Q^\star$ is a \term{w:law}{law}.
+  \item Constraints: the first coordinate of the display gives $\int y\,dQ^\star=0$, the second
+  $\int\phik\,dQ^\star=0$; $Q^\star$ has finite support. So $Q^\star\in\Gk$.
+  \item Divergence: the $u\in A$ differ from the $y_i$, so $dR/dQ^\star(y_i)=p_i/w_i=\hl_{\lambda^\star}(y_i)$ and
+  $\KL(R,Q^\star)=\sum_ip_i\log\hl_{\lambda^\star}(y_i)=\Phi(\lambda^\star)$.
+\end{itemize}
+Hence $\KG(R)\le\Phi(\lambda^\star)$. With Lemma~\ref{lem:weak}, $\KG(R)=\Phi(\lambda^\star)=\max_\Lam\Phi$, attained by $Q^\star$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:alllaws}}\label{sec:proof-lem-alllaws}
+
+\begin{proof}
+\proves{lem:alllaws}
+\uses{def:normalised, def:dualset, lem:lsc, lem:lambda, lem:weak, lem:finite}
+\emph{Idea.} Approximate $R$ by its empirical \term{w:law}{laws}, for which Lemma~\ref{lem:finite} holds, take limits of the
+dual maximisers, and pass to the limit in the dual objective with Fatou's lemma, dominated by the growth
+bound $C_\Lam(1+y^4)$.
+
+\emph{Step 1: the case $\E_R\log(1+|Y|)=\infty$.} Let $b:=\kappa(\kappa-1)$ and $\lambda^0:=(0,\frac1{2b})$, an interior point of $\Lam$
+(Lemma~\ref{lem:lambda}(b)). Then
+\begin{equation*}
+  \hl_{\lambda^0}(y)=\frac12+\frac{(y^2-\kappa)^2}{2b}\ \ge\ \max\Bigl\{\frac12,\ \frac{(y^2-\kappa)^2}{2b}\Bigr\},
+\end{equation*}
+so $\log\hl_{\lambda^0}(y)\ge4\log(1+|y|)-c_\kappa$ for a constant $c_\kappa$ (use the first bound for $|y|\le2\sqrt\kappa$, and
+$y^2-\kappa\ge\frac34y^2\ge\frac3{16}(1+|y|)^2$ for $|y|\ge2\sqrt\kappa$); hence $\E_R\log\hl_{\lambda^0}(Y)=\infty$. By
+Lemma~\ref{lem:weak}, $\KL(R,Q)=\infty$ for every $Q\in\Gk$, so $\KG(R)=\infty$.
+
+\emph{Step 2: well-definedness and upper semicontinuity.} Assume $\E_R\log(1+|Y|)<\infty$. By
+Lemma~\ref{lem:lambda}(d), $(\log\hl_\lambda(Y))^+\le\log C_\Lam+\log(1+Y^4)$, which is $R$-integrable; so
+$\E_R\log\hl_\lambda(Y)\in[-\infty,\infty)$ is defined for every $\lambda\in\Lam$. Let $\lambda_n\to\lambda$ in $\Lam$, $f_n:=\log\hl_{\lambda_n}(Y)$ and
+$G:=\log C_\Lam+\log(1+Y^4)$. Then $G-f_n\ge0$ and $\limsup_nf_n\le\log\hl_\lambda(Y)$ pointwise, by continuity of
+$(\lambda,y)\mapsto\hl_\lambda(y)$ and upper semicontinuity of $\log$ on $[0,\infty)$. Fatou's lemma applied to $G-f_n$ gives
+\begin{equation*}
+  \limsup_n\E_Rf_n\le\E_R\log\hl_\lambda(Y).
+\end{equation*}
+So $\lambda\mapsto\E_R\log\hl_\lambda(Y)$ is upper semicontinuous, and it attains its maximum on the compact set $\Lam$.
+
+\emph{Step 3: $\KG(R)\le\max_\Lam\E_R\log\hl_\lambda$.} Let $Y_1,Y_2,\dots$ be independent with \term{w:law}{law} $R$ and $R_n$ their empirical
+\term{w:law}{laws}. Almost surely, $R_n\to R$ weakly (Varadarajan's theorem) and $\frac1n\sum_{i\le n}\log(1+Y_i^4)\to\E_R\log(1+Y^4)$ (strong
+\term{w:law}{law} of large numbers); fix an outcome where both hold, so that $(R_n)$ is a deterministic sequence of finitely
+supported \term{w:law}{laws}. By Lemma~\ref{lem:finite}, $\KG(R_n)=\E_{R_n}\log\hl_{\lambda_n}$ for some $\lambda_n\in\Lam$. Along a subsequence realising
+$\liminf_n\KG(R_n)$, we may assume $\lambda_n\to\bar\lambda\in\Lam$. By Skorokhod's representation theorem, there are random
+variables $Z_n\sim R_n$ and $Z\sim R$ with $Z_n\to Z$ almost surely. Let $f_n:=\log\hl_{\lambda_n}(Z_n)$,
+$G_n:=\log C_\Lam+\log(1+Z_n^4)\ge f_n$ and $G:=\log C_\Lam+\log(1+Z^4)$. Then $G_n\to G$ almost surely, $\E G_n\to\E G<\infty$
+(by the choice of the outcome), and $\limsup_nf_n\le\log\hl_{\bar\lambda}(Z)$ almost surely. Fatou's lemma applied to
+$G_n-f_n\ge0$ gives
+\begin{equation*}
+  \E G-\E\log\hl_{\bar\lambda}(Z)\le\E\liminf_n(G_n-f_n)\le\liminf_n\E(G_n-f_n)=\E G-\limsup_n\E f_n .
+\end{equation*}
+So $\limsup_n\E f_n\le\E_R\log\hl_{\bar\lambda}(Y)$. With Lemma~\ref{lem:lsc},
+\begin{equation*}
+  \KG(R)\le\liminf_n\KG(R_n)=\lim_n\E f_n\le\E_R\log\hl_{\bar\lambda}(Y)\le\max_{\lambda\in\Lam}\E_R\log\hl_\lambda(Y).
+\end{equation*}
+
+\emph{Step 4: conclusion.} Lemma~\ref{lem:weak} gives the converse inequality, so $\KG(R)$ equals the maximum, which
+is at most $\log C_\Lam+\E_R\log(1+Y^4)<\infty$. Finally, let $\lambda^\star$ be a maximiser and $\lambda^0\in\mathrm{int}\,\Lam$; for
+$t\in(0,1]$, $\lambda_t:=(1-t)\lambda^\star+t\lambda^0\in\mathrm{int}\,\Lam$, and since $\hl$ is affine in $\lambda$ and $\log$ is concave,
+\begin{equation*}
+  \E_R\log\hl_{\lambda_t}(Y)\ge(1-t)\E_R\log\hl_{\lambda^\star}(Y)+t\,\E_R\log\hl_{\lambda^0}(Y),
+\end{equation*}
+where $\E_R\log\hl_{\lambda^0}(Y)$ is finite by Lemma~\ref{lem:lambda}(c)--(d). Letting $t\to0$ shows that the supremum over
+$\mathrm{int}\,\Lam$ equals the maximum over $\Lam$.
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{\texorpdfstring{Proof of Proposition~\ref{prop:kinfty}}{Proof of Proposition 4.3}}\label{sec:proof-kinfty}
+
+To prove Proposition~\ref{prop:kinfty} we use the following three lemmas.
+
+\begin{lemma}[The largest atom]\label{lem:atom}
+\uses{def:class, def:kinfty}
+Let $\kappa>1$. For every $Q\in\Hk$ and $y\in\R$, $Q(\{y\})\le\qk$. For $y'\neq y$, the \term{w:law}{law}
+$\qk\delta_y+(1-\qk)\delta_{y'}$ has kurtosis $\kappa$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-atom}.) An elementary extremal moment computation, an instance of
+the classical question of the largest mass a \term{w:law}{law} can put on a point under moment constraints (the theory of
+Chebyshev, Markov and Krein); we did not find this statement in the literature.
+
+\begin{lemma}[Mixing with a far atom]\label{lem:mixture}
+\uses{def:kinf, def:kinfty}
+Let $\kappa>1$, $P$ a \term{w:law}{law} with $\int x^4\,dP<\infty$ and $\mu\in\R$. Then $\Kc(P,\mu)\le\Kinfty(\kappa)$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-mixture}.) The ``outlier'' perturbation is the idea of
+\citet[Appendix~A]{L17}; the sharp mass $1-\qk$ is new.
+
+\begin{lemma}[Size of the value at infinity]\label{lem:expansion}
+\uses{def:kinfty}
+For every $\kappa>1$, $\kappa<1/\Kinfty(\kappa)<\kappa+2$, and $1/\Kinfty(\kappa)=\kappa+\frac32+O(1/\kappa)$ as $\kappa\to\infty$, with an
+absolute constant in the $O(\cdot)$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-expansion}.) Elementary.
+
+\begin{proof}[Proof of Proposition~\ref{prop:kinfty}]
+\proves{prop:kinfty}
+\uses{def:kinf, def:kinfty, def:class, lem:atom, lem:mixture, lem:expansion, lem:G, lem:repr}
+Items (i), (ii) and (iv) are Lemmas~\ref{lem:atom}, \ref{lem:mixture} and \ref{lem:expansion}. For (iii), let
+$y,\mu\in\R$. For every $z\in\R$ and $Q\in\Gk$, $\KL(\delta_z,Q)=\log(1/Q(\{z\}))$ (or $+\infty$ if $Q(\{z\})=0$), and
+$Q\in\Hk$ by Lemma~\ref{lem:G}(a), so Lemma~\ref{lem:atom} gives
+\begin{equation*}
+  \KG(\delta_z)\ge\log\frac1{\qk}=\Kinfty(\kappa).
+\end{equation*}
+Since $\tauc_{c,s}\delta_y=\delta_{(y-c)/s}$, Lemma~\ref{lem:repr} gives $\Kc(\delta_y,\mu)\ge\Kinfty(\kappa)$, and
+Lemma~\ref{lem:mixture}, applied to $P=\delta_y$, gives the converse inequality.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:atom}}\label{sec:proof-lem-atom}
+
+\begin{proof}
+\proves{lem:atom}
+\uses{def:class, def:kinfty, def:laws}
+\emph{Idea.} Conditionally on not being at $y$, the \term{w:law}{law} has a mean forced by the atom; Jensen's inequality
+bounds the kurtosis from below by that of the two-point \term{w:law}{law} with the same atom, which is
+$1/(q(1-q))-3$.
+
+\emph{Setting.} Let $q:=Q(\{y\})$. If $q\le\frac12$, then $q<\qk$; so assume $q>\frac12$. Since $\sd^2(Q)>0$, $q<1$.
+Let $m:=\mean(Q)$, $d:=y-m$, and $S$ the \term{w:law}{law} $Q$ conditioned on $\R\setminus\{y\}$. Since
+$qd+(1-q)\int(x-m)\,dS=0$, the \term{w:law}{law} $S$ has mean $m+e$ with
+\begin{equation*}
+  e:=-\frac{qd}{1-q},
+\end{equation*}
+and $u:=\int(x-m)^2\,dS\ge e^2$. \emph{Goal.} Show $q(1-q)\ge1/(\kappa+3)$, which with $q>\frac12$ gives $q\le\qk$.
+
+\emph{Step 1: two moments.} We have
+\begin{equation*}
+  \sd^2(Q)=qd^2+(1-q)u,\qquad \int(x-m)^4\,dQ=qd^4+(1-q)\int(x-m)^4\,dS\ge qd^4+(1-q)u^2,
+\end{equation*}
+the last inequality by Jensen's inequality.
+
+\emph{Step 2: the case $d\neq0$.} By Step 1, $\kurt(Q)\ge f(u)$ with
+\begin{equation*}
+  f(v):=\frac{qd^4+(1-q)v^2}{(qd^2+(1-q)v)^2},\qquad f'(v)=\frac{2q(1-q)d^2(v-d^2)}{(qd^2+(1-q)v)^3},
+\end{equation*}
+so $f$ is non-decreasing on $[d^2,\infty)$. Since $q>\frac12$, $e^2=q^2d^2/(1-q)^2>d^2$, hence $u\ge e^2>d^2$ and,
+using $qd^2+(1-q)e^2=qd^2/(1-q)$ and $q^3+(1-q)^3=1-3q(1-q)$,
+\begin{equation*}
+  \kappa\ge\kurt(Q)\ge f(e^2)=\frac{(1-q)^3+q^3}{q(1-q)}=\frac1{q(1-q)}-3 .
+\end{equation*}
+So $q(1-q)\ge1/(\kappa+3)$.
+
+\emph{Step 3: the case $d=0$.} Then $\sd^2(Q)=(1-q)u$ with $u>0$, and $\int(x-m)^4\,dQ\ge(1-q)u^2$, so
+$\kappa\ge\kurt(Q)\ge1/(1-q)$, that is $q\le1-1/\kappa$. If $\kappa\le2$ this contradicts $q>\frac12$. If $\kappa>2$, then
+$t:=1-1/\kappa\in(\frac12,1)$ satisfies
+\begin{equation*}
+  t(1-t)=\frac{\kappa-1}{\kappa^2}\ge\frac1{\kappa+3}\quad\text{(equivalent to }2\kappa\ge3\text{)},
+\end{equation*}
+so $t\le\qk$ and $q\le\qk$.
+
+\emph{Step 4: the two-point \term{w:law}{law}.} A \term{w:law}{law} with masses $q$ and $1-q$ at two points at distance $D$ has variance
+$q(1-q)D^2$ and fourth central moment $q(1-q)D^4(q^3+(1-q)^3)$, hence kurtosis $1/(q(1-q))-3$, which equals
+$\kappa$ for $q=\qk$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:mixture}}\label{sec:proof-lem-mixture}
+
+\begin{proof}
+\proves{lem:mixture}
+\uses{def:kinf, def:kinfty, def:class, def:laws, lem:mixkl}
+\emph{Setting.} Let $m:=\mean(P)$, $\sigma^2:=\sd^2(P)\ge0$, $\mu_3$ and $\mu_4$ the third and fourth central moments of $P$
+(finite), $p\in(1-\qk,\frac12)$, and for $x\in\R$
+\begin{equation*}
+  Q_x:=(1-p)P+p\,\delta_x,\qquad D:=x-m .
+\end{equation*}
+\emph{Goal.} Show that $Q_x\in\Hk$ and $\mean(Q_x)>\mu$ for $x$ large, and $\KL(P,Q_x)\le\log\frac1{1-p}$.
+
+\emph{Step 1: moments of $Q_x$.} The mean is $\mean(Q_x)=m+pD$, and the variance is
+$\sd^2(Q_x)=(1-p)\sigma^2+p(1-p)D^2$. Since $\E_P(X-m)=0$, the fourth central moment is
+\begin{align*}
+  \int(y-m-pD)^4\,dQ_x&=(1-p)\E_P(X-m-pD)^4+p(1-p)^4D^4\\
+  &=(1-p)\bigl(\mu_4-4pD\mu_3+6p^2D^2\sigma^2+p^4D^4\bigr)+p(1-p)^4D^4\\
+  &=p(1-p)\bigl(1-3p(1-p)\bigr)D^4+O(D^2)\qquad(D\to\infty),
+\end{align*}
+using $(1-p)p^4+p(1-p)^4=p(1-p)(p^3+(1-p)^3)=p(1-p)(1-3p(1-p))$.
+
+\emph{Step 2: the kurtosis.} Since $\sd^4(Q_x)=p^2(1-p)^2D^4+O(D^2)$,
+\begin{equation*}
+  \kurt(Q_x)\longrightarrow\frac{1-3p(1-p)}{p(1-p)}=\frac1{p(1-p)}-3\qquad(x\to\infty).
+\end{equation*}
+The map $t\mapsto t(1-t)$ is increasing on $(0,\frac12)$ and $p>1-\qk$, so $p(1-p)>\qk(1-\qk)=1/(\kappa+3)$ and the limit
+is less than $\kappa$. Hence, for $x$ large, $Q_x$ has a finite fourth moment, a positive variance and kurtosis
+less than $\kappa$, so $Q_x\in\Hk$, and $\mean(Q_x)=m+p(x-m)>\mu$.
+
+\emph{Step 3: the divergence.} Since $Q_x\ge(1-p)P$, Lemma~\ref{lem:mixkl} gives $\KL(P,Q_x)\le\log\frac1{1-p}$. Hence
+$\Kc(P,\mu)\le\log\frac1{1-p}$ for every $p\in(1-\qk,\frac12)$, and letting $p\downarrow1-\qk$ gives $\Kc(P,\mu)\le\log\frac1{\qk}$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:expansion}}\label{sec:proof-lem-expansion}
+
+\begin{proof}
+\proves{lem:expansion}
+\uses{def:kinfty}
+Let $p:=1-\qk\in(0,\frac12)$, so that $p(1-p)=1/(\kappa+3)$ and $\Kinfty(\kappa)=-\log(1-p)$.
+
+\emph{Bounds.} For $p\in(0,1)$, $p<-\log(1-p)<p/(1-p)$, so
+\begin{equation*}
+  \frac{1-p}p<\frac1{\Kinfty(\kappa)}<\frac1p .
+\end{equation*}
+Now $(\kappa+3)p=1/(1-p)$, so
+\begin{align*}
+  \frac1p&=\frac{1-p}{p(1-p)}=(\kappa+3)(1-p)=\kappa+3-\frac1{1-p}<\kappa+2,\\
+  \frac{1-p}p&=(\kappa+3)(1-p)^2=(\kappa+3)(1-p)-(\kappa+3)p(1-p)=\kappa+2-\frac1{1-p}>\kappa,
+\end{align*}
+since $1<1/(1-p)<2$ for $p\in(0,\frac12)$.
+
+\emph{Limit.} As $\kappa\to\infty$, $p=(\kappa+3)^{-1}/(1-p)\le2/(\kappa+3)\to0$. By Taylor's formula,
+$-\log(1-p)=p+\frac{p^2}2+O(p^3)$, so
+\begin{equation*}
+  \frac1{\Kinfty(\kappa)}=\frac1p\Bigl(1-\frac p2+O(p^2)\Bigr)=\frac1p-\frac12+O(p)
+  =\kappa+2-\frac p{1-p}-\frac12+O(p)=\kappa+\frac32+O\Bigl(\frac1\kappa\Bigr).
+\end{equation*}
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{\texorpdfstring{Proof of Lemma~\ref{lem:escape}, Proposition~\ref{prop:regularity} and Corollary~\ref{cor:largegap}}{Proof of Lemma 8.1, Proposition 4.4 and Corollary 4.5}}\label{sec:proof-regularity}
+
+This appendix carries Step~4 of Section~\ref{sec:overview}. We first prove the escape lemma, which uses one
+more elementary lemma, then derive the regularity of $\Kc$ from it.
+
+\begin{lemma}[Mass far away is expensive]\label{lem:tail}
+\uses{def:normalised, lem:G}
+For every \term{w:law}{law} $R$ and every Borel set $A$,
+\begin{equation*}
+  \KG(R)\ge R(A)\log\frac1{\sup_{Q\in\Gk}Q(A)}-\log2,\qquad\text{and}\qquad\sup_{Q\in\Gk}Q([-M,M]^c)\le\frac{4\kappa^2}{M^4}\quad(M>0).
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-tail}.) Classical (data processing on a two-set partition).
+
+\subsection{Proof of Lemma~\ref{lem:tail}}\label{sec:proof-lem-tail}
+
+\begin{proof}
+\proves{lem:tail}
+\uses{def:normalised, lem:G}
+Let $Q\in\Gk$, $a:=R(A)$ and $b:=Q(A)$. By the data processing inequality applied to the partition $\{A,A^c\}$,
+\begin{equation*}
+  \KL(R,Q)\ge\kl(a,b),\qquad\text{where}\quad\dt{s:kl}\kl(a,b):=a\log\frac ab+(1-a)\log\frac{1-a}{1-b}
+\end{equation*}
+is the Bernoulli divergence. Since $a\log a+(1-a)\log(1-a)\ge-\log2$ and $\log\frac1{1-b}\ge0$,
+\begin{equation*}
+  \kl(a,b)\ge a\log\frac1b-\log2 .
+\end{equation*} Taking $b\le\sup_{\Gk}Q(A)$ and the infimum over $Q$
+gives the first claim. The second is Markov's inequality with $\int y^4\,dQ<4\kappa^2$ (Lemma~\ref{lem:G}(a)).
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:escape}}\label{sec:proof-lem-escape}
+
+\begin{proof}
+\proves{lem:escape}
+\uses{def:normalised, def:kinfty, lem:G, lem:lsc, lem:tail, lem:atom}
+\emph{Idea.} Extract a subsequence along which the location, the scale and their ratio converge in the
+extended line. Either the affine maps converge to a genuine affine map, or the normalised \term{w:law}{laws} spread
+their mass to infinity, which Lemma~\ref{lem:tail} makes infinitely expensive, or they collapse to a Dirac mass,
+which costs at least $\Kinfty(\kappa)$ by the largest atom.
+
+\emph{Setting.} Let $c_-:=\inf_nc_n>-\infty$. Extract a subsequence along which $c_n\to c\in\R\cup\{+\infty\}$,
+$s_n\to s\in[0,\infty]$ and $c_n/s_n\to r\in[-\infty,+\infty]$. Since $(P_n)$ converges weakly, it is tight (Prokhorov's
+theorem). \emph{Goal.} Show that each of the four cases below gives (a) or (b), and that they exhaust all
+possibilities.
+
+\emph{Case 1: $c<\infty$ and $0<s<\infty$.} If $X_n\sim P_n$ and $X\sim P$ with $X_n\to X$ in \term{w:law}{law}, then
+$(X_n-c_n)/s_n\to(X-c)/s$ in \term{w:law}{law} by Slutsky's lemma, so $R_n\to\tauc_{c,s}P$ weakly, and Lemma~\ref{lem:lsc} gives
+$\liminf_n\KG(R_n)\ge\KG(\tauc_{c,s}P)$: this is (a).
+
+\emph{Case 2: $c<\infty$ and $s=0$.} Let $\rho:=(1-P(\{c\}))/2$, positive because $P$ is not a Dirac mass. Since
+$P([c-\eta,c+\eta])\downarrow P(\{c\})$ as $\eta\downarrow0$, fix $\eta>0$ with $P([c-\eta,c+\eta])<1-\rho$. Fix $M>0$. For $n$ large,
+$|c_n-c|+Ms_n\le\eta$, so
+\begin{equation*}
+  R_n([-M,M])=P_n([c_n-Ms_n,c_n+Ms_n])\le P_n([c-\eta,c+\eta]),
+\end{equation*}
+whose $\limsup$ is at most $P([c-\eta,c+\eta])<1-\rho$ by the portmanteau theorem. So $R_n([-M,M]^c)\ge\rho$ for $n$
+large, and Lemma~\ref{lem:tail} gives
+\begin{equation*}
+  \liminf_n\KG(R_n)\ge\rho\log\frac{M^4}{4\kappa^2}-\log2 .
+\end{equation*}
+Since $M$ is arbitrary, $\liminf_n\KG(R_n)=\infty$: this is (b).
+
+\emph{Case 3: $c=\infty$ and $r=\infty$.} By tightness, fix $M'$ with $P_n([-M',M'])\ge\frac12$ for every $n$. For $n$ large,
+$c_n\ge2M'$, and then for $x\in[-M',M']$,
+\begin{equation*}
+  \frac{x-c_n}{s_n}\le\frac{M'-c_n}{s_n}\le-\frac{c_n}{2s_n}\longrightarrow-\infty .
+\end{equation*}
+So for every $M$, $R_n((-\infty,-M])\ge\frac12$ for $n$ large, and Lemma~\ref{lem:tail} gives $\KG(R_n)\to\infty$: this is (b).
+
+\emph{Case 4: $s=\infty$ and $r<\infty$.} Since $c_n/s_n\ge c_-/s_n\to0$, $r\ge0$. If $X_n\sim P_n$, tightness gives
+$X_n/s_n\to0$ in probability, so $R_n$, the \term{w:law}{law} of $X_n/s_n-c_n/s_n$, converges weakly to $\delta_{-r}$. By
+Lemma~\ref{lem:lsc} (\emph{lower semicontinuity of $\KG$}), then by Lemma~\ref{lem:atom} (\emph{the largest atom}) and $\Gk\subset\Hk$ (as in the proof of
+Proposition~\ref{prop:kinfty}(iii)),
+\begin{equation*}
+  \liminf_n\KG(R_n)\ge\KG(\delta_{-r})\ge\log\frac1{\qk}=\Kinfty(\kappa):
+\end{equation*}
+this is (b).
+
+\emph{Exhaustiveness.} If $c<\infty$, then $s\in(0,\infty)$ (Case 1), $s=0$ (Case 2), or $s=\infty$, and then
+$r=\lim c_n/s_n=0$ (Case 4). If $c=\infty$, then $r=\infty$ (Case 3) or $r<\infty$, and then $s_n\ge c_n/(r+1)$ for $n$
+large, so $s=\infty$ (Case 4).
+\end{proof}
+
+\subsection{Proof of Proposition~\ref{prop:regularity}}\label{sec:proof-prop-regularity}
+
+\begin{proof}
+\proves{prop:regularity}
+\uses{def:kinf, def:kinfty, def:class, lem:repr, lem:strict, lem:escape, lem:mixture, lem:lsc, lem:G}
+\emph{(i) Lower semicontinuity.} Let $\ell:=\liminf_n\Kc(P_n,\mu_n)$; pass to a subsequence realising it and assume
+$\ell<\infty$. By Lemmas~\ref{lem:repr} and \ref{lem:strict}(a),
+\begin{equation*}
+  \Kc(P_n,\mu_n)=\Kge(P_n,\mu_n)=\inf_{c\ge\mu_n,\ s>0}\KG(\tauc_{c,s}P_n),
+\end{equation*}
+so there are $c_n\ge\mu_n$ and $s_n>0$ with $\KG(\tauc_{c_n,s_n}P_n)\le\Kc(P_n,\mu_n)+1/n$. Since $(\mu_n)$ converges,
+$\inf_nc_n>-\infty$, and Lemma~\ref{lem:escape} applies. In its case (a), $c:=\lim c_n\ge\mu$ and
+\begin{equation*}
+  \ell\ge\KG(\tauc_{c,s}P)\ge\Kge(P,\mu)=\Kc(P,\mu),
+\end{equation*}
+by Lemmas~\ref{lem:repr} and \ref{lem:strict}(a). In its case (b), $\ell\ge\Kinfty(\kappa)\ge\Kc(P,\mu)$ by
+Lemma~\ref{lem:mixture}, since $P$ has a finite fourth moment.
+
+\emph{(ii) Continuity and limit.} The function $\Kc(P,\cdot)$ is non-decreasing and right-continuous
+(Lemma~\ref{lem:strict}(a)). If $\mu_n\uparrow\mu$, then $\lim_n\Kc(P,\mu_n)\le\Kc(P,\mu)$ by monotonicity and
+$\liminf_n\Kc(P,\mu_n)\ge\Kc(P,\mu)$ by (i) with $P_n:=P$; so $\Kc(P,\cdot)$ is also left-continuous. For the limit, let
+$\mu_n\to\infty$ and $\ell:=\liminf_n\Kc(P,\mu_n)$; as in (i), pass first to a subsequence realising $\ell$ and assume
+$\ell<\infty$. Take $c_n\ge\mu_n$ and $s_n>0$ with $\KG(\tauc_{c_n,s_n}P)\le\Kc(P,\mu_n)+1/n$, which exist by
+Lemmas~\ref{lem:repr} and \ref{lem:strict}(a). Lemma~\ref{lem:escape} applies with $P_n:=P$, and its case (a) is impossible,
+since $c_n\to\infty$ along every subsequence; so case (b) holds along a further subsequence, $\ell\ge\Kinfty(\kappa)$, and
+Lemma~\ref{lem:mixture} gives the converse inequality $\Kc(P,\mu_n)\le\Kinfty(\kappa)$.
+
+\emph{(iii) Positivity.} Let $\mu>\mean(P)$ and suppose $\Kc(P,\mu)=0$. By Lemmas~\ref{lem:repr} and \ref{lem:strict}(a), there
+are $c_n\ge\mu$ and $s_n>0$ with $\KG(\tauc_{c_n,s_n}P)\to0$. Case (b) of Lemma~\ref{lem:escape} is impossible since
+$\Kinfty(\kappa)>0$. In case (a), $\KG(\tauc_{c,s}P)=0$ with $c\ge\mu$; by Lemma~\ref{lem:lsc} the infimum is attained, so
+$\tauc_{c,s}P\in\Gk$, and Lemma~\ref{lem:G}(b) gives $\mean(P)=c\ge\mu>\mean(P)$, a contradiction.
+\end{proof}
+
+\subsection{Proof of Corollary~\ref{cor:largegap}}\label{sec:proof-cor-largegap}
+
+\begin{proof}
+\proves{cor:largegap}
+\uses{def:kinf, def:kinfty, def:class, lem:G, lem:strict, prop:regularity}
+The \term{w:law}{law} $P$ is the image of $P_0$ under $x\mapsto m+\sigma x$, so Lemma~\ref{lem:G}(d) with $(c,s,\mu)=(m,\sigma,\Delta/\sigma)$ gives
+$\Kc(P,m+\Delta)=\Kc(P_0,\Delta/\sigma)$. For $\Delta\le0$, $P$ itself is an alternative of mean $m\ge m+\Delta$, so
+$\Kc(P,m+\Delta)=\Kge(P,m+\Delta)=0$ by Lemma~\ref{lem:strict}(a). The \term{w:law}{law} $P$ has a finite fourth moment and is not
+a Dirac mass, since $\sigma>0$; so Proposition~\ref{prop:regularity}(ii)--(iii) gives the continuity, the positivity for
+$\Delta>0$ and the limit, and Lemma~\ref{lem:strict}(a) the monotonicity.
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{\texorpdfstring{Proof of Lemma~\ref{lem:index}}{Proof of Lemma 5.1}}\label{sec:proof-index}
+
+\begin{proof}[Proof of Lemma~\ref{lem:index}]
+\proves{lem:index}
+\uses{def:algorithm, def:kinf, def:kinfty, def:dualset, def:normalised, lem:repr, lem:strict, lem:finite, lem:lambda, prop:kinfty}
+\emph{Setting.} Fix $n\ge1$. For $x=(x_1,\dots,x_n)\in\R^n$ let $\hat P_x:=\frac1n\sum_i\delta_{x_i}$ and
+\begin{equation*}
+  F(x,\lambda):=\frac1n\sum_{i\le n}\log\hl_\lambda(x_i)\in[-\infty,\infty),\qquad D(x):=\max_{\lambda\in\Lam}F(x,\lambda)=\KG(\hat P_x),
+\end{equation*}
+the last equality by Lemma~\ref{lem:finite} (\emph{duality for finitely supported laws}; group equal $x_i$ into one atom). \emph{Goal.} Show that $D$ is
+continuous, then deduce (i); (ii) and (iii) follow from Proposition~\ref{prop:kinfty}.
+
+\emph{Step 1: $D$ is upper semicontinuous.} $F$ is jointly upper semicontinuous on $\R^n\times\Lam$ (a finite sum
+of $\log$, upper semicontinuous on $[0,\infty)$, composed with the continuous $(\lambda,y)\mapsto\hl_\lambda(y)$). If $x_k\to x$
+and $\lambda_k$ maximises $F(x_k,\cdot)$, a subsequence realising $\limsup_kD(x_k)$ has $\lambda_k\to\bar\lambda\in\Lam$ (compactness,
+Lemma~\ref{lem:lambda}(a)), and $\limsup_kD(x_k)\le F(x,\bar\lambda)\le D(x)$.
+
+\emph{Step 2: $D$ is lower semicontinuous.} For $\lambda\in\mathrm{int}\,\Lam$, $\hl_\lambda>0$ on $\R$ (Lemma~\ref{lem:lambda}(c)), so
+$F(\cdot,\lambda)$ is continuous and finite. Moreover $D(x)=\sup_{\lambda\in\mathrm{int}\,\Lam}F(x,\lambda)$: if $\lambda^\star$ maximises $F(x,\cdot)$
+(with $F(x,\lambda^\star)\ge F(x,0)=0$) and $\lambda^0\in\mathrm{int}\,\Lam$, then $\lambda_t:=(1-t)\lambda^\star+t\lambda^0\in\mathrm{int}\,\Lam$ for
+$t\in(0,1]$, and by concavity of $\log$ and affinity of $\hl$ in $\lambda$,
+\begin{equation*}
+  F(x,\lambda_t)\ge(1-t)F(x,\lambda^\star)+tF(x,\lambda^0)\longrightarrow F(x,\lambda^\star)\qquad(t\to0).
+\end{equation*}
+A supremum of continuous functions is lower semicontinuous. So $D$ is continuous on $\R^n$, with values in
+$[0,\infty)$.
+
+\emph{Step 3: the information function.} By Lemma~\ref{lem:repr}, since $\tauc_{c,s}\hat P_x=\hat P_{(x-c)/s}$,
+\begin{equation*}
+  \Kc(\hat P_x,\mu)=\inf_{c>\mu,\ s>0}D\Bigl(\frac{x-c}{s}\Bigr)=\inf_{(r,s)\in(0,\infty)^2}D\Bigl(\frac{x-\mu-r}{s}\Bigr).
+\end{equation*}
+Each map $(x,\mu)\mapsto D((x-\mu-r)/s)$ is continuous, and by continuity the infimum over $(0,\infty)^2$ equals the
+infimum over the countable set $(\mathbb Q\cap(0,\infty))^2$. So $(x,\mu)\mapsto\Kc(\hat P_x,\mu)$ is upper semicontinuous on
+$\R^n\times\R$, hence Borel, which proves the first claim of (i).
+
+\emph{Step 4: the index.} At the end of round $t$, with $n:=\Np_a(t)$ and $x$ the observed rewards of arm $a$, the set
+$S:=\{\mu:n\Kc(\hat P_x,\mu)\le\thr(t,n)\}$ is an interval unbounded below, because $\Kc(\hat P_x,\cdot)$ is non-decreasing
+(Lemma~\ref{lem:strict}(a)). For $\mu\in\mathbb Q$ let $\psi_\mu:=\mu$ if $\mu\in S$ and $\psi_\mu:=-\infty$ otherwise, a Borel function of
+$x$ by Step 3. Since $S$ is an interval unbounded below,
+\begin{equation*}
+  \Ix_a(t)=\sup S=\sup_{\mu\in\mathbb Q}\psi_\mu ,
+\end{equation*}
+a countable supremum of Borel functions of $x$. The number $n$ and the past choices are measurable
+functions of the history, so $\Ix_a(t)$ is a Borel function of the history and $\Arm_{t+1}$ is a measurable choice
+(with the independent randomness of the tie rule). This proves (i).
+
+\emph{Step 5: (ii) and (iii).} An empirical \term{w:law}{law} has a finite fourth moment, so $\Kc(\hat P_x,\mu)\le\Kinfty(\kappa)$ for
+every $\mu$ by Proposition~\ref{prop:kinfty}(ii) (\emph{the value at infinity bounds $\Kc$}). If $n\Kinfty(\kappa)\le\thr(t,n)$, then $S=\R$ and $\Ix_a(t)=+\infty$: this is
+(ii). If all the $x_i$ are equal to $y$, then $\hat P_x=\delta_y$ and $\Kc(\delta_y,\mu)=\Kinfty(\kappa)$ for every $\mu$
+(Proposition~\ref{prop:kinfty}(iii)); so $S=\R$ when $n\Kinfty(\kappa)\le\thr(t,n)$ and $S=\emptyset$ otherwise, which gives (iii).
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{\texorpdfstring{Proof of Theorem~\ref{thm:main} and Corollary~\ref{cor:exact}}{Proof of Theorem 6.1 and Corollary 6.2}}\label{sec:proof-main}
+
+Throughout this appendix, $\kappa>1$, $\nu\in\Hk^\alpha$, $a$ is a \term{w:subopt}{suboptimal} arm, $a^\star$ an arm with $\marm_{a^\star}=\mstar$,
+and $\varepsilon\in(0,\Ka)$. Lemmas~\ref{lem:decomp} and~\ref{lem:termB} hold for every $\delta>0$; only
+Lemma~\ref{lem:termC} uses the particular $(\delta,J,\eta)$ given by Theorem~\ref{thm:deviation}(ii) applied to
+$(P,\mu,\varepsilon):=(\nu_a,\mstar,\varepsilon)$. We will often use the fundamental inequality of index policies: for every
+$s\ge1$, since $\Np_a(t)=s$ and $\Arm_{t+1}=a$ imply $\Np_a(t+1)=s+1$,
+\begin{equation}\label{eq:fundamental}
+  \sum_{t\ge1}\ind\bigl(\Arm_{t+1}=a,\ \Np_a(t)=s\bigr)\le1 .
+\end{equation}
+
+To prove Theorem~\ref{thm:main} we use the following decomposition.
+
+\begin{lemma}[Decomposition]\label{lem:decomp}
+\uses{def:algorithm, def:bandit, def:kinf}
+For every $\delta>0$, every $T\ge3$ and every run of \algo{},
+\begin{equation*}
+  \Np_a(T)\ \le\ 1+\underbrace{\sum_{t=\Karms}^{T-1}\ind\bigl(\Ix_{a^\star}(t)<\mstar\bigr)}_{A}
+  +\underbrace{\sum_{s=1}^{T}\ind\bigl(s\,\Kc(\Pe_{a,s},\mstar-\delta)\le\thr(T,s)\bigr)}_{B}.
+\end{equation*}
+The term $A$ does not depend on $\delta$; the term $B$ does.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-decomp}.)
+
+From this decomposition we use the following lemmas to control each term.
+
+\begin{lemma}[The optimal arm]\label{lem:termA}
+\uses{def:algorithm, def:class, def:kinf, thm:deviation}
+$\E[A]\le\frac32$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-termA}.) This is the classical argument for the optimal arm
+of KL-UCB-type indices, as in \citet[Section~3.3]{AJK21}; the new ingredient is the upper deviation inequality
+of Theorem~\ref{thm:deviation}(i) for the class $\Hk$.
+
+\begin{lemma}[Counting the \term{w:subopt}{suboptimal} pulls]\label{lem:termB}
+\uses{def:algorithm, def:kinf, lem:decomp}
+For every $\delta>0$, every $T\ge3$ and every run, with $B$ as in Lemma~\ref{lem:decomp} for this $\delta$,
+\begin{equation*}
+  B\le\nT(\varepsilon)+\underbrace{\sum_{s\ge1}\ind\bigl(\Kc(\Pe_{a,s},\mstar-\delta)\le\Ka-\varepsilon\bigr)}_{C},
+\end{equation*}
+and, with $\kep=\Ka-\varepsilon$ as in Theorem~\ref{thm:main},
+\begin{equation*}
+  \nT(\varepsilon)\le\frac{\LT+2\log\bigl(1+2(\LT+2\log(4/\kep))/\kep\bigr)}{\kep},\qquad
+  \limsup_{T\to\infty}\frac{\nT(\varepsilon)}{\log T}\le\frac1{\kep}.
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-termB}.) Classical: no contribution here.
+
+\begin{lemma}[The \term{w:subopt}{suboptimal} arm]\label{lem:termC}
+\uses{def:class, def:kinf, thm:deviation, lem:termB}
+Let $(\delta,J,\eta)$ be given by Theorem~\ref{thm:deviation}(ii) applied to $(P,\mu,\varepsilon):=(\nu_a,\mstar,\varepsilon)$, and let
+$C$ be as in Lemma~\ref{lem:termB} for this $\delta$. Then
+$\E[C]\le\dt{s:Ca}\Ca(\varepsilon):=\dfrac{2J}{e^{2\eta^2}-1}<\infty$.
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-termC}.) The argument is classical, but the lower deviation
+inequality it rests on, Theorem~\ref{thm:deviation}(ii), is new for this class and is where the escape of mass
+is controlled.
+
+From these lemmas the proof of the theorem is short.
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{def:bandit, def:class, def:kinf, def:kinfty, def:algorithm, lem:decomp, lem:termA, lem:termB, lem:termC, prop:kinfty, prop:regularity, thm:deviation}
+\emph{The constant $\Ka$.} By Proposition~\ref{prop:kinfty}(ii) (\emph{the value at infinity bounds $\Kc$}) and Proposition~\ref{prop:regularity}(iii) (\emph{positivity}) (the \term{w:law}{law}
+$\nu_a\in\Hk$ has a finite fourth moment and positive variance, and $\mstar>\marm_a$), $0<\Ka\le\Kinfty(\kappa)$, and
+$\Kinfty(\kappa)\le\log2<1$ since $\qk>\frac12$; so $\kep\in(0,1)$.
+
+\emph{(i).} Let $(\delta,J,\eta)$ be given by Theorem~\ref{thm:deviation}(ii) at $(\nu_a,\mstar,\varepsilon)$. The constant
+$\Ca(\varepsilon)$ of Lemma~\ref{lem:termC} depends only on $(\delta,J,\eta)$, hence, by the statement of
+Theorem~\ref{thm:deviation}(ii), only on $\nu_a$, $\mstar$, $\varepsilon$ and $\kappa$, and not on $T$. Taking expectations in
+Lemma~\ref{lem:decomp} with this $\delta$, then using Lemmas~\ref{lem:termA}, \ref{lem:termB} (with the same $\delta$) and
+\ref{lem:termC}, we get for every $T\ge3$
+\begin{align*}
+  \E[\Np_a(T)]&\le1+\E[A]+\E[B]\\
+  &\le1+\frac32+\nT(\varepsilon)+\E[C]\\
+  &\le\nT(\varepsilon)+\frac52+\Ca(\varepsilon),
+\end{align*}
+and the bound on $\nT(\varepsilon)$ of Lemma~\ref{lem:termB} gives \eqref{eq:main-finite}.
+
+\emph{(ii).} Dividing (i) by $\log T$ and using Lemma~\ref{lem:termB},
+$\limsup_T\E[\Np_a(T)]/\log T\le1/(\Ka-\varepsilon)$ for every $\varepsilon\in(0,\Ka)$; letting $\varepsilon\to0$ gives the first claim. Summing
+$\gap_a$ times it over the \term{w:subopt}{suboptimal} arms gives the bound on $\Reg_T$, since $\Reg_T=\sum_a\gap_a\E[\Np_a(T)]$.
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:exact}]
+\proves{cor:exact}
+\uses{def:bandit, def:class, def:kinf, def:kinfty, def:algorithm, cite:LS-16.2, thm:main, prop:kinfty, prop:regularity, lem:strict, lem:expansion}
+\emph{(i).} For every \term{w:subopt}{suboptimal} arm, $0<\Kc(\nu_a,\mstar)\le\Kinfty(\kappa)$ (Propositions~\ref{prop:regularity}(iii) and
+\ref{prop:kinfty}(ii)), so $\Cst(\nu)$ is a finite sum of finite positive numbers, positive since some arm is
+\term{w:subopt}{suboptimal}. The \term{w:law}{laws} of $\Hk$ have finite means, and $\Kinf(\nu_a,\mstar;\Hk)=\Kc(\nu_a,\mstar)$, so
+Theorem~\ref{cite:LS-16.2} with $\mathcal D:=\Hk$ gives the lower bound.
+
+\emph{(ii).} By Theorem~\ref{thm:main}(i), for every $\nu\in\Hk^\alpha$, $\Reg_T(\nu)=O(\log T)=o(T^p)$ for every $p>0$: \algo{}
+is \term{w:consistent}{consistent} over $\Hk^\alpha$. Then (i) and Theorem~\ref{thm:main}(ii) give
+\begin{equation*}
+  \Cst(\nu)\le\liminf_{T\to\infty}\frac{\Reg_T}{\log T}\le\limsup_{T\to\infty}\frac{\Reg_T}{\log T}\le\Cst(\nu).
+\end{equation*}
+
+\emph{(iii).} $\Kc(\nu_a,\mstar)\le\Kinfty(\kappa)$ and $1/\Kinfty(\kappa)>\kappa$ (Lemma~\ref{lem:expansion}).
+
+\emph{(iv).} The identity is Lemma~\ref{lem:strict}(b). For $\nu\in(\Hlt)^\alpha$, the constant of
+Theorem~\ref{cite:LS-16.2} with $\mathcal D:=\Hlt$ is therefore $\Cst(\nu)$. Since $(\Hlt)^\alpha\subset\Hk^\alpha$,
+Theorem~\ref{thm:main} applies to $\nu$, and \algo{} is \term{w:consistent}{consistent} over $(\Hlt)^\alpha$. Theorem~\ref{cite:LS-16.2}
+(\emph{the lower bound for consistent algorithms}) with $\mathcal D:=\Hlt$ gives $\liminf_T\Reg_T/\log T\ge\Cst(\nu)$ for every algorithm
+\term{w:consistent}{consistent} over $(\Hlt)^\alpha$, and Theorem~\ref{thm:main}(ii) gives $\limsup_T\Reg_T/\log T\le\Cst(\nu)$ for \algo{}.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:decomp}}\label{sec:proof-lem-decomp}
+
+\begin{proof}
+\proves{lem:decomp}
+\uses{def:algorithm, def:bandit, def:kinf, lem:strict}
+If $T<\Karms+1$, then $\Np_a(T)\le1$. Otherwise each arm is pulled once in rounds $1,\dots,\Karms$, so
+\begin{align*}
+  \Np_a(T)&=1+\sum_{t=\Karms}^{T-1}\ind(\Arm_{t+1}=a)\\
+  &\le1+\sum_{t=\Karms}^{T-1}\ind\bigl(\Ix_{a^\star}(t)<\mstar\bigr)+\sum_{t=\Karms}^{T-1}\ind\bigl(\Ix_{a^\star}(t)\ge \mstar,\ \Arm_{t+1}=a\bigr)\\
+  &\le1+A+\sum_{t=\Karms}^{T-1}\ind\bigl(\Ix_a(t)\ge \mstar,\ \Arm_{t+1}=a\bigr),
+\end{align*}
+since $\Arm_{t+1}=a$ implies $\Ix_a(t)\ge\Ix_{a^\star}(t)$ (whatever the tie rule). Let us look at the last sum. If
+$\Ix_a(t)\ge \mstar$, then $\Ix_a(t)>\mstar-\delta$, so some $\mu''>\mstar-\delta$ satisfies
+$\Np_a(t)\Kc(\Pe_a(t),\mu'')\le\thr(t,\Np_a(t))$; since $\Kc(\Pe_a(t),\cdot)$ is non-decreasing (Lemma~\ref{lem:strict}(a)) and
+$\thr(\cdot,n)$ is non-decreasing with $t\le T$,
+\begin{equation*}
+  \Np_a(t)\,\Kc\bigl(\Pe_a(t),\mstar-\delta\bigr)\le\thr\bigl(T,\Np_a(t)\bigr).
+\end{equation*}
+For $t\in\{\Karms,\dots,T-1\}$, $\Np_a(t)\in\{1,\dots,T\}$ and $\Pe_a(t)=\Pe_{a,\Np_a(t)}$ (stack model). So, splitting according to the
+value $s$ of $\Np_a(t)$ and using \eqref{eq:fundamental},
+\begin{align*}
+  \sum_{t=\Karms}^{T-1}\ind\bigl(\Ix_a(t)\ge \mstar,\ \Arm_{t+1}=a\bigr)
+  &\le\sum_{t=\Karms}^{T-1}\sum_{s=1}^{T}\ind\bigl(\Arm_{t+1}=a,\ \Np_a(t)=s\bigr)\,\ind\bigl(s\,\Kc(\Pe_{a,s},\mstar-\delta)\le\thr(T,s)\bigr)\\
+  &\le\sum_{s=1}^{T}\ind\bigl(s\,\Kc(\Pe_{a,s},\mstar-\delta)\le\thr(T,s)\bigr)=B .
+\end{align*}
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:termA}}\label{sec:proof-lem-termA}
+
+\begin{proof}
+\proves{lem:termA}
+\uses{def:algorithm, def:class, def:kinf, thm:deviation, lem:strict}
+Let $t\ge\Karms$ and suppose $\Ix_{a^\star}(t)<\mstar$. Pick $\mu\in(\Ix_{a^\star}(t),\mstar)$ (any $\mu<\mstar$ if $\Ix_{a^\star}(t)=-\infty$). Then $\mu$ is
+not in the set defining $\Ix_{a^\star}(t)$, and $\Kc(\Pe_{a^\star}(t),\cdot)$ is non-decreasing (Lemma~\ref{lem:strict}(a)), so
+\begin{align*}
+  \ind\bigl(\Ix_{a^\star}(t)<\mstar\bigr)
+  &\le\ind\bigl(\Np_{a^\star}(t)\Kc(\Pe_{a^\star}(t),\mu)>\thr(t,\Np_{a^\star}(t))\bigr)\\
+  &\le\ind\bigl(\Np_{a^\star}(t)\Kc(\Pe_{a^\star}(t),\mstar)>\thr(t,\Np_{a^\star}(t))\bigr)\\
+  &\le\ind\bigl(\exists s\ge1:\ s\,\Kc(\Pe_{a^\star,s},\mstar)\ge x_t+1+2\log(s+1)\bigr),
+\end{align*}
+with $x_t:=\log(t\vee3)+2\log\log(t\vee3)\ge0$. The rewards $\Xr_{a^\star,1},\Xr_{a^\star,2},\dots$ are independent with \term{w:law}{law}
+$\nu_{a^\star}\in\Hk$ of mean $\mstar$, so Theorem~\ref{thm:deviation}(i) (\emph{the anytime upper deviation inequality}) gives
+\begin{equation*}
+  \Prob\bigl(\Ix_{a^\star}(t)<\mstar\bigr)\le e^{-x_t}=\frac1{(t\vee3)\log^2(t\vee3)} .
+\end{equation*}
+Finally, since $t\mapsto1/(t\log^2t)$ is decreasing on $[3,\infty)$ and $\Karms\ge2$,
+\begin{equation*}
+  \E[A]\le\frac1{3\log^23}+\sum_{t\ge3}\frac1{t\log^2t}\le\frac2{3\log^23}+\int_3^\infty\frac{dt}{t\log^2t}=\frac2{3\log^23}+\frac1{\log3}\le1.47\le\frac32 .
+\end{equation*}
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:termB}}\label{sec:proof-lem-termB}
+
+\begin{proof}
+\proves{lem:termB}
+\uses{def:algorithm, def:kinf}
+\emph{The split.} For each $s$, we split according to the event $\{\Kc(\Pe_{a,s},\mstar-\delta)>\Ka-\varepsilon\}$:
+\begin{align*}
+  \ind\bigl(s\Kc(\Pe_{a,s},\mstar-\delta)\le\thr(T,s)\bigr)
+  &\le\ind\bigl(s\Kc(\Pe_{a,s},\mstar-\delta)\le\thr(T,s),\ \Kc(\Pe_{a,s},\mstar-\delta)>\Ka-\varepsilon\bigr)\\
+  &\qquad+\ind\bigl(\Kc(\Pe_{a,s},\mstar-\delta)\le\Ka-\varepsilon\bigr)\\
+  &\le\ind\bigl(s(\Ka-\varepsilon)\le\thr(T,s)\bigr)+\ind\bigl(\Kc(\Pe_{a,s},\mstar-\delta)\le\Ka-\varepsilon\bigr).
+\end{align*}
+Every $s$ with $s(\Ka-\varepsilon)\le\thr(T,s)$ satisfies $s\le\nT(\varepsilon)$, so summing over $s\in\{1,\dots,T\}$ gives
+$B\le\nT(\varepsilon)+C$.
+
+\emph{The bound on $\nT(\varepsilon)$.} Let $k:=\kep\in(0,1)$ and $n\ge0$ with $nk\le\thr(T,n)=\LT+2\log(1+n)$ (for $T\ge3$,
+$t\vee3=T$). By concavity of $\log$, $\log y\le\log c+(y-c)/c$ for $y,c>0$; with $y:=1+n$ and $c:=4/k$,
+\begin{equation*}
+  2\log(1+n)\le2\log\frac4k+\frac{k(1+n)}2-2 .
+\end{equation*}
+So $nk\le\LT+2\log(4/k)+k/2-2+nk/2$, and since $k/2-2<0$,
+\begin{equation*}
+  n\le\bar n:=\frac{2(\LT+2\log(4/k))}{k}.
+\end{equation*}
+Using this in $nk\le\LT+2\log(1+n)$ gives $nk\le\LT+2\log(1+\bar n)$, which is the bound on $\nT(\varepsilon)$. Finally,
+$\LT/\log T\to1$ and $\log(1+\bar n)/\log T\to0$ as $T\to\infty$, since $\bar n=O(\log T)$; this gives the $\limsup$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:termC}}\label{sec:proof-lem-termC}
+
+\begin{proof}
+\proves{lem:termC}
+\uses{def:class, def:kinf, thm:deviation}
+The rewards $\Xr_{a,1},\Xr_{a,2},\dots$ are independent with \term{w:law}{law} $\nu_a\in\Hk$, and $\Pe_{a,s}$ is their empirical \term{w:law}{law} after $s$
+samples. By the choice of $(\delta,J,\eta)$ (Theorem~\ref{thm:deviation}(ii), \emph{the lower deviation inequality}, at $(\nu_a,\mstar,\varepsilon)$),
+\begin{equation*}
+  \E[C]=\sum_{s\ge1}\Prob\bigl(\Kc(\Pe_{a,s},\mstar-\delta)\le\Kc(\nu_a,\mstar)-\varepsilon\bigr)\le\sum_{s\ge1}2Je^{-2s\eta^2}=\frac{2J}{e^{2\eta^2}-1}.
+\end{equation*}
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{\texorpdfstring{Proof of Theorem~\ref{thm:deviation} and Corollary~\ref{cor:confseq}}{Proof of Theorem 7.1 and Corollary 7.2}}\label{sec:proof-deviation}
+
+To prove Theorem~\ref{thm:deviation}(i) we use the following mixture bound.
+
+\begin{lemma}[Mixture over the dual set]\label{lem:mixbound}
+\uses{def:dualset, lem:lambda}
+Let $\pi$ be the uniform \term{w:law}{law} on $\Lam$ (Lebesgue measure restricted to $\Lam$, normalised), $n\ge1$,
+$y_1,\dots,y_n\in\R$ and $M(\lambda):=\prod_{i\le n}\hl_\lambda(y_i)$. Then
+\begin{equation*}
+  \int_\Lam M\,d\pi\ \ge\ \frac{1}{e(n+1)^2}\,\max_{\lambda\in\Lam}M(\lambda).
+\end{equation*}
+\end{lemma}
+
+(See the proof in Subsection~\ref{sec:proof-lem-mixbound}.) This is the bound of \citet[Lemma~E.1 of the arXiv
+version]{AKJ21} on the maximum of a sum of exp-concave functions, restated by \citet[Lemma~11]{AJK21}, with the
+same constants; \citet{AKJ21} present it as the regret bound of the continuous exponentially weighted average
+predictor, shown for universal portfolios by Blum and Kalai and in general by Hazan, Agarwal and Kale. We give
+the short direct proof for our affine integrands.
+
+\begin{proof}[Proof of Theorem~\ref{thm:deviation}]
+\proves{thm:deviation}
+\uses{def:class, def:kinf, def:laws, def:normalised, def:dualset, lem:G, lem:repr, lem:strict, lem:finite, lem:lambda, lem:mixbound, lem:index, prop:regularity}
+\emph{(i) Idea.} Fix the location and the scale of the alternatives at the true mean and standard deviation:
+this bounds $n\Kc(\hat P_n,\mean(P))$ by a maximum over the fixed set $\Lam$ of sums of logarithms of variables of
+mean at most $1$, and a mixture over $\Lam$ is a supermartingale.
+
+\emph{Step 1: the supermartingale.} Let $m:=\mean(P)$, $\sigma:=\sd(P)>0$ and $Y_i:=(X_i-m)/\sigma$. Then $\E Y_i=0$ and
+$\E\phik(Y_i)=\kurt(P)-2\kappa+\kappa\le0$, so for every $\lambda\in\Lam$
+\begin{equation*}
+  \E\,\hl_\lambda(Y_i)=1+\lambda_2\E\phik(Y_i)\le1 .
+\end{equation*}
+Let $W_0:=1$ and $W_n:=\int_\Lam\prod_{i\le n}\hl_\lambda(Y_i)\,\pi(d\lambda)$, with $\pi$ as in Lemma~\ref{lem:mixbound} ($\Lam$ has positive
+Lebesgue measure by Lemma~\ref{lem:lambda}(b)). The integrand is non-negative and jointly measurable, so by
+Tonelli's theorem and the independence of $Y_n$ from $Y_1,\dots,Y_{n-1}$,
+\begin{equation*}
+  \E[W_n\mid Y_1,\dots,Y_{n-1}]=\int_\Lam\prod_{i<n}\hl_\lambda(Y_i)\,\E\bigl[\hl_\lambda(Y_n)\bigr]\,\pi(d\lambda)\le W_{n-1}.
+\end{equation*}
+So $(W_n)$ is a non-negative supermartingale with $W_0=1$, and the maximal inequality \citep[Theorem~3.9]{LS} gives
+\begin{equation*}
+  \Prob\bigl(\exists n\ge1:\ W_n\ge e^x\bigr)\le e^{-x}.
+\end{equation*}
+
+\emph{Step 2: the link with $\Kc$.} The \term{w:law}{law} $\tauc_{m,\sigma}\hat P_n$ is the empirical \term{w:law}{law} of $Y_1,\dots,Y_n$, and $c=m$ is admissible
+in the non-strict representation. By Lemma~\ref{lem:strict}(a) (\emph{strict and non-strict versions}), Lemma~\ref{lem:repr} (\emph{representation}), Lemma~\ref{lem:finite} (\emph{duality for finitely supported laws}) and Lemma~\ref{lem:mixbound},
+\begin{align*}
+  n\,\Kc(\hat P_n,m)&=n\,\Kge(\hat P_n,m)\\
+  &\le n\,\KG(\tauc_{m,\sigma}\hat P_n)\\
+  &=\max_{\lambda\in\Lam}\sum_{i\le n}\log\hl_\lambda(Y_i)\\
+  &\le\log W_n+1+2\log(n+1).
+\end{align*}
+Hence the event of \eqref{eq:upper-dev} is contained in $\{\exists n:W_n\ge e^x\}$, which proves \eqref{eq:upper-dev}. For
+the consequence, let $n\ge1$ and $x\in\R$, and $x':=x-1-2\log(n+1)$. If $x'<0$ the bound $e(n+1)^2e^{-x}=e^{-x'}>1$ is trivial;
+otherwise \eqref{eq:upper-dev} with $x'$ gives $\Prob(n\Kc(\hat P_n,m)\ge x)\le e^{-x'}=e(n+1)^2e^{-x}$.
+
+\emph{(ii) Idea.} Lower semicontinuity at $(P,\mu)$ gives a weak neighbourhood of $P$, described by finitely many
+test functions, on which $\Kc(\cdot,\mu-\delta)$ stays above $\Kc(P,\mu)-\varepsilon$; Hoeffding's inequality controls the
+empirical means of the test functions.
+
+\emph{Step 3: a neighbourhood.} If $\Kc(P,\mu)-\varepsilon<0$, the event of \eqref{eq:lower-dev} is empty and any $(\delta,J,\eta)$ works.
+Otherwise, $P\in\Hk$ has a finite fourth moment and is not a Dirac mass ($\sd(P)>0$), so $\Kc$ is lower
+semicontinuous at $(P,\mu)$ by Proposition~\ref{prop:regularity}(i) (\emph{lower semicontinuity away from Dirac masses}). Since $\Pspace\times\R$ is metrisable, lower
+semicontinuity along sequences gives an open neighbourhood $\mathcal N$ of $(P,\mu)$ on which
+$\Kc>\Kc(P,\mu)-\varepsilon$ (otherwise a sequence of points of $\{\Kc\le\Kc(P,\mu)-\varepsilon\}$ would converge to $(P,\mu)$). The sets
+$\{R:|\int f_j\,dR-\int f_j\,dP|<\eta,\ j\le J\}$, for bounded continuous $f_j$ and $\eta>0$, form a base of neighbourhoods of
+$P$. Dropping the constant $f_j$, replacing each other $f_j$ by $(f_j-\inf f_j)/(\sup f_j-\inf f_j)$ and $\eta$ by
+$\min_j\eta/(\sup f_j-\inf f_j)$ only shrinks such a set, so we may take $f_j$ with values in $[0,1]$ and a single $\eta$. So there are
+$\delta>0$, $J$, continuous $f_1,\dots,f_J:\R\to[0,1]$ and $\eta>0$ with
+\begin{equation*}
+  \Bigl\{R:\Bigl|\int f_j\,dR-\int f_j\,dP\Bigr|<\eta\ \text{for all } j\le J\Bigr\}\times[\mu-\delta,\mu+\delta]\subset\mathcal N .
+\end{equation*}
+
+\emph{Step 4: Hoeffding.} Since $(\hat P_n,\mu-\delta)\in\mathcal N$ as soon as all the $J$ empirical means are $\eta$-close to their
+expectations,
+\begin{align*}
+  \Prob\bigl(\Kc(\hat P_n,\mu-\delta)\le\Kc(P,\mu)-\varepsilon\bigr)
+  &\le\Prob\Bigl(\exists j\le J:\ \Bigl|\frac1n\sum_{i\le n}f_j(X_i)-\E f_j(X_1)\Bigr|\ge\eta\Bigr)\\
+  &\le\sum_{j\le J}2e^{-2n\eta^2}=2Je^{-2n\eta^2},
+\end{align*}
+by Hoeffding's inequality for variables in $[0,1]$. The events are measurable by Lemma~\ref{lem:index}(i).
+\end{proof}
+
+\begin{proof}[Proof of Corollary~\ref{cor:confseq}]
+\proves{cor:confseq}
+\uses{def:class, def:kinf, thm:deviation}
+The \term{w:law}{law} of $-X_1$ belongs to $\Hk$ (the kurtosis is invariant under $x\mapsto-x$) and has mean $-\mean(P)$. Let $E^+$ and
+$E^-$ be the events of \eqref{eq:upper-dev} for $X$ and for $-X$; each has probability at most $e^{-x}$. Outside
+$E^+\cup E^-$, for every $n$, $n\Kc(\hat P_n,\mean(P))<b_n$ and $n\Kc(\hat P^-_n,-\mean(P))<b_n$, so $\mean(P)$ belongs to the set defining
+$U^+_n$ and $-\mean(P)$ to the set defining $U^-_n$; hence $-U^-_n\le\mean(P)\le U^+_n$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:mixbound}}\label{sec:proof-lem-mixbound}
+
+\begin{proof}
+\proves{lem:mixbound}
+\uses{def:dualset, lem:lambda}
+$M$ is continuous on the compact set $\Lam$ (Lemma~\ref{lem:lambda}(a)); let $\lambda^\star$ maximise it, $\theta:=1/(n+1)$ and
+$S:=\lambda^\star+\theta(\Lam-\lambda^\star)$. By convexity $S\subset\Lam$, and $\pi(S)=\theta^2$ since $S$ is a homothetic copy of $\Lam$ in
+$\R^2$. For $\lambda=\lambda^\star+\theta(\lambda'-\lambda^\star)\in S$, $\lambda'\in\Lam$, the affinity of $\hl$ in $\lambda$ and $\hl_{\lambda'}\ge0$ give
+\begin{equation*}
+  \hl_\lambda(y)=(1-\theta)\hl_{\lambda^\star}(y)+\theta\hl_{\lambda'}(y)\ge(1-\theta)\hl_{\lambda^\star}(y)\qquad(y\in\R),
+\end{equation*}
+so $M(\lambda)\ge(1-\theta)^nM(\lambda^\star)$ on $S$. Hence
+\begin{equation*}
+  \int_\Lam M\,d\pi\ge\pi(S)(1-\theta)^nM(\lambda^\star)=\frac1{(n+1)^2}\Bigl(1+\frac1n\Bigr)^{-n}M(\lambda^\star)\ge\frac{M(\lambda^\star)}{e(n+1)^2}.
+\end{equation*}
+\end{proof}
+
+% ----------------------------------------------------------------
+\section{Sources of the techniques}\label{sec:attribution}
+
+For each technique of the proofs, where it is used and the earliest source we found.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.47\textwidth}p{0.47\textwidth}@{}}
+\toprule
+Technique (where) & Earliest source found \\
+\midrule
+Lower bound for \term{w:consistent}{consistent} algorithms with $\Kinf$ (Corollary~\ref{cor:exact}) & Burnetas and Katehakis, in the form of \citet[Theorem~16.2]{LS} \\
+KL-UCB index with $\Kinf$ of a non-parametric class, threshold $\log t+2\log\log t+2\log(1+n)+1$, regret decomposition (Algorithm~\ref{alg:kucb}, Appendix~\ref{sec:proof-main}) & \citet[Algorithm~1, Theorem~1, Section~3.3]{AJK21}; for an abstract class \citet[Theorem~3.1]{PA26}; KL-UCB: \citet{CGMMS13} \\
+Outer minimisation over a scalar parameter that makes a non-convex $\Kinf$ problem convex (Lemmas~\ref{lem:G}, \ref{lem:repr}) & \citet[Theorem~3.4]{AKJ21} for CVaR (see also \citealp[Chapter~6]{A22}); for centred moments, over the location, \citet[Section~6.10]{A22} and, with a regret theorem under a known lower bound on the means, \citet[Appendix~D.5 and Corollary~6]{BSH23}; location and scale as nuisance parameters of moment equations: empirical likelihood (see also \citealp[Sections~1.1 and 3.5]{O01}). The inequality $\kurt\le\kappa$ as a linear constraint with a free scale: source not known \\
+Fixing the outer parameter at its true value to bound the empirical $\Kinf$ from above (Theorem~\ref{thm:deviation}(i)) & \citet[Appendix~6.D.1, equation~(6.55)]{A22} (the value-at-risk for CVaR) \\
+Dual formula of $\Kinf$ under moment constraints, of the form $\max\E\log(1+\lambda\cdot\gam)$ (Lemmas~\ref{lem:weak}, \ref{lem:finite}) & \citet[Theorem~8]{HT10} for bounded supports; \citet[Lemma~7]{AJK21} for a moment bound \\
+Direct construction of the optimal \term{w:law}{law} from a maximiser of the dual (Lemma~\ref{lem:finite}) & standard first-order (Karush--Kuhn--Tucker) argument for a concave maximisation over a convex set; the optimal \term{w:law}{law} is read off from the multipliers, as in empirical likelihood (see also \citealp[Section~3.14]{O01}) \\
+Extension of the dual formula from finitely supported \term{w:law}{laws} to every \term{w:law}{law} by approximation (Lemma~\ref{lem:alllaws}) & the proof of \citet[Theorem~8]{HT10} (finite supports, then approximation) for bounded supports; the variant with Fatou's lemma on an unbounded support is ours \\
+Mixture of supermartingales over the dual set, universal-portfolio bound $d\log(n+1)+1$, maximal inequality (Theorem~\ref{thm:deviation}(i), Lemma~\ref{lem:mixbound}) & in bandits, \citet[Lemma~E.1 of the arXiv version]{AKJ21}, restated by \citet[Lemma~11, used for Proposition~5]{AJK21}; \citet{AKJ21} credit the bound to Blum and Kalai (universal portfolios) and to Hazan, Agarwal and Kale (in general) \\
+Mixing an alternative with a far atom (``outlier'') (Lemma~\ref{lem:mixture}) & \citet[Appendix~A]{L17}, with a Bernoulli outlier; the sharp mass $1-\qk$: source not known \\
+Kurtosis of two-point \term{w:law}{laws} and the largest atom of a \term{w:law}{law} of kurtosis at most $\kappa$ (Lemma~\ref{lem:atom}) & elementary, of the type of the maximal mass at a point under moment constraints (Chebyshev--Markov--Krein); the statement: source not known \\
+Mixing to make a constraint strict (Lemma~\ref{lem:strict}) & classical; source not known \\
+Compactness modulo the affine group with the boundary value $\Kinfty(\kappa)$ (Lemma~\ref{lem:escape}, Proposition~\ref{prop:regularity}) & source not known \\
+Lower semicontinuity turned into an exponential lower deviation by finitely many test functions and Hoeffding's inequality (Theorem~\ref{thm:deviation}(ii)) & source not known (a standard topological argument); Hoeffding's inequality \\
+Joint lower semicontinuity of $\KL$, Prokhorov, Skorokhod, Varadarajan (Lemmas~\ref{lem:lsc}, \ref{lem:alllaws}, \ref{lem:escape}) & textbook facts \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ----------------------------------------------------------------
+\section{Notation}\label{sec:notation}
+
+Every symbol is a link to its definition.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.2\textwidth}p{0.55\textwidth}p{0.17\textwidth}@{}}
+\toprule
+Symbol & Meaning & Defined in \\
+\midrule
+$\Pspace$ & \term{w:law}{laws} on $\R$, weak topology & Section~\ref{sec:setting} \\
+$\mean(P)$, $\sd^2(P)$, $\kurt(P)$ & mean, variance, kurtosis & Definition~\ref{def:laws} \\
+$\KL$, $\kl$ & Kullback--Leibler divergence; its Bernoulli version & Definition~\ref{def:laws}; Lemma~\ref{lem:tail} \\
+$\alpha$, $\Karms$ & set of arms, number of arms & Definition~\ref{def:bandit} \\
+$\nu$, $\marm_a$, $\sda_a$, $\mstar$, $\gap_a$ & \term{w:instance}{instance}, means, standard deviations, best mean, gaps & Definition~\ref{def:bandit} \\
+$\Xr_{a,j}$, $\Arm_t$ & $j$-th reward of arm $a$ (stack model); arm pulled at round $t$ & Definition~\ref{def:bandit} \\
+$\Np_a(t)$, $\Reg_T$ & pulls of $a$ in rounds $1,\dots,t$; regret & Definition~\ref{def:bandit} \\
+$\Pe_{a,s}$, $\Pe_a(t)$ & empirical \term{w:law}{law} of the first $s$ rewards of $a$; at round $t$ & Definition~\ref{def:bandit} \\
+$\Kinf(P,\mu;\mathcal D)$ & information function of a model (strict) & Definition~\ref{def:kinfD} \\
+$\Hk$, $\Hlt$ & \term{w:law}{laws} of kurtosis at most $\kappa$; less than $\kappa$ & Definition~\ref{def:class} \\
+$\Kc(P,\mu)$, $\Kge(P,\mu)$ & $\Kinf(P,\mu;\Hk)$; its non-strict version & Definition~\ref{def:kinf} \\
+$\phik$ & $y^4-2\kappa y^2+\kappa$ & Definition~\ref{def:normalised} \\
+$\Gk$, $\KG$ & normalised class; its information function & Definition~\ref{def:normalised} \\
+$\tauc_{c,s}$ & $x\mapsto(x-c)/s$, and image \term{w:law}{laws} & Definition~\ref{def:normalised} \\
+$\hl_\lambda$, $\gam(y)$ & $1+\lambda_1y+\lambda_2\phik(y)$; $(y,\phik(y))$ & Definition~\ref{def:dualset}, Appendix~\ref{sec:proof-dual} \\
+$\Lam$, $\Lw$ & dual set; its half-width & Definition~\ref{def:dualset} \\
+$\qk$, $\Kinfty(\kappa)$ & largest atom; value at infinity $\log(1/\qk)$ & Definition~\ref{def:kinfty} \\
+$\Cst(\nu)$ & first-order constant $\sum_a\gap_a/\Kc(\nu_a,\mstar)$ & \eqref{eq:cstar} \\
+$\thr(t,n)$ & threshold & \eqref{eq:threshold} \\
+$\Ix_a(t)$ & index of \algo{} & \eqref{eq:index} \\
+$\Ka$, $\LT$, $\nT(\varepsilon)$, $\kep$ & $\Kc(\nu_a,\mstar)$; $\log T+2\log\log T+1$; largest $n$ with $n(\Ka-\varepsilon)\le\thr(T,n)$; $\Ka-\varepsilon$ & \eqref{eq:Ka}, Theorem~\ref{thm:main} \\
+$\Ca(\varepsilon)$, $(\delta,J,\eta)$ & existential constant; parameters of the lower deviation & Lemma~\ref{lem:termC}, Theorem~\ref{thm:deviation} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\bibliographystyle{plainnat}
+\bibliography{refs,../../papers/library}
+
+\end{document}

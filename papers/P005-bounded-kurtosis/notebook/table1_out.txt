@@ -1,0 +1,22 @@
+kappa | q_kappa | K_inf(kappa) | 1/K_inf | 1/K_inf - kappa | kappa < 1/K_inf < kappa+2 | log(kappa/(kappa-1))
+     1.5 | 0.666667 | 0.40547 |     2.4663 | 0.96630 | True | 1.09861
+       2 | 0.723607 | 0.32351 |     3.0911 | 1.09112 | True | 0.69315
+       3 | 0.788675 | 0.23740 |     4.2123 | 1.21229 | True | 0.40547
+     3.5 | 0.810087 | 0.21061 |     4.7480 | 1.24803 | True | 0.33647
+       5 | 0.853553 | 0.15835 |     6.3152 | 1.31524 | True | 0.22314
+       9 | 0.908248 | 0.09624 |    10.3910 | 1.39096 | True | 0.11778
+      20 | 0.954447 | 0.04662 |    21.4484 | 1.44839 | True | 0.05129
+     100 | 0.990195 | 0.00985 |   101.4893 | 1.48928 | True | 0.01005
+    1000 | 0.999002 | 0.00100 |  1001.4989 | 1.49892 | True | 0.00100
+   10000 | 0.999900 | 0.00010 | 10001.4999 | 1.49989 | True | 0.00010
+
+checks: q(1-q)(kappa+3) = 1 and two-point kurtosis 1/(q(1-q)) - 3 = kappa
+kappa=1.5: q(1-q)(kappa+3)=1.000000000000, two-point kurtosis=1.500000000000
+kappa=3: q(1-q)(kappa+3)=1.000000000000, two-point kurtosis=3.000000000000
+kappa=7: q(1-q)(kappa+3)=1.000000000000, two-point kurtosis=7.000000000000
+
+largest atom of a 4-point law with kurtosis <= kappa (SLSQP, 40 random starts)
+kappa=1.5: largest atom found=0.666667, q_kappa=0.666667
+kappa=2.5: largest atom found=0.761116, q_kappa=0.761116
+kappa=3: largest atom found=0.788675, q_kappa=0.788675
+kappa=6: largest atom found=0.872678, q_kappa=0.872678

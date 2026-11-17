@@ -1,0 +1,23 @@
+kappa=3.0, K_infinity=0.237401
+
+(a) fixed (c,s): dual max over Lambda vs convex primal over G
+  law 0: atoms=[-0.85  -0.067  0.764  1.767], weights=[0.347 0.514 0.092 0.046]: dual=0.0624185, primal=0.0624185
+  law 1: atoms=[-0.25   0.163  2.009  4.052], weights=[0.039 0.373 0.245 0.344]: dual=1.1231499, primal=1.1231499
+  law 2: atoms=[-1.133 -1.007 -0.795  0.767], weights=[0.032 0.093 0.621 0.255]: dual=0.1196631, primal=0.1196631
+  law 3: atoms=[-1.913 -1.45  -0.364 -0.239], weights=[0.527 0.228 0.075 0.171]: dual=0.4251247, primal=0.4251247
+
+(b) P uniform on {-1,0,1}: profiled dual vs direct primal
+  mu=0.1: dual=0.007492 at (c,s)=(0.1000,0.8188), primal=0.007492; primal extra atoms: masses [0.     0.0001] at [17.381  8.932]
+  mu=0.3: dual=0.066107 at (c,s)=(0.3000,0.8599), primal=0.066107; primal extra atoms: masses [0.008  0.0059] at [3.134 3.134]
+  mu=0.6: dual=0.164736 at (c,s)=(0.6000,1.4298), primal=0.164736; primal extra atoms: masses [0.087  0.0577] at [3.543 3.543]
+  mu=1.0: dual=0.205489 at (c,s)=(1.0000,2.1658), primal=0.205489; primal extra atoms: masses [0.0784 0.1066] at [5.27 5.27]
+  mu=2.0: dual=0.228409 at (c,s)=(2.0000,4.0063), primal=0.228409; primal extra atoms: masses [0.2005 0.0037] at [9.777 9.777]
+
+(c) extremal two-point law (atom q_kappa at 0), kurtosis exactly kappa
+  kurtosis=3.000000, mean=0.21132, variance=0.16667
+  Delta=0.001: dual=0.000003, primal=0.000003, ratio to Delta^2/(2 sigma^2)=0.9977
+  Delta=0.01: dual=0.000293, primal=0.000293, ratio to Delta^2/(2 sigma^2)=0.9778
+  Delta=0.05: dual=0.006762, primal=0.006762, ratio to Delta^2/(2 sigma^2)=0.9016
+  Delta=0.2: dual=0.082477, primal=0.082477, ratio to Delta^2/(2 sigma^2)=0.6873
+  Delta=1.0: dual=0.227261, primal=0.227261, ratio to Delta^2/(2 sigma^2)=0.0758
+  Delta=5.0: dual=0.237014, primal=0.237014, ratio to Delta^2/(2 sigma^2)=0.0032
