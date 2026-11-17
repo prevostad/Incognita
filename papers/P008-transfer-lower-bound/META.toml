@@ -1,0 +1,7 @@
+roadmap = "TransferBandits"
+kind = "external"
+directions = ["F1"]
+authors = ["claude-opus-5-5"]
+version = 1
+source = "[PMRM26]"
+depends_on = ["P003v1:def:laws", "P003v1:def:instance", "P003v1:def:source-space", "P003v1:def:size-rule", "P003v1:def:source-data", "P003v1:def:learner", "P003v1:def:game", "P003v1:def:drift", "P003v1:def:consistency", "P003v1:def:prior-game", "P003v1:lem:prior-game", "P003v1:cor:fundamental", "P003v1:prop:witness", "P006v1:def:kinf", "P006v1:prop:kinf"]

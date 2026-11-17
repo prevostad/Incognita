@@ -1,0 +1,27 @@
+Instance: target Ber(0.70), Ber(0.50); source Ber(0.60), Ber(0.30); L = (0.20, 0.25)
+  arm 1: |mu - mu'| = 0.10 < L = 0.20: True; mu - mu' = 0.10 < L: True
+  arm 2: |mu - mu'| = 0.20 < L = 0.25: True; mu - mu' = 0.20 < L: True
+mu* - L_2 = 0.45, mu'_2 = 0.30 (improvement case: True)
+K_2  = kl(0.50, 0.70) = 0.087177, 1/K_2 = 11.470956
+K'_2 = kl(0.30, 0.45) = 0.047174, 1/K'_2 = 21.198159
+
+Deterministic sizes N'_2(T) = floor(c ln T): lower bound (1 - c K'_2)_+ / K_2
+       c      (1-cK')_+          bound
+  0.0000       1.000000      11.470956
+  1.0000       0.952826      10.929826
+  2.0000       0.905652      10.388696
+  5.0000       0.764130       8.765307
+ 10.0000       0.528261       6.059658
+ 21.1982       0.000000       0.000000
+ 20.0000       0.056522       0.648360
+
+Randomised sizes: N'_2 = floor(c ln T) w.p. 1/2, 0 otherwise; E N'_2 / ln T -> c/2:
+  c = 2.0000: bound (1 - (c/2) K')_+ / K = 10.929826
+  c = 21.1982: bound (1 - (c/2) K')_+ / K = 5.735478
+  c = 42.3963: bound (1 - (c/2) K')_+ / K = 0.000000
+
+eps = 0.1: m(Q') = 0.550000, m(Q) = 0.750000, |m(Q) - m(Q')| = 0.200000 < L_2: True; KL' - K' = 8.03e-02, KL - K = 5.67e-02; all conditions: True
+eps = 0.01: m(Q') = 0.462500, m(Q) = 0.706250, |m(Q) - m(Q')| = 0.243750 < L_2: True; KL' - K' = 7.87e-03, KL - K = 6.08e-03; all conditions: True
+eps = 0.001: m(Q') = 0.451562, m(Q) = 0.700781, |m(Q) - m(Q')| = 0.249219 < L_2: True; KL' - K' = 9.52e-04, KL - K = 7.46e-04; all conditions: True
+
+Boundary instance mu'_2 = 0.45 = mu* - L_2: K'_2 = kl(mu'_2, mu'_2) = 0.0

@@ -2490,6 +2490,40 @@
     "identifiers": {},
     "version": ""
   },
+  "HZT26": {
+    "uri": "https://arxiv.org/abs/2605.25789",
+    "citation": {
+      "id": "HZT26",
+      "type": "article",
+      "title": "On the Benefits of Free Exploration for Regret Minimization in Multi-Armed Bandits",
+      "author": [
+        {
+          "family": "Hou",
+          "given": "Yunlong"
+        },
+        {
+          "family": "Zhong",
+          "given": "Zixin"
+        },
+        {
+          "family": "Tan",
+          "given": "Vincent Y. F."
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2605.25789"
+    },
+    "version": "v1"
+  },
   "Hal69": {
     "uri": "https://doi.org/10.2307/3212107",
     "citation": {
@@ -5202,6 +5236,41 @@
       "arxiv": "2010.09686"
     },
     "version": "v7"
+  },
+  "YTC25": {
+    "uri": "https://arxiv.org/abs/2505.23165",
+    "citation": {
+      "id": "YTC25",
+      "type": "article",
+      "title": "Best Arm Identification with Possibly Biased Offline Data",
+      "author": [
+        {
+          "family": "Yang",
+          "given": "Le"
+        },
+        {
+          "family": "Tan",
+          "given": "Vincent Y. F."
+        },
+        {
+          "family": "Cheung",
+          "given": "Wang Chi"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2025
+          ]
+        ]
+      },
+      "note": "arXiv comment: 'Accepted to UAI 2025'; proceedings version not checked"
+    },
+    "identifiers": {
+      "arxiv": "2505.23165"
+    },
+    "version": "v1"
   },
   "ZL19": {
     "uri": "https://proceedings.neurips.cc/paper_files/paper/2019/hash/92cf3f7ef90630755b955924254e6ec4-Abstract.html",
