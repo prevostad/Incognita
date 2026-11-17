@@ -1,0 +1,99 @@
+% formalisation.tex: blueprint extension of an accepted paper (AGENTS.md, section 6.6, case c).
+% Not refereed: Lean checks every node. paper.tex is never edited.
+% Nodes of paper.tex are referred to by their labels: xr-hyper reads paper.aux, so compile
+% paper.tex first (CI does). New labels start with f (flem:, fprop:, fdef:) and are never reused.
+% Every node has \lean{...} with its Lean name and an exhaustive \uses{...}; never write \leanok.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+\externaldocument{paper}
+\counterwithout{theorem}{section}
+\renewcommand{\thetheorem}{F\arabic{theorem}}
+
+% The paper's macros, copied from paper.tex.
+\newcommand{\E}{\mathbb{E}}
+
+\title{Formalisation notes for P003-transfer-setting}
+\author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
+  are this file's; other numbers refer to the paper.}}
+\date{2026-11-17}
+
+\begin{document}
+\maketitle
+
+\section{Extra lemmas}
+
+\begin{lemma}[The prior game, round by round]\label{flem:prior-state}
+\lean{Incognita.P003.measurable_state, Incognita.P003.sum_state_fst,
+  Incognita.P003.state_fst_le_succ}
+\uses{def:prior-game, def:source-space}
+For a prior strategy and every $r\in\mathbb N$, the state after $r$ rounds (the counts $C(r)$ and
+the history $(A'_i,Y'_i)_{i<r}$) is a measurable function of $\omega\in\Omega'$; the counts satisfy
+$\sum_k C_k(r)=r$ and $C_k(r)\le C_k(r+1)$ for every arm $k$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:prior-game, def:source-space}
+Induction on $r$. The arm $A'_r$ is a measurable function of $U'$ and of the history; the new counts
+are a function of $(A'_r, C(r))$, with values in the countable set $[K]\times\mathbb N^K$, hence
+measurable; the observation $X'_{A'_r,C_{A'_r}(r)}$ is measurable as a function of the stacks and
+of $(A'_r,C(r))$ (a countable family of measurable sections). Only the count of $A'_r$ increases,
+by $1$.
+\end{proof}
+
+\begin{lemma}[The game reads only the box of its counts]\label{flem:box-claim}
+\lean{Incognita.P003.state_eq_of_eqOn_box, Incognita.P003.stoppedCounts_eq_of_eqOn_box}
+\uses{def:prior-game, def:stopped-game, def:source-space, flem:prior-state}
+Let $\omega,\omega'\in\Omega'$ have the same randomisation and the same values $X'_{k,j}$ for
+$(k,j)\in B(n)$. If $C(r)\le n$ in the game run on $\omega$, the first $r$ rounds of the games run on
+$\omega$ and on $\omega'$ coincide. For a stopping time $\tau$ of the prior game, if the stopped
+counts at $\omega$ equal $n$, so do the stopped counts at $\omega'$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:prior-game, def:stopped-game, flem:prior-state}
+This is the claim of the proofs of Lemma~\ref{lem:prior-game} and
+Proposition~\ref{prop:stopped-games}~(a). The first part by induction on $r$: at round $r$ the two
+games choose the same arm $a$ with the same count $C_a(r)$, and $C_a(r)+1=C_a(r+1)\le n_a$, so the
+value read is in the box. For the second, with $r_0=\tau(\omega)$, the first $r_0$ rounds coincide;
+$\{\tau=r_0\}\in\mathcal F'_{r_0}$ is a function of the randomisation and of these rounds, so
+$\tau(\omega')=r_0$ and the counts at $r_0$ agree.
+\end{proof}
+
+\begin{lemma}[Stopped counts form a size rule]\label{flem:stopped-size-rule}
+\lean{Incognita.P003.stoppedCounts_isSizeRule}
+\uses{def:size-rule, def:stopped-game, flem:prior-state, flem:box-claim}
+Item (a) of Proposition~\ref{prop:stopped-games}, proved without Lemma~\ref{lem:prior-game}.
+\end{lemma}
+
+\begin{proof}
+\uses{def:size-rule, def:source-space, def:stopped-game, flem:prior-state, flem:box-claim}
+A stopping time is measurable, since $\mathcal F'_r$ is contained in the $\sigma$-algebra of
+$\Omega'$ by Lemma~\ref{flem:prior-state}; so the stopped counts
+$\omega\mapsto C(\tau(\omega))(\omega)$ are measurable (a countable family of measurable sections,
+indexed by $r$), and their total is $\tau\le T'$. For $n\in\mathbb N^K$ let $\hat\omega$ keep the
+randomisation and the values of $B(n)$ of $\omega$ and put $0$ elsewhere; $\omega\mapsto\hat\omega$ is
+$\mathcal G_n$-measurable. By Lemma~\ref{flem:box-claim} applied to $(\omega,\hat\omega)$ and to
+$(\hat\omega,\omega)$, the event $\{N'=n\}$ is its own preimage under this map, hence in
+$\mathcal G_n$.
+\end{proof}
+
+\section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Lemma~\ref{lem:prior-game}]
+\proves{lem:prior-game}
+\uses{def:size-rule, def:prior-game, def:stopped-game, flem:stopped-size-rule}
+(a) as in the paper. (b) is Lemma~\ref{flem:stopped-size-rule} for the constant stopping time
+$\tau\equiv T'$ (\texttt{PriorStrategy.isStoppingTime\_const}): the counts are a size rule with total
+at most $T'$, so each count is at most $T'$.
+\end{proof}
+
+\end{document}

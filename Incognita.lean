@@ -8,6 +8,10 @@ public import Incognita.BatchedBandits.HY
 public import Incognita.BatchedBandits.Instances
 public import Incognita.BatchedBandits.Relations
 public import Incognita.P000.Witnesses
+public import Incognita.P003.Cyclic
+public import Incognita.P003.Drift
+public import Incognita.P003.Exclusions
+public import Incognita.P003.PriorGame
 public import Incognita.P003.Witnesses
 public import Incognita.P006.Main
 public import Incognita.P006.Witnesses
