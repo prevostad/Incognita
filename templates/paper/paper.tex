@@ -204,10 +204,17 @@ proved, in plain words (no roadmap item ids).>
 
 \paragraph{Where the difficulty lies} <The new step, and why the known methods stop there.>
 
-\section{<Numerical experiments, or Examples>}\label{sec:examples}
+\section{Numerical experiments}\label{sec:examples}
 
-% The setup in a paragraph, a table or a figure, then a run-in paragraph interpreting it; one
-% explicit instance satisfying all the hypotheses at once; the degenerate cases.
+% Criterion W16 (docs/writing.md): run the algorithm EXACTLY as proved (parameters its theorems
+% cover; a variant only as an extra, labelled curve); the setup in a paragraph (instances, horizon,
+% runs, seeds, algorithms and parameters); figures of CURVES comparing the paper's algorithms (or its bound) with
+% at least two published algorithms, mean and confidence band, logarithmic time axis when the
+% theory is in ln T; a run-in paragraph interpreting each figure (what it shows at finite horizon,
+% and only that); one explicit instance satisfying all the hypotheses; the degenerate cases.
+% Figures: PDF made by a committed script of notebook/ (at most ~30 min on four cores).
+% \begin{figure}[t]\centering\includegraphics[width=.8\linewidth]{notebook/fig_regret.pdf}
+% \caption{<Regret against time, mean over N runs, band: ...>}\label{fig:regret}\end{figure}
 \begin{example}[<Name>]
 <An explicit instance (for example Bernoulli arms with means ...): the hypotheses hold because ...,
 and the constant of Theorem~\ref{thm:main} equals ...>

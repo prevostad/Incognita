@@ -164,10 +164,15 @@ on_main papers/P002-y/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndi
 pass "a paper waits for the frozen statements of its dependencies" "== task: formalize-statements P002-y"
 world "Reviewed by owner: 2026-11-14"
 on_main papers/P001-old/META.toml "$(printf 'roadmap = "BB"\nkind = "internal"\ndirections = ["D9"]\n')"
+# Owner, 2026-11-17: by default (INCOGNITA_ACCEPTED_UNVERIFIED_MAX=1) an accepted paper not verified
+# in Lean stops write-paper in its roadmap.
+nopass "formalise first: an accepted paper not verified blocks writing" "== task: write-paper BB"
+export INCOGNITA_ACCEPTED_UNVERIFIED_MAX=2
 pass "no definitions paper on main: no statements yet, a paper instead" "== task: write-paper BB"
 h=$(pr 42 write-paper BB)
 check 42 "Build and check" IN_PROGRESS
 nopass "no definitions paper on main: one paper in review at a time" "== task: write-paper BB"
+unset INCOGNITA_ACCEPTED_UNVERIFIED_MAX
 world "Reviewed by owner: 2026-11-14"
 h=$(pr 5 write-paper BB)
 pass "a new paper PR goes to referee-scope" "== task: referee-scope 5"

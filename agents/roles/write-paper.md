@@ -53,7 +53,9 @@ then proposes an extension of the roadmap.
   `Ask-owner: item <D/F> seems answered by …`; the script forwards it to the owner.
 - Then work out the result. Keep `papers/<P>/notebook/NOTEBOOK.md` as you go (AGENTS.md §5.3):
   attempts, dead ends with the reason they fail, ideas, every web query. Numerical experiments:
-  `python3` scripts in `papers/<P>/notebook/` with their small outputs. Lean drafts:
+  `python3` scripts in `papers/<P>/notebook/` with their small outputs; plan the section
+  "Numerical experiments" of criterion W16 early (curves against at least two published
+  algorithms, figures as PDF from a committed script, at most about thirty minutes of runs). Lean drafts:
   `Exploration/<prefix>/` (`sorry` allowed; run `lake exe mk_all --lib Exploration` and
   `scripts/build.sh Exploration` if you add any).
 - Aim at one clean main result, preferably what the roadmap's "What would be an important result"
