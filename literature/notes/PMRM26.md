@@ -5,7 +5,7 @@
 | Work | A. Prevost, T. Mathieu, W. Radji, O.-A. Maillard, *Transfer Learning in Bandits from Unknown Adaptive Policies: Problem-Dependent Lower and Upper Bounds*, arXiv preprint, 2026 |
 | Identifiers | arXiv 2610.21582 (v1, 15 Oct 2026, the only version on 2026-11-15) |
 | Read | arXiv:2610.21582v1 HTML, through extracts of a fetch tool (short verbatim pieces, joined below): §3.1, §3.2, §4.1 (consistency and $\mathcal K_{\inf}$), §4.2 (the set $\mathcal P([0,1])_L$, the class $\mathcal C_L$, Theorem 2 statement, the sentence on Lemma 22), §7 (one-sided quantities). arXiv e-print of v1 (LaTeX source `main.tex`, read as text): §4.2 after Theorem 2; Appendix E (proof of Theorem 2), with Lemma 22 (label `lem:jointure`) and its proof |
-| By, date | Claude Opus 5.5 (write-paper, P003), 2026-11-15; Claude Opus 5.5 (revise, P003), 2026-11-15 (Appendix E, Lemma 22); Claude Opus 5.5 (write-paper, P008), 2026-11-17: the arXiv v1 PDF (arxiv.org/pdf/2610.21582v1), text layer extracted with `pdftotext`: §4.1–§4.2 (Theorem 1, the class $\mathcal C_L$, Theorem 2 and the paragraphs after it), Appendix E in full (the single-game construction, Lemmas 22–24, the proof of Theorem 2, E.1 proof of Lemma 22, E.2 proof of Lemma 23), §6 (Theorem 3, Proposition 4), Appendix D (proof of Proposition 4); Claude Opus 5.5 (revise, P008, round 2), 2026-11-17: the same PDF, text layer (`pdftotext -layout`): §5.1 (KL-UCB, $U^{KL}$, the dual form of $\mathcal K_{\inf}$), §5.2 (the KL-UCB-Transfer index, $\delta_t$, Algorithm 1), §6 (Theorem 3, hypotheses re-checked), §9 (setup of the experiments) |
+| By, date | Claude Opus 5.5 (write-paper, P003), 2026-11-15; Claude Opus 5.5 (revise, P003), 2026-11-15 (Appendix E, Lemma 22); Claude Opus 5.5 (write-paper, P008), 2026-11-17: the arXiv v1 PDF (arxiv.org/pdf/2610.21582v1), text layer extracted with `pdftotext`: §4.1–§4.2 (Theorem 1, the class $\mathcal C_L$, Theorem 2 and the paragraphs after it), Appendix E in full (the single-game construction, Lemmas 22–24, the proof of Theorem 2, E.1 proof of Lemma 22, E.2 proof of Lemma 23), §6 (Theorem 3, Proposition 4), Appendix D (proof of Proposition 4); Claude Opus 5.5 (revise, P008, round 2), 2026-11-17: the same PDF, text layer (`pdftotext -layout`): §5.1 (KL-UCB, $U^{KL}$, the dual form of $\mathcal K_{\inf}$), §5.2 (the KL-UCB-Transfer index, $\delta_t$, Algorithm 1), §6 (Theorem 3, hypotheses re-checked), §9 (setup of the experiments); Claude Opus 5.5 (bibliographer), 2026-11-17: the same PDF, text layer (`pdftotext -layout`): §7 in full (Theorem 5, "Three regimes", the paragraphs after them), Appendix B opening (Lemmas 11–15 statements, the proof of Theorem 5), B.4 (Lemma 17 statement), B.6 (proof of Lemma 17), §9 paragraph "Interpretation of Figure 4"; the HTML rendering of v1 (fetch tool) for the display of Lemma 17 and the hypotheses of Theorem 5 |
 
 The statements below are copied from the HTML rendering of v1, with the mathematics as written
 there (LaTeX of the rendering); the notation $\mathcal P([0,1])$ is the set of probability laws on
@@ -142,6 +142,57 @@ $[0,1]$. KNOWN.md (K2, K7, K8 of `roadmaps/TransferBandits/`) summarises the sam
   $T=10^5$, bands $\pm3\hat\sigma_M/\sqrt M$. §9.1: $K=4$, $\mu=(0.6,0.5,0.45,0.35)$, three sources
   (Table 2), with $N'_a=500$ (left panel) or the counts of KL-UCB played on $\mu'$ for $T'=2000$ rounds
   (right panel).
+- **Theorem 5, §7 "Robustness to misspecification of L"** (arXiv v1 PDF, pp. 12–13, text layer
+  (`pdftotext -layout`), bibliographer, 2026-11-17; displays rebuilt from the extraction, the
+  subscripts $\nu',\pi',\nu,\pi$ of $\mathbb E$ as printed): "For all distributions
+  $\nu,\nu'\in\mathcal P([0,1])$, for every suboptimal arm $a$ and for every $T\ge3$, the algorithm
+  KL-UCB-Transfer (run with prior data and discrepancy bound $L$) satisfies the following. Let
+  $\mu^\dagger\in(\mu_a,\mu_1]$ be any real number such that $\mu^\dagger<\mu'_1+L_1$. Then
+  $$\mathbb E_{\nu',\pi',\nu,\pi}[N_a(T)]\le\frac{\ln T}{\mathcal K_{\inf}(\nu_a,\mu^\dagger)}+h_{\nu,\nu',\mu^\dagger,L}(T).$$
+  If moreover $\mu'_a+L_a<\mu^\dagger$, then
+  $$\mathbb E_{\nu',\pi',\nu,\pi}[N_a(T)]\le\frac{\mathbb E_{\nu',\pi'}\big[\big(\ln T-N'_a\mathcal K_{\inf}(\nu'_a,\mu^\dagger-L_a)\big)_+\big]}{\mathcal K_{\inf}(\nu_a,\mu^\dagger)}+g_{\nu,\nu',\mu^\dagger,L}(T),$$
+  where $h_{\nu,\nu',\mu^\dagger,L}(T)=O\big((\ln T)^{4/5}(\ln\ln T)^{1/5}\big)$ and
+  $g_{\nu,\nu',\mu^\dagger,L}(T)=O\big((\ln T)^{4/5}(\ln\ln T)^{1/5}\big)$." Then: "An explicit
+  expression for both $h_{\nu,\nu',\mu^\dagger,L}$ and $g_{\nu,\nu',\mu^\dagger,L}$ is given in the proof
+  in section B." "We remind that $\mu^\dagger$ is not an input of the algorithm. The algorithm only
+  uses the prior data $(N'_a,\hat\nu'_a)_a$ and the discrepancy bounds $(L_a)_a$." No hypothesis
+  $|\mu_k-\mu'_k|<L_k$ is made (unlike Theorem 3). The HTML rendering (fetch tool, 2026-11-17) gives
+  the same hypotheses ($\mu^\dagger\in(\mu_a,\mu_1]$, $\mu^\dagger<\mu'_1+L_1$; second bound under
+  $\mu'_a+L_a<\mu^\dagger$).
+- **"Three regimes", §7, after Theorem 5** (same extraction): "In the well-specified regime, where
+  $|\mu_a-\mu'_a|<L_a$ holds for all arms $a$, we in particular have $\mu_1<\mu'_1+L_1$, and choosing
+  $\mu^\dagger:=\mu_1$ in Theorem 5 recovers Theorem 3. When this condition is violated, i.e.,
+  $\mu'_1+L_1<\mu_1$, logarithmic regret may still hold as long as $\mu'_1+L_1>\mu_a$: any
+  $\mu^\dagger\in(\mu_a,\mu'_1+L_1)$ yields a mildly misspecified regime with a degraded constant. If
+  instead $\mu'_1+L_1\le\mu_a$, no admissible choice of $\mu^\dagger$ exists and our theorem gives no
+  guarantee, a severely misspecified regime." The following paragraphs (summary): "Asymmetry of
+  discrepancy requirements" (the bound $L_1$ on the optimal arm decides whether a logarithmic regime
+  exists; the $L_a$, $a\ne1$, only affect the leading constant); "Favorable overestimation regime"
+  (if $\mu'_a>\mu_a$ for all $a$, $L_a=0$ is valid); "Small number of prior data" (if $N'_k\le B$
+  a.s. with $B$ independent of $T$, the classical KL-UCB rate is recovered even in the severely
+  misspecified regime; stated without proof, "it can be deduced easily from the proof of Theorem 5
+  by using Lemma 9"). §8 extends Theorem 5 to several sources ("Taking $M:=2$ recovers exactly
+  Theorem 5"; not read further).
+- **Lemma 17, Appendix B.4 "Proof of Lemma 14"** (arXiv v1 PDF, p. 31, text layer; the display is
+  garbled in the extraction and was rebuilt with the HTML rendering of v1, whose LaTeX fragment
+  `\left(1-e^{-2\eta^{2}}\right)^{3}` fixes the exponent and the power; bibliographer, 2026-11-17):
+  "Lemma 17 For $\eta:=\mu'_1+L_1-\mu^\dagger+\varepsilon>0$
+  $$\mathbb E_{\nu',\pi'}\Big[\exp\big(N'_1\mathcal K_{\inf}(\hat\nu'_1,\mu^\dagger-\varepsilon-L_1)\big)\Big]\le\frac{2+18\ln(1/(1-\mu'_1))}{\big(1-e^{-2\eta^2}\big)^3}+2."$$
+  Context (Appendix B, proof of Theorem 5): the standing assumptions are those of Lemma 11:
+  $\mu^\dagger>\mu_a$, $\mu^\dagger\le\mu_1$, $\mu^\dagger\le\mu'_1+L_1$, and
+  "$\varepsilon>0$, $\varepsilon<\mu^\dagger$, $\varepsilon\le\frac{(1-\mu^\dagger)\mathcal K_{\inf}(\nu_a,\mu^\dagger)}4$";
+  Lemma 17 itself states only $\eta>0$. It is used in the proof of Lemma 14 (the term of the optimal
+  arm, $\sum_{t=K+1}^T\sum_{s=1}^t\mathbb 1\big(\mathcal K_{\inf}(\hat\nu_{1,s},\mu_1)>\frac{\delta_t-N'_1\mathcal K_{\inf}(\hat\nu'_1,\mu^\dagger-\varepsilon-L_1)}s+2\varepsilon^2\big)$),
+  whose bound is $\big(\frac{2+18\ln(1/(1-\mu'_1))}{(1-e^{-2\eta^2})^3}+2\big)\frac{81(2+\ln\ln T)}{\varepsilon^4}$.
+  In the proof of Theorem 5, $\varepsilon\asymp(\ln\ln T/\ln T)^{1/5}$ and $\eta\to\mu'_1+L_1-\mu^\dagger>0$.
+  Proof (B.6, summary): write $\mu^\dagger-\varepsilon-L_1=\mu'_1-\eta$; on $\{\hat\mu'_1\ge\mu'_1-\eta\}$
+  the exponent is $0$ (contributes $\le1$); on the complement, the second part of Lemma 10 gives
+  $\mathcal K_{\inf}(\hat\nu'_1,\mu'_1-\eta)\le\mathcal K_{\inf}(\hat\nu'_1,\mu'_1)-2\eta^2$; the dependence
+  on $\pi'$ is removed by summing over all sample sizes $s$ ("$\le1+\sum_{s=1}^{+\infty}\mathbb E_{\nu'}[\exp(s(\mathcal K_{\inf}(\hat\nu'_{1,s},\mu'_1)-2\eta^2))]$");
+  each term by the tail integral, the bound $\mathcal K_{\inf}(\hat\nu'_{1,s},\mu'_1)\le\ln(1/(1-\mu'_1))$,
+  the concentration Lemma 7 (a tail $e(2s+1)e^{-su}$), giving $s^2e^{-2s\eta^2}(1+9\ln(1/(1-\mu'_1)))$, then
+  a sum over $s$. §9 ("Interpretation of Figure 4") remarks that the factor $(1-e^{-2\eta^2})^{-3}\approx(2\eta^2)^{-3}$ "diverges as
+  $\eta\to0$" (Lemmas 14 and 17).
 - **§7 (one-sided condition).** "The analysis only relies on the one-sided quantities
   $\mu_a'+L_a$, rather than on the symmetric discrepancies"; the lower inequalities
   $\mu'_a-L_a<\mu_a$ "play no role in the regret analysis".
@@ -151,7 +202,11 @@ $[0,1]$. KNOWN.md (K2, K7, K8 of `roadmaps/TransferBandits/`) summarises the sam
 Change of measure on the pair (prior data, online game), with the source entering through
 $\mathbb E_{\nu',\pi'}[N'_a]$ (Lemma 22: the prior game and the online game written as one bandit
 game, then the divergence decomposition of bandit histories); KL-UCB-type index penalised by the source
-(KNOWN K8).
+(KNOWN K8). Upper bounds (Theorems 3 and 5, Appendix B): the KL-UCB analysis of CGMMS13 with a
+comparison level $\mu^\dagger$; the source sample of the optimal arm enters through the margin
+$\eta=\mu'_1+L_1-\mu^\dagger+\varepsilon$ and the exponential moment of
+$N'_1\mathcal K_{\inf}(\hat\nu'_1,\cdot)$ (Lemma 17), the dependence on the unknown prior strategy
+being removed by a union over all sample sizes.
 
 ## Where Incognita uses it
 
@@ -160,4 +215,6 @@ $\mathcal C_L$); P003 (Definition `def:consistency`, copied from §4.2 above; Cl
 (the blueprint of Theorem 2: Corollary `cor:source` is Theorem 2 in the setting of P003, with
 learners that see the source data; Lemmas 23 and the two cases of Appendix E in `lem:window` and
 `lem:alternative`; Lemma 22 replaced by Corollary 4.2 of P003; Algorithm 1 with $\delta_t$ of §5.2
-simulated in Section `sec:examples`).
+simulated in Section `sec:examples`); P002 also cites Theorem 5 (its parameter $\mu^\dagger$, the
+misspecification question) and Lemma 17 (the margin on the source of the optimal arm), statements
+above.
