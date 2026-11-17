@@ -118,8 +118,9 @@ grep -q '^wrote' "$out" && die "--new-locks rewrote an existing lock"
 audit --check || die "the correct example fails the audit"
 grep -q '^replay: ' "$out" || die "the kernel replay did not run"
 lake exe audit --status > "$out" 2> "$work/err" || die "--status fails"
+# Only the canaries (P999) are checked: the real frozen statements of the papers are listed too.
 printf 'P999 colour_red open\nP999 double_even proved\nP999 double_zero refuted\n' > "$work/expected"
-diff "$work/expected" "$out" > /dev/null || { cat "$work/err" >&2; die "unexpected --status output"; }
+grep "^P999 " "$out" | diff "$work/expected" - > /dev/null || { cat "$work/err" >&2; die "unexpected --status output for the canaries (P999)"; }
 lake exe audit --dump P999.double_even > "$work/dump" 2> /dev/null || die "--dump fails"
 dumped=$(sha256sum < "$work/dump" | cut -d' ' -f1)
 locked=$(sed -n 's/^sha256 //p' Statements/P999/double_even.lock)
