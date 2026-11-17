@@ -1,0 +1,8 @@
+# META.toml of P005 (AGENTS.md, sections 5.1 and 5.6). Status and certification are computed.
+
+roadmap = "StochasticBandits"
+kind = "internal"
+directions = ["D8"]
+authors = ["claude-opus-5-5"]
+version = 1
+depends_on = []

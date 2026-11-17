@@ -4,8 +4,8 @@
 |---|---|
 | Work | T. Lattimore, Cs. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020 |
 | Identifiers | DOI 10.1017/9781108571401 |
-| Read | This session: the free online edition, https://tor-lattimore.com/downloads/book/book.pdf ("This is the (free) online edition"; PDF dated 12 Aug 2024), read as extracted text (via r.jina.ai), not as page images; page numbers are those of this edition, inferred from running headers, and the online edition states that its page numbers differ from the print edition. Parts read: Chapter 4 title; §4.6 heading, first two sentences and the stack-of-rewards passage; Chapter 9 title; §9.1 Algorithm "MOSS" (numbered Algorithm 7 in this edition) and Theorem 9.1; Chapter 15 title; text before Theorem 15.2, Theorem 15.2 and the paragraph after it; Exercise 15.2 (setup, displays of parts (a)–(c), part (d)). Read earlier, see index.md: §9.2; §9.3 Notes 1–3; §15.1 Lemma 15.1 statement; §16.1–16.4 parts; Exercise 16.4; §25; §36.5–36.6. Not read: the proofs of Theorems 9.1 and 15.2 |
-| By, date | Claude Opus 5.5 (revise, P001), 2026-11-15 |
+| Read | Session of 2026-11-15 (Claude Opus 5.5, revise, P001): the free online edition, https://tor-lattimore.com/downloads/book/book.pdf ("This is the (free) online edition"; PDF dated 12 Aug 2024), read as extracted text (via r.jina.ai), not as page images; page numbers are those of this edition, inferred from running headers, and the online edition states that its page numbers differ from the print edition. Parts read: Chapter 4 title; §4.6 heading, first two sentences and the stack-of-rewards passage; Chapter 9 title; §9.1 Algorithm "MOSS" (numbered Algorithm 7 in this edition) and Theorem 9.1; Chapter 15 title; text before Theorem 15.2, Theorem 15.2 and the paragraph after it; Exercise 15.2 (setup, displays of parts (a)–(c), part (d)). Read earlier, see index.md: §9.2; §9.3 Notes 1–3; §15.1 Lemma 15.1 statement; §16.1–16.4 parts; Exercise 16.4; §25; §36.5–36.6. Not read: the proofs of Theorems 9.1 and 15.2. Session of 2026-11-16 (Claude Opus 5.5, write-paper, P005): the free online PDF (text layer): §3.3 Theorem 3.9 (maximal inequality); §16.1 Definition 16.1, the definition of $d_{\inf}$ and Theorem 16.2 with the start of its proof; §16.3 Notes 1–3; §16.4 |
+| By, date | agent (roadmap draft), 2026-11-14; Claude Opus 5.5 (revise, P001), 2026-11-15; Claude Opus 5.5 (write-paper, P005), 2026-11-16 (the results from §3.3 and §16) |
 
 ## Results
 
@@ -56,6 +56,29 @@ image before it is quoted as printed.
   $c=\frac14$ it reads $\frac12\sqrt{k/n}\,n(\frac{3k}4-1)\ge\frac{nk}8\sqrt{k/n}$, that is $k\ge2$
   (our check, not the book's text). The average is over the position $i$ of the good arm.
 
+Statements copied from the text layer of the free PDF (session of 2026-11-16); formulas rebuilt in LaTeX with the book's symbols
+($R_n(\pi,\nu)$ the expected regret after $n$ rounds, $D$ the relative entropy, $\mu(P)$ the mean of $P$).
+
+- **Theorem 3.9 (Maximal inequality).** "Let $(X_t)_{t=0}^\infty$ be a supermartingale with $X_t\ge0$ almost surely
+  for all $t$. Then for any $\varepsilon>0$, $\mathbb P\big(\sup_{t\in\mathbb N}X_t\ge\varepsilon\big)\le\frac{\mathbb E[X_0]}{\varepsilon}$."
+- **Definition 16.1.** "A policy $\pi$ is called consistent over a class of bandits $\mathcal E$ if for all $\nu\in\mathcal E$
+  and $p>0$, it holds that $\lim_{n\to\infty}\frac{R_n(\pi,\nu)}{n^p}=0$. (16.1) The class of consistent policies over
+  $\mathcal E$ is denoted by $\Pi_{\mathrm{cons}}(\mathcal E)$."
+- **Definition of $d_{\inf}$ (§16.1).** "Let $\mathcal M$ be a set of distributions with finite means, and let
+  $\mu:\mathcal M\to\mathbb R$ be the function that maps $P\in\mathcal M$ to its mean. Let $\mu^*\in\mathbb R$ and $P\in\mathcal M$
+  have $\mu(P)<\mu^*$ and define $d_{\inf}(P,\mu^*,\mathcal M)=\inf_{P'\in\mathcal M}\{D(P,P'):\mu(P')>\mu^*\}$."
+- **Theorem 16.2.** "Let $\mathcal E=\mathcal M_1\times\dots\times\mathcal M_k$ and $\pi\in\Pi_{\mathrm{cons}}(\mathcal E)$ be a consistent
+  policy over $\mathcal E$. Then, for all $\nu=(P_i)_{i=1}^k\in\mathcal E$, it holds that
+  $\liminf_{n\to\infty}\frac{R_n}{\log(n)}\ge c^*(\nu,\mathcal E)=\sum_{i:\Delta_i>0}\frac{\Delta_i}{d_{\inf}(P_i,\mu^*,\mathcal M_i)}$, (16.2)
+  where $\Delta_i$ is the suboptimality gap of the $i$th arm in $\nu$ and $\mu^*$ is the mean of the optimal arm."
+  The proof shows, for every suboptimal arm $i$, $\liminf_{n\to\infty}\mathbb E_{\nu\pi}[T_i(n)]/\log(n)\ge1/d_{\inf}(P_i,\mu^*,\mathcal M_i)$,
+  and uses the regret decomposition (Lemma 4.5).
+- **§16.3, Note 1.** Burnetas and Katehakis [1996] is the original source of Theorem 16.2. **Note 3.** The
+  non-parametric classes analysed exactly are bounded and semi-bounded supports; for bounded kurtosis
+  the book refers to Lattimore [2017].
+- **§16.4.** Classes with bounded kurtosis are "only understood up to constant factors" (citing Lattimore
+  [2017]); "plenty of open questions" remain for non-parametric classes.
+
 ## Techniques
 
 Minimax lower bound by change of measure between a base instance and instances where one arm is
@@ -65,6 +88,11 @@ decomposition Lemma 15.1, Jensen and $\sum_i\mathbb E_0[T_i(n)]=n$). Canonical m
 independent rewards, one stack per arm (§4.6). MOSS: UCB with a $\log^+(n/(kT_i))$ exploration bonus
 (§9.1).
 
+Change of measure on one arm (Lemma 15.1, Theorem 14.2) for Theorem 16.2.
+
 ## Where Incognita uses it
 
-`papers/P001-minimax-constant/`: thm:bounds, Main result (Context), Closest known, sec:app-exp (MOSS).
+- `papers/P001-minimax-constant/`: thm:bounds, Main result (Context), Closest known, sec:app-exp (MOSS).
+- `papers/P005-bounded-kurtosis/`: node `cite:LS-16.2` (the lower bound paired with the main theorem); the
+  maximal inequality (Theorem 3.9), used by name in the proof of the upper deviation.
+- `roadmaps/StochasticBandits/KNOWN.md`: K1, K43, K63.
