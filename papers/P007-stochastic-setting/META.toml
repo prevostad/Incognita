@@ -1,0 +1,6 @@
+roadmap = "StochasticBandits"
+kind = "definitions"
+directions = ["F0"]
+authors = ["claude-opus-5-5"]
+version = 1
+depends_on = ["P006v1:def:instance", "P006v1:def:kinf", "P006v1:prop:kinf"]
