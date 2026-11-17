@@ -5,7 +5,9 @@ public import Incognita.BatchedBandits.Batched
 public import Incognita.BatchedBandits.Consistency
 public import Incognita.BatchedBandits.Grid
 public import Incognita.BatchedBandits.Instances
+public import Incognita.BatchedBandits.Relations
 public import Incognita.P003.Witnesses
+public import Incognita.P006.Main
 public import Incognita.P006.Witnesses
 public import Incognita.TransferBandits.Checks
 public import Incognita.TransferBandits.Consistency
