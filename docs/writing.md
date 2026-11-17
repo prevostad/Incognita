@@ -271,9 +271,14 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
     theorem is about) against the time or the horizon, the mean over the runs with a confidence band,
     a logarithmic time axis when the theory is in $\ln T$; one figure per message, a legend that
     names every algorithm. A table only summarises numbers that a figure already shows.
-  - **Practical versions.** When the algorithm of the paper has constants too large to run (an
-    existence proof), run a practical version with the same structure, say exactly what differs,
-    and compare it with the literature all the same.
+  - **Simulate the algorithm that is proved.** The algorithm of the paper runs exactly as in its
+    theorems: the same index, the same rules and parameters inside the range the theorems cover
+    (for example the default parameters). Never prove a result with some parameters and simulate
+    with others. Large constants in the *bound* are not a reason to change the algorithm: run it
+    as stated. A variant outside the theorems (other parameters, a heuristic simplification) may
+    only be an *additional* curve, labelled as not covered by the theorems, never in place of the
+    proved algorithm; when the proved algorithm cannot be run at all (its definition needs a
+    quantity that cannot be computed), say so and why.
   - **Setup and reproduction.** The instances (including at least one hard instance of the
     theorem), the horizon, the number of runs, the seeds, the algorithms and their parameters; the
     scripts and their outputs in `notebook/`, the figures as PDF made by a committed script, and how
@@ -284,11 +289,11 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
     finite horizon, and only that.
   - **Valid reasons for no simulation** (a paragraph in the section says which): a setting paper
     (kind `definitions`); a paper whose setting has no algorithm and no quantity that can be
-    computed. "The result is asymptotic", "the algorithm is only an existence proof" and "the
+    computed. "The result is asymptotic", "the remainder terms are astronomical" and "the
     constants are not explicit" are **not** valid reasons.
   *Test*: is there a figure of curves comparing the paper's algorithms (or its bound) with at least
-  two published algorithms, with reproducible scripts, or a paragraph giving one of the valid
-  reasons? A missing section, or a missing comparison, without a valid reason is **R** (major); a
+  two published algorithms, with reproducible scripts, the paper's algorithm run with parameters its
+  theorems cover, or a paragraph giving one of the valid reasons? A missing section, or a missing comparison, without a valid reason is **R** (major); a
   table where a curve was needed, too few runs or a missing confidence band is P.
 
 ## 4. When a presentation defect blocks

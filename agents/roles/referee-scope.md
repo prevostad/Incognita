@@ -122,7 +122,9 @@ failure as a defect with its criterion (`W6: …` in the Defect column). **Insis
 owner, 2026-11-17): a paper without numerical experiments compared with at least two published
 algorithms, in figures of curves, is a major (R) defect unless it gives one of the valid reasons of
 W16; ask for the experiments you would want to see (instances, algorithms, horizons), and check
-that the scripts in `notebook/` produce the figures:
+that the scripts in `notebook/` produce the figures and run the paper's algorithm exactly as its
+theorems state it (parameters inside the range they cover; a variant only as an extra, labelled
+curve):
 
 - its class is **R** (readability) when it prevents an expert from understanding or checking what
   is proved, or hides or distorts what is claimed; **P** when an expert could fix it without anyone
