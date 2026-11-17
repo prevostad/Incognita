@@ -130,7 +130,8 @@ proofs) and win over them in case of conflict.
 **Writing a proof.**
 
 - Long **aligned chains** of $\le$ and $=$ on indicators of events written with $\cap$, **one
-  transformation per line**, the justification at the end of the line when it is not obvious.
+  transformation per line**, the justification at the end of **every** line that is not a pure
+  rewriting (rule B10).
 - Short linking sentences between the chains: "Let us look at $A$, we have", "Now using Lemma 7 we
   get", "Then we split according to this event", "Using Lemma 7 and that $\mu_1-\mu^\dagger\ge0$ we
   get", "Finally we have". Each step ends by saying what it obtained.
@@ -231,8 +232,9 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
   the hierarchy follows mathematical importance, not the granularity of the Lean. *Test*: does
   each such proof open with its idea and its plan?
 - **W11 (P) Local readability**: the rules B7–B12b below (a Setting/Goal block, one non-trivial
-  relation per sentence of running text, chains in `align` with the justification on the line, a
-  sentence of conclusion after each chain). *Test*: pick three proofs: do they follow them?
+  relation per sentence of running text, chains in `align` with a justification on every line that is not a pure rewriting (B10), a
+  sentence of conclusion after each chain). *Test*: pick three proofs: do they follow them? and
+  apply the ten-line test of B10.
 
 ### Honesty and cleanliness
 
@@ -365,9 +367,18 @@ mathematicians read proofs and on cognitive load.
   the middle of a computation; with `:=`, and a hyperlink anchor when it is used far away.
 - **B9. Every non-trivial relation is displayed**; never more than one non-trivial relation in the
   running text of a paragraph.
-- **B10. Chains of more than two relations go in `align`**, one step per line, with the
-  justification on the line itself, on the right:
+- **B10. Chains of more than two relations go in `align`**, one step per line, and **every line
+  that transforms the expression carries its justification on the line itself, on the right**
+  (owner, 2026-11-17, as in his paper P000): the result used, with its link; the hypothesis used;
+  or the named computation ("Pinsker", "union bound", "since $x \le e^{x-1}$", "by definition of
+  $\tau$"):
   `&\le \dots && \text{(Lemma~3, since } n \ge n_0\text{)}`.
+  Only a pure rewriting (the same expression rearranged, expanded or simplified by algebra a reader
+  does at a glance) may go without one. The justification says what is applied, not just a label:
+  "(Lemma~3)" is enough only when Lemma~3 applies with no further condition. *Test*: pick ten lines
+  of `align` at random in the appendix proofs and count those that transform the expression without
+  a justification. A few easy lines without one is P; a load-bearing step without one, or more than
+  a third of the lines tested, is R.
 - **B11. A sentence of purpose before each chain, a sentence of conclusion after it** ("Hence we
   have shown that …"). Each step ends by stating what it obtained.
 - **B12. Spacing and typography follow the structure of the formulas**: visual groupings agree with

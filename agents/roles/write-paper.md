@@ -92,7 +92,7 @@ closest published result; detail the hard step more than the easy ones.
   it to the note), the proofs (each appendix with its plan), the sources of the techniques, the
   notation beyond about 30 symbols. Every node labelled, exhaustive `\uses`, an "Idea." paragraph
   before every proof longer than half a page, no proof longer than about a page (split by meaning),
-  the micro rules B7–B12b of `docs/writing.md`. At most 100 pages; shorter is better.
+  the micro rules B7–B12b of `docs/writing.md` (B10: a justification on every line of an `align` that is not a pure rewriting). At most 100 pages; shorter is better.
 - `DOSSIER.md` (from the template): the roadmap correspondence, the closest known results with
   KNOWN ids and an honest attempt to derive your result from each, the sanity checks (degenerate
   cases, consistency with every `[Lean]` entry of KNOWN.md), your three weak points, your web
