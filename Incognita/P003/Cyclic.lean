@@ -6,6 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.TransferBandits.Checks
+public import Incognita.TransferBandits.SizeRules
 
 /-! # P003: the cyclic map is a size rule
 
@@ -14,47 +15,15 @@ total at most `3`.
 
 ## Main statements
 
-* `isSizeRule_of_eqOn_box`: a measurable size map such that `N'(ω) = n` implies `N'(ω') = n`
-  whenever `ω'` has the randomisation and the values of the box of `n` of `ω` is a size rule.
-* `isSizeRule_cyclicSize`, `sum_cyclicSize_le`.
+* `isSizeRule_cyclicSize`, `sum_cyclicSize_le`, from the criterion
+  `Incognita.TransferBandits.isSizeRule_of_eqOn_box`.
 -/
 
 @[expose] public section
 
 open MeasureTheory ProbabilityTheory Incognita.TransferBandits
 
-open scoped unitInterval
-
 namespace Incognita.P003
-
-/-- A measurable size map whose event `{N' = n}` only depends on the randomisation and on the box
-of `n` is a size rule: `{N' = n}` is its own preimage under the `𝒢_n`-measurable map that keeps
-the box of `n` and puts `0` outside it. -/
-lemma isSizeRule_of_eqOn_box {α : Type*} [Finite α] {N : SourceSpace α → α → ℕ}
-    (hN : Measurable N)
-    (h : ∀ (n : α → ℕ) (ω ω' : SourceSpace α), ω.1 = ω'.1 → (∀ a, ∀ j < n a, ω.2 a j = ω'.2 a j) →
-      N ω = n → N ω' = n) :
-    IsSizeRule N := by
-  refine ⟨hN, fun n ↦ ?_⟩
-  let ext : (ℕ → I) × ((a : α) → Fin (n a) → ℝ) → SourceSpace α :=
-    fun x ↦ (x.1, fun a j ↦ if h : j < n a then x.2 a ⟨j, h⟩ else 0)
-  have hext : Measurable ext := by
-    refine measurable_fst.prodMk (measurable_pi_iff.mpr fun a ↦ measurable_pi_iff.mpr fun j ↦ ?_)
-    by_cases h : j < n a
-    · simp only [h, ↓reduceDIte]
-      exact (measurable_pi_apply _).comp ((measurable_pi_apply a).comp measurable_snd)
-    · simp only [h, ↓reduceDIte]
-      exact measurable_const
-  have hhat : Measurable[boxSigma n] (ext ∘ boxRestrict n) :=
-    hext.comp (comap_measurable (boxRestrict n))
-  have hagree : ∀ ω : SourceSpace α, ∀ a, ∀ j < n a, ω.2 a j = (ext (boxRestrict n ω)).2 a j :=
-    fun ω a j hj ↦ by simp [ext, boxRestrict, hj]
-  have hE : {ω | N ω = n} = (ext ∘ boxRestrict n) ⁻¹' {ω | N ω = n} := by
-    ext ω
-    simp only [Set.mem_ofPred_eq, Set.mem_preimage, Function.comp_apply]
-    exact ⟨h n ω _ rfl (hagree ω), h n _ ω rfl fun a j hj ↦ (hagree ω a j hj).symm⟩
-  rw [hE]
-  exact hhat (hN (measurableSet_singleton n))
 
 variable {α : Type*} [Fintype α] [DecidableEq α]
 
