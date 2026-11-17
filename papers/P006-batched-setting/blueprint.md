@@ -37,6 +37,17 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | cite:GMS19-lem1 | cited | (added by prove) | data processing for `klDiv`; used only in the proof of prop:kinf(iii) |
 | cite:ACF02-thm1 | cited | (not formalised) | used only by cor:ucb |
 | lem:kl | lemma | (added by prove) | LMLExplore has `monotoneOn_klBer`, `tendsto_klBer_nhdsGT` |
+| flem:infomodel-mono | lemma (formalisation.tex) | Incognita.BatchedBandits.InfoModel.mono | thm:main (i), inclusions |
+| flem:grid-eq | lemma (formalisation.tex) | Incognita.BatchedBandits.Grid.eq_of_forall_one_le_t_eq | |
+| flem:infomodel-top | lemma (formalisation.tex) | Incognita.BatchedBandits.infoModel_top_iff | $\mathcal M_\infty$ = families of batched learners |
+| flem:components | lemma (formalisation.tex) | Incognita.BatchedBandits.isBatched_iff_exists_infoModel_top | thm:main (i), components; `Const_a` in place of `RR` |
+| flem:strict | lemma (formalisation.tex) | Incognita.BatchedBandits.exists_infoModel_and_not_infoModel | thm:main (i), strictness, via `Par^{(k)}` |
+| flem:last-end-finer | lemma (formalisation.tex) | Incognita.BatchedBandits.Grid.t_batchOf_sub_one_le_of_isFiner | |
+| flem:batched-finer | lemma (formalisation.tex) | Incognita.BatchedBandits.IsBatched.of_isFiner | thm:main (ii), batching |
+| flem:consistent-coarser | lemma (formalisation.tex) | Incognita.BatchedBandits.IsConsistentAtBatchEnds.of_isFiner | thm:main (ii), consistency |
+| flem:batched-seq | lemma (formalisation.tex) | Incognita.BatchedBandits.isBatched_sequential_iff | thm:main (iii), batching |
+| flem:seq-cons-of-ends | lemma (formalisation.tex) | Incognita.BatchedBandits.IsConsistentAtBatchEnds.isConsistent_of_sequential | thm:main (iii), consistency, (⇒); replaces the route through lem:consist-regret |
+| flem:ends-of-seq | lemma (formalisation.tex) | LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds | already in the library (`Incognita/BatchedBandits/Consistency.lean`); thm:main (iii), consistency, (⇐) |
 
 ### prop:witnesses, item by item
 

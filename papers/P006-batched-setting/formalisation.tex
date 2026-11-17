@@ -1,0 +1,211 @@
+% formalisation.tex: blueprint extension of an accepted paper (AGENTS.md, section 6.6, case c).
+% Not refereed: Lean checks every node. paper.tex is never edited.
+% Nodes of paper.tex are referred to by their labels: xr-hyper reads paper.aux, so compile
+% paper.tex first (CI does). New labels start with f (flem:, fprop:, fdef:) and are never reused.
+% Every node has \lean{...} with its Lean name and an exhaustive \uses{...}; never write \leanok.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+\externaldocument{paper}
+\counterwithout{theorem}{section}
+\renewcommand{\thetheorem}{F\arabic{theorem}}
+
+% Notation of the paper, written out.
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Mk}[1]{\mathcal M_{#1}}
+\newcommand{\Sq}{\mathsf S}
+
+\title{Formalisation notes for P006-batched-setting}
+\author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
+  are this file's; other numbers refer to the paper.}}
+\date{2026-11-17}
+
+\begin{document}
+\maketitle
+
+Rounds are numbered from $0$ as in the paper's paragraph ``Rounds numbered from zero'': the batch
+of a round $n\ge0$ in a grid $g=(t_\ell)_\ell$ is $b_g(n)=\min\{\ell\ge1:\ n<t_\ell\}$, and the
+policy at the round $n$ sees the rewards of the rounds $<r$ when it ``sees the rewards up to
+$r$''. The lemmas below are stated in Lean for any action and feedback types and any number $K$ in
+the definition of a grid; the hypotheses $K\ge2$ and $E\subseteq\mathcal P$ of
+Theorem~\ref{thm:main} are used only where said.
+
+\section{Extra lemmas}
+
+\begin{lemma}[information models are nested]\label{flem:infomodel-mono}
+\lean{Incognita.BatchedBandits.InfoModel.mono}
+\uses{def:infomodel}
+If $k\le k'$ in $\mathbb N\cup\{\infty\}$, then $\Mk{k}\subseteq\Mk{k'}$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:infomodel}
+Condition (a) does not depend on $k$. For (b): agreement of two grids on $t_j$ for
+$1\le j\le\ell+k'$ implies agreement for $1\le j\le\ell+k$, since $\ell+k\le\ell+k'$.
+\end{proof}
+
+\begin{lemma}[grids equal from their ends]\label{flem:grid-eq}
+\lean{Incognita.BatchedBandits.Grid.eq_of_forall_one_le_t_eq}
+\uses{def:grid}
+Two grids with $t_j=t'_j$ for every $j\ge1$ are equal.
+\end{lemma}
+
+\begin{proof}
+\uses{def:grid}
+Both have $t_0=t'_0=0$.
+\end{proof}
+
+\begin{lemma}[the model $\Mk{\infty}$]\label{flem:infomodel-top}
+\lean{Incognita.BatchedBandits.infoModel_top_iff}
+\uses{def:infomodel, def:batched, def:grid}
+A family $\Pi=(\pi^g)_g$ is in $\Mk{\infty}$ if and only if $\pi^g$ is batched on $g$ for every
+grid $g$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:infomodel, flem:grid-eq}
+The direct implication is (a). Conversely (b) holds for $k=\infty$: its hypothesis is $t_j=t'_j$
+for every $j\ge1$, so $g=g'$ by Lemma~\ref{flem:grid-eq}, and then $\pi^g_n=\pi^{g'}_n$.
+\end{proof}
+
+\begin{lemma}[components of $\Mk{\infty}$]\label{flem:components}
+\lean{Incognita.BatchedBandits.isBatched_iff_exists_infoModel_top}
+\uses{def:batched, def:infomodel, def:grid}
+Assume there is at least one action. A learner $\pi$ is batched on a grid $g$ if and only if
+$\pi=\pi^g$ for some $\Pi\in\Mk{\infty}$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:infomodel-top, def:exlearners, prop:witnesses}
+If $\Pi\in\Mk{\infty}$, $\pi^g$ is batched on $g$ by (a). Conversely, fix an action $a$ and let
+$\pi^g:=\pi$ and $\pi^{g'}:=\mathrm{Const}_a$ for $g'\ne g$; $\mathrm{Const}_a$ is batched on every
+grid (Proposition~\ref{prop:witnesses}(c), Lean \texttt{isBatched\_const}), so
+$\Pi\in\Mk{\infty}$ by Lemma~\ref{flem:infomodel-top}. The paper uses $\mathrm{RR}$ in place of
+$\mathrm{Const}_a$; any learner batched on every grid does, and $\mathrm{RR}$ is not defined in
+Lean.
+\end{proof}
+
+\begin{lemma}[strictness]\label{flem:strict}
+\lean{Incognita.BatchedBandits.exists_infoModel_and_not_infoModel}
+\uses{def:infomodel}
+If there are two distinct actions and $k<k'$, some family is in $\Mk{k'}$ and not in $\Mk{k}$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:infomodel-mono, def:exlearners, prop:witnesses}
+$k$ is finite and $k+1\le k'$. The parity learner $\mathrm{Par}^{(k)}$ is in $\Mk{k+1}$ and not
+in $\Mk{k}$ (Proposition~\ref{prop:witnesses}(d), Lean \texttt{infoModel\_parityAlg} and
+\texttt{not\_infoModel\_parityAlg}); $\Mk{k+1}\subseteq\Mk{k'}$ by
+Lemma~\ref{flem:infomodel-mono}.
+\end{proof}
+
+\begin{lemma}[last end before a round, finer grid]\label{flem:last-end-finer}
+\lean{Incognita.BatchedBandits.Grid.t_batchOf_sub_one_le_of_isFiner}
+\uses{def:grid}
+If $g$ is finer than $g'$, then for every round $n$,
+$t'_{b_{g'}(n)-1}\le t_{b_g(n)-1}$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:grid}
+$t'_{b_{g'}(n)-1}=t_m$ for some $m$, since $g$ is finer. By Lemma~\ref{lem:grid}(ii),
+$t_m=t'_{b_{g'}(n)-1}\le n<t_{b_g(n)}$, so $m<b_g(n)$, $m\le b_g(n)-1$, and
+$t_m\le t_{b_g(n)-1}$ since $t$ is increasing.
+\end{proof}
+
+\begin{lemma}[refining preserves batching]\label{flem:batched-finer}
+\lean{Incognita.BatchedBandits.IsBatched.of_isFiner}
+\uses{def:batched, def:grid}
+If $g$ is finer than $g'$, every learner batched on $g'$ is batched on $g$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:last-end-finer}
+At each round $n$ the policy sees the rewards up to $t'_{b_{g'}(n)-1}$, hence up to the larger
+$t_{b_g(n)-1}$ (Lemma~\ref{flem:last-end-finer}): seeing the rewards up to $r$ implies seeing
+them up to every $r'\ge r$ (Lean \texttt{SeesRewardsUpTo.mono}).
+\end{proof}
+
+\begin{lemma}[coarsening preserves consistency at the batch ends]\label{flem:consistent-coarser}
+\lean{Incognita.BatchedBandits.IsConsistentAtBatchEnds.of_isFiner}
+\uses{def:consistent, def:grid}
+If $g$ is finer than $g'$, every learner consistent at the batch ends of $g$ on a class $E$ is
+consistent at the batch ends of $g'$ on $E$. ($E\subseteq\mathcal P$ is not needed.)
+\end{lemma}
+
+\begin{proof}
+\uses{def:consistent, def:grid}
+Choose $\varphi(\ell)$ with $t_{\varphi(\ell)}=t'_\ell$ for every $\ell\ge0$. Since $t$ and $t'$
+are strictly increasing, so is $\varphi$, hence $\varphi(\ell)\to\infty$, and the sequence of
+Definition~\ref{def:consistent} for $g'$ is the one for $g$ composed with $\varphi$.
+\end{proof}
+
+\begin{lemma}[batching on the sequential grid]\label{flem:batched-seq}
+\lean{Incognita.BatchedBandits.isBatched_sequential_iff}
+\uses{def:batched, def:exgrids}
+A learner is batched on $\Sq_s$ if and only if its policies ignore the rewards at the rounds
+$n<s$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:grid, def:exgrids}
+For $n<s=t_1$, $b(n)=1$ and $t_0=0$. For $n\ge s$, $b(n)=n-s+2$ and $t_{n-s+1}=n$; every policy at
+the round $n$ sees the rewards of its whole history, the rounds $<n$ (Lean
+\texttt{seesRewardsUpTo\_self}).
+\end{proof}
+
+\begin{lemma}[from the ends of $\Sq_s$ to sequential consistency]\label{flem:seq-cons-of-ends}
+\lean{Incognita.BatchedBandits.IsConsistentAtBatchEnds.isConsistent_of_sequential}
+\uses{def:consistent, def:seqcons, def:exgrids}
+For finitely many arms, a learner consistent at the batch ends of $\Sq_s$ on $E$ is sequentially
+consistent on $E$. ($E\subseteq\mathcal P$ is not needed.)
+\end{lemma}
+
+\begin{proof}
+\uses{lem:counts, def:exgrids}
+Fix $\nu\in E$ and $\alpha>0$. By Lemma~\ref{lem:counts}(ii) (LML's
+\texttt{integral\_regret\_eq\_sum\_gap\_mul\_integral\_pullCount}),
+$\mathcal R(T)/T^\alpha=\sum_c\Delta_c\,\E[N_c(T)]/T^\alpha$, a finite sum. A term with
+$\Delta_c=0$ vanishes. For $\Delta_c>0$: for $T\ge s$, $T=t_{T-s+1}$ on $\Sq_s$, and
+$T\mapsto T-s+1$ tends to infinity, so $\E[N_c(T)]/T^\alpha\to0$ by consistency at the batch ends.
+\end{proof}
+
+\begin{lemma}[from sequential consistency to the batch ends]\label{flem:ends-of-seq}
+\lean{LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds}
+\uses{def:consistent, def:seqcons, def:grid}
+For finitely many arms, a sequentially consistent learner on $E$ is consistent at the batch ends of
+every grid on $E$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:counts}
+For a suboptimal $c$, $0\le\Delta_c\,\E[N_c(t_\ell)]\le\mathcal R(t_\ell)$
+(Lemma~\ref{lem:counts}(ii)), and $\mathcal R(t_\ell)/t_\ell^\alpha\to0$ along the subsequence
+$t_\ell\to\infty$.
+\end{proof}
+
+\section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{flem:infomodel-mono, flem:strict, flem:components, flem:batched-finer, flem:consistent-coarser, flem:batched-seq, flem:seq-cons-of-ends, flem:ends-of-seq}
+Each of the seven frozen statements of Theorem~\ref{thm:main} (\texttt{Incognita.P006.<name>}) is
+the specialisation of one lemma to the arms $\alpha$ with $K=|\alpha|$:
+(i) inclusions, Lemma~\ref{flem:infomodel-mono}; strictness, Lemma~\ref{flem:strict} with two
+distinct arms (from $K\ge2$); components, Lemma~\ref{flem:components} with one arm (from $K\ge2$);
+(ii) batching, Lemma~\ref{flem:batched-finer}; consistency, Lemma~\ref{flem:consistent-coarser};
+(iii) batching, Lemma~\ref{flem:batched-seq}; consistency, Lemmas~\ref{flem:seq-cons-of-ends}
+and~\ref{flem:ends-of-seq}. The paper's route for (iii) through Lemma~\ref{lem:consist-regret} is
+replaced by these two lemmas, which compare counts and regret directly; Lemma~\ref{lem:consist-regret}
+is not formalised. The hypothesis $E\subseteq\mathcal P$ is not used, and $K\ge2$ only where said.
+\end{proof}
+
+\end{document}
