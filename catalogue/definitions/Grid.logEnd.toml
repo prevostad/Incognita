@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.logEnd"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:logratio"
+meaning = "L_l = log t_l (natural logarithm)."
+conventions = "Used for l >= 1; at l = 0 it is the junk value log 0 = 0."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.log_two_le_logEnd"]
+known_cases = ["Incognita.BatchedBandits.Grid.logEnd_doublyExp"]
+exclusion = ["Incognita.BatchedBandits.Grid.logEnd_pos"]
+non_vacuity = []

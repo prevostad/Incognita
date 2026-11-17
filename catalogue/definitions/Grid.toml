@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:grid"
+meaning = "An imposed grid for K arms: batch ends 0 = t 0 < t 1 < t 2 < ..., strictly increasing, with max 2 K <= t 1."
+conventions = "Rounds numbered from 0: batch l >= 1 is the set of rounds t (l-1), ..., t l - 1; the number of arms K is a parameter of the structure because K <= t 1 is part of a grid."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.sequential", "Incognita.BatchedBandits.Grid.geometric", "Incognita.BatchedBandits.Grid.doublyExp"]
+known_cases = ["Incognita.BatchedBandits.Grid.sequential_batchOf", "Incognita.BatchedBandits.Grid.sequential_batchOf_of_lt"]
+exclusion = ["Incognita.BatchedBandits.Grid.not_exists_t_eq_id"]
+non_vacuity = ["Incognita.P006.isBatched_of_isFiner_satisfiable", "Incognita.P006.isBatched_sequential_iff_satisfiable"]

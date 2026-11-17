@@ -1,0 +1,6 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P006.kinf_eq_zero_of_lt_mean
+sha256 fbb37da7702cc9aa3ab8bdd78cb8da29a34fc9a1e9eb7602db3175b37c238f0a
+constant def Incognita.BatchedBandits.unitLaws
+constant theorem Incognita.Statements.P006.kinf_eq_zero_of_lt_mean

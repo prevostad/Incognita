@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.unitLaws"
+module = "Incognita.BatchedBandits.Instances"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:instance"
+meaning = "The set of probability measures Q on the real line with Q([0, 1]) = 1, written as almost every x in [0, 1]."
+conventions = "The mean of Q is the Bochner integral Q[id]; K_inf(P, mu) is LMLExplore.Bandits.dInf unitLaws P mu."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.dirac_mem_unitLaws"]
+known_cases = ["Incognita.BatchedBandits.bernoulliMeasure_mem_unitLaws"]
+exclusion = ["Incognita.BatchedBandits.dirac_two_not_mem_unitLaws"]
+non_vacuity = ["Incognita.P006.kinf_eq_top_of_one_le_satisfiable", "Incognita.P006.kinf_eq_zero_of_lt_mean_satisfiable", "Incognita.P006.kinf_bounds_satisfiable"]

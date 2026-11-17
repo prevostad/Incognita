@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.sequential"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exgrids"
+meaning = "The sequential grid S_s: t l = s + l - 1 for l >= 1; its batches after the first have size one."
+conventions = "Requires max 2 K <= s."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.P006.isBatched_sequential_iff_satisfiable"]
+known_cases = ["Incognita.BatchedBandits.Grid.sequential_batchOf", "Incognita.BatchedBandits.Grid.sequential_isFiner", "Incognita.BatchedBandits.Grid.tendsto_ratio_sequential"]
+exclusion = ["Incognita.BatchedBandits.Grid.not_sequential_succ_isFiner"]
+non_vacuity = ["Incognita.P006.isBatched_sequential_iff_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_sequential_iff_satisfiable"]

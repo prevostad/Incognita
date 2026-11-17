@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.reactAlg"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exlearners"
+meaning = "The deterministic learner React, which reacts at round 1 to the reward of round 0."
+conventions = "Rounds numbered from 0."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = []
+known_cases = []
+exclusion = ["Incognita.BatchedBandits.not_isBatched_reactAlg"]
+non_vacuity = []

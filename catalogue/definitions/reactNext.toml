@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.reactNext"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exlearners"
+meaning = "The action of the learner React at round n: c2 at round 1 if the reward of round 0 is below 1/2, c1 otherwise."
+conventions = "Rounds numbered from 0 (the paper's rounds 2 and 1)."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.measurable_reactNext"]
+known_cases = []
+exclusion = []
+non_vacuity = []

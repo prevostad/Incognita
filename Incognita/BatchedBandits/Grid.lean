@@ -1,0 +1,345 @@
+/-
+Copyright (c) 2026 Incognita contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Incognita contributors
+-/
+module
+
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+
+/-! # Imposed grids of batches
+
+An imposed grid for `K` arms is a strictly increasing sequence of batch ends
+`0 = t 0 < t 1 < t 2 < ⋯` with `max 2 K ≤ t 1` [INC-P006, Definition `def:grid`].
+
+**Rounds are numbered from `0`**, as in LML: the round `t ≥ 1` of the paper is the round `t - 1`
+here. Batch `ℓ ≥ 1` is the set of rounds `t (ℓ - 1), …, t ℓ - 1`, the batch of a round `n` is
+`min {ℓ ≥ 1 | n < t ℓ}` (`Grid.batchOf`), and the rewards available during batch `ℓ + 1` are those
+of the rounds `< t ℓ`. A quantity evaluated at a batch end `t ℓ` (a count `pullCount A a (t ℓ)`,
+the regret) is the same in both numberings.
+
+## Main definitions
+
+* `Incognita.BatchedBandits.Grid K`: a grid for `K` arms.
+* `Incognita.BatchedBandits.Grid.batchOf g n`: the batch of the round `n`.
+* `Incognita.BatchedBandits.Grid.logEnd g ℓ`: `L_ℓ = log t_ℓ`.
+* `Incognita.BatchedBandits.Grid.ratio g ℓ`: `x_ℓ = L_ℓ / L_{ℓ-1}` for `ℓ ≥ 2`, and `x_1 = 1`.
+* `Incognita.BatchedBandits.Grid.IsFiner g g'`: every batch end of `g'` is a batch end of `g`.
+* `Incognita.BatchedBandits.Grid.sequential`, `Grid.geometric`, `Grid.doublyExp`: the grids
+  `t ℓ = s + ℓ - 1`, `t ℓ = s 2 ^ (ℓ - 1)` and `t ℓ = s ^ 2 ^ (ℓ - 1)` (for `ℓ ≥ 1`)
+  [INC-P006, Definition `def:exgrids`].
+
+## Main statements
+
+* `Grid.batchOf_eq_iff`: `batchOf n = ℓ + 1` if and only if `t ℓ ≤ n < t (ℓ + 1)`.
+* `Grid.sequential_batchOf`: on the sequential grid every round `n ≥ s` is a batch on its own.
+* `Grid.not_exists_t_eq_id`: the sequence `t ℓ = ℓ` is not a grid.
+* `Grid.ratio_doublyExp`: the ratios of the doubly exponential grid are all `2`;
+  `Grid.tendsto_ratio_sequential`, `Grid.tendsto_ratio_geometric`: those of the sequential and
+  geometric grids tend to `1`.
+-/
+
+@[expose] public section
+
+open Real
+
+namespace Incognita.BatchedBandits
+
+/-- An **imposed grid** for `K` arms [INC-P006, Definition `def:grid`]: batch ends
+`0 = t 0 < t 1 < t 2 < ⋯`, strictly increasing, with `max 2 K ≤ t 1`. In 0-based rounds, batch
+`ℓ ≥ 1` is the set of rounds `t (ℓ - 1), …, t ℓ - 1`, of size `t ℓ - t (ℓ - 1) ≥ 1`; `t ℓ` is its
+end. The number of arms is a parameter because the condition `K ≤ t 1` is part of a grid. -/
+@[ext]
+structure Grid (K : ℕ) where
+  /-- The batch ends: `t 0 = 0`, and `t ℓ` is the end of batch `ℓ ≥ 1`. -/
+  t : ℕ → ℕ
+  /-- The sequence of ends starts at `0`. -/
+  t_zero : t 0 = 0
+  /-- The ends are strictly increasing. -/
+  strictMono : StrictMono t
+  /-- The first batch has at least `max 2 K` rounds. -/
+  le_t_one : max 2 K ≤ t 1
+
+namespace Grid
+
+variable {K : ℕ} (g : Grid K)
+
+lemma le_t (ℓ : ℕ) : ℓ ≤ g.t ℓ := g.strictMono.id_le ℓ
+
+lemma two_le_t_one : 2 ≤ g.t 1 := (le_max_left 2 K).trans g.le_t_one
+
+lemma card_le_t_one : K ≤ g.t 1 := (le_max_right 2 K).trans g.le_t_one
+
+lemma two_le_t {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : 2 ≤ g.t ℓ :=
+  g.two_le_t_one.trans (g.strictMono.monotone hℓ)
+
+lemma exists_lt_t (n : ℕ) : ∃ ℓ, 1 ≤ ℓ ∧ n < g.t ℓ :=
+  ⟨n + 1, by omega, Nat.lt_of_lt_of_le (Nat.lt_succ_self n) (g.le_t (n + 1))⟩
+
+/-- The **batch of a round** `n` (rounds from `0`): `min {ℓ ≥ 1 | n < t ℓ}`, the paper's `b(n + 1)`
+[INC-P006, Definition `def:grid` and paragraph "Rounds numbered from zero"]. -/
+noncomputable def batchOf (n : ℕ) : ℕ := Nat.find (g.exists_lt_t n)
+
+lemma one_le_batchOf (n : ℕ) : 1 ≤ g.batchOf n := (Nat.find_spec (g.exists_lt_t n)).1
+
+lemma lt_t_batchOf (n : ℕ) : n < g.t (g.batchOf n) := (Nat.find_spec (g.exists_lt_t n)).2
+
+lemma t_batchOf_sub_one_le (n : ℕ) : g.t (g.batchOf n - 1) ≤ n := by
+  rcases Nat.lt_or_ge (g.batchOf n - 1) 1 with h | h
+  · rw [show g.batchOf n - 1 = 0 by omega, g.t_zero]
+    exact Nat.zero_le n
+  · have hlt : g.batchOf n - 1 < g.batchOf n := by have := g.one_le_batchOf n; omega
+    have := Nat.find_min (g.exists_lt_t n) hlt
+    rw [not_and, not_lt] at this
+    exact this h
+
+/-- The round `n` is in batch `ℓ + 1` if and only if `t ℓ ≤ n < t (ℓ + 1)`. -/
+lemma batchOf_eq_iff {n ℓ : ℕ} : g.batchOf n = ℓ + 1 ↔ g.t ℓ ≤ n ∧ n < g.t (ℓ + 1) := by
+  constructor
+  · intro h
+    have h1 := g.t_batchOf_sub_one_le n
+    have h2 := g.lt_t_batchOf n
+    rw [h] at h1 h2
+    exact ⟨by simpa using h1, h2⟩
+  · rintro ⟨h1, h2⟩
+    rw [batchOf, Nat.find_eq_iff]
+    refine ⟨⟨by omega, h2⟩, fun m hm ⟨_, hm2⟩ ↦ ?_⟩
+    have := g.strictMono.monotone (show m ≤ ℓ by omega)
+    omega
+
+/-- `L_ℓ = log t_ℓ` [INC-P006, Definition `def:logratio`]. The paper uses it for `ℓ ≥ 1` only; at
+`ℓ = 0` it takes the junk value `log 0 = 0`. -/
+noncomputable def logEnd (ℓ : ℕ) : ℝ := Real.log (g.t ℓ)
+
+/-- The **growth ratio** `x_ℓ = L_ℓ / L_{ℓ-1}` for `ℓ ≥ 2`, and `x_1 = 1`
+[INC-P006, Definition `def:logratio`]; at `ℓ = 0`, which the paper does not use, it is `1`. -/
+noncomputable def ratio (ℓ : ℕ) : ℝ := if ℓ ≤ 1 then 1 else g.logEnd ℓ / g.logEnd (ℓ - 1)
+
+/-- A grid `g` is **finer** than a grid `g'` if every batch end of `g'` is a batch end of `g`
+[INC-P006, Definition `def:grid`]. (Both have `t 0 = 0`, so the index `0` changes nothing.) -/
+def IsFiner (g g' : Grid K) : Prop := Set.range g'.t ⊆ Set.range g.t
+
+lemma ratio_one : g.ratio 1 = 1 := by simp [ratio]
+
+lemma log_two_le_logEnd {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : Real.log 2 ≤ g.logEnd ℓ := by
+  unfold logEnd
+  gcongr
+  exact_mod_cast g.two_le_t hℓ
+
+lemma logEnd_pos {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : 0 < g.logEnd ℓ :=
+  (Real.log_pos one_lt_two).trans_le (g.log_two_le_logEnd hℓ)
+
+/-- The ratios after the first are larger than `1`. -/
+lemma one_lt_ratio {ℓ : ℕ} (hℓ : 2 ≤ ℓ) : 1 < g.ratio ℓ := by
+  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), one_lt_div (g.logEnd_pos (by omega))]
+  unfold logEnd
+  gcongr
+  · exact_mod_cast (show 0 < g.t (ℓ - 1) by have := g.two_le_t (ℓ := ℓ - 1) (by omega); omega)
+  · exact_mod_cast g.strictMono (show ℓ - 1 < ℓ by omega)
+
+/-- No grid is the sequence `t ℓ = ℓ`: its first batch has one round [INC-P006,
+Proposition `prop:witnesses`(b)]. -/
+lemma not_exists_t_eq_id : ¬ ∃ g : Grid K, g.t = id := by
+  rintro ⟨g, hg⟩
+  have := g.two_le_t_one
+  rw [hg] at this
+  simp at this
+
+/-! ### Example grids -/
+
+variable {s : ℕ}
+
+/-- The **sequential grid** `𝖲_s`: `t ℓ = s + ℓ - 1` for `ℓ ≥ 1`; its batches after the first have
+size one [INC-P006, Definition `def:exgrids`]. -/
+def sequential (s : ℕ) (hs : max 2 K ≤ s) : Grid K where
+  t ℓ := if ℓ = 0 then 0 else s + ℓ - 1
+  t_zero := rfl
+  strictMono := strictMono_nat_of_lt_succ fun ℓ ↦ by
+    have : 2 ≤ s := (le_max_left 2 K).trans hs
+    change (if ℓ = 0 then 0 else s + ℓ - 1) < (if ℓ + 1 = 0 then 0 else s + (ℓ + 1) - 1)
+    split_ifs <;> first | contradiction | omega
+  le_t_one := by simpa using hs
+
+/-- The **geometric grid** `𝖦_s`: `t ℓ = s 2 ^ (ℓ - 1)` for `ℓ ≥ 1` [INC-P006,
+Definition `def:exgrids`]. -/
+def geometric (s : ℕ) (hs : max 2 K ≤ s) : Grid K where
+  t ℓ := if ℓ = 0 then 0 else s * 2 ^ (ℓ - 1)
+  t_zero := rfl
+  strictMono := strictMono_nat_of_lt_succ fun ℓ ↦ by
+    have : 2 ≤ s := (le_max_left 2 K).trans hs
+    rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+    · simp; omega
+    · change (if ℓ = 0 then 0 else s * 2 ^ (ℓ - 1)) < (if ℓ + 1 = 0 then 0 else s * 2 ^ (ℓ + 1 - 1))
+      rw [ite_eq_right (show ℓ ≠ 0 by omega), ite_eq_right (show ℓ + 1 ≠ 0 by omega),
+        show ℓ + 1 - 1 = (ℓ - 1) + 1 by omega, pow_succ,
+        show s * (2 ^ (ℓ - 1) * 2) = 2 * (s * 2 ^ (ℓ - 1)) by ring]
+      have : 0 < s * 2 ^ (ℓ - 1) := by positivity
+      omega
+  le_t_one := by simpa using hs
+
+/-- The **doubly exponential grid** `𝖣_s`: `t ℓ = s ^ 2 ^ (ℓ - 1)` for `ℓ ≥ 1` [INC-P006,
+Definition `def:exgrids`]. -/
+def doublyExp (s : ℕ) (hs : max 2 K ≤ s) : Grid K where
+  t ℓ := if ℓ = 0 then 0 else s ^ 2 ^ (ℓ - 1)
+  t_zero := rfl
+  strictMono := strictMono_nat_of_lt_succ fun ℓ ↦ by
+    have : 2 ≤ s := (le_max_left 2 K).trans hs
+    rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+    · simp; omega
+    · change (if ℓ = 0 then 0 else s ^ 2 ^ (ℓ - 1)) < (if ℓ + 1 = 0 then 0 else s ^ 2 ^ (ℓ + 1 - 1))
+      rw [ite_eq_right (show ℓ ≠ 0 by omega), ite_eq_right (show ℓ + 1 ≠ 0 by omega)]
+      exact Nat.pow_lt_pow_right (by omega) (Nat.pow_lt_pow_right (by norm_num) (by omega))
+  le_t_one := by simpa using hs
+
+lemma sequential_t {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
+    (sequential s hs).t ℓ = s + ℓ - 1 := by
+  simp [sequential, show ℓ ≠ 0 by omega]
+
+lemma doublyExp_t {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
+    (doublyExp s hs).t ℓ = s ^ 2 ^ (ℓ - 1) := by
+  simp [doublyExp, show ℓ ≠ 0 by omega]
+
+/-- On the sequential grid `𝖲_s`, every round `n ≥ s` is a batch on its own, the batch
+`n - s + 2`: the batched constraint is the sequential one after the first batch. -/
+lemma sequential_batchOf {hs : max 2 K ≤ s} {n : ℕ} (hn : s ≤ n) :
+    (sequential s hs).batchOf n = n - s + 2 := by
+  rw [show n - s + 2 = (n - s + 1) + 1 by omega, batchOf_eq_iff, sequential_t (by omega),
+    sequential_t (by omega)]
+  omega
+
+/-- On the sequential grid `𝖲_s`, the first batch is the set of rounds `0, …, s - 1`. -/
+lemma sequential_batchOf_of_lt {hs : max 2 K ≤ s} {n : ℕ} (hn : n < s) :
+    (sequential s hs).batchOf n = 1 := by
+  rw [show (1 : ℕ) = 0 + 1 from rfl, batchOf_eq_iff, (sequential s hs).t_zero,
+    sequential_t le_rfl]
+  omega
+
+lemma geometric_t {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
+    (geometric s hs).t ℓ = s * 2 ^ (ℓ - 1) := by
+  simp [geometric, show ℓ ≠ 0 by omega]
+
+/-- **Known case**: on the doubly exponential grid `𝖣_s`, `L_ℓ = 2 ^ (ℓ - 1) log s`. -/
+lemma logEnd_doublyExp {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
+    (doublyExp s hs).logEnd ℓ = 2 ^ (ℓ - 1) * Real.log s := by
+  rw [logEnd, doublyExp_t hℓ, Nat.cast_pow, Real.log_pow]
+  push_cast
+  ring
+
+/-- **Known case**: on the geometric grid `𝖦_s`, for `ℓ ≥ 2`,
+`x_ℓ = (log s + (ℓ - 1) log 2) / (log s + (ℓ - 2) log 2)` [INC-P006, proof of
+Proposition `prop:witnesses`(b)]. -/
+lemma ratio_geometric {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
+    (geometric s hs).ratio ℓ = (Real.log s + ((ℓ - 1 : ℕ) : ℝ) * Real.log 2) /
+      (Real.log s + ((ℓ - 2 : ℕ) : ℝ) * Real.log 2) := by
+  have hs0 : (s : ℝ) ≠ 0 := by
+    have : 2 ≤ s := (le_max_left 2 K).trans hs
+    exact_mod_cast (show s ≠ 0 by omega)
+  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), logEnd, logEnd, geometric_t (by omega),
+    geometric_t (by omega), Nat.cast_mul, Nat.cast_mul, Nat.cast_pow, Nat.cast_pow,
+    Real.log_mul hs0 (by positivity), Real.log_mul hs0 (by positivity), Real.log_pow,
+    Real.log_pow, show ℓ - 1 - 1 = ℓ - 2 by omega]
+  push_cast
+  ring
+
+/-- **Known case** [INC-P006, Proposition `prop:witnesses`(b)]: on the geometric grid `𝖦_s`,
+`x_ℓ → 1`. -/
+lemma tendsto_ratio_geometric (hs : max 2 K ≤ s) :
+    Filter.Tendsto (geometric s hs).ratio Filter.atTop (nhds 1) := by
+  have h2 : 2 ≤ s := (le_max_left 2 K).trans hs
+  have hlog2 : 0 < Real.log 2 := Real.log_pos one_lt_two
+  have hlogs : 0 < Real.log s := Real.log_pos (by exact_mod_cast (show 1 < s by omega))
+  have hden : Filter.Tendsto (fun ℓ : ℕ ↦ Real.log s + ((ℓ - 2 : ℕ) : ℝ) * Real.log 2)
+      Filter.atTop Filter.atTop :=
+    Filter.tendsto_atTop_add_const_left _ _ (Filter.Tendsto.atTop_mul_const hlog2
+      (tendsto_natCast_atTop_atTop.comp (Filter.tendsto_sub_atTop_nat 2)))
+  have h1 := ((tendsto_const_nhds (x := Real.log 2)).div_atTop hden).const_add 1
+  rw [add_zero] at h1
+  refine h1.congr' ?_
+  filter_upwards [Filter.eventually_ge_atTop 2] with ℓ hℓ
+  rw [ratio_geometric hℓ]
+  have hpos : 0 < Real.log s + ((ℓ - 2 : ℕ) : ℝ) * Real.log 2 := by positivity
+  have hcast : ((ℓ - 1 : ℕ) : ℝ) = ((ℓ - 2 : ℕ) : ℝ) + 1 := by
+    rw [show ℓ - 1 = (ℓ - 2) + 1 by omega]
+    push_cast
+    ring
+  rw [hcast]
+  field_simp
+  ring
+
+/-- **Known case** [INC-P006, Proposition `prop:witnesses`(b)]: on the sequential grid `𝖲_s`,
+`x_ℓ → 1`. -/
+lemma tendsto_ratio_sequential (hs : max 2 K ≤ s) :
+    Filter.Tendsto (sequential s hs).ratio Filter.atTop (nhds 1) := by
+  have h2 : 2 ≤ s := (le_max_left 2 K).trans hs
+  set x : ℕ → ℝ := fun ℓ ↦ ((s + ℓ - 2 : ℕ) : ℝ) with hx
+  have hxtop : Filter.Tendsto x Filter.atTop Filter.atTop :=
+    Filter.tendsto_atTop_mono
+      (fun ℓ ↦ by simp only [hx]; exact_mod_cast (show ℓ ≤ s + ℓ - 2 by omega))
+      tendsto_natCast_atTop_atTop
+  have hnum := (Real.tendsto_log_comp_add_sub_log 1).comp hxtop
+  have hden := Real.tendsto_log_atTop.comp hxtop
+  have h1 := (hnum.div_atTop hden).const_add 1
+  rw [add_zero] at h1
+  refine h1.congr' ?_
+  filter_upwards [Filter.eventually_ge_atTop 2] with ℓ hℓ
+  have hx2 : (2 : ℝ) ≤ x ℓ := by
+    simp only [hx]
+    exact_mod_cast (show 2 ≤ s + ℓ - 2 by omega)
+  have hlogpos : 0 < Real.log (x ℓ) := Real.log_pos (by linarith)
+  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), logEnd, logEnd, sequential_t (by omega),
+    sequential_t (by omega), show s + (ℓ - 1) - 1 = s + ℓ - 2 by omega,
+    show s + ℓ - 1 = (s + ℓ - 2) + 1 by omega]
+  simp only [Function.comp_apply, hx, Nat.cast_add, Nat.cast_one] at hlogpos ⊢
+  have hne : Real.log ((s + ℓ - 2 : ℕ) : ℝ) ≠ 0 := hlogpos.ne'
+  field_simp
+  ring
+
+/-- Every grid is finer than itself. -/
+lemma isFiner_refl (g : Grid K) : g.IsFiner g := subset_rfl
+
+/-- **Witness and known case**: the sequential grid `𝖲_s`, whose ends are `0` and every
+`n ≥ s`, is finer than every grid whose first end is at least `s`; observing after every round
+(the sequential setting) is the finest way to observe. -/
+lemma sequential_isFiner {hs : max 2 K ≤ s} {g' : Grid K} (h : s ≤ g'.t 1) :
+    (sequential s hs).IsFiner g' := by
+  rintro _ ⟨ℓ, rfl⟩
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+  · exact ⟨0, by rw [(sequential s hs).t_zero, g'.t_zero]⟩
+  · have := g'.strictMono.monotone (show 1 ≤ ℓ by omega)
+    refine ⟨g'.t ℓ - s + 1, ?_⟩
+    rw [sequential_t (by omega)]
+    omega
+
+/-- **Exclusion**: `𝖲_{s+1}` is not finer than `𝖲_s`, whose end `s` is not an end of `𝖲_{s+1}`. -/
+lemma not_sequential_succ_isFiner {hs : max 2 K ≤ s} {hs' : max 2 K ≤ s + 1} :
+    ¬ (sequential (s + 1) hs').IsFiner (sequential s hs) := by
+  intro h
+  have h2 : 2 ≤ s := (le_max_left 2 K).trans hs
+  obtain ⟨j, hj⟩ := h ⟨1, rfl⟩
+  rw [sequential_t (hs := hs) le_rfl] at hj
+  rcases Nat.eq_zero_or_pos j with rfl | hj0
+  · rw [(sequential (s + 1) hs').t_zero] at hj
+    omega
+  · rw [sequential_t hj0] at hj
+    omega
+
+/-- The ratios of the doubly exponential grid `𝖣_s` are `x_ℓ = 2` for `ℓ ≥ 2` [INC-P006,
+Proposition `prop:witnesses`(b)]. -/
+lemma ratio_doublyExp {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
+    (doublyExp s hs).ratio ℓ = 2 := by
+  have hs1 : (1 : ℝ) < s := by
+    have : 2 ≤ s := (le_max_left 2 K).trans hs
+    exact_mod_cast (show 1 < s by omega)
+  have hlog : 0 < Real.log s := Real.log_pos hs1
+  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), logEnd, logEnd, doublyExp_t (by omega),
+    doublyExp_t (by omega),
+    Nat.cast_pow, Nat.cast_pow, Real.log_pow, Real.log_pow,
+    show ℓ - 1 = (ℓ - 1 - 1) + 1 by omega, pow_succ]
+  field_simp
+  push_cast
+  ring
+
+end Grid
+
+end Incognita.BatchedBandits

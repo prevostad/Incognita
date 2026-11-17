@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.geometric"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exgrids"
+meaning = "The geometric grid G_s: t l = s 2^(l-1) for l >= 1."
+conventions = "Requires max 2 K <= s."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.geometric_t"]
+known_cases = ["Incognita.BatchedBandits.Grid.ratio_geometric", "Incognita.BatchedBandits.Grid.tendsto_ratio_geometric"]
+exclusion = []
+non_vacuity = []

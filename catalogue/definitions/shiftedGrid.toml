@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.shiftedGrid"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "prop:witnesses"
+meaning = "The grid with t j = s + j - 1 for 1 <= j <= k and t j = s + j for j > k: it agrees with S_s up to t k and differs at t (k + 1)."
+conventions = "Auxiliary grid of the proof that Par^(k) is not in M_k."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.not_infoModel_parityAlg"]
+known_cases = []
+exclusion = []
+non_vacuity = []

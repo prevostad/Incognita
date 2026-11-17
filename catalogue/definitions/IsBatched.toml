@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.IsBatched"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:batched"
+meaning = "A learner is batched on a grid g: at every round n its policy sees the rewards up to t (batchOf n - 1), so during batch l + 1 it uses only the rewards of the rounds < t l."
+conventions = "Rounds numbered from 0; characterised in l-form by isBatched_iff."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.isBatched_firstRewardAlg", "Incognita.BatchedBandits.not_seesRewardsUpTo_zero_firstRewardAlg", "Incognita.BatchedBandits.isBatched_const"]
+known_cases = ["Incognita.BatchedBandits.IsBatched.seesRewardsUpTo_zero", "Incognita.BatchedBandits.isBatched_iff"]
+exclusion = ["Incognita.BatchedBandits.not_isBatched_reactAlg"]
+non_vacuity = ["Incognita.P006.isBatched_iff_exists_infoModel_top_satisfiable", "Incognita.P006.isBatched_of_isFiner_satisfiable", "Incognita.P006.isBatched_sequential_iff_satisfiable"]
