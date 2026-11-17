@@ -267,7 +267,7 @@
         },
         {
           "family": "Juneja",
-          "given": "Sandeep"
+          "given": "Sandeep K."
         },
         {
           "family": "Koolen",
@@ -285,7 +285,17 @@
             2021
           ]
         ]
-      }
+      },
+      "editor": [
+        {
+          "family": "Belkin",
+          "given": "Mikhail"
+        },
+        {
+          "family": "Kpotufe",
+          "given": "Samory"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "2102.03734"
@@ -525,7 +535,8 @@
             2013
           ]
         ]
-      }
+      },
+      "DOI": "10.1109/TIT.2013.2277869"
     },
     "identifiers": {
       "arxiv": "1209.1727"
@@ -1990,11 +2001,11 @@
     "version": ""
   },
   "GHRZ19": {
-    "uri": "",
+    "uri": "https://proceedings.neurips.cc/paper_files/paper/2019/hash/20f07591c6fcb220ffe637cda29bb3f6-Abstract.html",
     "citation": {
       "id": "GHRZ19",
       "type": "paper-conference",
-      "title": "Batched multi-armed bandits problem",
+      "title": "Batched Multi-armed Bandits Problem",
       "author": [
         {
           "family": "Gao",
@@ -2023,7 +2034,9 @@
       },
       "volume": "32"
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "1904.01763"
+    },
     "version": ""
   },
   "GK16": {
@@ -2053,7 +2066,21 @@
             2016
           ]
         ]
-      }
+      },
+      "editor": [
+        {
+          "family": "Feldman",
+          "given": "Vitaly"
+        },
+        {
+          "family": "Rakhlin",
+          "given": "Alexander"
+        },
+        {
+          "family": "Shamir",
+          "given": "Ohad"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "1602.04589"
@@ -2061,7 +2088,7 @@
     "version": ""
   },
   "GKL16": {
-    "uri": "https://arxiv.org/abs/1605.08988",
+    "uri": "https://papers.nips.cc/paper_files/paper/2016/hash/ef575e8837d065a1683c022d2077d342-Abstract.html",
     "citation": {
       "id": "GKL16",
       "type": "paper-conference",
@@ -2087,7 +2114,8 @@
             2016
           ]
         ]
-      }
+      },
+      "volume": "29"
     },
     "identifiers": {
       "arxiv": "1605.08988"
@@ -2453,7 +2481,17 @@
             2014
           ]
         ]
-      }
+      },
+      "editor": [
+        {
+          "family": "Kaski",
+          "given": "Samuel"
+        },
+        {
+          "family": "Corander",
+          "given": "Jukka"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "1311.1894"
@@ -2461,7 +2499,7 @@
     "version": ""
   },
   "HT15": {
-    "uri": "",
+    "uri": "https://jmlr.org/papers/v16/honda15a.html",
     "citation": {
       "id": "HT15",
       "type": "article-journal",
@@ -2485,7 +2523,8 @@
         ]
       },
       "volume": "16",
-      "page": "3721-3756"
+      "page": "3721-3756",
+      "issue": "113"
     },
     "identifiers": {},
     "version": ""
@@ -2606,7 +2645,7 @@
     "citation": {
       "id": "JTXHXG21",
       "type": "paper-conference",
-      "title": "Almost optimal anytime algorithm for batched multi-armed bandits",
+      "title": "Almost Optimal Anytime Algorithm for Batched Multi-Armed Bandits",
       "author": [
         {
           "family": "Jin",
@@ -2644,7 +2683,17 @@
             2021
           ]
         ]
-      }
+      },
+      "editor": [
+        {
+          "family": "Meila",
+          "given": "Marina"
+        },
+        {
+          "family": "Zhang",
+          "given": "Tong"
+        }
+      ]
     },
     "identifiers": {},
     "version": ""
@@ -2859,7 +2908,8 @@
             2016
           ]
         ]
-      }
+      },
+      "issue": "1"
     },
     "identifiers": {
       "arxiv": "1407.4443"
@@ -3793,7 +3843,7 @@
     "version": "commit efbe5d2"
   },
   "LR85": {
-    "uri": "",
+    "uri": "https://doi.org/10.1016/0196-8858(85)90002-8",
     "citation": {
       "id": "LR85",
       "type": "article-journal",
@@ -3818,7 +3868,8 @@
       },
       "volume": "6",
       "issue": "1",
-      "page": "4-22"
+      "page": "4-22",
+      "DOI": "10.1016/0196-8858(85)90002-8"
     },
     "identifiers": {},
     "version": ""
@@ -3851,7 +3902,7 @@
     }
   },
   "LS17": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v54/lattimore17a.html",
     "citation": {
       "id": "LS17",
       "type": "paper-conference",
@@ -3873,7 +3924,21 @@
             2017
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "54",
+      "page": "728-737",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Singh",
+          "given": "Aarti"
+        },
+        {
+          "family": "Zhu",
+          "given": "Jerry"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "1610.04491"
@@ -4076,7 +4141,7 @@
     "version": ""
   },
   "MG17": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v76/m%C3%A9nard17a.html",
     "citation": {
       "id": "MG17",
       "type": "paper-conference",
@@ -4098,7 +4163,21 @@
             2017
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "76",
+      "page": "223-237",
+      "publisher": "PMLR",
+      "editor": [
+        {
+          "family": "Hanneke",
+          "given": "Steve"
+        },
+        {
+          "family": "Reyzin",
+          "given": "Lev"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "1702.07211"
@@ -4519,7 +4598,7 @@
     "version": ""
   },
   "PRCS16": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/15-AOS1381",
     "citation": {
       "id": "PRCS16",
       "type": "article-journal",
@@ -4552,7 +4631,8 @@
       },
       "volume": "44",
       "issue": "2",
-      "page": "660-681"
+      "page": "660-681",
+      "DOI": "10.1214/15-AOS1381"
     },
     "identifiers": {},
     "version": ""
@@ -4695,7 +4775,7 @@
       "container-title": "Proceedings of the 31st International Conference on Algorithmic Learning Theory (ALT)",
       "collection-title": "Proceedings of Machine Learning Research",
       "volume": "117",
-      "page": "1-50",
+      "page": "777-826",
       "publisher": "PMLR",
       "editor": [
         {
