@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.HY.pseudoKinf"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:kinf"
+meaning = "K_inf(nu~_c, mu) for the pseudo-empirical law nu~_c = (N_c nu^_c + w0 delta_0) / (N_c + w0) of the rewards of an arm c in the rounds < r of a history: for mu < 1 the supremum over rational lambda in [0, 1 / (1 - mu)) of E_{nu~_c}[log(1 - lambda (X - mu))]; for mu >= 1, 0 if the mean of nu~_c is 1 and infinity otherwise."
+conventions = "Values in ENNReal; the supremum over rational lambda, as the paper allows for empirical laws (the two suprema agree for rewards in [0, 1]); used by HY for its IMED and test divergences."
+source = "[INC-P000, Definition def:kinf, dual formula]; [HT10, Theorem 8]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.HY.pseudoKinf_ne_zero_example"]
+known_cases = ["Incognita.BatchedBandits.HY.pseudoKinf_eq_zero_of_le_pseudoMean"]
+exclusion = ["Incognita.BatchedBandits.HY.pseudoKinf_ne_zero_example"]
+non_vacuity = ["Incognita.P000.hy_tendsto_count_satisfiable"]

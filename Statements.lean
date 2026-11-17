@@ -1,6 +1,16 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import Statements.Basic
+public import Statements.P000.hy_infoModel_zero
+public import Statements.P000.hy_isConsistent
+public import Statements.P000.hy_tendsto_count
+public import Statements.P000.hy_tendsto_regret
+public import Statements.P000.lower_liminf
+public import Statements.P000.lower_liminf_of_tendsto_ratio_one
+public import Statements.P000.lower_limsup
+public import Statements.P000.lower_regret_liminf
+public import Statements.P000.lower_regret_limsup
+public import Statements.P000.one_batch_ahead
 public import Statements.P003.constSize_isSizeRule
 public import Statements.P003.cyclicSize_not_stoppedCounts
 public import Statements.P003.divergence_decomposition

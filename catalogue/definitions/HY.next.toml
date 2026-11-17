@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.HY.next"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The arm pulled by HY(w0, beta, omega, theta, gamma) on the grid g at the round n, from the history of the rounds 0, ..., n - 1: the arms in turn in batch 1; afterwards the IMED arm (HY.imedArm) while n + 1 <= s_l, and the paced arm (HY.pacedArm, with the threshold h_l = (1 - gamma_l) y_(l-1) Lambda^_l) after."
+conventions = "Rounds numbered from 0, l = g.batchOf n - 1; log t = log (n + 1); Lambda^_1 = L_1; statistics at t_l and t_(l-1) from the rounds < t l and < t (l - 1)."
+source = "[INC-P000, Definition def:hy]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.HY.measurable_next", "Incognita.BatchedBandits.hy_exists_next_eq"]
+known_cases = ["Incognita.BatchedBandits.HY.next_of_lt_t_one"]
+exclusion = ["Incognita.BatchedBandits.hy_exists_next_eq"]
+non_vacuity = ["Incognita.P000.hy_isConsistent_satisfiable"]

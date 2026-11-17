@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.imedEnd"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The end s_l = floor(t_l ^ (1 + theta_l)) of the IMED phase of batch l + 1 (paper's rounds)."
+conventions = "Natural floor of a real power; the round n (from 0) is in the IMED phase when n + 1 <= s_l."
+source = "[INC-P000, Definition def:hy]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.t_le_imedEnd"]
+known_cases = ["Incognita.BatchedBandits.Grid.imedEnd_zero"]
+exclusion = []
+non_vacuity = ["Incognita.P000.hy_isConsistent_satisfiable"]

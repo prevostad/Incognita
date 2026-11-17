@@ -4,8 +4,10 @@ public import Incognita.Basic
 public import Incognita.BatchedBandits.Batched
 public import Incognita.BatchedBandits.Consistency
 public import Incognita.BatchedBandits.Grid
+public import Incognita.BatchedBandits.HY
 public import Incognita.BatchedBandits.Instances
 public import Incognita.BatchedBandits.Relations
+public import Incognita.P000.Witnesses
 public import Incognita.P003.Witnesses
 public import Incognita.P006.Main
 public import Incognita.P006.Witnesses

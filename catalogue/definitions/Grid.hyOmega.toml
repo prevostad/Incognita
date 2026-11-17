@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.hyOmega"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The default margins omega^dy_l = 2^(-k_l) of HY, k_l = floor((1/4) log_2 max(L_l, 1))."
+conventions = "Written (1/2)^k_l with the natural floor; a function of t_l only."
+source = "[INC-P000, Definition def:hy, default parameters]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.hyOmega_mem", "Incognita.BatchedBandits.Grid.hyOmega_antitone"]
+known_cases = ["Incognita.BatchedBandits.Grid.hyOmega_hyGamma_of_logEnd_le_one"]
+exclusion = []
+non_vacuity = ["Incognita.P000.hy_isConsistent_satisfiable"]

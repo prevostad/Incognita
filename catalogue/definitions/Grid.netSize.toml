@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.netSize"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The net size U_j of HY: U_1 = 1 and U_(l+1) = ceil(L_l ^ beta) for l >= 1."
+conventions = "Natural ceiling of the real power L_l ^ beta (Real.rpow, L_l > 0); value 1 at j = 0, not used."
+source = "[INC-P000, Definition def:hy]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.one_le_netSize"]
+known_cases = ["Incognita.BatchedBandits.Grid.netSize_one", "Incognita.BatchedBandits.Grid.netSize_succ"]
+exclusion = []
+non_vacuity = ["Incognita.P000.hy_isConsistent_satisfiable"]

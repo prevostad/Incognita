@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.hyTheta"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The default activation exponents of HY: theta_l = 1 / log log t_l if t_l >= e^e, and 1 otherwise."
+conventions = "A function of t_l only."
+source = "[INC-P000, Definition def:hy, default parameters]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.hyTheta_mem"]
+known_cases = ["Incognita.BatchedBandits.Grid.hyTheta_of_lt"]
+exclusion = []
+non_vacuity = ["Incognita.P000.hy_isConsistent_satisfiable"]
