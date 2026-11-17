@@ -1,0 +1,1251 @@
+% Incognita paper P006, kind `definitions`: the setting paper of the roadmap BatchedBandits.
+% Rules: AGENTS.md, section 5; docs/writing.md. One source, two builds (AGENTS.md 5.2), after
+% `python3 scripts/certify.py bib`:
+%   reader:    latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/P006-batched-setting/paper.tex
+%   blueprint: latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=paper-blueprint
+%                -usepretex='\def\IncognitaBlueprint{}' -cd papers/P006-batched-setting/paper.tex
+% Planned Lean names of the nodes: DOSSIER.md (never \lean here). Never \leanok or \mathlibok.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage[round]{natbib}
+\usepackage{../../templates/paper/blueprint-macros}
+
+% Navigation: an anchor \dt{s:...} where a quantity is defined, one macro per symbol (\sy).
+\newcommand{\dt}[1]{\hypertarget{#1}{}}
+\newcommand{\sy}[2]{{\hyperlink{#1}{#2}}}
+\newcommand{\term}[2]{\hyperlink{#1}{#2}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\1}{\mathbf{1}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Nat}{\mathbb{N}}
+% ---------------------------------------------------------------- arms, laws, instances
+\newcommand{\Arms}{\sy{s:inst}{\mathcal A}}
+\newcommand{\Kar}{\sy{s:inst}{K}}
+\newcommand{\Mu}{\sy{s:inst}{\mathcal M}}
+\newcommand{\mean}{\sy{s:inst}{m}}
+\newcommand{\ms}{\sy{s:inst}{m^\star}}
+\newcommand{\Dg}{\sy{s:inst}{\Delta}}
+\newcommand{\cP}{\sy{s:inst}{\mathcal P}}
+% ---------------------------------------------------------------- divergences
+\newcommand{\KL}{\sy{s:kinf}{\mathrm{KL}}}
+\newcommand{\Ber}{\sy{s:kinf}{\mathrm{Ber}}}
+\newcommand{\kl}{\sy{s:kinf}{\mathrm{kl}}}
+\newcommand{\Ki}{\sy{s:kinf}{\mathcal K_{\inf}}}
+\newcommand{\Ka}{\sy{s:kinf}{K}}
+% ---------------------------------------------------------------- learners, counts, regret
+\newcommand{\Hs}{\sy{s:learner}{\mathcal H}}
+\newcommand{\Pnu}{\sy{s:learner}{\mathbb P}}
+\newcommand{\Enu}{\sy{s:learner}{\mathbb E}}
+\newcommand{\Ac}{\sy{s:learner}{A}}
+\newcommand{\Rw}{\sy{s:learner}{R}}
+\newcommand{\Ng}{\sy{s:count}{N}}
+\newcommand{\Reg}{\sy{s:count}{\mathcal R}}
+% ---------------------------------------------------------------- grids
+\newcommand{\Gr}{\sy{s:grid}{\mathcal G}}
+\newcommand{\tl}{\sy{s:grid}{t}}
+\newcommand{\Bg}{\sy{s:grid}{B}}
+\newcommand{\bt}{\sy{s:grid}{b}}
+\newcommand{\Lg}{\sy{s:log}{L}}
+\newcommand{\xg}{\sy{s:log}{x}}
+\newcommand{\Sq}{\sy{s:exgrid}{\mathsf S}}
+\newcommand{\Ge}{\sy{s:exgrid}{\mathsf G}}
+\newcommand{\Db}{\sy{s:exgrid}{\mathsf D}}
+% ---------------------------------------------------------------- batched learners, models
+\newcommand{\mask}{\sy{s:batched}{\mathrm{mask}}}
+\newcommand{\Mk}[1]{\sy{s:info}{\mathcal M}_{#1}}
+% ---------------------------------------------------------------- example learners
+\newcommand{\RR}{\hyperref[def:exlearners]{\texttt{RR}}}
+\newcommand{\Const}{\hyperref[def:exlearners]{\texttt{Const}}}
+\newcommand{\FL}{\hyperref[def:exlearners]{\texttt{FL}}}
+\newcommand{\React}{\hyperref[def:exlearners]{\texttt{React}}}
+\newcommand{\Par}{\hyperref[def:exlearners]{\texttt{Par}}}
+\newcommand{\UCB}{\hyperref[def:exlearners]{\texttt{UCB}}}
+% ---------------------------------------------------------------- words
+\newcommand{\sees}{\term{t:sees}{sees the rewards up to}}
+\newcommand{\ignores}{\term{t:sees}{ignores the rewards}}
+\newcommand{\batched}{\term{t:batched}{batched}}
+\newcommand{\consistent}{\term{t:cons}{consistent at the batch ends}}
+\newcommand{\seqcons}{\term{t:seqc}{sequentially consistent}}
+\newcommand{\finer}{\term{t:finer}{finer}}
+% ---------------------------------------------------------------- proofs
+\newcommand{\Setting}{\noindent\textbf{Setting.}\ }
+\newcommand{\Goal}{\par\smallskip\noindent\textbf{Goal.}\ }
+\newcommand{\why}[1]{\text{\small(#1)}}
+\setlength{\emergencystretch}{3em}
+
+\title{Stochastic bandits on an imposed grid of batches:\\ the setting}
+\author{Claude Opus 5.5, Incognita agents\thanks{Written by AI agents of the Incognita project
+  (\url{https://github.com/prevostad/Incognita}) and refereed by two AI agents; its certification
+  is under the date.}}
+\date{2026-11-16}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We fix the definitions of a model of $K$-armed stochastic bandits in which the learner observes
+the rewards only at the ends of batches, and the ends of the batches $t_1<t_2<\cdots$ are imposed
+by the environment rather than chosen by the learner. The rewards are in $[0,1]$ with a largest
+mean below $1$, and the relevant divergence is the non-parametric $\mathcal K_{\inf}$. We define
+imposed grids, the growth ratios $x_\ell=\log t_\ell/\log t_{\ell-1}$, batched learners, a scale
+of information models $\mathcal M_k$ (during batch $\ell+1$ the learner knows $t_1,\dots,t_{\ell+k}$),
+and consistency at the batch ends. We prove the basic relations between these objects: the
+information models form a strictly increasing chain from $\mathcal M_0$ (nothing known ahead) to
+$\mathcal M_\infty$ (the whole grid known); refining a grid preserves batching; on the grid whose
+batches after the first have size one, batched learners reduce to the classical sequential ones
+except in the first batch, where they must ignore the rewards, and consistency at the batch ends
+reduces to classical consistency; and $2\Delta_a^2\le\mathcal K_{\inf}(\nu_a,m^\star)\le\log\frac{1-m_a}{1-m^\star}$
+for every suboptimal arm. Every definition comes with an explicit object that satisfies it and one
+that it rules out. The paper proves no regret bound: it is the common ground on which such bounds
+are stated.
+\end{abstract}
+
+% ======================================================================
+\section{Introduction}\label{sec:intro}
+
+In clinical trials, A/B tests, or any system that redeploys a policy periodically, a bandit learner
+can update its decisions only at the end of batches, and when the batches end is decided by the
+environment: a trial phase closes, a season ends, a new day of data arrives. The learner still
+chooses an arm at every round, but it sees the rewards of a batch only once the batch is over, and
+it may not even know in advance when that will be. The question that motivates this model is how
+much the problem-dependent asymptotic regret of Lai, Robbins, Burnetas and Katehakis degrades as a
+function of the imposed grid, and in which information model.
+
+Before answering it, one must say precisely what a learner on an imposed grid is, what it knows of
+the grid, and what consistency means when the learner can be evaluated only at the ends of the
+batches. This paper fixes these definitions, proves their basic relations, and checks that none of
+them is empty or trivially satisfied. It contains no regret bound.
+
+\paragraph{The objects} An imposed grid is a strictly increasing sequence of batch ends
+$0=t_0<t_1<t_2<\cdots$ with $t_1\ge\max(2,K)$; its growth is measured by
+\begin{equation*}
+  x_\ell := \frac{\log t_\ell}{\log t_{\ell-1}}\quad(\ell\ge2).
+\end{equation*}
+A learner is \emph{batched} on a grid when its action at a round of batch $\ell+1$ depends on the
+rewards only through those of the rounds $1,\dots,t_\ell$. In the information model $\mathcal M_k$,
+during batch $\ell+1$ the learner may also use the grid, but only through $t_1,\dots,t_{\ell+k}$:
+$\mathcal M_0$ knows nothing ahead, $\mathcal M_1$ knows the end of the current batch, and
+$\mathcal M_\infty$ knows the whole grid. A learner is \emph{consistent at the batch ends} on a class of
+instances if $\E N_c(t_\ell)=o(t_\ell^\alpha)$ for every $\alpha>0$ and every suboptimal arm $c$.
+
+\paragraph{Main result, informally} Theorem~\ref{thm:main} shows that this setting is coherent and
+extends the classical one: the chain $\mathcal M_0\subsetneq\mathcal M_1\subsetneq\cdots\subsetneq\mathcal M_\infty$
+is strictly increasing; batching is preserved when a grid is refined; and on the grid
+$t_\ell=s+\ell-1$, whose batches after the first have size one, a learner is batched exactly when
+its first $s$ actions ignore the rewards, and consistency at the batch ends is the classical
+consistency of \citet[Definition~16.1]{LS}. Proposition~\ref{prop:kinf} brackets the divergence
+that governs the problem-dependent constants: for every instance with rewards in $[0,1]$ and
+largest mean $m^\star<1$, and every suboptimal arm $a$,
+\begin{equation*}
+  0<2\Delta_a^2\ \le\ \mathcal K_{\inf}(\nu_a,m^\star)\ \le\ \log\frac{1-m_a}{1-m^\star}<\infty .
+\end{equation*}
+
+\paragraph{Our contributions} We summarize our contributions below:
+\begin{itemize}
+\item precise definitions of imposed grids, batched learners, the information models
+  $\mathcal M_k$ for $k\in\Nat\cup\{\infty\}$ and consistency at the batch ends, on top of the
+  classical model of learners as sequences of probability kernels
+  (Definitions~\ref{def:instance}--\ref{def:consistent}), with the translation to rounds numbered
+  from zero fixed once (Section~\ref{sec:setting});
+\item their basic relations (Theorem~\ref{thm:main}) and the bounds on $\mathcal K_{\inf}$ on
+  $[0,1]$, with its value on Bernoulli laws (Proposition~\ref{prop:kinf});
+\item for every definition, an explicit object that satisfies it and one that it excludes
+  (Proposition~\ref{prop:witnesses} and Table~\ref{tab:witnesses}), and a learner that is consistent
+  at the batch ends on the whole class of instances, on the sequential grid
+  (Corollary~\ref{cor:ucb}).
+\end{itemize}
+
+\paragraph{Outline} Section~\ref{sec:related} places the model among batched and delayed bandits.
+Section~\ref{sec:setting} gives the definitions. Section~\ref{sec:main} states the basic relations.
+Section~\ref{sec:overview} explains how the proofs work. Section~\ref{sec:examples} gives the
+witnesses and exclusions and numerical values on explicit instances, and Section~\ref{sec:open}
+concludes. The proofs are in the appendices.
+
+% ======================================================================
+\section{Related work and context}\label{sec:related}
+
+\paragraph{Sequential bandits and consistency} In the classical model the learner observes each
+reward before its next decision. \citet{LR85}, for parametric families, and \citet{BK96}, for
+more general models, show that a learner whose regret is $o(T^\alpha)$ for every $\alpha>0$ on
+every instance of a class must pull every suboptimal arm $a$ at least $(1+o(1))\log T$ times the
+inverse of a divergence. For the model of all laws on $[0,1]$ this divergence is
+$\mathcal K_{\inf}(\nu_a,m^\star)$, and the bound is \citet[Theorem~1]{GMS19}. We use the definition
+of consistency of \citet[Definition~16.1]{LS} (regret $o(T^\alpha)$) and, equivalently for finitely
+many arms, the ``uniformly fast convergent'' strategies of \citet[Definition~1]{GMS19} (counts
+$o(T^\alpha)$). We model a learner as a sequence of probability kernels, which carry its internal
+randomisation; \citet[Section~1.1]{GMS19} make that randomisation explicit with independent
+uniform variables instead.
+
+\paragraph{The divergence $\mathcal K_{\inf}$ on $[0,1]$} For distributions on $[0,1]$ the
+relevant divergence is the infimum of $\mathrm{KL}(\nu_a,\nu')$ over the laws $\nu'$ on $[0,1]$ with
+mean above $m^\star$ \citep{BK96}, \citep[Section~1.2]{GMS19}. \citet[Theorem~8]{HT10} prove a dual
+formula for it, which algorithms such as IMED use (see also \citet{HT15}). Empirical KL-UCB attains
+the constant $1/\mathcal K_{\inf}$ for finitely supported laws on $[0,1]$, when every mean is
+positive and the largest one is below $1$ \citep[Theorem~2]{CGMMS13}. \citet[Section~6.1]{CGMMS13}
+also observe that $\mathcal K_{\inf}$ is at least the Bernoulli divergence of the means, the lower
+bound of our Proposition~\ref{prop:kinf}. The dual formula is not needed for the definitions; we
+prove here only what follows from the primal definition.
+
+\paragraph{Batched bandits with a chosen grid} \citet{PRCS16} study policies that must split the
+trials into a small number of batches whose ends the policy designs, and give close to minimax
+optimal regret bounds; \citet{GHRZ19} extend this to $K$ arms, with lower bounds that hold even when
+the batch sizes are chosen adaptively. \citet[Theorem~4]{JTXHXG21} consider anytime learners on a
+static grid and show that, for one-parameter exponential families, no anytime algorithm reaches the
+sequential constant with $c\log\log T$ batches. See also \citet{EKMM21} and \citet{JXXG21}. In all
+these works the grid is a design variable of the learner.
+
+\paragraph{Imposed batches and delays} \citet{KO21b} analyse Thompson sampling when the batch sizes
+are not chosen by the learner; in their model \citep[Section~II.A]{KO21b} the end of a batch may be
+fixed at the previous end, possibly by an adversary, as a function of the history.
+\citet{PGPK21} take batches of a common size $b$ fixed by the environment and, under two
+assumptions on the policy, bound the regret of its batched version over $n=bM$ rounds between the
+regret of the policy run online and $b$ times its regret over $M$ rounds
+\citep[Theorem~3.1]{PGPK21}; see also \citet{PGPK22} for linear bandits.
+\citet{QW26} let the environment fix the update times $t_1<\dots<t_B=T$
+adversarially; a \emph{batch-aware} learner is given all of them in advance, and a
+\emph{batch-oblivious} learner is only told when each batch ends. For stochastic bandits with
+rewards in $[0,1]$ they measure the hardness of the grid by $\alpha=\max_j(t_j-t_{j-1})/t_{j-1}$
+(with $t_0:=1$), prove a regret bound of order $\alpha^2\log(KT)\sum_a1/\Delta_a$ and a lower bound
+of order $\alpha^{3/2}\sum_a1/\Delta_a$ on some instances \citep[Theorems~1 and~4]{QW26}. Batching is
+also a form of delayed feedback: the reduction of \citet[Theorem~6]{JGS13} adds to the regret
+without delays a term proportional to the largest number of missing observations, here the size
+of the largest batch.
+
+\paragraph{Closest related work} Table~\ref{tab:comparison} compares the batch models. The closest
+is that of \citet{QW26}: the grid is imposed by the environment, and their two kinds of learners
+are the two ends of our scale, the batch-aware learner corresponding to $\mathcal M_\infty$ (the
+whole grid known) and the batch-oblivious one to $\mathcal M_0$ (only the ends already passed
+known), up to the horizon $T$, which their algorithm takes as an input. It does not give our results: it has no intermediate model between the two, its criterion
+is the regret at a finite horizon $T$, up to constant factors, with no consistency notion and no
+problem-dependent constant such as $1/\mathcal K_{\inf}$, and its hardness $\alpha$ is a ratio of
+consecutive ends, while the asymptotic constants of the classical theory involve ratios of their
+logarithms, our $x_\ell$. In \citet{KO21b} the batch ends are imposed too, but the end of a batch is
+decided at the previous end and may depend on the history, and the algorithm analysed, Thompson
+sampling, does not use the batch ends; the criterion is the regret over all rounds. In
+\citet{PGPK21} the batch size is imposed and constant. The chosen-grid models of \citet{PRCS16},
+\citet{GHRZ19} and \citet{JTXHXG21} do not contain imposed grids: there the learner picks the ends,
+which gives it at least the information of $\mathcal M_\infty$ together with the freedom to choose
+the grid.
+
+\paragraph{Gap with the literature} Imposed grids, and learners that know the whole grid or only
+its past ends, are in \citet{QW26}. We are not aware of a published definition of the intermediate
+information models $\mathcal M_k$, $1\le k<\infty$, of consistency at the batch ends, or of a
+statement relating them to the sequential notions. This paper provides them, for rewards in
+$[0,1]$, together with witnesses and exclusions.
+
+\begin{table}[t]
+\centering
+\caption{Batch models: who fixes the batch ends, and what the learner knows of them.}\label{tab:comparison}
+\begin{tabular}{@{}p{0.2\textwidth}p{0.22\textwidth}p{0.3\textwidth}p{0.2\textwidth}@{}}
+\toprule
+Reference & Batch ends fixed by & Known to the learner & Results \\
+\midrule
+\citet{PRCS16} & the learner & all (designed) & minimax regret \\
+\citet{GHRZ19} & the learner, possibly adaptively & all (designed) & minimax regret \\
+\citet{JTXHXG21} & the learner (static grid) & all; the horizon unknown & asymptotic regret \\
+\citet{KO21b} & the environment, at the previous end & not used by the algorithm & asymptotic regret of Thompson sampling \\
+\citet{PGPK21} & the environment (constant size $b$) & not needed: the policy updates when the rewards arrive & regret relative to online regret \\
+\citet{QW26} & the environment, adversarially & all (batch-aware) or the past ends (batch-oblivious) & regret at horizon $T$, up to constants \\
+This paper & the environment, in advance & $t_1,\dots,t_{\ell+k}$ during batch $\ell+1$ (model $\mathcal M_k$) & definitions only \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ======================================================================
+\section{Problem formulation}\label{sec:setting}
+
+We first recall the classical sequential setting (instances, the divergence $\Ki$, learners,
+counts, regret, consistency), then define imposed grids, batched learners, the information models
+and consistency at the batch ends. Logarithms are natural.
+
+\subsection{Classical setting}
+
+\begin{definition}[{laws on $[0,1]$, instances, the class $\mathcal P$}]\label{def:instance}
+\dt{s:inst}Let $\Mu$ be the set of probability measures $Q$ on $\R$ (with its Borel
+$\sigma$-algebra) such that $Q([0,1])=1$, and for $Q\in\Mu$ let $\mean(Q):=\int x\,Q(dx)\in[0,1]$
+be its mean. The arms form a finite set $\Arms$ with $\Kar:=|\Arms|\ge2$ elements. An instance is
+a family $\nu=(\nu_c)_{c\in\Arms}$ of probability measures on $\R$; when every $\nu_c$ is in $\Mu$, we
+write
+\begin{equation*}
+  \mean_c:=\mean(\nu_c),\qquad \ms:=\max_{c\in\Arms}\mean_c,\qquad \Dg_c:=\ms-\mean_c\ge0 .
+\end{equation*}
+An arm $c$ is \emph{optimal} if $\Dg_c=0$ and \emph{suboptimal} if $\Dg_c>0$. The class
+$\cP:=\{\nu:\ \nu_c\in\Mu\ \text{for all}\ c\in\Arms,\ \ms<1\}$ is the set of instances with
+rewards in $[0,1]$ and largest mean below $1$.
+\end{definition}
+
+\begin{definition}[divergences and $\mathcal K_{\inf}$]\label{def:kinf}
+\uses{def:instance}
+\dt{s:kinf}For probability measures $P,Q$ on a measurable space,
+$\KL(P,Q):=\int\log\frac{dP}{dQ}\,dP\in[0,\infty]$ if $P$ is absolutely continuous with respect to
+$Q$, and $\KL(P,Q):=+\infty$ otherwise. For $p\in[0,1]$, $\Ber(p):=(1-p)\delta_0+p\,\delta_1\in\Mu$,
+and $\kl(p,q):=\KL(\Ber(p),\Ber(q))$, that is
+\begin{equation*}
+  \kl(p,q)=p\log\frac pq+(1-p)\log\frac{1-p}{1-q}\qquad(p,q\in[0,1]),
+\end{equation*}
+with $0\log\frac0q:=0$ for every $q\in[0,1]$ (so $\kl(p,p)=0$) and $\kl(p,q):=+\infty$ when
+$q\in\{0,1\}$ and $q\ne p$. For $P\in\Mu$ and a level $\mu\in\R$,
+\begin{equation*}
+  \Ki(P,\mu):=\inf\big\{\KL(P,Q):\ Q\in\Mu,\ \mean(Q)>\mu\big\}\in[0,\infty],
+\end{equation*}
+with $\inf\emptyset:=+\infty$. For an instance $\nu\in\cP$ and an arm $a$ we write
+$\Ka_a:=\Ki(\nu_a,\ms)$.
+\end{definition}
+
+The infimum is over all laws on $[0,1]$, not over a parametric family. On Bernoulli laws it
+coincides with $\kl$ (Proposition~\ref{prop:kinf}(iv)).
+
+\begin{definition}[learners and the law of the interaction]\label{def:learner}
+\uses{def:instance}
+\dt{s:learner}Rounds are numbered $t=1,2,\dots$ For $t\ge0$, a history of length $t$ is an element
+$h=(a_1,y_1,\dots,a_t,y_t)$ of $\Hs_t:=(\Arms\times\R)^t$ ($\Hs_0$ is a point), with the product
+$\sigma$-algebra ($\Arms$ discrete). A \emph{learner} is a sequence $\pi=(\pi_t)_{t\ge1}$ where
+$\pi_t$ is a probability kernel from $\Hs_{t-1}$ to $\Arms$: $\pi_t(\cdot\mid h)$ is the law of the
+arm pulled at round $t$ after the history $h$. It is \emph{deterministic} if every
+$\pi_t(\cdot\mid h)$ is a Dirac mass. For an instance $\nu$ and a learner $\pi$, $\Pnu_{\nu,\pi}$ is
+the unique probability measure on $(\Arms\times\R)^{\Nat}$, with coordinates
+$(\Ac_t,\Rw_t)_{t\ge1}$, under which, for every $t\ge1$,
+\begin{equation*}
+  \Ac_t\ \big|\ H_{t-1}\ \sim\ \pi_t(\cdot\mid H_{t-1}),\qquad
+  \Rw_t\ \big|\ (H_{t-1},\Ac_t)\ \sim\ \nu_{\Ac_t},
+\end{equation*}
+where $H_{t}:=(\Ac_1,\Rw_1,\dots,\Ac_t,\Rw_t)$; it exists and is unique by the Ionescu-Tulcea
+theorem. $\Enu_{\nu,\pi}$ is its expectation.
+\end{definition}
+
+The internal randomisation of the learner is carried by the kernels $\pi_t$. Without further
+constraint, the policy of round $t$ may use every reward of the rounds $1,\dots,t-1$: this is the
+classical sequential setting, and a learner in this sense is also called \emph{sequential}.
+
+\begin{definition}[counts and regret]\label{def:counts}
+\uses{def:instance, def:learner}
+\dt{s:count}For an arm $c$ and $t\ge0$, the number of pulls of $c$ up to round $t$ included is
+\begin{equation*}
+  \Ng_c(t):=\sum_{s=1}^{t}\1(\Ac_s=c),
+\end{equation*}
+and, for $\nu$ with every $\nu_c\in\Mu$, the regret at round $t$ is
+$\Reg_{\nu,\pi}(t):=\sum_{c\in\Arms}\Dg_c\,\Enu_{\nu,\pi}[\Ng_c(t)]$.
+\end{definition}
+
+\begin{lemma}[counts and regret]\label{lem:counts}
+\uses{def:instance, def:learner, def:counts}
+For every learner $\pi$, every instance $\nu$ with $\nu_c\in\Mu$ for all $c$, and every $t\ge0$:
+\begin{enumerate}[label=(\roman*)]
+\item $0\le\Ng_c(t)\le t$, $t\mapsto\Ng_c(t)$ is nondecreasing, and $\sum_{c\in\Arms}\Ng_c(t)=t$;
+\item $\Reg_{\nu,\pi}(t)=\Enu_{\nu,\pi}\big[\sum_{s=1}^{t}\Dg_{\Ac_s}\big]=t\,\ms-\Enu_{\nu,\pi}\big[\sum_{s=1}^t\mean_{\Ac_s}\big]$,
+  and $0\le\Reg_{\nu,\pi}(t)\le t\max_c\Dg_c\le t$.
+\end{enumerate}
+\end{lemma}
+(see the proof in Appendix~\ref{sec:pf-lem:counts}).
+
+\begin{definition}[sequential consistency]\label{def:seqcons}
+\uses{def:instance, def:learner, def:counts}
+\dt{t:seqc}Let $E\subseteq\cP$. A learner $\pi$ is \emph{sequentially consistent} on $E$ if, for
+every $\nu\in E$ and every $\alpha>0$,
+\begin{equation*}
+  \lim_{T\to\infty}\frac{\Reg_{\nu,\pi}(T)}{T^{\alpha}}=0 .
+\end{equation*}
+\end{definition}
+
+This is \citet[Definition~16.1]{LS}, restricted to a class of instances with rewards in $[0,1]$.
+
+\subsection{Imposed grids}
+
+\begin{definition}[grid, batches]\label{def:grid}
+\uses{def:instance}
+\dt{s:grid}A \emph{grid} (for $\Kar$ arms) is a sequence $g=(\tl_\ell)_{\ell\ge0}$ of integers with
+\begin{equation*}
+  \tl_0=0,\qquad \tl_{\ell-1}<\tl_\ell\ \ (\ell\ge1),\qquad \tl_1\ge\max(2,\Kar).
+\end{equation*}
+$\Gr$ is the set of grids. Batch $\ell\ge1$ is the set of rounds $\{\tl_{\ell-1}+1,\dots,\tl_\ell\}$,
+its size is $\Bg_\ell:=\tl_\ell-\tl_{\ell-1}\ge1$, and $\tl_\ell$ is its \emph{end}. For a round
+$t\ge1$, its batch is $\bt(t):=\min\{\ell\ge1:\ t\le\tl_\ell\}$; when several grids are involved,
+$\bt_g(t)$ denotes the batch of $t$ in the grid $g$. A grid $g$ is \dt{t:finer}\emph{finer}
+than a grid $g'$ if every end of $g'$ is an end of $g$.
+\end{definition}
+
+The condition $\tl_1\ge2$ makes $\log\tl_1>0$, so that the ratios below are defined; the condition
+$\tl_1\ge\Kar$ lets the first batch pull every arm once.
+
+\begin{definition}[logarithmic ends and ratios]\label{def:logratio}
+\uses{def:grid}
+\dt{s:log}For a grid $g=(\tl_\ell)_\ell$, $\Lg_\ell:=\log\tl_\ell$ for $\ell\ge1$, $\xg_1:=1$ and
+\begin{equation*}
+  \xg_\ell:=\frac{\Lg_\ell}{\Lg_{\ell-1}}\qquad(\ell\ge2).
+\end{equation*}
+\end{definition}
+
+\begin{lemma}[elementary facts on grids]\label{lem:grid}
+\uses{def:grid, def:logratio}
+For every grid $g$:
+\begin{enumerate}[label=(\roman*)]
+\item $\tl_\ell\ge\tl_1+\ell-1$ for every $\ell\ge1$; in particular $\tl_\ell\to\infty$;
+\item every round $t\ge1$ belongs to exactly one batch, namely $\bt(t)$, and
+  $\tl_{\bt(t)-1}<t\le\tl_{\bt(t)}$; moreover $\bt(\tl_\ell)=\ell$, $\bt$ is nondecreasing, and
+  $\bt(t)=1$ if and only if $t\le\tl_1$;
+\item $\Lg_\ell\ge\log2>0$ for $\ell\ge1$, $\ell\mapsto\Lg_\ell$ is strictly increasing,
+  $\xg_\ell>1$ for $\ell\ge2$, and for $\ell\ge2$
+  \begin{equation*}
+    \Lg_\ell=\Lg_1\prod_{k=2}^{\ell}\xg_k,\qquad \tl_\ell=\tl_{\ell-1}^{\,\xg_\ell}.
+  \end{equation*}
+\end{enumerate}
+\end{lemma}
+(see the proof in Appendix~\ref{sec:pf-lem:grid}).
+
+\begin{definition}[three example grids]\label{def:exgrids}
+\uses{def:grid}
+\dt{s:exgrid}For an integer $s\ge\max(2,\Kar)$ and $\ell\ge1$, with $\tl_0:=0$ in each case:
+\begin{equation*}
+  \Sq_s:\ \tl_\ell:=s+\ell-1,\qquad
+  \Ge_s:\ \tl_\ell:=s\,2^{\ell-1},\qquad
+  \Db_s:\ \tl_\ell:=s^{2^{\ell-1}} .
+\end{equation*}
+$\Sq_s$ is the \emph{sequential grid}: its batches after the first have size one.
+\end{definition}
+
+\paragraph{Rounds numbered from zero} A formalisation of these definitions in the proof assistant
+Lean numbers the rounds from $0$, as the Lean library of learning algorithms on which it is built
+does: the round $t\ge1$ of this paper is the round $t-1$ there. With this shift, batch $\ell$ is the set of rounds $\tl_{\ell-1},\dots,\tl_\ell-1$,
+the batch of a round $n\ge0$ is $\min\{\ell\ge1:\ n<\tl_\ell\}$, the count $\Ng_c(t)$ is the
+number of pulls of $c$ in the rounds $0,\dots,t-1$, and the rewards available during batch $\ell+1$
+are those of the rounds $<\tl_\ell$. In particular every quantity evaluated at a batch end
+$\tl_\ell$ (counts, regret) is the same in both numberings, and no statement at the batch ends
+needs a shift.
+
+\subsection{Batched learners and information models}
+
+\begin{definition}[batched learner]\label{def:batched}
+\uses{def:learner, def:grid}
+\dt{s:batched}Let $t\ge1$ and let $r\ge0$ be an integer. For
+$h=(a_1,y_1,\dots,a_{t-1},y_{t-1})\in\Hs_{t-1}$, let
+$\mask_r(h):=(a_1,y_1\1(1\le r),\dots,a_{t-1},y_{t-1}\1(t-1\le r))$: the rewards of the rounds
+$s>r$ are replaced by $0$. The policy $\pi_t$ \dt{t:sees}\emph{sees the rewards up to} $r$ if
+\begin{equation*}
+  \pi_t(\cdot\mid h)=\pi_t(\cdot\mid h')
+\end{equation*}
+for all $h,h'\in\Hs_{t-1}$ with $a_s=a'_s$ for every $s<t$ and $y_s=y'_s$ for every $s\le\min(r,t-1)$;
+it \emph{ignores the rewards} if it \sees{} $0$. A learner $\pi$ is \dt{t:batched}\emph{batched} on
+a grid $g$ if, for every round $t\ge1$,
+\begin{equation*}
+  \pi_t\ \text{\sees}\ \tl_{\bt(t)-1}.
+\end{equation*}
+\end{definition}
+
+So during batch $\ell+1$ the learner uses its own past actions, its internal randomisation and the
+rewards of the rounds $1,\dots,\tl_\ell$, and nothing of the rewards of the current batch. A learner
+batched on $g$ may depend on $g$ in any way: on a fixed grid, it knows the whole grid.
+
+\begin{lemma}[masked form]\label{lem:mask}
+\uses{def:batched, def:learner, def:grid}
+Let $\pi$ be a learner. For $t\ge1$ and an integer $r\ge0$, $\mask_r$ is measurable, and $\pi_t$
+\sees{} $r$ if and only if $\pi_t(\cdot\mid h)=\pi_t(\cdot\mid\mask_r(h))$ for every
+$h\in\Hs_{t-1}$. Hence, for a grid $g=(\tl_\ell)_\ell$, $\pi$ is
+\batched{} on $g$ if and only if $\pi_t$ is the kernel $h\mapsto\pi_t(\cdot\mid\mask_{\tl_{\bt(t)-1}}(h))$
+for every $t\ge1$.
+\end{lemma}
+(see the proof in Appendix~\ref{sec:pf-lem:mask}).
+
+\begin{definition}[information models]\label{def:infomodel}
+\uses{def:grid, def:learner, def:batched}
+\dt{s:info}A \emph{learner for imposed grids} is a family $\Pi=(\pi^g)_{g\in\Gr}$ of learners, one
+per grid. For $k\in\Nat\cup\{\infty\}$, $\Pi$ belongs to the information model $\Mk{k}$ if
+\begin{enumerate}[label=(\alph*)]
+\item for every grid $g$, $\pi^g$ is \batched{} on $g$;
+\item for all grids $g=(\tl_j)_j$ and $g'=(\tl'_j)_j$, every $\ell\ge0$ and every round $t$ that
+  belongs to batch $\ell+1$ of $g$ and to batch $\ell+1$ of $g'$,
+  \begin{equation*}
+    \tl_j=\tl'_j\ \text{for every integer}\ j\ \text{with}\ 1\le j\le\ell+k
+    \quad\Longrightarrow\quad\pi^g_t=\pi^{g'}_t .
+  \end{equation*}
+\end{enumerate}
+\end{definition}
+
+During batch $\ell+1$, a learner of $\Mk{k}$ uses the grid only through $\tl_1,\dots,\tl_{\ell+k}$,
+the current round and the fact that the batch has not ended. In $\Mk{0}$ it knows nothing ahead
+(neither the end of the current batch nor any horizon: the doubly anytime model); in $\Mk{1}$ it
+knows the end of the current batch; for $k=\infty$, the hypothesis of (b) forces $g=g'$, so (b) is
+void and $\Mk{\infty}$ is the set of families of batched learners, which may know the whole grid.
+
+\subsection{Consistency at the batch ends}
+
+\begin{definition}[consistency at the batch ends]\label{def:consistent}
+\uses{def:instance, def:grid, def:learner, def:counts}
+\dt{t:cons}Let $E\subseteq\cP$ and let $g=(\tl_\ell)_\ell$ be a grid. A learner $\pi$ is \emph{consistent at the
+batch ends} of $g$ on $E$ if, for every $\nu\in E$, every suboptimal arm $c$ of $\nu$ and every
+$\alpha>0$,
+\begin{equation*}
+  \lim_{\ell\to\infty}\frac{\Enu_{\nu,\pi}[\Ng_c(\tl_\ell)]}{\tl_\ell^{\,\alpha}}=0 .
+\end{equation*}
+\end{definition}
+
+The criterion is evaluated only at the ends of the batches, where the learner has seen every
+reward, which is natural when it cannot react inside a batch. Written with counts, as here, it is
+the ``uniformly fast convergent'' property of \citet[Definition~1]{GMS19} along the batch ends;
+written with the regret, it is the consistency of \citet[Definition~16.1]{LS} along the batch ends.
+The two forms agree:
+
+\begin{lemma}[counts or regret]\label{lem:consist-regret}
+\uses{def:consistent, def:counts, def:instance, def:grid, def:learner}
+Let $E\subseteq\cP$, $g=(\tl_\ell)_\ell$ a grid and $\pi$ a learner. Then $\pi$ is \consistent{} of $g$ on $E$
+if and only if $\Reg_{\nu,\pi}(\tl_\ell)/\tl_\ell^{\,\alpha}\to0$ as $\ell\to\infty$ for every
+$\nu\in E$ and every $\alpha>0$.
+\end{lemma}
+(see the proof in Appendix~\ref{sec:pf-lem:consist-regret}).
+
+% ======================================================================
+\section{Basic relations}\label{sec:main}
+
+The classical facts are the sequential ones: a sequential learner is any learner of
+Definition~\ref{def:learner}, and it is sequentially consistent in the sense of
+\citet[Definition~16.1]{LS}. The first result places the batched objects with respect to them and
+to each other.
+
+\begin{theorem}[basic relations]\label{thm:main}
+\uses{def:instance, def:learner, def:grid, def:exgrids, def:batched, def:infomodel, def:consistent, def:seqcons}
+Fix the set of arms $\Arms$, with $\Kar\ge2$. Then:
+\begin{enumerate}[label=(\roman*)]
+\item \emph{(Information models.)} For all $k\le k'$ in $\Nat\cup\{\infty\}$,
+  $\Mk{k}\subseteq\Mk{k'}$, and the inclusion is strict when $k<k'$. A learner $\pi$ is \batched{}
+  on a grid $g$ if and only if $\pi=\pi^g$ for some $\Pi\in\Mk{\infty}$.
+\item \emph{(Refinement.)} Let $g$ be a grid \finer{} than a grid $g'$ and $E\subseteq\cP$. Every
+  learner \batched{} on $g'$ is \batched{} on $g$, and every learner \consistent{} of $g$ on $E$ is
+  \consistent{} of $g'$ on $E$.
+\item \emph{(Sequential grid.)} Let $s\ge\max(2,\Kar)$ and $E\subseteq\cP$. A learner $\pi$ is
+  \batched{} on $\Sq_s$ if and only if $\pi_t$ \ignores{} for every $t\le s$; and $\pi$ is
+  \consistent{} of $\Sq_s$ on $E$ if and only if it is \seqcons{} on $E$.
+\end{enumerate}
+\end{theorem}
+(see the proof in Appendix~\ref{sec:pf-thm:main}).
+
+\paragraph{Interpretation} Item (i) says that the information models are genuinely different: a
+learner that reads $\tl_{\ell+k+1}$ during batch $\ell+1$ belongs to $\Mk{k+1}$ and not to $\Mk{k}$
+(Proposition~\ref{prop:witnesses}(d)). A lower bound proved for every batched learner on a fixed
+grid is therefore a lower bound in $\Mk{\infty}$, hence in every $\Mk{k}$; an upper bound for a learner
+of $\Mk{0}$ holds in every $\Mk{k}$. Item (ii) says that observing more often can only help a learner:
+a batched learner of a coarse grid is still batched on every finer grid. Item (iii) is the bridge to
+the classical setting: on $\Sq_s$ the only constraint is that the first $s\ge\Kar$ rounds do not
+react to rewards, which classical index policies satisfy when they start by pulling each arm once
+and $s=\Kar$ (Corollary~\ref{cor:ucb} for UCB1); and consistency at the batch ends is then the classical notion of consistency used
+by the lower bounds of \citet{LR85}, \citet{BK96} and \citet[Theorem~16.2]{LS}, which therefore
+apply on $\Sq_s$ whenever the class of instances contains the alternatives their proofs use.
+
+\paragraph{Scope} Theorem~\ref{thm:main} is about the definitions only. It does not say on which
+grids a consistent learner exists, nor give any bound on the counts; it does not cover random grids
+or grids that depend on the history, nor information models finer than $\Mk{k}$ (for instance a
+learner that knows the sizes of the batches but not their ends).
+
+The second result concerns the divergence that appears in the problem-dependent constants.
+
+\begin{proposition}[{$\mathcal K_{\inf}$ on $[0,1]$}]\label{prop:kinf}
+\uses{def:instance, def:kinf}
+Let $P\in\Mu$ with mean $p:=\mean(P)$, and let $\mu\in\R$. Then:
+\begin{enumerate}[label=(\roman*)]
+\item if $\mu\ge1$, then $\Ki(P,\mu)=+\infty$;
+\item if $\mu<p$, then $\Ki(P,\mu)=0$;
+\item if $p\le \mu<1$, then
+  \begin{equation*}
+    2(\mu-p)^2\ \le\ \kl(p,\mu)\ \le\ \Ki(P,\mu)\ \le\ \log\frac{1-p}{1-\mu}<\infty ;
+  \end{equation*}
+\item if $P=\Ber(p)$ and $p\le \mu<1$, then $\Ki(P,\mu)=\kl(p,\mu)$;
+\item for every $\nu\in\cP$ and every suboptimal arm $a$,
+  $0<2\Dg_a^2\le \Ka_a\le\log\frac{1-\mean_a}{1-\ms}<\infty$.
+\end{enumerate}
+\end{proposition}
+(see the proof in Appendix~\ref{sec:pf-prop:kinf}).
+
+\paragraph{Why the largest mean is below one} If the largest mean is $1$, then $\Ka_a=+\infty$ for every suboptimal arm by
+(i), and the classical constant $1/\Ka_a$ vanishes: such instances are excluded from $\cP$, as in
+\citet[Theorem~8]{HT10}, whose dual formula holds for $\mu<1$. Item (v) shows that on $\cP$ the
+constant $1/\Ka_a$ is finite and positive, so that a bound of the form $\E\Ng_a(\tl_\ell)\approx
+C\log\tl_\ell/\Ka_a$ is never trivial.
+
+% ======================================================================
+\section{How the proofs work}\label{sec:overview}
+
+All proofs are short and self-contained, except for two cited results.
+
+\paragraph{Information models} The inclusions of Theorem~\ref{thm:main}(i) hold because agreeing
+on more batch ends implies agreeing on fewer. Strictness needs, for each $k$, a learner of
+$\Mk{k+1}$ that is not in $\Mk{k}$: the learner $\Par^{(k)}$, which plays one of two arms according
+to the parity of $\tl_{\ell+k+1}$, separates two grids that agree up to $\tl_{\ell+k}$.
+
+\paragraph{Refinement and the sequential grid} If every end of $g'$ is an end of $g$, the last end of
+$g$ before a round $t$ is at least the last end of $g'$ before $t$; a policy that sees the rewards
+up to the smaller one sees them up to the larger one. On $\Sq_s$ the last end before a round $t>s$
+is $t-1$, so batching constrains only the first batch, and the batch ends $\{s,s+1,\dots\}$ are a
+tail of all rounds, so limits along them are limits along all rounds; Lemma~\ref{lem:consist-regret}
+passes from counts to regret.
+
+\paragraph{The divergence} The lower bound of Proposition~\ref{prop:kinf}(iii) is the inequality
+$\KL(P,Q)\ge\kl(\mean(P),\mean(Q))$ for laws on $[0,1]$, already observed by
+\citet[Section~6.1]{CGMMS13}; we derive it from the data-processing inequality of
+\citet[Lemma~1]{GMS19} applied to the reward itself, then use the monotonicity of $\kl$ and
+Pinsker's inequality for Bernoulli laws (Lemma~\ref{lem:kl}), as in \citet[(7)]{GHMS22}. The upper
+bound uses the mixture $Q_u:=(1-u)P+u\delta_1$, whose density bound gives
+$\KL(P,Q_u)\le\log\frac1{1-u}$.
+
+\paragraph{A consistent learner} Corollary~\ref{cor:ucb} combines Theorem~\ref{thm:main}(iii) with
+the logarithmic regret bound of UCB1 \citep[Theorem~1]{ACF02}: UCB1 starts by pulling each arm once,
+so it is batched on the sequential grid $\Sq_{\Kar}$, and logarithmic regret is sequential
+consistency.
+
+\paragraph{Map of the appendices} Appendix~\ref{sec:cited} (the cited results),
+Appendix~\ref{sec:pf-setting} (the lemmas of Section~\ref{sec:setting}),
+Appendices~\ref{sec:pf-thm:main}, \ref{sec:pf-prop:kinf} and~\ref{sec:pf-prop:witnesses} (the three
+main statements, and Corollary~\ref{cor:ucb} in the last one).
+
+% ======================================================================
+\section{Witnesses, exclusions and examples}\label{sec:examples}
+
+Each definition of Section~\ref{sec:setting} is checked against two explicit objects: one that
+satisfies it and is not degenerate, and one that it must exclude. The learners used are the
+following.
+
+\begin{definition}[example learners]\label{def:exlearners}
+\uses{def:instance, def:learner, def:grid}
+\dt{s:exlearn}Enumerate the arms as $\Arms=\{c_1,\dots,c_{\Kar}\}$. All the learners below are
+deterministic; we give the arm they pull at round $t$ after a history
+$h=(a_1,y_1,\dots,a_{t-1},y_{t-1})$.
+\begin{itemize}
+\item $\RR$ (round robin) pulls $c_i$ with $i:=((t-1)\bmod\Kar)+1$.
+\item $\Const_c$, for an arm $c$, always pulls $c$.
+\item $\React$ pulls $c_1$ at $t=1$; at $t=2$ it pulls $c_1$ if $y_1\ge1/2$ and $c_2$ otherwise;
+  for $t\ge3$ it pulls $c_1$.
+\item $\FL^g$ (frozen leader), for a grid $g=(\tl_j)_j$, plays as $\RR$ if $t\le\tl_1$; otherwise,
+  with $\ell:=\bt(t)-1\ge1$ and, for each arm $c$, $n_c:=|\{s\le\tl_\ell:\ a_s=c\}|$, it pulls the
+  first arm (in the order $c_1,\dots,c_{\Kar}$) that maximises the frozen empirical mean
+  \begin{equation*}
+    \hat\mu_c:=\frac1{\max(n_c,1)}\sum_{s\le\tl_\ell:\ a_s=c}y_s .
+  \end{equation*}
+\item $\Par^{(k),g}$, for $k\in\Nat$ and a grid $g=(\tl_j)_j$, pulls $c_1$ if $\tl_{\bt(t)+k}$ is
+  even and $c_2$ otherwise.
+\item $\UCB$ (the policy UCB1 of \citet{ACF02}, with a fixed order and a fixed tie rule) pulls $c_t$
+  if $t\le\Kar$; for $t>\Kar$, with, for each arm $c$, $n_c:=|\{s\le t-1:\ a_s=c\}|$ and
+  $\bar y_c:=\frac1{\max(n_c,1)}\sum_{s\le t-1:\ a_s=c}y_s$, it pulls the first arm (in the order
+  $c_1,\dots,c_{\Kar}$) that maximises
+  \begin{equation*}
+    \bar y_c+\sqrt{\frac{2\log(t-1)}{\max(n_c,1)}} .
+  \end{equation*}
+\end{itemize}
+$\FL$ and $\Par^{(k)}$ denote the learners for imposed grids $(\FL^g)_{g\in\Gr}$ and
+$(\Par^{(k),g})_{g\in\Gr}$. For an arm $c$, $\cP_c:=\{\nu\in\cP:\ \mean_c=\ms\}$.
+\end{definition}
+
+The decision rules are measurable functions of the history (finitely many comparisons of
+measurable functions), so these are learners in the sense of Definition~\ref{def:learner}.
+
+\begin{proposition}[witnesses and exclusions]\label{prop:witnesses}
+\uses{def:instance, def:grid, def:logratio, def:exgrids, def:learner, def:batched, def:infomodel, def:consistent, def:exlearners}
+Let $\Kar\ge2$ and $s\ge\max(2,\Kar)$.
+\begin{enumerate}[label=(\alph*)]
+\item \emph{Class $\cP$.} Every Bernoulli instance $(\Ber(p_c))_{c\in\Arms}$ with all $p_c<1$ is in
+  $\cP$. An instance with an arm $\delta_1$, or with an arm of law $\mathcal N(0,1)$, is not in $\cP$.
+\item \emph{Grids.} $\Sq_s$, $\Ge_s$ and $\Db_s$ are grids; $\xg_\ell\to1$ on $\Sq_s$ and on $\Ge_s$,
+  and $\xg_\ell=2$ for every $\ell\ge2$ on $\Db_s$. The sequence $\tl_\ell:=\ell$ is not a grid.
+\item \emph{Batched learners.} $\RR$ and $\Const_c$ are \batched{} on every grid. For every grid
+  $g$, $\FL^g$ is \batched{} on $g$ and $\pi:=\FL^g$ does not \term{t:sees}{ignore the rewards} at
+  round $\tl_1+1$. $\React$ is \batched{} on no grid.
+\item \emph{Information models.} $\FL\in\Mk{0}$, and, for every arm $c$, the constant family
+  $(\Const_c)_{g\in\Gr}$ is in $\Mk{0}$. For every $k\in\Nat$, $\Par^{(k)}\in\Mk{k+1}$ and
+  $\Par^{(k)}\notin\Mk{k}$.
+\item \emph{Consistency.} For every arm $c$ and every grid, $\Const_c$ is \consistent{} on $\cP_c$.
+  On every grid, neither $\Const_c$ nor $\RR$ is \consistent{} on $\cP$.
+\end{enumerate}
+\end{proposition}
+(see the proof in Appendix~\ref{sec:pf-prop:witnesses}).
+
+The witness of consistency in (e) is degenerate: on $\cP_c$ nothing has to be learned. A learner
+consistent at the batch ends on the whole class $\cP$ follows from Theorem~\ref{thm:main}(iii) and
+the classical regret bound of UCB1 \citep[Theorem~1]{ACF02} (Theorem~\ref{cite:ACF02-thm1}).
+
+\begin{corollary}[a consistent learner on the sequential grid]\label{cor:ucb}
+\uses{def:instance, def:exgrids, def:batched, def:consistent, def:exlearners}
+Let $\Kar\ge2$. The learner $\UCB$ is \batched{} on $\Sq_{\Kar}$ and \consistent{} of $\Sq_{\Kar}$
+on $\cP$.
+\end{corollary}
+(see the proof in Appendix~\ref{sec:pf-cor:ucb}).
+
+On a grid with batches of size larger than one after the first, whether a learner consistent at the
+batch ends on $\cP$ exists, and in which information model, is not settled here.
+
+Together with Proposition~\ref{prop:kinf}(i) and~(iv) for $\Ki$, this gives a witness and an
+exclusion for each definition (Table~\ref{tab:witnesses}). The exclusions are the ones the
+definitions are meant to make: a learner that reacts inside a batch, a learner that reads the future
+of the grid, a learner that never explores, an instance whose best mean is $1$.
+
+\begin{table}[t]
+\centering
+\caption{A witness and an exclusion for each definition.}\label{tab:witnesses}
+\begin{tabular}{@{}p{0.22\textwidth}p{0.36\textwidth}p{0.34\textwidth}@{}}
+\toprule
+Definition & Witness & Exclusion \\
+\midrule
+class $\cP$ (Def.~\ref{def:instance}) & Bernoulli instances with means $<1$ & an arm $\delta_1$ ($\ms=1$); an arm $\mathcal N(0,1)$ \\
+$\Ki$ (Def.~\ref{def:kinf}) & $\Ki(\Ber(p),\mu)=\kl(p,\mu)$, $p\le\mu<1$ & $\Ki(P,\mu)=+\infty$ for $\mu\ge1$ \\
+grid (Def.~\ref{def:grid}) & $\Sq_s$, $\Ge_s$ ($\xg_\ell\to1$), $\Db_s$ ($\xg_\ell=2$) & $\tl_\ell=\ell$ \\
+batched (Def.~\ref{def:batched}) & $\FL^g$ on $g$ (uses rewards) & $\React$, on every grid \\
+$\Mk{k}$ (Def.~\ref{def:infomodel}) & $\FL\in\Mk{0}$; $\Par^{(k)}\in\Mk{k+1}$ & $\Par^{(k)}\notin\Mk{k}$ \\
+consistency (Def.~\ref{def:consistent}) & $\UCB$ on $\cP$, grid $\Sq_{\Kar}$; $\Const_c$ on $\cP_c$, every grid & $\Const_c$ and $\RR$ on $\cP$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Numerical values} No algorithm is analysed here, so there is nothing to simulate: the
+paper proves no bound that numbers could illustrate. We give instead the constants on explicit
+instances, which are elementary computations from the closed forms above. For the
+Bernoulli instance $\nu=(\Ber(0.7),\Ber(0.5))$, the suboptimal arm has $\Dg_a=0.2$ and, by
+Proposition~\ref{prop:kinf}(iv) and~(iii),
+\begin{equation*}
+  2\Dg_a^2=0.0800\ \le\ \Ka_a=\kl(0.5,0.7)=0.0872\ \le\ \log\tfrac{0.5}{0.3}=0.5108,
+\end{equation*}
+so $1/\Ka_a=11.47$; the lower bound is nearly tight here, the upper bound is not. On the grids with
+$s=2$, the first ratios $\xg_2,\dots,\xg_6$ are $1.585, 1.262, 1.161, 1.113, 1.086$ on $\Sq_2$,
+$2, 1.5, 1.333, 1.25, 1.2$ on $\Ge_2$ (where $\xg_\ell=\ell/(\ell-1)$), and $2$ on $\Db_2$, whose
+ends $2,4,16,256,65536,\dots$ grow doubly exponentially.
+
+\paragraph{An instance satisfying every hypothesis at once} The instance $\nu$ above, the grid
+$\Db_2$ and the learner $\Const_{c_1}$ (arm $c_1$ has law $\Ber(0.7)$) satisfy all the definitions
+together: $\nu\in\cP_{c_1}\subseteq\cP$, $\Db_2$ is a grid, and $\Const_{c_1}$ belongs to $\Mk{0}$
+(Proposition~\ref{prop:witnesses}(d)) and is \consistent{} of $\Db_2$ on $\cP_{c_1}$. With
+$\UCB$ instead of $\Const_{c_1}$ and the grid $\Sq_2$ (here $\Kar=2$), the learner is batched on
+the grid and consistent at its batch ends on the whole class $\cP$, which contains $\nu$
+(Corollary~\ref{cor:ucb}).
+
+% ======================================================================
+\section{Conclusion and open questions}\label{sec:open}
+
+\paragraph{Conclusion} We fixed the definitions of stochastic bandits on an imposed grid, with rewards in $[0,1]$: grids,
+batched learners, the information models $\Mk{k}$, consistency at the batch ends, and the divergence
+$\Ki$; we proved their basic relations and gave a witness and an exclusion for each. The limitations
+are those of the definitions: the grid is deterministic and fixed in advance, the rewards are in
+$[0,1]$, and the dual formula of $\Ki$, its continuity and the deviation inequalities for its
+empirical version, which upper bounds need, are not proved here.
+
+\paragraph{Open questions} None. The questions that motivate this setting (the price of an imposed grid for
+the problem-dependent constant, in each information model) are the subject of other papers.
+
+% ======================================================================
+\appendix
+
+\section{Useful lemmas}\label{sec:cited}
+
+In this section we present the two results from other papers that we use.
+
+\citet{GMS19} write $\mathbb P_1,\mathbb P_2$ for two probability measures on a measurable space
+$(\Gamma,\mathcal G)$ and $Z$ for a $\mathcal G$-measurable function with values in $[0,1]$ (printed
+there as $Z:\Omega\to[0,1]$, where $\Gamma$ is meant); we keep these names, except the
+$\sigma$-algebra, which we write $\mathcal S$ ($\mathcal G$ is the set of grids here), with $\KL$
+and $\kl$ of Definition~\ref{def:kinf}. It is used to compare the means of two laws on $[0,1]$.
+
+% Verbatim: literature/notes/GMS19.md, Lemma 1 of Section 2.1.
+\begin{lemma}[{From \citet{GMS19}, Lemma~1}]\label{cite:GMS19-lem1}
+\uses{def:kinf}
+Let $\mathbb P_1$ and $\mathbb P_2$ be probability measures on a measurable space
+$(\Gamma,\mathcal S)$ and let $Z:\Gamma\to[0,1]$ be $\mathcal S$-measurable, with expectations
+$\E_1[Z]$ and $\E_2[Z]$ under $\mathbb P_1$ and $\mathbb P_2$. Then
+\begin{equation*}
+  \KL(\mathbb P_1,\mathbb P_2)\ \ge\ \kl\big(\E_1[Z],\E_2[Z]\big).
+\end{equation*}
+\end{lemma}
+
+\citet{ACF02} call the arms machines, write $P_i$ for the law $\nu_c$ of an arm, $\mu_i$, $\mu^*$
+and $\Delta_i$ for $\mean_c$, $\ms$ and $\Dg_c$, $n$ for the number of rounds $T$, and $T_j(n)$ for
+the count $N'_c(T)$ below; their regret after $n$ plays is $\mu^*n-\sum_j\mu_j\E[T_j(n)]$, which is
+$\sum_c\Dg_c\E[N'_c(T)]$. In their model successive pulls of an arm give independent rewards with
+its law, independently across arms; we write it with a stack of rewards per arm, as in
+\citet[Section~4.6]{LS}, who state that this reward-stack model gives the same law of the history
+as the canonical model and leave the proof as their Exercise~4.4. In the bound, $\pi$ is the number
+$3.14159\ldots$, not a learner. UCB1 is defined there up to the order of the first $\Kar$ pulls and the
+rule for ties, and the theorem holds for each choice, in particular for $\UCB$ of
+Definition~\ref{def:exlearners}. It is used for Corollary~\ref{cor:ucb}.
+
+% Verbatim: literature/notes/ACF02.md, Theorem 1 and Figure 1.
+\begin{theorem}[{From \citet{ACF02}, Theorem~1}]\label{cite:ACF02-thm1}
+\uses{def:instance, def:exlearners}
+Let $\Kar\ge2$ and let $\nu$ be an instance with $\nu_c\in\Mu$ for every arm $c$. On a probability
+space, let $(X_{c,j})_{c\in\Arms,\,j\ge1}$ be independent random variables with $X_{c,j}$ of law
+$\nu_c$, and run $\UCB$ with rewards taken from these stacks: the reward of the $j$-th pull of the
+arm $c$ is $X_{c,j}$. Let $N'_c(T)$ be the number of pulls of $c$ in the rounds $1,\dots,T$. Then,
+for every $T\ge1$,
+\begin{equation*}
+  \sum_{c\in\Arms}\Dg_c\,\E\big[N'_c(T)\big]\ \le\ 8\sum_{c:\ \Dg_c>0}\frac{\log T}{\Dg_c}
+  +\Big(1+\frac{\pi^2}{3}\Big)\sum_{c\in\Arms}\Dg_c .
+\end{equation*}
+\end{theorem}
+
+% ======================================================================
+\section{Proofs of the lemmas of Section~\ref{sec:setting}}\label{sec:pf-setting}
+
+\subsection{Proof of Lemma~\ref{lem:counts}}\label{sec:pf-lem:counts}
+
+\begin{proof}
+\uses{def:instance, def:learner, def:counts}
+\Setting $\pi$, $\nu$ with $\nu_c\in\Mu$ for all $c$, and $t\ge0$ are fixed.
+\Goal (i) and (ii).
+
+(i) Each term of $\Ng_c(t)=\sum_{s\le t}\1(\Ac_s=c)$ is in $\{0,1\}$, so $0\le\Ng_c(t)\le t$, and
+going from $t$ to $t+1$ adds a nonnegative term. Since each $\Ac_s$ is exactly one arm,
+$\sum_{c}\1(\Ac_s=c)=1$, and summing over $s\le t$ gives $\sum_c\Ng_c(t)=t$.
+
+(ii) By linearity of the expectation and $\Dg_{\Ac_s}=\sum_c\Dg_c\1(\Ac_s=c)$,
+\begin{align*}
+  \Reg_{\nu,\pi}(t)
+  &=\Enu_{\nu,\pi}\Big[\sum_{c}\Dg_c\sum_{s\le t}\1(\Ac_s=c)\Big]
+   =\Enu_{\nu,\pi}\Big[\sum_{s\le t}\Dg_{\Ac_s}\Big]\\
+  &=t\,\ms-\Enu_{\nu,\pi}\Big[\sum_{s\le t}\mean_{\Ac_s}\Big] && \why{$\Dg_c=\ms-\mean_c$}.
+\end{align*}
+Each $\Dg_{\Ac_s}$ is in $[0,\max_c\Dg_c]$ and $\max_c\Dg_c\le\ms\le1$ since the means are in
+$[0,1]$, so $0\le\Reg_{\nu,\pi}(t)\le t\max_c\Dg_c\le t$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:grid}}\label{sec:pf-lem:grid}
+
+\begin{proof}
+\uses{def:grid, def:logratio}
+\Setting a grid $g$ is fixed. \Goal (i)--(iii).
+
+(i) The $\tl_\ell$ are integers and strictly increasing, so $\tl_\ell\ge\tl_{\ell-1}+1$; by induction
+from $\ell=1$, $\tl_\ell\ge\tl_1+\ell-1$, which tends to infinity.
+
+(ii) Let $t\ge1$. By (i) the set $\{\ell\ge1:\ t\le\tl_\ell\}$ is not empty, so $\bt(t)$ is defined,
+and $t\le\tl_{\bt(t)}$. If $\bt(t)=1$, then $\tl_{\bt(t)-1}=\tl_0=0<t$; otherwise
+$\bt(t)-1\ge1$ is not in the set by minimality, so $\tl_{\bt(t)-1}<t$. The batches are disjoint
+because the intervals $(\tl_{\ell-1},\tl_\ell]$ are disjoint for a strictly increasing sequence, so
+$\bt(t)$ is the only batch containing $t$. For $t=\tl_\ell$: $\tl_\ell\le\tl_\ell$ and
+$\tl_{\ell-1}<\tl_\ell$, so $\bt(\tl_\ell)=\ell$. If $t\le t'$, every $\ell$ with $t'\le\tl_\ell$
+satisfies $t\le\tl_\ell$, so $\bt(t)\le\bt(t')$. Finally $\bt(t)=1$ if and only if $t\le\tl_1$, by
+definition of the minimum.
+
+(iii) For $\ell\ge1$, $\tl_\ell\ge\tl_1\ge2$, so $\Lg_\ell\ge\log2>0$; $\log$ is strictly increasing,
+so $\Lg_{\ell-1}<\Lg_\ell$ for $\ell\ge2$ and $\xg_\ell=\Lg_\ell/\Lg_{\ell-1}>1$. The product
+telescopes:
+\begin{equation*}
+  \Lg_1\prod_{k=2}^{\ell}\xg_k=\Lg_1\prod_{k=2}^{\ell}\frac{\Lg_k}{\Lg_{k-1}}=\Lg_\ell .
+\end{equation*}
+Finally $\tl_{\ell-1}^{\,\xg_\ell}=\exp(\xg_\ell\Lg_{\ell-1})=\exp(\Lg_\ell)=\tl_\ell$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:mask}}\label{sec:pf-lem:mask}
+
+\begin{proof}
+\uses{def:batched, def:learner, def:grid}
+\Setting $t\ge1$, an integer $r\ge0$ and a learner $\pi$ are fixed. \Goal measurability of
+$\mask_r$ and the equivalence.
+
+Each coordinate of $\mask_r$ is either a coordinate of $h$ or the constant $0$, so $\mask_r$ is
+measurable on $\Hs_{t-1}$ with its product $\sigma$-algebra.
+
+($\Rightarrow$) Let $h\in\Hs_{t-1}$. The histories $h$ and $\mask_r(h)$ have the same actions and the
+same rewards at the rounds $s\le\min(r,t-1)$, since $\mask_r$ keeps them. If $\pi_t$ \sees{} $r$, then
+$\pi_t(\cdot\mid h)=\pi_t(\cdot\mid\mask_r(h))$.
+
+($\Leftarrow$) Let $h,h'\in\Hs_{t-1}$ with the same actions and the same rewards at the rounds
+$s\le\min(r,t-1)$. Then $\mask_r(h)=\mask_r(h')$, because the other rewards are replaced by $0$ in
+both. Hence
+\begin{equation*}
+  \pi_t(\cdot\mid h)=\pi_t(\cdot\mid\mask_r(h))=\pi_t(\cdot\mid\mask_r(h'))=\pi_t(\cdot\mid h').
+\end{equation*}
+The last sentence of the lemma is the case $r=\tl_{\bt(t)-1}$, for every $t$.
+\end{proof}
+
+\subsection{Proof of Lemma~\ref{lem:consist-regret}}\label{sec:pf-lem:consist-regret}
+
+\begin{proof}
+\uses{def:consistent, def:counts, def:instance, def:grid, def:learner}
+\Setting $E$, $g$, $\pi$ are fixed; fix $\nu\in E$ and $\alpha>0$, and write
+$u_c(\ell):=\Enu_{\nu,\pi}[\Ng_c(\tl_\ell)]/\tl_\ell^{\,\alpha}\ge0$.
+\Goal $u_c(\ell)\to0$ for every suboptimal $c$ if and only if
+$\Reg_{\nu,\pi}(\tl_\ell)/\tl_\ell^{\,\alpha}\to0$.
+
+By Definition~\ref{def:counts}, and since the optimal arms have $\Dg_c=0$,
+\begin{equation*}
+  \frac{\Reg_{\nu,\pi}(\tl_\ell)}{\tl_\ell^{\,\alpha}}=\sum_{c:\ \Dg_c>0}\Dg_c\,u_c(\ell).
+\end{equation*}
+($\Rightarrow$) This is a finite sum of sequences that tend to $0$. ($\Leftarrow$) For a suboptimal
+$c$, $0\le u_c(\ell)\le\Reg_{\nu,\pi}(\tl_\ell)/(\Dg_c\,\tl_\ell^{\,\alpha})$, which tends to $0$.
+\end{proof}
+
+% ======================================================================
+\section{Proof of Theorem~\ref{thm:main}}\label{sec:pf-thm:main}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{def:instance, def:learner, def:counts, def:grid, def:exgrids, def:batched, def:infomodel, def:consistent, def:seqcons, def:exlearners, lem:grid, lem:consist-regret, prop:witnesses}
+\Setting the set of arms $\Arms$, with $\Kar\ge2$. \Goal items (i)--(iii) of
+Theorem~\ref{thm:main}.
+
+\emph{Idea.} Every item reduces to comparing the last batch end before a round in two grids.
+Agreeing on more ends implies agreeing on fewer, which gives the inclusions of (i); strictness is
+the parity learner of Proposition~\ref{prop:witnesses}(d). If $g$ is finer than $g'$, the last end
+of $g$ before a round is at least that of $g'$, which gives (ii), and the ends of $g'$ are a
+subsequence of those of $g$. On $\Sq_s$ the last end before a round $t>s$ is $t-1$, so batching
+only constrains the first batch, and the ends form a tail of all rounds, which gives (iii) with
+Lemma~\ref{lem:consist-regret}. The proof follows the items: (i) inclusions, strictness and
+components; (ii) batching and consistency; (iii) batching and consistency.
+
+\textbf{Item (i), inclusions.} Let $k\le k'$ and $\Pi\in\Mk{k}$. Condition (a) of
+Definition~\ref{def:infomodel} does not depend on $k$. For (b) at level $k'$: if two grids $g,g'$
+agree on $\tl_j$ for all $j\le\ell+k'$, they agree for all $j\le\ell+k$, since $\ell+k\le\ell+k'$ (with
+$\ell+\infty=\infty$); so (b) at level $k$ gives $\pi^g_t=\pi^{g'}_t$. Hence $\Pi\in\Mk{k'}$.
+
+\textbf{Item (i), strictness.} Let $k<k'$; then $k\in\Nat$ and $k+1\le k'$. By
+Proposition~\ref{prop:witnesses}(d), $\Par^{(k)}\in\Mk{k+1}\subseteq\Mk{k'}$ and
+$\Par^{(k)}\notin\Mk{k}$, so $\Mk{k}\ne\Mk{k'}$.
+
+\textbf{Item (i), components.} If $\Pi\in\Mk{\infty}$, then $\pi^g$ is batched on $g$ by (a). Conversely,
+let $\pi$ be batched on $g$, and let $\Pi$ have $\pi^g:=\pi$ and $\pi^{g'}:=\RR$ for $g'\ne g$. Each
+component is batched on its grid ($\RR$ ignores the rewards, so it sees them up to any $r\ge0$), so (a)
+holds, and (b) is void for $k=\infty$ because its hypothesis forces $g=g'$. Hence $\Pi\in\Mk{\infty}$.
+
+\textbf{Item (ii), batching.} Let $g=(\tl_j)_j$ be finer than $g'=(\tl'_j)_j$, let $\pi$ be batched on
+$g'$, and let $t\ge1$. Write $j:=\bt_g(t)-1$ and $i:=\bt_{g'}(t)-1$ (Definition~\ref{def:grid}: the
+batch of $t$ in $g$ and in $g'$, minus one) for the indices of the last ends
+before $t$ (Lemma~\ref{lem:grid}(ii): $\tl_j<t$ and $\tl'_i<t$). The end $\tl'_i$ of $g'$ is an end
+of $g$ (also when $i=0$, as $\tl'_0=\tl_0=0$), and it is smaller than $t$; since $\tl_j$ is the
+largest end of $g$ smaller than $t$ (the next one, $\tl_{j+1}$, is $\ge t$),
+\begin{equation*}
+  \tl'_i\le\tl_j .
+\end{equation*}
+Now let $h,h'$ have the same actions and the same rewards at the rounds $s\le\min(\tl_j,t-1)$. They
+have the same rewards at the rounds $s\le\min(\tl'_i,t-1)$, so $\pi_t(\cdot\mid h)=\pi_t(\cdot\mid h')$
+because $\pi_t$ sees the rewards up to $\tl'_i$. Hence $\pi_t$ sees the rewards up to $\tl_j$, for
+every $t$: $\pi$ is batched on $g$.
+
+\textbf{Item (ii), consistency.} The ends of $g'$ form a subset of the ends of $g$; since both
+sequences are strictly increasing, there is a strictly increasing $\varphi$ with
+$\tl'_\ell=\tl_{\varphi(\ell)}$ for $\ell\ge1$. For $\nu\in E$, a suboptimal $c$ and $\alpha>0$, the
+sequence $\ell\mapsto\Enu_{\nu,\pi}[\Ng_c(\tl'_\ell)]/(\tl'_\ell)^\alpha$ is a subsequence of
+$\ell\mapsto\Enu_{\nu,\pi}[\Ng_c(\tl_\ell)]/\tl_\ell^{\,\alpha}$, which tends to $0$; so does the
+subsequence.
+
+\textbf{Item (iii), batching.} On $\Sq_s$, $\tl_\ell=s+\ell-1$. For $t\le s=\tl_1$,
+$\bt(t)=1$ (Lemma~\ref{lem:grid}(ii)) and $\tl_{\bt(t)-1}=0$: the condition of
+Definition~\ref{def:batched} at $t$ is that $\pi_t$ ignores the rewards. For $t>s$,
+\begin{equation*}
+  \tl_{t-s}=t-1<t\le t=\tl_{t-s+1},
+\end{equation*}
+so $\bt(t)=t-s+1$ and $\tl_{\bt(t)-1}=t-1$; a policy $\pi_t$ always sees the rewards up to $t-1$,
+since its histories have length $t-1$. Hence $\pi$ is batched on $\Sq_s$ if and only if $\pi_t$
+ignores the rewards for every $t\le s$.
+
+\textbf{Item (iii), consistency.} Fix $\nu\in E$, $\alpha>0$ and write
+$r(T):=\Reg_{\nu,\pi}(T)/T^\alpha$. By Lemma~\ref{lem:consist-regret}, $\pi$ is consistent at the
+batch ends of $\Sq_s$ on $E$ if and only if $r(s+\ell-1)\to0$ as $\ell\to\infty$ for all such $\nu$
+and $\alpha$. The map $\ell\mapsto s+\ell-1$ is a bijection from $\{\ell\ge1\}$ onto $\{T\ge s\}$,
+and the limit of a sequence depends only on its tail, so $r(s+\ell-1)\to0$ if and only if $r(T)\to0$
+as $T\to\infty$, which is sequential consistency (Definition~\ref{def:seqcons}).
+\end{proof}
+
+% ======================================================================
+\section{Proof of Proposition~\ref{prop:kinf}}\label{sec:pf-prop:kinf}
+
+We first record two properties of $\kl$, used for the lower bound in (iii) and for (iv).
+
+\begin{lemma}[monotonicity and Pinsker for $\kl$]\label{lem:kl}
+\uses{def:kinf}
+Let $p\in[0,1)$. Then $q\mapsto\kl(p,q)$ is nondecreasing on $[p,1]$ and continuous on $[p,1)$,
+with $\kl(p,p)=0$, and
+\begin{equation*}
+  \kl(p,q)\ge2(q-p)^2\qquad\text{for every }q\in[p,1].
+\end{equation*}
+\end{lemma}
+
+\begin{proof}
+\uses{def:kinf}
+\Setting $p\in[0,1)$. \Goal monotonicity, continuity, $\kl(p,p)=0$ and the quadratic bound.
+
+At $q=1$, $\kl(p,1)=+\infty$ since $p<1$, which is larger than every other value. On $[p,1)$, if $p=0$
+then $\kl(0,q)=\log\frac1{1-q}$, which is continuous, nondecreasing and $0$ at $q=0$, and
+differentiable on $(0,1)$ with
+$\frac{\partial}{\partial q}\kl(0,q)=\frac1{1-q}=\frac{q-0}{q(1-q)}$. If $p>0$,
+then $[p,1)\subseteq(0,1)$, where $\kl(p,\cdot)$ is finite and differentiable, $\kl(p,p)=0$, and
+\begin{equation*}
+  \frac{\partial}{\partial q}\kl(p,q)=-\frac pq+\frac{1-p}{1-q}=\frac{q-p}{q(1-q)}\ \ge0\qquad(q\in[p,1)).
+\end{equation*}
+So in both cases $\frac{\partial}{\partial q}\kl(p,q)=\frac{q-p}{q(1-q)}$ on $(p,1)$.
+For the quadratic bound, let $f(q):=\kl(p,q)-2(q-p)^2$ on $[p,1)$: it is continuous, $f(p)=0$, and on
+$(p,1)$, since $q(1-q)\le1/4$,
+\begin{equation*}
+  f'(q)=(q-p)\Big(\frac1{q(1-q)}-4\Big)\ \ge0 .
+\end{equation*}
+Hence $f\ge0$ on $[p,1)$, and the bound holds at $q=1$ because $\kl(p,1)=+\infty$.
+\end{proof}
+
+\begin{proof}[Proof of Proposition~\ref{prop:kinf}]
+\proves{prop:kinf}
+\uses{def:instance, def:kinf, cite:GMS19-lem1, lem:kl}
+\Setting $P\in\Mu$, $p=\mean(P)\in[0,1]$, $\mu\in\R$. \Goal (i)--(v).
+
+\emph{Idea.} Items (i) and (ii) read off the definition: no law on $[0,1]$ has mean above $1$, and
+$P$ itself is admissible when $\mu<p$. For (iii), every admissible $Q$ has mean $q>\mu$, and
+data processing to the reward gives $\KL(P,Q)\ge\kl(p,q)\ge\kl(p,\mu)$; Pinsker's inequality
+(Lemma~\ref{lem:kl}) gives the quadratic bound. The upper bound moves just enough mass of $P$ to
+the point $1$: the mixture $(1-u)P+u\delta_1$ has a density bounded by $1/(1-u)$. Item (iv) uses the
+Bernoulli laws as competitors, and (v) is (iii) at $\mu=\ms$.
+
+\textbf{(i)} Every $Q\in\Mu$ has $\mean(Q)\le1\le \mu$, so the set in the definition of $\Ki(P,\mu)$ is
+empty and $\Ki(P,\mu)=+\infty$.
+
+\textbf{(ii)} If $\mu<p$, then $Q:=P\in\Mu$ has $\mean(Q)>\mu$ and $\KL(P,P)=0$, so $\Ki(P,\mu)=0$.
+
+\textbf{(iii), lower bound.} Let $p\le \mu<1$ and let $Q\in\Mu$ with $q:=\mean(Q)>\mu$. Apply
+Lemma~\ref{cite:GMS19-lem1} on $(\Gamma,\mathcal S):=(\R,\text{Borel})$ with $\mathbb P_1:=P$,
+$\mathbb P_2:=Q$ and $Z(x):=\min(\max(x,0),1)$, which is measurable with values in $[0,1]$. Since
+$P$ and $Q$ give mass $1$ to $[0,1]$, where $Z(x)=x$, we have $\E_1[Z]=p$ and $\E_2[Z]=q$, so
+\begin{align*}
+  \KL(P,Q)&\ge\kl(p,q) && \why{Lemma~\ref{cite:GMS19-lem1}}\\
+          &\ge\kl(p,\mu) && \why{Lemma~\ref{lem:kl}: $\kl(p,\cdot)$ nondecreasing on $[p,1]$, $p\le \mu<q\le1$}.
+\end{align*}
+Taking the infimum over such $Q$ gives $\Ki(P,\mu)\ge\kl(p,\mu)$, and $\kl(p,\mu)\ge2(\mu-p)^2$ by
+Lemma~\ref{lem:kl} (here $p\le \mu<1$, so $p<1$).
+
+\textbf{(iii), upper bound.} Let $u_0:=\frac{\mu-p}{1-p}\in[0,1)$ (well defined since $p\le \mu<1$) and
+let $u\in(u_0,1)$. The measure $Q_u:=(1-u)P+u\,\delta_1$ is in $\Mu$, with mean
+\begin{equation*}
+  \mean(Q_u)=(1-u)p+u=p+u(1-p)>p+u_0(1-p)=\mu .
+\end{equation*}
+Since $Q_u\ge(1-u)P$, $P$ is absolutely continuous with respect to $Q_u$ and its density satisfies
+$\frac{dP}{dQ_u}\le\frac1{1-u}$, $Q_u$-almost everywhere, hence $P$-almost everywhere. Therefore
+\begin{equation*}
+  \Ki(P,\mu)\le\KL(P,Q_u)=\int\log\frac{dP}{dQ_u}\,dP\le\log\frac1{1-u}.
+\end{equation*}
+Letting $u$ decrease to $u_0$ gives $\Ki(P,\mu)\le\log\frac1{1-u_0}=\log\frac{1-p}{1-\mu}$, which is
+finite.
+
+\textbf{(iv)} Let $P=\Ber(p)$ with $p\le \mu<1$. The lower bound $\Ki(P,\mu)\ge\kl(p,\mu)$ is (iii). For
+the upper bound, every $q\in(\mu,1)$ gives $\Ber(q)\in\Mu$ with mean $q>\mu$, so
+$\Ki(P,\mu)\le\KL(\Ber(p),\Ber(q))=\kl(p,q)$. As $q$ decreases to $\mu$, $\kl(p,q)\to\kl(p,\mu)$ by the
+continuity of Lemma~\ref{lem:kl} on $[p,1)$, so $\Ki(P,\mu)\le\kl(p,\mu)$.
+
+\textbf{(v)} Let $\nu\in\cP$ and $a$ suboptimal. Apply (iii) with $P:=\nu_a\in\Mu$, $p=\mean_a$ and
+$\mu:=\ms$: indeed $\mean_a<\ms<1$. It gives
+$2\Dg_a^2=2(\ms-\mean_a)^2\le \Ka_a\le\log\frac{1-\mean_a}{1-\ms}<\infty$, and $2\Dg_a^2>0$.
+\end{proof}
+
+% ======================================================================
+\section{Proofs of Proposition~\ref{prop:witnesses} and Corollary~\ref{cor:ucb}}\label{sec:pf-prop:witnesses}
+
+\subsection{Proof of Proposition~\ref{prop:witnesses}}
+
+\begin{proof}[Proof of Proposition~\ref{prop:witnesses}]
+\proves{prop:witnesses}
+\uses{def:instance, def:grid, def:logratio, def:exgrids, def:learner, def:counts, def:batched, def:infomodel, def:consistent, def:exlearners, lem:grid, lem:counts}
+\Setting $\Kar\ge2$ and $s\ge\max(2,\Kar)$. \Goal items (a)--(e).
+
+\emph{Idea.} Each item is a direct check on an explicit object. A learner whose arm depends on the
+round only ignores the rewards, hence is batched on every grid; the frozen leader reads only the
+rewards up to the last end, and two histories with opposite rewards make it pull different arms.
+For the information models, two grids that agree on the ends a learner reads give it the same
+policy, and the parity learner is separated by two grids that differ by one at the end
+$\tl_{k+1}$. For consistency, a learner that never pulls a suboptimal arm has zero counts, and a
+learner that pulls a fixed suboptimal arm a constant fraction of the time has linear counts.
+
+\textbf{(a)} $\Ber(p_c)$ gives mass $1$ to $\{0,1\}\subseteq[0,1]$ and has mean $p_c$, so
+$\ms=\max_cp_c<1$ and the instance is in $\cP$. An arm $\delta_1$ has mean $1$, so $\ms=1$; an arm
+$\mathcal N(0,1)$ gives mass $<1$ to $[0,1]$, so it is not in $\Mu$. Neither instance is in $\cP$.
+
+\textbf{(b)} In the three cases $\tl_0=0$, $\tl_1=s\ge\max(2,\Kar)$ and the sequence is strictly
+increasing for $\ell\ge1$: $s+\ell-1$ increases by $1$, $s2^{\ell-1}$ doubles, and
+$s^{2^{\ell}}=(s^{2^{\ell-1}})^2>s^{2^{\ell-1}}$ since $s^{2^{\ell-1}}\ge2$. The ratios are, for $\ell\ge2$,
+\begin{equation*}
+  \Sq_s:\ \xg_\ell=\frac{\log(s+\ell-1)}{\log(s+\ell-2)},\qquad
+  \Ge_s:\ \xg_\ell=\frac{\log s+(\ell-1)\log2}{\log s+(\ell-2)\log2},\qquad
+  \Db_s:\ \xg_\ell=\frac{2^{\ell-1}\log s}{2^{\ell-2}\log s}=2 .
+\end{equation*}
+For $\Ge_s$ the numerator and the denominator differ by $\log2$ and tend to infinity, so
+$\xg_\ell\to1$. For $\Sq_s$, $\log(s+\ell-1)-\log(s+\ell-2)=\log(1+\frac1{s+\ell-2})\to0$ while the
+denominator tends to infinity, so $\xg_\ell\to1$. The sequence $\tl_\ell:=\ell$ has $\tl_1=1<2$, so
+it is not a grid.
+
+\textbf{(c)} $\RR$ and $\Const_c$ ignore the rewards (their arm at round $t$ depends on $t$ only), so
+they see the rewards up to every $r\ge0$, and are batched on every grid.
+
+Let $g$ be a grid and $t\ge1$. If $t\le\tl_1$, $\FL^g$ plays as $\RR$, which ignores the rewards. If
+$t>\tl_1$, then $\ell=\bt(t)-1\ge1$ and $\tl_\ell<t$ (Lemma~\ref{lem:grid}(ii)); the arm pulled is
+a function of the actions and of the rewards $y_s$, $s\le\tl_\ell$, so $\FL^g_t$ sees the rewards up
+to $\tl_\ell=\tl_{\bt(t)-1}$. Hence $\FL^g$ is batched on $g$.
+
+$\FL^g$ uses the rewards at round $t:=\tl_1+1$: take the history $h$ of the first $\tl_1$ rounds of
+$\RR$ (each arm is pulled at least once there, as $\tl_1\ge\Kar$) with $y_s:=\1(a_s=c_1)$, and the
+history $h'$ with the same actions and $y'_s:=\1(a_s=c_2)$. Then $\FL^g$ pulls $c_1$ after $h$ and
+$c_2$ after $h'$, so $\FL^g_t$ does not ignore the rewards.
+
+$\React$ is batched on no grid: for every grid, $2\le\tl_1$, so $\bt(2)=1$ and $\React_2$ must ignore
+the rewards. The histories $h:=(c_1,1)$ and $h':=(c_1,0)$ have the same action, and $\React$ pulls $c_1$
+after $h$ and $c_2\ne c_1$ after $h'$.
+
+\textbf{(d), $\FL\in\Mk{0}$.} Condition (a) of Definition~\ref{def:infomodel} is (c). For (b) with
+$k=0$, let $g,g'$ agree on $\tl_1,\dots,\tl_\ell$ and let $t$ be in batch $\ell+1$ of both. Then
+$\bt_g(t)=\bt_{g'}(t)=\ell+1$. If $\ell=0$, both policies are those of $\RR$ at $t$. If $\ell\ge1$,
+both pull the first maximiser of the frozen empirical means computed from the rounds
+$s\le\tl_\ell=\tl'_\ell$, the same function of the history. Hence $\FL^g_t=\FL^{g'}_t$.
+
+\textbf{(d), $(\Const_c)_{g\in\Gr}\in\Mk{0}$.} Condition (a) is (c): $\Const_c$ is batched on every
+grid. Condition (b) holds for every $k$, because the policy $\Const_c$ at a round $t$ is the same for
+all grids (the Dirac mass at $c$ after every history).
+
+\textbf{(d), $\Par^{(k)}\in\Mk{k+1}$.} Each $\Par^{(k),g}$ ignores the rewards, so it is batched on
+$g$. Let $g,g'$ agree on $\tl_j$ for $1\le j\le\ell+k+1$, and let $t$ be in batch $\ell+1$ of both.
+Then $\bt_g(t)=\bt_{g'}(t)=\ell+1$ and $\tl_{\ell+1+k}=\tl'_{\ell+1+k}$, so the two policies pull the
+same arm at $t$.
+
+\textbf{(d), $\Par^{(k)}\notin\Mk{k}$.} Let $g:=\Sq_s$ ($\tl_j=s+j-1$ for $j\ge1$)
+and $g'$ the sequence with $\tl'_0:=0$, $\tl'_j:=s+j-1$ for $1\le j\le k$ and $\tl'_j:=s+j$ for
+$j\ge k+1$. Then $g'$ is a grid: it is strictly increasing (it increases by $2$ from $j=k$ to $j=k+1$
+when $k\ge1$, and by $1$ elsewhere) and $\tl'_1\ge s\ge\max(2,\Kar)$. Take $\ell:=0$ and $t:=1$:
+round $1$ is in batch $1$ of both grids, since $\tl_1,\tl'_1\ge2$, and the grids agree on $\tl_j$
+for $1\le j\le0+k$. But
+\begin{equation*}
+  \tl_{\bt(1)+k}=\tl_{k+1}=s+k,\qquad \tl'_{\bt(1)+k}=\tl'_{k+1}=s+k+1
+\end{equation*}
+have different parities, so $\Par^{(k),g}$ pulls one of $c_1,c_2$ at round $1$ and $\Par^{(k),g'}$
+pulls the other. Condition (b) of $\Mk{k}$ fails.
+
+\textbf{(e)} Let $\nu\in\cP_c$. Every suboptimal arm $c'$ of $\nu$ differs from $c$ because
+$\mean_c=\ms$, so under $\Const_c$, $\Ng_{c'}(t)=0$ for all $t$: $\Const_c$ is consistent at the batch
+ends of every grid on $\cP_c$.
+
+On $\cP$: fix a grid. Let $\nu$ have $\nu_c:=\Ber(1/4)$ and $\nu_{c'}:=\Ber(1/2)$ for $c'\ne c$;
+then $\nu\in\cP$ by (a) and $c$ is suboptimal. Under $\Const_c$, $\Ng_c(\tl_\ell)=\tl_\ell$, so with
+$\alpha:=1/2$,
+\begin{equation*}
+  \frac{\Enu_{\nu,\Const_c}[\Ng_c(\tl_\ell)]}{\tl_\ell^{1/2}}=\tl_\ell^{1/2}\to\infty
+\end{equation*}
+by Lemma~\ref{lem:grid}(i). Under $\RR$, every block of $\Kar$ consecutive rounds pulls each arm
+once, so $\Ng_c(t)\ge\lfloor t/\Kar\rfloor\ge t/\Kar-1$ for all $t$ and every arm $c$ (with $\Ng_c(t)\le t$,
+Lemma~\ref{lem:counts}(i)); with the same $\nu$ and $\alpha$,
+\begin{equation*}
+  \frac{\Enu_{\nu,\RR}[\Ng_c(\tl_\ell)]}{\tl_\ell^{1/2}}\ge\frac{\tl_\ell}{\Kar\,\tl_\ell^{1/2}}-\frac1{\tl_\ell^{1/2}}\to\infty .
+\end{equation*}
+Neither learner is consistent at the batch ends on $\cP$.
+\end{proof}
+
+\subsection{Proof of Corollary~\ref{cor:ucb}}\label{sec:pf-cor:ucb}
+
+\begin{proof}[Proof of Corollary~\ref{cor:ucb}]
+\proves{cor:ucb}
+\uses{def:instance, def:learner, def:counts, def:seqcons, def:exgrids, def:batched, def:consistent, def:exlearners, cite:ACF02-thm1, thm:main}
+\Setting $\Kar\ge2$, so that $s:=\Kar$ satisfies $s\ge\max(2,\Kar)$ and $\Sq_{\Kar}$ is the grid
+$\tl_\ell=\Kar+\ell-1$. \Goal $\UCB$ is batched on $\Sq_{\Kar}$, and consistent at its batch ends on
+$\cP$.
+
+\emph{Idea.} By Theorem~\ref{thm:main}(iii) with $s=\Kar$, both properties reduce to sequential
+ones: the first $\Kar$ policies must ignore the rewards, which $\UCB$ does, and $\UCB$ must be
+sequentially consistent on $\cP$, which follows from the logarithmic regret bound of
+Theorem~\ref{cite:ACF02-thm1} once the stack model of that theorem is shown to have the law
+$\Pnu_{\nu,\UCB}$ of Definition~\ref{def:learner}. Steps: (1) the law; (2) sequential consistency;
+(3) conclusion.
+
+\textbf{Step 1: the stack model gives the law $\Pnu_{\nu,\UCB}$.} This identification is standard:
+\citet[Section~4.6]{LS} state it, and its proof is their Exercise~4.4. We write it out for a
+deterministic learner. Fix $\nu$ with $\nu_c\in\Mu$ for all $c$. $\UCB$ is deterministic: its arm at round $t$ is $f_t(h)$ for a measurable map $f_t$ on
+$\Hs_{t-1}$. In the stack model of Theorem~\ref{cite:ACF02-thm1}, let $A'_t:=f_t(H'_{t-1})$,
+$R'_t:=X_{A'_t,\,N'_{A'_t}(t-1)+1}$ and $H'_t:=(A'_1,R'_1,\dots,A'_t,R'_t)$. We show by induction on
+$t$ that $H'_t$ has the law of $H_t$ under $\Pnu_{\nu,\UCB}$; for $t=0$ both are the point of
+$\Hs_0$. Let $t\ge1$, an arm $c$ and an integer $j\ge1$, and let $X^{(c,j)}$ be the family of
+stacks in which $X_{c,i}$ is replaced by $0$ for every $i\ge j$. Run $\UCB$ on $X^{(c,j)}$, with
+history $H^{(c,j)}$ and counts $N^{(c,j)}$. Up to round $t-1$, the two runs read the same rewards
+as long as $c$ has been pulled at most $j-1$ times; so, by induction on the rounds, the events
+$\{N'_c(t-1)=j-1\}$ and $\{N^{(c,j)}_c(t-1)=j-1\}$ coincide and $H'_{t-1}=H^{(c,j)}_{t-1}$ on them.
+These are functions of $X^{(c,j)}$, which is independent of $X_{c,j}$. Hence, for every bounded
+measurable $\varphi$ on $\Hs_{t}$,
+\begin{equation*}
+  \E\big[\varphi(H'_{t-1},c,X_{c,j})\,\1\{A'_t=c,\ N'_c(t-1)=j-1\}\big]
+  =\E\Big[\int\varphi(H'_{t-1},c,y)\,\nu_c(dy)\,\1\{A'_t=c,\ N'_c(t-1)=j-1\}\Big],
+\end{equation*}
+since $A'_t=f_t(H'_{t-1})$. On the event of the indicator, $R'_t=X_{c,j}$. Summing over $c$ and
+$j\ge1$,
+\begin{equation*}
+  \E\big[\varphi(H'_t)\big]=\E\Big[\int\varphi\big(H'_{t-1},f_t(H'_{t-1}),y\big)\,\nu_{f_t(H'_{t-1})}(dy)\Big].
+\end{equation*}
+The same identity holds for $H_t$ under $\Pnu_{\nu,\UCB}$, by the two conditional laws of
+Definition~\ref{def:learner}. With the induction hypothesis, $H'_t$ and $H_t$ have the same law. The
+count of an arm up to round $T$ is a function of the history, so
+$\E[N'_c(T)]=\Enu_{\nu,\UCB}[\Ng_c(T)]$ for all $c$ and $T$.
+
+\textbf{Step 2: $\UCB$ is sequentially consistent on $\cP$.} Let $\nu\in\cP$ and $\alpha>0$. By
+Step~1, Definition~\ref{def:counts} and Theorem~\ref{cite:ACF02-thm1}, for every $T\ge1$,
+\begin{equation*}
+  0\le\frac{\Reg_{\nu,\UCB}(T)}{T^\alpha}\le
+  \frac{8\log T}{T^\alpha}\sum_{c:\ \Dg_c>0}\frac1{\Dg_c}+\frac1{T^\alpha}\Big(1+\frac{\pi^2}{3}\Big)\sum_{c}\Dg_c
+  \ \xrightarrow[T\to\infty]{}\ 0,
+\end{equation*}
+since $\log T/T^\alpha\to0$ (here $\pi=3.14159\ldots$ is the number). This is Definition~\ref{def:seqcons} with $E=\cP$.
+
+\textbf{Step 3: conclusion.} For $t\le\Kar$, $\UCB$ pulls $c_t$ whatever the history, so its policy
+at $t$ ignores the rewards. By Theorem~\ref{thm:main}(iii) with $s=\Kar$, $\UCB$ is batched on
+$\Sq_{\Kar}$; by the same item with $E=\cP$ and Step~2, it is consistent at the batch ends of
+$\Sq_{\Kar}$ on $\cP$.
+\end{proof}
+
+% ======================================================================
+\section{Sources of the techniques}\label{sec:attribution}
+
+\begin{center}
+\begin{tabular}{@{}p{0.45\textwidth}p{0.45\textwidth}@{}}
+\toprule
+Technique (where) & Earliest source found \\
+\midrule
+$\mathcal K_{\inf}$ as an infimum of $\mathrm{KL}$ over a model, $\inf\emptyset=+\infty$ (Definition~\ref{def:kinf}) & \citet{BK96}; in this form \citet[Section~1.2]{GMS19} \\
+Consistency as $o(T^\alpha)$ regret, or counts (Definitions~\ref{def:seqcons}, \ref{def:consistent}) & \citet{LR85}; \citet[Definition~16.1]{LS}; \citet[Definition~1]{GMS19} \\
+$\KL\ge\kl$ of the means for laws on $[0,1]$, hence $\Ki\ge\kl$ (Proposition~\ref{prop:kinf}(iii)) & \citet[Section~6.1]{CGMMS13}, from Hoeffding's bound on the moment-generating function; in the form used here (data processing with a $[0,1]$-valued $Z$), \citet[Lemma~1]{GMS19} \\
+The chain $\Ki\ge\kl\ge2(\cdot)^2$ (Proposition~\ref{prop:kinf}(iii)) & \citet[(7)]{GHMS22} \\
+Mixing with an atom, $(1-u)P+u\delta_1$ (Proposition~\ref{prop:kinf}(iii)) & \citet[Appendix~B.1]{GHMS22} (mixing with $\delta_x$) \\
+Upper bound $\Ki(P,\mu)\le\log\frac{1-p}{1-\mu}$ (Proposition~\ref{prop:kinf}(iii)) & this form: source not known; the uniform bound $-\log(1-\mu)$: \citet[Lemma~14]{HT10} \\
+Pinsker's inequality for Bernoulli laws with the constant $2$, and its proof by integrating $\partial_q\kl$ (Lemma~\ref{lem:kl}) & Csisz\'ar (1967), Kullback (1967) and Kemperman (1969), and Sch\"utzenberger (1953) in the binary case, after the survey of \citet[Sections~3--4]{Rio23}; the proof is Csisz\'ar's, as written in \citet[(16)]{Rio23} \\
+Learners that know the whole imposed grid or only its past ends (Definition~\ref{def:infomodel}, $k=\infty$ and $k=0$) & \citet{QW26} (batch-aware and batch-oblivious learners) \\
+Intermediate information models $\Mk{k}$, $1\le k<\infty$ (Definition~\ref{def:infomodel}) & source not known; anytime learners on a static grid: \citet{JTXHXG21} \\
+Batched learners as policies that see the rewards up to the last end (Definition~\ref{def:batched}) & \citet{PRCS16} for chosen grids; \citet{QW26} for imposed ones \\
+A consistent learner on the sequential grid (Corollary~\ref{cor:ucb}) & \citet[Theorem~1]{ACF02} \\
+The reward-stack model has the law of the canonical interaction (Corollary~\ref{cor:ucb}, Step~1) & stated in \citet[Section~4.6]{LS}, proof left as their Exercise~4.4 (hint: Doob's optional stopping theorem); the argument written here replaces a stack by zeros from an index on instead \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ======================================================================
+\section{Notation}\label{sec:notation}
+
+Every symbol is a link to its definition.
+\begin{center}
+\begin{tabular}{@{}p{0.27\textwidth}p{0.44\textwidth}p{0.23\textwidth}@{}}
+\toprule
+Symbol & Meaning & Defined in \\
+\midrule
+$\Arms$, $\Kar$ & set of arms, number of arms & Definition~\ref{def:instance} \\
+$\Mu$, $\mean(Q)$ & laws on $[0,1]$, mean of $Q$ & Definition~\ref{def:instance} \\
+$\mean_c$, $\ms$, $\Dg_c$ & mean of arm $c$, largest mean, gap & Definition~\ref{def:instance} \\
+$\cP$, $\cP_c$ & instances with rewards in $[0,1]$ and $\ms<1$; those where $c$ is optimal & Definitions~\ref{def:instance}, \ref{def:exlearners} \\
+$\KL$, $\Ber$, $\kl$ & relative entropy, Bernoulli law, Bernoulli relative entropy & Definition~\ref{def:kinf} \\
+$\Ki(P,\mu)$, $\Ka_a$ & infimum of $\KL$ over $\Mu$ above the level $\mu$; $\Ki(\nu_a,\ms)$ & Definition~\ref{def:kinf} \\
+$\Hs_t$, $\pi_t$ & histories of length $t$, policy at round $t$ & Definition~\ref{def:learner} \\
+$\Ac_t$, $\Rw_t$, $\Pnu_{\nu,\pi}$, $\Enu_{\nu,\pi}$ & arm, reward, law and expectation of the interaction & Definition~\ref{def:learner} \\
+$\Ng_c(t)$, $\Reg_{\nu,\pi}(t)$ & pulls of $c$ up to round $t$, regret & Definition~\ref{def:counts} \\
+$\Gr$, $\tl_\ell$, $\Bg_\ell$, $\bt(t)$, $\bt_g(t)$ & grids, batch ends, batch sizes, batch of round $t$ (in the grid $g$) & Definition~\ref{def:grid} \\
+$\Lg_\ell$, $\xg_\ell$ & $\log\tl_\ell$, ratio $\Lg_\ell/\Lg_{\ell-1}$ & Definition~\ref{def:logratio} \\
+$\Sq_s$, $\Ge_s$, $\Db_s$ & sequential, geometric, doubly exponential grids & Definition~\ref{def:exgrids} \\
+$\mask_r$ & history with the rewards after round $r$ set to $0$ & Definition~\ref{def:batched} \\
+$\Mk{k}$ & information model & Definition~\ref{def:infomodel} \\
+$\RR$, $\Const_c$, $\React$, $\FL$, $\Par^{(k)}$, $\UCB$ & example learners & Definition~\ref{def:exlearners} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Vocabulary} A policy \sees{} $r$, or \ignores{} (Definition~\ref{def:batched}); a learner
+is \batched{} on a grid (Definition~\ref{def:batched}); a grid is \finer{} than another
+(Definition~\ref{def:grid}); a learner is \consistent{} (Definition~\ref{def:consistent}) or
+\seqcons{} (Definition~\ref{def:seqcons}).
+
+\bibliographystyle{plainnat}
+\bibliography{refs,../../papers/library}
+
+\end{document}

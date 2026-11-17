@@ -4240,6 +4240,82 @@
     },
     "version": "v1"
   },
+  "PGPK21": {
+    "uri": "https://arxiv.org/abs/2111.02071",
+    "citation": {
+      "id": "PGPK21",
+      "type": "article",
+      "title": "The Impact of Batch Learning in Stochastic Bandits",
+      "author": [
+        {
+          "family": "Provodin",
+          "given": "Danil"
+        },
+        {
+          "family": "Gajane",
+          "given": "Pratik"
+        },
+        {
+          "family": "Pechenizkiy",
+          "given": "Mykola"
+        },
+        {
+          "family": "Kaptein",
+          "given": "Maurits"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2021
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2111.02071"
+    },
+    "version": ""
+  },
+  "PGPK22": {
+    "uri": "https://arxiv.org/abs/2202.06657",
+    "citation": {
+      "id": "PGPK22",
+      "type": "article",
+      "title": "The Impact of Batch Learning in Stochastic Linear Bandits",
+      "author": [
+        {
+          "family": "Provodin",
+          "given": "Danil"
+        },
+        {
+          "family": "Gajane",
+          "given": "Pratik"
+        },
+        {
+          "family": "Pechenizkiy",
+          "given": "Mykola"
+        },
+        {
+          "family": "Kaptein",
+          "given": "Maurits"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2022
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2202.06657"
+    },
+    "version": ""
+  },
   "PMM25": {
     "uri": "https://proceedings.mlr.press/v304/prevost26a.html",
     "citation": {
@@ -4364,6 +4440,36 @@
       "page": "660-681"
     },
     "identifiers": {},
+    "version": ""
+  },
+  "QW26": {
+    "uri": "https://arxiv.org/abs/2611.17500",
+    "citation": {
+      "id": "QW26",
+      "type": "article",
+      "title": "Adversarially Batched Online Learning",
+      "author": [
+        {
+          "family": "Qiao",
+          "given": "Mingda"
+        },
+        {
+          "family": "Wu",
+          "given": "Kerui"
+        }
+      ],
+      "container-title": "arXiv preprint",
+      "issued": {
+        "date-parts": [
+          [
+            2026
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "arxiv": "2611.17500"
+    },
     "version": ""
   },
   "R76": {
@@ -4524,6 +4630,46 @@
       }
     },
     "identifiers": {},
+    "version": ""
+  },
+  "Rio23": {
+    "uri": "https://doi.org/10.1007/978-3-031-38271-0_29",
+    "citation": {
+      "id": "Rio23",
+      "type": "paper-conference",
+      "title": "A Historical Perspective on Schützenberger-Pinsker Inequalities",
+      "author": [
+        {
+          "family": "Rioul",
+          "given": "Olivier"
+        }
+      ],
+      "editor": [
+        {
+          "family": "Nielsen",
+          "given": "F."
+        },
+        {
+          "family": "Barbaresco",
+          "given": "F."
+        }
+      ],
+      "container-title": "Geometric Science of Information (GSI 2023)",
+      "collection-title": "Lecture Notes in Computer Science",
+      "volume": "14071",
+      "page": "291-306",
+      "issued": {
+        "date-parts": [
+          [
+            2023
+          ]
+        ]
+      },
+      "DOI": "10.1007/978-3-031-38271-0_29"
+    },
+    "identifiers": {
+      "doi": "10.1007/978-3-031-38271-0_29"
+    },
     "version": ""
   },
   "Rod78": {
