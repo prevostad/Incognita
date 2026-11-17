@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.unitBandits"
+module = "Incognita.TransferBandits.Consistency"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:instance"
+meaning = "The instances P^K: Markov kernels alpha -> R whose laws are concentrated on [0,1]."
+conventions = "LML's bandits; laws on [0,1] are probability measures on R with a.s. values in Icc 0 1. File named with the roadmap prefix: BatchedBandits already has a unitBandits.toml."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:instance]"
+
+[checks]
+witness = ["Incognita.TransferBandits.const_dirac_mem_unitBandits"]
+known_cases = ["Incognita.TransferBandits.bernoulliBandit_mem_unitBandits"]
+exclusion = ["Incognita.TransferBandits.const_dirac_two_not_mem_unitBandits"]
+non_vacuity = ["Incognita.P003.divergence_decomposition_satisfiable"]

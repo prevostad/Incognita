@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.gameMeasure"
+module = "Incognita.TransferBandits.Setting"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:game"
+meaning = "The law of the game at horizon T: the law of the source data composed with the kernel of the online history of T rounds of the learner against the bandit nu (an iterated composition product)."
+conventions = "Online history of T rounds in Fin T -> alpha x R, rounds from 0; the reward of a round is drawn from nu at the action."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:game]"
+
+[checks]
+witness = ["Incognita.TransferBandits.isProbabilityMeasure_gameMeasure"]
+known_cases = ["Incognita.TransferBandits.map_fst_gameMeasure_zero"]
+exclusion = []
+non_vacuity = ["Incognita.P003.divergence_decomposition_satisfiable", "Incognita.P003.lookahead_divergence_satisfiable"]

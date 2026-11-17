@@ -1,0 +1,20 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.two_arms_sizeRule_eq_stoppedCounts
+sha256 b348d643a97d190fe0067b209f0478236ee5490b28730163f6d775e872d7bc28
+constant inductive Incognita.TransferBandits.IsSizeRule
+constant inductive Incognita.TransferBandits.PriorStrategy
+constant def Incognita.TransferBandits.SourceSpace
+constant def Incognita.TransferBandits.boxRestrict
+constant def Incognita.TransferBandits.boxSigma
+constant theorem Incognita.Statements.P003.two_arms_sizeRule_eq_stoppedCounts
+constant constructor Incognita.TransferBandits.IsSizeRule.mk
+constant inductive Incognita.TransferBandits.PriorStrategy.IsStoppingTime
+constant def Incognita.TransferBandits.PriorStrategy.act
+constant def Incognita.TransferBandits.PriorStrategy.histSigma
+constant constructor Incognita.TransferBandits.PriorStrategy.mk
+constant def Incognita.TransferBandits.PriorStrategy.state
+constant def Incognita.TransferBandits.PriorStrategy.stoppedCounts
+constant constructor Incognita.TransferBandits.PriorStrategy.IsStoppingTime.mk
+constant def Incognita.TransferBandits.PriorStrategy.state._f
+constant def Incognita.TransferBandits.PriorStrategy.state.match_1

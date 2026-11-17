@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.IsConsistentOnUnit"
+module = "Incognita.TransferBandits.Consistency"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:consistency"
+meaning = "Consistency of an LML bandit algorithm on P^K: for every instance with rewards in [0,1], every suboptimal arm a and every c > 0, E[N_a(T)] / T^c -> 0 under LML's law of the trajectory."
+conventions = "N_a(T) is LML's pullCount IT.action a T (rounds 0, ..., T - 1)."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:consistency]"
+
+[checks]
+witness = ["Incognita.P003.isConsistentOnUnit_klucb"]
+known_cases = ["Incognita.P003.isConsistentOnUnit_of_isConsistent"]
+exclusion = ["Incognita.TransferBandits.not_isConsistentOnUnit_ofSeq_const"]
+non_vacuity = ["Incognita.P003.ofAlgorithm_isConsistent_satisfiable"]

@@ -1,6 +1,27 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import Statements.Basic
+public import Statements.P003.constSize_isSizeRule
+public import Statements.P003.cyclicSize_not_stoppedCounts
+public import Statements.P003.divergence_decomposition
+public import Statements.P003.drift_all_pairs
+public import Statements.P003.drift_meanBand_inclusions
+public import Statements.P003.drift_of_mem_meanBand
+public import Statements.P003.drift_of_twoSided
+public import Statements.P003.drift_witness_exclusion
+public import Statements.P003.exists_isConsistent
+public import Statements.P003.followSource_not_isConsistent
+public import Statements.P003.fundamental_inequality
+public import Statements.P003.isConsistent_anti
+public import Statements.P003.isConsistent_one
+public import Statements.P003.learner_exclusion
+public import Statements.P003.lookahead_divergence
+public import Statements.P003.lookahead_not_isSizeRule
+public import Statements.P003.ofAlgorithm_isConsistent
+public import Statements.P003.priorCounts_isSizeRule
+public import Statements.P003.stoppedCounts_isSizeRule
+public import Statements.P003.two_arms_sizeRule_eq_stoppedCounts
+public import Statements.P003.ucb_isConsistentOnUnit
 public import Statements.P006.infoModel_mono
 public import Statements.P006.infoModel_strict
 public import Statements.P006.isBatched_iff_exists_infoModel_top

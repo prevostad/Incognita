@@ -1,0 +1,12 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.lookahead_not_isSizeRule
+sha256 c076004d57508a3e05db975e6d37bb171c8280151b39537b421afe57c20c2289
+constant inductive Incognita.TransferBandits.IsSizeRule
+constant def Incognita.TransferBandits.SourceSpace
+constant def Incognita.TransferBandits.boxRestrict
+constant def Incognita.TransferBandits.boxSigma
+constant def Incognita.TransferBandits.lookahead
+constant theorem Incognita.Statements.P003.lookahead_not_isSizeRule
+constant constructor Incognita.TransferBandits.IsSizeRule.mk
+constant theorem Incognita.TransferBandits.lookahead._proof_1

@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.DriftBound"
+module = "Incognita.TransferBandits.Consistency"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:drift"
+meaning = "The one-sided drift condition Drift_L: mu_k - mu'_k < L_k for every arm, the means being Bochner integrals (nu k)[id]."
+conventions = "L : alpha -> R; the statements take L positive."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:drift]"
+
+[checks]
+witness = ["Incognita.TransferBandits.driftBound_self"]
+known_cases = ["Incognita.TransferBandits.driftBound_const_dirac_iff"]
+exclusion = ["Incognita.TransferBandits.not_driftBound_dirac_one_zero"]
+non_vacuity = ["Incognita.P003.drift_of_twoSided_satisfiable", "Incognita.P003.drift_of_mem_meanBand_satisfiable"]

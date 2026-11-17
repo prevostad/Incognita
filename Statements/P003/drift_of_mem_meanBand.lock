@@ -1,0 +1,8 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.drift_of_mem_meanBand
+sha256 1951a19c5e264cbce786e1e980296690144ffdc7f6d74376d6453c4825eaeb57
+constant def Incognita.TransferBandits.DriftBound
+constant def Incognita.TransferBandits.meanBand
+constant def Incognita.TransferBandits.unitBandits
+constant theorem Incognita.Statements.P003.drift_of_mem_meanBand
