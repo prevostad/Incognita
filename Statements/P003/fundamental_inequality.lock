@@ -1,0 +1,25 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.fundamental_inequality
+sha256 77fb089d72eae3285a30ae72c519c3a53753f15bda27d0ba217f964b7d860f70
+constant inductive Incognita.TransferBandits.IsSizeRule
+constant def Incognita.TransferBandits.Source
+constant def Incognita.TransferBandits.SourceSpace
+constant inductive Incognita.TransferBandits.TransferAlgorithm
+constant def Incognita.TransferBandits.boxRestrict
+constant def Incognita.TransferBandits.boxSigma
+constant def Incognita.TransferBandits.gameMeasure
+constant def Incognita.TransferBandits.onlineCount
+constant def Incognita.TransferBandits.onlineKernel
+constant def Incognita.TransferBandits.sourceData
+constant def Incognita.TransferBandits.sourceLaw
+constant def Incognita.TransferBandits.sourceMeasure
+constant def Incognita.TransferBandits.stepKernel
+constant def Incognita.TransferBandits.unitBandits
+constant theorem Incognita.Statements.P003.fundamental_inequality
+constant constructor Incognita.TransferBandits.IsSizeRule.mk
+constant constructor Incognita.TransferBandits.TransferAlgorithm.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.policy
+constant def Incognita.TransferBandits.onlineKernel._f
+constant def Incognita.TransferBandits.onlineKernel.match_1
+constant theorem Incognita.TransferBandits.stepKernel._proof_1

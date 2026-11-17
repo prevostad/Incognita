@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.TwoSidedDriftBound"
+module = "Incognita.TransferBandits.Consistency"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:drift"
+meaning = "The two-sided strict drift condition: |mu_k - mu'_k| < L_k for every arm."
+conventions = "L : alpha -> R; the statements take L positive."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:drift]"
+
+[checks]
+witness = ["Incognita.TransferBandits.twoSidedDriftBound_self"]
+known_cases = ["Incognita.TransferBandits.twoSidedDriftBound_const_dirac_iff"]
+exclusion = ["Incognita.TransferBandits.not_twoSidedDriftBound_dirac_one_zero"]
+non_vacuity = ["Incognita.P003.drift_of_twoSided_satisfiable"]

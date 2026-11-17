@@ -1,0 +1,9 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.drift_of_twoSided
+sha256 f02ccda705e52b0053254f316b45d054d43befed8748fdceb708bd1f22b36276
+constant def Incognita.TransferBandits.DriftBound
+constant def Incognita.TransferBandits.TwoSidedDriftBound
+constant def Incognita.TransferBandits.meanBand
+constant def Incognita.TransferBandits.unitBandits
+constant theorem Incognita.Statements.P003.drift_of_twoSided

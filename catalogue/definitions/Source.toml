@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.Source"
+module = "Incognita.TransferBandits.Setting"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:source-data"
+meaning = "The source data: the sizes N' and the kept values X'_{k,j} for j < N'_k (with 0 outside the box), as a pair (alpha -> N) x (alpha -> N -> R); sourceData N' maps a source point to it and sourceLaw nu' N' is its law."
+conventions = "Represents the paper's disjoint union over n of [0,1]^{B(n)} by masking the values outside the box with 0 (a measurable injection with measurable inverse on its range)."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:source-data]"
+
+[checks]
+witness = ["Incognita.TransferBandits.sourceData_constSize_zero"]
+known_cases = ["Incognita.TransferBandits.sourceData_constSize"]
+exclusion = ["Incognita.TransferBandits.sourceData_eq_of_eqOn_box"]
+non_vacuity = ["Incognita.P003.divergence_decomposition_satisfiable", "Incognita.P003.learner_exclusion_satisfiable"]

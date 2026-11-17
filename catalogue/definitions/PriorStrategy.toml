@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.PriorStrategy"
+module = "Incognita.TransferBandits.PriorGame"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:prior-game"
+meaning = "A strategy of a prior bandit game on the source stacks: for each round r, a measurable map from the randomisation and the r previous pairs (arm, value) to the arms; PriorStrategy.counts g T' are its counts after T' rounds."
+conventions = "Rounds from 0; the value observed at round r is the next unread value of the stack of the chosen arm."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:prior-game]"
+
+[checks]
+witness = ["Incognita.TransferBandits.PriorStrategy.constArm"]
+known_cases = ["Incognita.TransferBandits.PriorStrategy.counts_constArm"]
+exclusion = []
+non_vacuity = ["Incognita.P003.priorCounts_isSizeRule_satisfiable", "Incognita.P003.stoppedCounts_isSizeRule_satisfiable"]

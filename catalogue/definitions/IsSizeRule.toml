@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.IsSizeRule"
+module = "Incognita.TransferBandits.Setting"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:size-rule"
+meaning = "A size rule: a measurable size map N' from the source space to sizes alpha -> N such that each event {N' = n} lies in the sigma-algebra G_n of the randomisation and of the values in the box of n (a stopping point of the multiparameter filtration)."
+conventions = "Stacks indexed from 0: the box of n is {(k, j) | j < n k}; the source space is (N -> I) x (alpha -> N -> R)."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:size-rule]"
+
+[checks]
+witness = ["Incognita.TransferBandits.isSizeRule_constSize"]
+known_cases = ["Incognita.TransferBandits.isSizeRule_of_randomisation"]
+exclusion = ["Incognita.TransferBandits.not_isSizeRule_peek"]
+non_vacuity = ["Incognita.P003.divergence_decomposition_satisfiable", "Incognita.P003.fundamental_inequality_satisfiable", "Incognita.P003.two_arms_sizeRule_eq_stoppedCounts_satisfiable"]

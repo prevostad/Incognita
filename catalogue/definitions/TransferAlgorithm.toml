@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.TransferAlgorithm"
+module = "Incognita.TransferBandits.Setting"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:learner"
+meaning = "A transfer learner: for each round n, a Markov kernel from the source data and the online history of n rounds to the arms, that is, a bandit algorithm whose initial state is the source data."
+conventions = "Rounds from 0 (policy n is the paper's pi_{n+1}); online histories are Fin n -> alpha x R; LML algorithms embed by TransferAlgorithm.ofAlgorithm."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:learner]"
+
+[checks]
+witness = ["Incognita.TransferBandits.TransferAlgorithm.constArm_policy"]
+known_cases = ["Incognita.TransferBandits.TransferAlgorithm.ofAlgorithm_policy"]
+exclusion = []
+non_vacuity = ["Incognita.P003.divergence_decomposition_satisfiable", "Incognita.P003.isConsistent_one_satisfiable"]

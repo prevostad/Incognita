@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.meanBand"
+module = "Incognita.TransferBandits.Consistency"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:drift"
+meaning = "The set P_L of pairs (nu, nu') of instances of P^K with |mu_k - mu'_k| <= L_k for every arm."
+conventions = "A set of pairs of kernels; both components in unitBandits."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:drift]"
+
+[checks]
+witness = ["Incognita.TransferBandits.mem_meanBand_self"]
+known_cases = ["Incognita.TransferBandits.mem_meanBand_const_dirac_iff"]
+exclusion = ["Incognita.TransferBandits.not_mem_meanBand_dirac_one_zero"]
+non_vacuity = ["Incognita.P003.drift_of_mem_meanBand_satisfiable"]

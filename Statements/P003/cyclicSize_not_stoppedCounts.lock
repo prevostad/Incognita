@@ -1,0 +1,24 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.cyclicSize_not_stoppedCounts
+sha256 3592ae4fb647489373a17d291f81d62929959ca176faef964b979de60e3f9de7
+constant inductive Incognita.TransferBandits.IsSizeRule
+constant inductive Incognita.TransferBandits.PriorStrategy
+constant def Incognita.TransferBandits.SourceSpace
+constant def Incognita.TransferBandits.boxRestrict
+constant def Incognita.TransferBandits.boxSigma
+constant def Incognita.TransferBandits.cyclicSize
+constant def Incognita.TransferBandits.sourceMeasure
+constant def Incognita.TransferBandits.unitBandits
+constant theorem Incognita.Statements.P003.cyclicSize_not_stoppedCounts
+constant constructor Incognita.TransferBandits.IsSizeRule.mk
+constant inductive Incognita.TransferBandits.PriorStrategy.IsStoppingTime
+constant def Incognita.TransferBandits.PriorStrategy.act
+constant def Incognita.TransferBandits.PriorStrategy.histSigma
+constant constructor Incognita.TransferBandits.PriorStrategy.mk
+constant def Incognita.TransferBandits.PriorStrategy.state
+constant def Incognita.TransferBandits.PriorStrategy.stoppedCounts
+constant theorem Incognita.TransferBandits.lookahead._proof_1
+constant constructor Incognita.TransferBandits.PriorStrategy.IsStoppingTime.mk
+constant def Incognita.TransferBandits.PriorStrategy.state._f
+constant def Incognita.TransferBandits.PriorStrategy.state.match_1

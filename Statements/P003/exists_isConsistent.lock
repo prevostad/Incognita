@@ -1,0 +1,28 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.exists_isConsistent
+sha256 bd1968da96a99ec5a39e9a53fa1e3e45eb0fdae1e566f0ae1375e9c62e2cfbd6
+constant def Incognita.TransferBandits.IsConsistent
+constant inductive Incognita.TransferBandits.IsSizeRule
+constant def Incognita.TransferBandits.IsSourceStrategy
+constant def Incognita.TransferBandits.Source
+constant def Incognita.TransferBandits.SourceSpace
+constant inductive Incognita.TransferBandits.TransferAlgorithm
+constant def Incognita.TransferBandits.boxRestrict
+constant def Incognita.TransferBandits.boxSigma
+constant def Incognita.TransferBandits.gameMeasure
+constant def Incognita.TransferBandits.meanBand
+constant def Incognita.TransferBandits.onlineCount
+constant def Incognita.TransferBandits.onlineKernel
+constant def Incognita.TransferBandits.sourceData
+constant def Incognita.TransferBandits.sourceLaw
+constant def Incognita.TransferBandits.sourceMeasure
+constant def Incognita.TransferBandits.stepKernel
+constant def Incognita.TransferBandits.unitBandits
+constant theorem Incognita.Statements.P003.exists_isConsistent
+constant constructor Incognita.TransferBandits.IsSizeRule.mk
+constant constructor Incognita.TransferBandits.TransferAlgorithm.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.policy
+constant def Incognita.TransferBandits.onlineKernel._f
+constant def Incognita.TransferBandits.onlineKernel.match_1
+constant theorem Incognita.TransferBandits.stepKernel._proof_1

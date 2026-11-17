@@ -1,0 +1,12 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.learner_exclusion
+sha256 f326ce0f430f78343a8b8ddef016b74b1e12319cc39bfbf8406a12594ef9559d
+constant def Incognita.TransferBandits.Source
+constant def Incognita.TransferBandits.SourceSpace
+constant inductive Incognita.TransferBandits.TransferAlgorithm
+constant def Incognita.TransferBandits.constSize
+constant def Incognita.TransferBandits.sourceData
+constant theorem Incognita.Statements.P003.learner_exclusion
+constant constructor Incognita.TransferBandits.TransferAlgorithm.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.policy

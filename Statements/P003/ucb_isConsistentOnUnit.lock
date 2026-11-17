@@ -1,0 +1,6 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.ucb_isConsistentOnUnit
+sha256 b6b9b80db7cc2a151d922d751d470925694572ecde772b3fac4dc39a0fa66f9c
+constant def Incognita.TransferBandits.IsConsistentOnUnit
+constant theorem Incognita.Statements.P003.ucb_isConsistentOnUnit

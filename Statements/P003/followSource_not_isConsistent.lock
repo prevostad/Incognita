@@ -1,0 +1,36 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P003.followSource_not_isConsistent
+sha256 4fd586292adb0d86dd81a76fecc8a1f4b7d44bbf41f4b05d75f3c971b1a17bf4
+constant def Incognita.TransferBandits.IsConsistent
+constant inductive Incognita.TransferBandits.IsSizeRule
+constant def Incognita.TransferBandits.IsSourceStrategy
+constant def Incognita.TransferBandits.Source
+constant def Incognita.TransferBandits.SourceSpace
+constant inductive Incognita.TransferBandits.TransferAlgorithm
+constant def Incognita.TransferBandits.bestSourceArm
+constant def Incognita.TransferBandits.boxRestrict
+constant def Incognita.TransferBandits.boxSigma
+constant def Incognita.TransferBandits.constSize
+constant def Incognita.TransferBandits.followSourceArm
+constant def Incognita.TransferBandits.gameMeasure
+constant def Incognita.TransferBandits.meanBand
+constant def Incognita.TransferBandits.onlineCount
+constant def Incognita.TransferBandits.onlineKernel
+constant def Incognita.TransferBandits.sourceData
+constant def Incognita.TransferBandits.sourceLaw
+constant def Incognita.TransferBandits.sourceMean
+constant def Incognita.TransferBandits.sourceMeasure
+constant def Incognita.TransferBandits.stepKernel
+constant def Incognita.TransferBandits.unitBandits
+constant theorem Incognita.Statements.P003.followSource_not_isConsistent
+constant constructor Incognita.TransferBandits.IsSizeRule.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.followSource
+constant constructor Incognita.TransferBandits.TransferAlgorithm.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.policy
+constant theorem Incognita.TransferBandits.bestSourceArm._proof_1
+constant def Incognita.TransferBandits.onlineKernel._f
+constant def Incognita.TransferBandits.onlineKernel.match_1
+constant theorem Incognita.TransferBandits.stepKernel._proof_1
+constant theorem Incognita.TransferBandits.TransferAlgorithm.followSource._proof_1
+constant theorem Incognita.TransferBandits.TransferAlgorithm.followSource._proof_2

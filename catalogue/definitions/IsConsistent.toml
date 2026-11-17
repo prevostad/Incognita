@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.IsConsistent"
+module = "Incognita.TransferBandits.Consistency"
+roadmap = "TransferBandits"
+paper = "P003-transfer-setting"
+label = "def:consistency"
+meaning = "The class C_L of [PMRM26, Section 4.2]: for every pair of P_L, every source strategy, every suboptimal arm a and every c > 0, E[N_a(T)] / T^c -> 0 under the law of the game at horizon T."
+conventions = "Source strategies indexed by all T : N (the value at T = 0 plays no role); expectations are Bochner integrals of bounded counts."
+source = "roadmap TransferBandits, Definitions; [INC-P003, def:consistency]"
+
+[checks]
+witness = []
+known_cases = []
+exclusion = ["Incognita.TransferBandits.not_isConsistent_constArm"]
+non_vacuity = ["Incognita.P003.isConsistent_anti_satisfiable", "Incognita.P003.isConsistent_one_satisfiable", "Incognita.P003.exists_isConsistent_satisfiable"]
