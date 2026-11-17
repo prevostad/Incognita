@@ -112,7 +112,7 @@ with no assumption on the models. Each definition comes with an object that sati
 that does not: for example, the upper confidence bound algorithm with a Hoeffding bonus is
 uniformly super-fast convergent on laws on $[0,1]$ with the constant $13$, while a learner that
 always pulls the same arm is not consistent. We also compute $\mathcal{K}_{\inf}$ on Bernoulli and
-Gaussian laws, bound it on laws on $[0,1]$, show that it vanishes on all laws with a finite mean,
+Gaussian laws, show that it vanishes on all laws with a finite mean,
 and prove that the rewards collected by count form an independent array in every run.
 \end{abstract}
 
@@ -164,16 +164,18 @@ result stated for every class $\mathcal E$ can be checked on its unstructured ca
     constant vanishes when the law of the optimal arm identifies the instance
     (Proposition~\ref{prop:gl-zero}); with the lower bound of \citet[Theorem~1]{GMS19}, every
     consistent learner has $\liminf_T R_T/\log T\ge C(\nu;\mathcal D^\alpha)$ (Corollary~\ref{cor:lower}).
-  \item \emph{Properties of $\mathcal K_{\inf}$}: monotonicity, its values on laws on $[0,1]$
-    (bounds by $\mathrm{kl}$ and by a logarithm), closed forms on Bernoulli and Gaussian laws, its
-    vanishing on all laws with a finite mean (Lemmas~\ref{lem:kinf-basic}--\ref{lem:kinf-gauss});
+  \item \emph{Properties of $\mathcal K_{\inf}$}: monotonicity, closed forms on Bernoulli and
+    Gaussian laws, its vanishing on all laws with a finite mean
+    (Lemmas~\ref{lem:kinf-basic}--\ref{lem:kinf-gauss}), with its bounds on laws on $[0,1]$ by
+    $\mathrm{kl}$ and by a logarithm recalled from the setting paper of batched bandits \citep[Proposition~4.2]{INC-P006};
     properties of the semi-bounded, moment and kurtosis models (Lemmas~\ref{lem:semi}
     and~\ref{lem:kurt}).
   \item \emph{Witnesses and exclusions for the classes of learners.} The rewards collected by
     count are an independent array in every run (Lemma~\ref{lem:stack}); \ucb{} with a Hoeffding
     bonus is uniformly super-fast convergent on laws on $[0,1]$ with the constant $13$
     (Proposition~\ref{prop:ucb}), hence consistent, and its counts have tails in $1/(\log T)^2$
-    (Proposition~\ref{prop:ucb-tails}); constant, uniform and switching learners delimit the
+    (Proposition~\ref{prop:ucb-tails}, a weaker form of the tail bound of
+    \citet[Theorem~8]{AMS09}); constant, uniform and switching learners delimit the
     classes (Lemmas~\ref{lem:constant}, \ref{lem:gms-classes} and~\ref{lem:tails}); the relations
     between the classes (Lemmas~\ref{lem:classes} and~\ref{lem:family}).
   \item \emph{Examples} with explicit constants (Section~\ref{sec:examples}).
@@ -217,7 +219,10 @@ a model $\mathcal D$, that is on the instances of
 $\mathcal D^\alpha$; we define each class on an arbitrary set of instances, which contains their
 definitions as the case $\mathcal E=\mathcal D^\alpha$.
 
-\paragraph{Models of reward laws} Laws on $[0,1]$ are the setting of KL-UCB for general bounded
+\paragraph{Models of reward laws} The laws on $[0,1]$ and their $\mathcal K_{\inf}$ are defined, with
+the same conventions, in the setting paper of batched bandits \citep[Definitions~3.1--3.2]{INC-P006},
+whose bounds on $\mathcal K_{\inf}$ \citep[Proposition~4.2]{INC-P006} we recall and use. Laws on
+$[0,1]$ are the setting of KL-UCB for general bounded
 rewards \citep[Section~6]{CGMMS13} (their empirical KL-UCB, Section~5, is analysed for finitely
 supported laws), of KL-UCB-switch \citep[Section~2]{GHMS22} and of non-parametric
 Thompson sampling \citep[Theorem~5]{RH20}. Semi-bounded laws, on $(-\infty,1]$ with a finite mean,
@@ -267,6 +272,10 @@ independent array, restates a known fact: it is a form of the optional skipping 
 \citet[Section~4.6]{LS}; our proof is the one of its formalisation in Lean in the library
 \citet{LML} (file \texttt{RewardByCountMeasure.lean}). The analysis of \ucb{} in
 Proposition~\ref{prop:ucb} is that of UCB1 by \citet[Theorem~1]{ACF02}, written in our conventions
+with explicit constants. The tail bound of Proposition~\ref{prop:ucb-tails} and its argument at a
+single count are those of \citet[Theorem~8 and its proof]{AMS09}, which give a tail in
+$(\log T)^{-3}$ for the same index; \citet[Section~2]{SA11} state this as ``UCB1 is $\log^3$-$\mathcal T$
+and $\log^3$-$\mathcal R$''. Our bound, in $(\log T)^{-2}$, is a weaker form, written in our conventions
 with explicit constants.
 
 \begin{table}[t]
@@ -579,7 +588,7 @@ Lai--Robbins bound.
 divergence $\Kinf(\nu_a,\ms;\mathcal D_a)$ vanishes makes the constant infinite; by
 Lemma~\ref{lem:kinf-p1} this happens on $\powc{\Pone}$ for every instance. An arm whose divergence is
 infinite, because no law of $\mathcal D_a$ has a mean above $\ms$, contributes $0$; on $\powc{\Punit}$
-this is the case of every arm when $\ms=1$ (Lemma~\ref{lem:kinf-unit}(i)). The proof uses that $\nu$
+this is the case of every arm when $\ms=1$ (Theorem~\ref{cite:INC-P006-prop:kinf}(i)). The proof uses that $\nu$
 lies in the class only to build the alternatives that move one arm.
 
 \paragraph{Scope} The theorem concerns unstructured classes and a unique optimal arm. It says
@@ -598,7 +607,7 @@ instances
 \end{equation*}
 whose optimal arm reveals which instance is played, has the constant $0$ at both instances, while
 the unstructured class $\powc{\Bclass}$ has the positive constant $\frac12/\kl(\frac14,\frac34)$ at the
-same instances (Theorem~\ref{thm:main} and Lemma~\ref{lem:kinf-unit}(iii)). The class $\mathcal E_2$ is
+same instances (Theorem~\ref{thm:main} and Lemma~\ref{lem:kinf-unit}(ii)). The class $\mathcal E_2$ is
 not unstructured: it does not contain $(\Ber(3/4),\Ber(3/4))$, which any unstructured class containing
 it contains. This is the exclusion for
 Definition~\ref{def:gl}: the constant is not a function of the instance alone.
@@ -638,16 +647,24 @@ Let $\mathcal D,\mathcal D'$ be models, $P$ a law and $\mu\le\mu'$ reals. Then:
 \end{lemma}
 (see the proof in Appendix~\ref{sec:proof-kinf-basic}).
 
+On the model $\Punit$, the values of $\Kinf$ are those of the setting paper of batched bandits \citep[Proposition~4.2]{INC-P006},
+recalled as Theorem~\ref{cite:INC-P006-prop:kinf} in Appendix~\ref{sec:cited}: for $P\in\Punit$,
+$\Kinf(P,\mu;\Punit)$ is $+\infty$ when $\mu\ge1$ and $0$ when $\mu<\mean(P)$, and, when
+$\mean(P)\le\mu<1$,
+\begin{equation*}
+  2(\mu-\mean(P))^2\le\kl(\mean(P),\mu)\le\Kinf(P,\mu;\Punit)\le\log\frac{1-\mean(P)}{1-\mu}<\infty .
+\end{equation*}
+The lower bound by $\kl$ is stated by \citet[Section~6.1, after Lemma~1]{CGMMS13}, through the
+inequality $\kl(\mean(P),\mean(Q))\le\KL(P,Q)$ on $\Punit$. For the upper bound, see also the dual
+formula of \citet[(5) and Theorem~8]{HT10}: by Jensen's inequality, its objective
+$\E_P[\log(1-\lambda(X-\mu))]$ is at most $\log(1+\lambda(\mu-\mean(P)))\le\log\frac{1-\mean(P)}{1-\mu}$
+for every $\lambda\in[0,1/(1-\mu)]$. We add the two consequences that we use and the Bernoulli model.
+
 \begin{lemma}[$\Kinf$ on laws on {$[0,1]$} and on Bernoulli laws]\label{lem:kinf-unit}
-\uses{def:kinf, def:models}
+\uses{def:kinf, def:models, cite:INC-P006-prop:kinf}
 Let $P\in\Punit$ and $\mu\in\R$. Then:
 \begin{enumerate}[label=(\roman*)]
-  \item if $\mu\ge1$, then $\Kinf(P,\mu;\Punit)=+\infty$;
-  \item if $\mean(P)\le\mu<1$, then
-  \begin{equation*}
-    \kl(\mean(P),\mu)\le\Kinf(P,\mu;\Punit)\le\log\frac{1-\mean(P)}{1-\mu};
-  \end{equation*}
-  in particular $0<\Kinf(P,\mu;\Punit)<\infty$ when $\mean(P)<\mu<1$, and $\Kinf(P,\mean(P);\Punit)=0$
+  \item if $\mean(P)<\mu<1$, then $0<\Kinf(P,\mu;\Punit)<\infty$; and $\Kinf(P,\mean(P);\Punit)=0$
   when $\mean(P)<1$;
   \item if $P=\Ber(p)$ and $p\le\mu<1$, then
   \begin{equation*}
@@ -655,15 +672,11 @@ Let $P\in\Punit$ and $\mu\in\R$. Then:
   \end{equation*}
 \end{enumerate}
 \end{lemma}
-(see the proof in Appendix~\ref{sec:proof-kinf-unit}). Item~(iii) is the known case: on Bernoulli
+(see the proof in Appendix~\ref{sec:proof-kinf-unit}). Item~(ii) is the known case: on Bernoulli
 laws, $\Kinf$ is the Bernoulli divergence of the means, and no law on $[0,1]$ does better than a
-Bernoulli law. The lower bound of~(ii) is stated by \citet[Section~6.1, after Lemma~1]{CGMMS13} for
-the model of all laws on $[0,1]$, through the inequality $\kl(\mean(P),\mean(Q))\le\KL(P,Q)$ on
-$\Punit$; we prove it from the data-processing inequality of \citet[Lemma~1]{GMS19}. Item~(ii) is used with $P=\nu_a$ and $\mu=\ms$: on $\powc{\Punit}$, every suboptimal arm
-has a finite positive divergence as soon as $\ms<1$. For the upper bound of~(ii), see also the dual
-formula of \citet[(5) and Theorem~8]{HT10}: by Jensen's inequality, its objective
-$\E_P[\log(1-\lambda(X-\mu))]$ is at most $\log(1+\lambda(\mu-\mean(P)))\le\log\frac{1-\mean(P)}{1-\mu}$
-for every $\lambda\in[0,1/(1-\mu)]$.
+Bernoulli law; the value on $\Punit$ is Theorem~\ref{cite:INC-P006-prop:kinf}(iv), and we add the value on the
+model $\Bclass$. Item~(i) is used with $P=\nu_a$ and $\mu=\ms$: on $\powc{\Punit}$, every suboptimal arm has a
+finite positive divergence as soon as $\ms<1$.
 
 \begin{lemma}[$\Kinf$ vanishes on all laws with a finite mean]\label{lem:kinf-p1}
 \uses{def:kinf}
@@ -942,7 +955,9 @@ Let $\mathcal E$ be a class, $f:\{2,3,\dots\}\to(0,\infty)$ and $\pi$ a learner.
   nor $f$-upper tailed pseudo-regret on $\mathcal E$.
 \end{enumerate}
 \end{lemma}
-(see the proof in Appendix~\ref{sec:proof-tails}).
+(see the proof in Appendix~\ref{sec:proof-tails}). Item~(i) is the union bound with which
+\citet[Proposition~2.1]{SA11} show that upper-tailed counts give an upper-tailed regret, for their
+regret; with the pseudo-regret it is the whole argument.
 
 \begin{proposition}[Tails of the counts of \texttt{UCB}]\label{prop:ucb-tails}
 \uses{def:ucb, def:tails, def:models, lem:stack, lem:tails}
@@ -955,8 +970,18 @@ Hence \ucb{} has $f$-upper tailed counts on $\powc{\Punit}$ for $f(n):=(\log n)^
 constants $10$ and $1$, and $f$-upper tailed pseudo-regret with the constants $10(\Karms-1)$ and
 $\Karms-1$.
 \end{proposition}
-(see the proof in Appendix~\ref{sec:proof-ucb-tails}). We do not optimise the tail
-$1/(\log T)^2$: \citet{SA11} study how fast the tail of an anytime learner can decrease.
+(see the proof in Appendix~\ref{sec:proof-ucb-tails}). The argument is that of
+\citet[Theorem~8 and its proof]{AMS09}, for UCB1 with the index
+$\bar X_{k,s}+b\sqrt{\rho\log t/s}$ and rewards in $[0,b]$: they bound
+$\Pru(N_k(n)>u)$ at a single count $u$ by Hoeffding's inequality for arm $k$ at that count and by the
+event that the optimal arm is underestimated at the later rounds \citep[Theorem~2, (12)]{AMS09}. With
+$b=1$ and $\rho=2$ their index is that of \eqref{eq:ucb}, since their round $t+1$ is our round $t$;
+with $x=1$ the bound on one arm in the proof of their Theorem~8 gives $\Pru(N_a(n)>1+8\log n/\gap_a^2)\le n^{-3}+\frac13(1+8\log n/\gap_a^2)^{-3}$, a
+tail in $(\log n)^{-3}$; \citet[Section~2]{SA11} state this as ``UCB1 is $\log^3$-$\mathcal T$ and
+$\log^3$-$\mathcal R$''. Proposition~\ref{prop:ucb-tails} is a weaker, self-contained form of this
+bound, in our conventions (rounds from $0$, any tie rule) and with explicit constants; we use it only as a
+witness that the tail classes are not empty for a growing $f$. How fast the tail of an anytime
+learner can decrease is studied by \citet{SA11}.
 
 \begin{lemma}[Constant families]\label{lem:family}
 \uses{def:family}
@@ -998,7 +1023,8 @@ in both arrays. So all the $\Yc^t$ have the product law, and $\Yc^t\to\Yc$ coord
 \paragraph{The analysis of \texttt{UCB}} Proposition~\ref{prop:ucb} follows the classical
 decomposition: the pulls of a suboptimal arm $a$ before it has $u\approx8\log T/\gap_a^2$ samples,
 the rounds at which an optimal arm is underestimated, and the samples $s\ge u$ at which the
-empirical mean of $a$ exceeds $\marm_a+\gap_a/2$. Lemma~\ref{lem:ucb-decomp} states the
+empirical mean of $a$ exceeds $\marm_a+\gap_a/2$. Lemma~\ref{lem:ucb-basic} bounds the probability
+that an optimal arm is underestimated at a given round, Lemma~\ref{lem:ucb-decomp} states the
 decomposition and Lemma~\ref{lem:ucb-terms} bounds the two random terms by Hoeffding's inequality,
 applied to the array of Lemma~\ref{lem:stack}. Proposition~\ref{prop:ucb-tails} uses the same
 argument at a single count $s\approx10\log T/\gap_a^2$: if $a$ is pulled at count $s$, either the
@@ -1022,7 +1048,7 @@ $1/\kl(0.5,0.7)\approx11.5$), which a simulation would only confirm.
 
 \begin{example}[Bernoulli instance]
 Let $\arms=\{1,2,3\}$ and $\nu=(\Ber(0.7),\Ber(0.5),\Ber(0.3))\in\powc{\Bclass}$. Its optimal arm is
-$1$, with $\ms=0.7$, $\gap_2=0.2$ and $\gap_3=0.4$. By Lemma~\ref{lem:kinf-unit}(iii) and
+$1$, with $\ms=0.7$, $\gap_2=0.2$ and $\gap_3=0.4$. By Lemma~\ref{lem:kinf-unit}(ii) and
 Theorem~\ref{thm:main},
 \begin{equation*}
   \GL(\nu;\powc{\Bclass})=\GL(\nu;\powc{\Punit})=\frac{0.2}{\kl(0.5,0.7)}+\frac{0.4}{\kl(0.3,0.7)}
@@ -1042,7 +1068,7 @@ this instance.
 
 \begin{example}[A law on {$[0,1]$} that is not Bernoulli]
 Let $P:=0.2\,\delta_0+0.5\,\delta_{1/2}+0.3\,\delta_1$, with $\mean(P)=0.55$, and $\mu=0.8$. By
-Lemma~\ref{lem:kinf-unit}(ii),
+Theorem~\ref{cite:INC-P006-prop:kinf}(iii),
 \begin{equation*}
   0.1588\approx\kl(0.55,0.8)\le\Kinf(P,0.8;\Punit)\le\log\frac{0.45}{0.2}\approx0.8109.
 \end{equation*}
@@ -1050,7 +1076,7 @@ Lemma~\ref{lem:kinf-unit}(ii),
 
 \paragraph{Degenerate cases} Let $\nu\in\powc{\Punit}$ have a unique optimal arm. If $\ms=1$, every
 divergence $\Kinf(\nu_a,1;\Punit)$ is infinite and $\GL(\nu;\powc{\Punit})=0$
-(Lemma~\ref{lem:kinf-unit}(i) and Theorem~\ref{thm:main}). On $\powc{\Pone}$ the
+(Theorem~\ref{cite:INC-P006-prop:kinf}(i) and Theorem~\ref{thm:main}). On $\powc{\Pone}$ the
 constant is infinite at every instance with a unique optimal arm (Lemma~\ref{lem:kinf-p1}), so by
 Corollary~\ref{cor:lower} every learner consistent on $\powc{\Pone}$, if there is one, has a regret
 that grows faster than any multiple of $\log T$. With $\Karms=2$ and $\nu=(\Ber(p),\Ber(q))$, $p>q$,
@@ -1077,21 +1103,33 @@ classes are not empty for a growing $f$.
 
 \section{Useful lemmas}\label{sec:cited}
 
-In this section we present the two results from other papers that we use: the data-processing
-inequality for a $[0,1]$-valued variable, used for the lower bound of Lemma~\ref{lem:kinf-unit}(ii),
-and the lower bound of \citet[Theorem~1]{GMS19}, used in Corollary~\ref{cor:lower}.
+In this section we present the two results from other papers that we use: the values of $\Kinf$
+on laws on $[0,1]$ of the setting paper of batched bandits \citep[Proposition~4.2]{INC-P006}, used in Lemma~\ref{lem:kinf-unit}, and the
+lower bound of \citet[Theorem~1]{GMS19}, used in Corollary~\ref{cor:lower}.
 
-\citet{GMS19} write $\mathbb P_1,\mathbb P_2$ for two distributions on a measurable space
-$(\Gamma,\mathcal G)$ and $\mathbb E_1,\mathbb E_2$ for their expectations; the other symbols are
-ours.
+The setting paper of batched bandits \citep{INC-P006} writes $\mathcal M$ for our $\Punit$, $\mathcal K_{\inf}(P,\mu)$ for our
+$\Kinf(P,\mu;\Punit)$, $\mathcal P$ for the set of instances of $\powc{\Punit}$ with $\ms<1$, and
+$K_a$ for $\Kinf(\nu_a,\ms;\Punit)$; its laws, means, $\mathrm{KL}$, $\mathrm{kl}$ (with the same
+conventions at the endpoints) and $\mathrm{Ber}$ are ours, and its $\mathcal K_{\inf}$ also has the
+strict inequality on the mean and $\inf\emptyset:=+\infty$.
 
-\begin{lemma}[{From \citet[Lemma~1]{GMS19}}]\label{cite:GMS19-lem1}
-Let $(\Gamma,\mathcal G)$ be a measurable space with two probability measures $\mathbb P_1$ and
-$\mathbb P_2$, and $Z:\Gamma\to[0,1]$ a $\mathcal G$-measurable function. Then
-\begin{equation*}
-  \KL(\mathbb P_1,\mathbb P_2)\ge\kl\big(\mathbb E_1[Z],\mathbb E_2[Z]\big).
-\end{equation*}
-\end{lemma}
+\begin{theorem}[{From \citet[Proposition~4.2]{INC-P006}}]\label{cite:INC-P006-prop:kinf}
+\uses{def:kinf, def:models, def:instance}
+Let $P\in\Punit$ with mean $p:=\mean(P)$, and let $\mu\in\R$. Then:
+\begin{enumerate}[label=(\roman*)]
+  \item if $\mu\ge1$, then $\Kinf(P,\mu;\Punit)=+\infty$;
+  \item if $\mu<p$, then $\Kinf(P,\mu;\Punit)=0$;
+  \item if $p\le\mu<1$, then
+  \begin{equation*}
+    2(\mu-p)^2\le\kl(p,\mu)\le\Kinf(P,\mu;\Punit)\le\log\frac{1-p}{1-\mu}<\infty;
+  \end{equation*}
+  \item if $P=\Ber(p)$ and $p\le\mu<1$, then $\Kinf(\Ber(p),\mu;\Punit)=\kl(p,\mu)$;
+  \item for every instance $\nu\in\powc{\Punit}$ with $\ms<1$ and every suboptimal arm $a$,
+  \begin{equation*}
+    0<2\gap_a^2\le\Kinf(\nu_a,\ms;\Punit)\le\log\frac{1-\marm_a}{1-\ms}<\infty.
+  \end{equation*}
+\end{enumerate}
+\end{theorem}
 
 \citet{GMS19} write $\underline\nu$ for an instance, $\psi$ for a strategy, $N_{\psi,a}(T)$ for the
 number of pulls of $a$ among the rounds $1,\dots,T$ (our $\Np_a(T)$), $\mu^\star$ for our $\ms$,
@@ -1307,55 +1345,23 @@ $\Kinf(P,\mu;\mathcal D)=\inf_{Q\in S(\mu,\mathcal D)}\KL(P,Q)$.
 \subsection{Proof of Lemma~\ref{lem:kinf-unit}}\label{sec:proof-kinf-unit}
 
 \begin{proof}
-\uses{def:kinf, def:models, lem:kinf-basic, lem:mix, lem:kl, cite:GMS19-lem1}
-\emph{Setting.} $P\in\Punit$, $\mu\in\R$. \emph{Goal.} Items (i)--(iii).
+\uses{def:kinf, def:models, lem:kl, cite:INC-P006-prop:kinf}
+\emph{Setting.} $P\in\Punit$, $\mu\in\R$. \emph{Goal.} Items (i) and (ii). \emph{Idea.} Item~(i) and
+the value on $\Punit$ in item~(ii) are read off Theorem~\ref{cite:INC-P006-prop:kinf}; only the
+model $\Bclass$ needs an argument.
 
-\emph{Item (i).} Every $Q\in\Punit$ has $\mean(Q)\le1\le\mu$, so no law of $\Punit$ has a mean larger
-than $\mu$, and Lemma~\ref{lem:kinf-basic}(iii) (\emph{empty constraint set}) gives
-$\Kinf(P,\mu;\Punit)=+\infty$.
+\emph{Item (i).} If $\mean(P)<\mu<1$, Theorem~\ref{cite:INC-P006-prop:kinf}(iii) gives
+$0<2(\mu-\mean(P))^2\le\Kinf(P,\mu;\Punit)<\infty$. If $\mean(P)<1$, the same item with
+$\mu=\mean(P)$ gives $0\le\Kinf(P,\mean(P);\Punit)\le\log1=0$.
 
-\emph{Item (ii), lower bound.} Assume $\mean(P)\le\mu<1$ and let $Q\in\Punit$ with $\mean(Q)>\mu$.
-We apply Lemma~\ref{cite:GMS19-lem1} (\emph{data processing for a $[0,1]$-valued variable}) on
-$(\R,\mathcal B(\R))$ with $\mathbb P_1:=P$, $\mathbb P_2:=Q$ and $Z(x):=\min\{\max\{x,0\},1\}$. Since
-$P$ and $Q$ are carried by $[0,1]$, $Z(x)=x$ almost surely under both, so $\E_P[Z]=\mean(P)$ and
-$\E_Q[Z]=\mean(Q)$. Hence
-\begin{align*}
-  \KL(P,Q)&\ge\kl(\mean(P),\mean(Q)) && \text{(Lemma~\ref{cite:GMS19-lem1})}\\
-          &\ge\kl(\mean(P),\mu) && \text{(Lemma~\ref{lem:kl}, since }\mean(P)\le\mu<\mean(Q)\le1\text{)}.
-\end{align*}
-For the second line, if $\mean(Q)<1$ the monotonicity of Lemma~\ref{lem:kl} on $[\mean(P),1)$
-applies; if $\mean(Q)=1$, then $\kl(\mean(P),1)=+\infty$ because $\mean(P)\le\mu<1$. Taking the
-infimum over $Q$ gives $\Kinf(P,\mu;\Punit)\ge\kl(\mean(P),\mu)$.
-
-\emph{Item (ii), upper bound.} Let $\eta\in(\eta_0,1)$, where
-$\eta_0:=\frac{\mu-\mean(P)}{1-\mean(P)}\in[0,1)$ (note $\mean(P)\le\mu<1$). Let
-$Q_\eta:=(1-\eta)P+\eta\delta_1\in\Punit$. By Lemma~\ref{lem:mix} (\emph{mixing with a
-point mass}),
-\begin{equation*}
-  \mean(Q_\eta)=\mean(P)+\eta(1-\mean(P))>\mean(P)+\eta_0(1-\mean(P))=\mu
-  \qquad\text{and}\qquad\KL(P,Q_\eta)\le\log\frac1{1-\eta}.
-\end{equation*}
-So $\Kinf(P,\mu;\Punit)\le\log\frac1{1-\eta}$ for every $\eta\in(\eta_0,1)$, and
-letting $\eta\downarrow\eta_0$,
-\begin{equation*}
-  \Kinf(P,\mu;\Punit)\le\log\frac1{1-\eta_0}=\log\frac{1-\mean(P)}{1-\mu}.
-\end{equation*}
-
-\emph{Item (ii), consequences.} If $\mean(P)<\mu<1$, the lower bound is positive by
-Lemma~\ref{lem:kl} and the upper bound finite. If $\mu=\mean(P)<1$, the upper bound is $\log1=0$.
-
-\emph{Item (iii).} Let $p\le\mu<1$. For $q\in(\mu,1]$, $\KL(\Ber(p),\Ber(q))=\kl(p,q)$, and the laws of
+\emph{Item (ii).} Let $p\le\mu<1$. Theorem~\ref{cite:INC-P006-prop:kinf}(iv) gives
+$\Kinf(\Ber(p),\mu;\Punit)=\kl(p,\mu)$. For $q\in(\mu,1]$, $\KL(\Ber(p),\Ber(q))=\kl(p,q)$, and the laws of
 $\Bclass$ with a mean larger than $\mu$ are the $\Ber(q)$ with $q\in(\mu,1]$, so
 \begin{equation*}
   \Kinf(\Ber(p),\mu;\Bclass)=\inf_{q\in(\mu,1]}\kl(p,q)=\kl(p,\mu),
 \end{equation*}
 because $q\mapsto\kl(p,q)$ is nondecreasing on $[p,1)$, continuous at $\mu$, and $\kl(p,1)=+\infty$
-(Lemma~\ref{lem:kl}). Since $\Bclass\subseteq\Punit$, Lemma~\ref{lem:kinf-basic}(ii) and the lower
-bound of item (ii) give
-\begin{equation*}
-  \kl(p,\mu)\le\Kinf(\Ber(p),\mu;\Punit)\le\Kinf(\Ber(p),\mu;\Bclass)=\kl(p,\mu).
-\end{equation*}
-Hence the three quantities are equal.
+(Lemma~\ref{lem:kl}): the infimum over $(\mu,1)$ is the limit at $\mu^+$, which is $\kl(p,\mu)$.
 \end{proof}
 
 \subsection{Proof of Lemma~\ref{lem:kinf-p1}}\label{sec:proof-kinf-p1}
@@ -1403,12 +1409,11 @@ increasing on $[0,\infty)$, and $\mu_1\downarrow\mu$ approaches the infimum.
 \subsection{Proof of Lemma~\ref{lem:semi}}\label{sec:proof-semi}
 
 \begin{proof}
-\uses{def:kinf, def:models, lem:kinf-basic, lem:mix, lem:kinf-unit}
+\uses{def:kinf, def:models, lem:kinf-basic, lem:mix}
 \emph{Item (i).} If $\mu\ge1$, every $Q\in\Semi$ has $\mean(Q)\le1\le\mu$, and
 Lemma~\ref{lem:kinf-basic}(iii) gives $+\infty$. If $\mu<1$ and $\mean(P)>\mu$, then
-Lemma~\ref{lem:kinf-basic}(iv) gives $0<\infty$. If $\mean(P)\le\mu<1$, the argument of the upper
-bound of Lemma~\ref{lem:kinf-unit}(ii) applies verbatim, since $Q_\eta=(1-\eta)P+\eta\delta_1\in\Semi$:
-for every $\eta\in(\eta_0,1)$ with $\eta_0:=\frac{\mu-\mean(P)}{1-\mean(P)}$, Lemma~\ref{lem:mix}
+Lemma~\ref{lem:kinf-basic}(iv) gives $0<\infty$. If $\mean(P)\le\mu<1$, we mix $P$ with the point
+mass at $1$: $Q_\eta:=(1-\eta)P+\eta\delta_1\in\Semi$, and, for every $\eta\in(\eta_0,1)$ with $\eta_0:=\frac{\mu-\mean(P)}{1-\mean(P)}$, Lemma~\ref{lem:mix}
 gives $\mean(Q_\eta)>\mu$ and $\KL(P,Q_\eta)\le\log\frac1{1-\eta}$; letting
 $\eta\downarrow\eta_0$ gives the bound $\log\frac{1-\mean(P)}{1-\mu}<\infty$. (Note
 $\mean(P)\le\mu<1$, so $\eta_0\in[0,1)$.)
@@ -1557,17 +1562,51 @@ $\Ap_u=a$ are exactly $\taup_{a,1}<\dots<\taup_{a,s}$, all finite and below $t$,
 
 Throughout this subsection, $\nu\in\powc{\Punit}$, $a$ is a suboptimal arm, $\gap:=\gap_a$, $\as$ is
 an optimal arm of $\nu$ (any of them), $T\ge1$, and we work on the enlarged run of
-Lemma~\ref{lem:stack}. To prove the proposition we will use the following decomposition. Let
-\begin{equation*}
-  u:=\max\Big\{1,\Big\lceil\frac{8\log T}{\gap^2}\Big\rceil\Big\},
-\end{equation*}
-and, for $1\le t\le T-1$, let $E_t$ be the event that the optimal arm is underestimated:
+Lemma~\ref{lem:stack}. We first state two facts on every run of \ucb{}, which the proof of
+Proposition~\ref{prop:ucb-tails} uses too.
+
+\begin{lemma}[The pulls of \texttt{UCB} and the underestimation of an optimal arm]\label{lem:ucb-basic}
+\uses{def:ucb, def:models, lem:stack}
+Consider a run of \ucb{} with a tie rule $(\rho_t)$ on an instance $\nu\in\powc{\Punit}$, enlarged as in
+Lemma~\ref{lem:stack}, and let $\as$ be an optimal arm of $\nu$. \dt{s:Et}For $t\ge1$, let $E_t$ be
+the event that $\as$ is underestimated at round $t$:
 \begin{equation*}
   E_t:=\big\{\Np_{\as}(t)\ge1\big\}\cap\big\{\Uix_{\as}(t)\le\ms\big\}.
 \end{equation*}
+Then:
+\begin{enumerate}[label=(\alph*)]
+  \item almost surely, $\Ap_t\in M_t(\Hist_t)$ for every $t\ge0$, where $M_t(h)=\argmax_{b\in\arms}\Uix_b(t)$ as
+  in Definition~\ref{def:ucb};
+  \item $\Pru(E_t)\le(t+1)^{-3}$ for every $t\ge1$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\uses{def:ucb, def:run, def:models, lem:stack}
+\emph{Item (a).} For each $t$, $\Pru(\Ap_t\in M_t(\Hist_t))=\E[\rho_t(\Hist_t,M_t(\Hist_t))]=1$ by
+Definition~\ref{def:run} and Definition~\ref{def:ucb}; a countable intersection of almost sure events
+is almost sure.
+
+\emph{Item (b).} By Lemma~\ref{lem:stack} (\emph{rewards by count}), the variables
+$\Yc_{\as,1},\Yc_{\as,2},\dots$ are independent with the law $\nu_{\as}\in\Punit$, of mean $\ms$, so
+Hoeffding's inequality gives $\Pru(\bY_{\as,j}-\ms\le-x)\le e^{-2jx^2}$ for every $j\ge1$ and $x\ge0$.
+Let $t\ge1$. On $E_t$, $j:=\Np_{\as}(t)\in\{1,\dots,t\}$ and, by Lemma~\ref{lem:stack},
+$\Uix_{\as}(t)=\bY_{\as,j}+\sqrt{2\log(t+1)/j}$. A union bound over the possible values of $j$, and
+Hoeffding's inequality with $x=\sqrt{2\log(t+1)/j}$, give
+\begin{equation*}
+  \Pru(E_t)\le\sum_{j=1}^{t}\Pru\Big(\bY_{\as,j}-\ms\le-\sqrt{\frac{2\log(t+1)}{j}}\Big)
+  \le\sum_{j=1}^{t}e^{-4\log(t+1)}=\frac{t}{(t+1)^4}\le\frac{1}{(t+1)^3}.\qedhere
+\end{equation*}
+\end{proof}
+
+To prove the proposition we will use the following decomposition, with the events $E_t$ of
+Lemma~\ref{lem:ucb-basic}. Let
+\begin{equation*}
+  u:=\max\Big\{1,\Big\lceil\frac{8\log T}{\gap^2}\Big\rceil\Big\}.
+\end{equation*}
 
 \begin{lemma}[Decomposition]\label{lem:ucb-decomp}
-\uses{def:ucb, lem:stack}
+\uses{def:ucb, lem:stack, lem:ucb-basic}
 Almost surely,
 \begin{equation*}
   \Np_a(T)\le u+\underbrace{\sum_{t=1}^{T-1}\ind(E_t)}_{\mathsf A}
@@ -1579,7 +1618,7 @@ Almost surely,
 From this decomposition we will use the following lemma to control the two random terms.
 
 \begin{lemma}[The two terms]\label{lem:ucb-terms}
-\uses{lem:stack, def:ucb, def:models}
+\uses{lem:stack, def:ucb, def:models, lem:ucb-decomp, lem:ucb-basic}
 With the notation of Lemma~\ref{lem:ucb-decomp},
 \begin{equation*}
   \E[\mathsf A]\le\frac14,\qquad\E[\mathsf B]\le\frac{2}{\gap^2}.
@@ -1610,9 +1649,8 @@ $\powc{\Bclass}\subseteq\powc{\Punit}$, gives them on $\powc{\Bclass}$.
 \subsubsection{Proof of Lemma~\ref{lem:ucb-decomp}}\label{sec:proof-ucb-decomp}
 
 \begin{proof}
-\uses{def:ucb, lem:stack}
-Almost surely, $\Ap_t\in M_t(\Hist_t)$ for every $t$, since
-$\Pru(\Ap_t\in M_t(\Hist_t))=\E[\rho_t(\Hist_t,M_t(\Hist_t))]=1$. We split the rounds at which $a$ is
+\uses{def:ucb, lem:stack, lem:ucb-basic}
+By Lemma~\ref{lem:ucb-basic}(a), almost surely $\Ap_t\in M_t(\Hist_t)$ for every $t$. We split the rounds at which $a$ is
 pulled according to its count:
 \begin{equation*}
   \Np_a(T)=\sum_{t=0}^{T-1}\ind(\Ap_t=a,\ \Np_a(t)<u)+\sum_{t=0}^{T-1}\ind(\Ap_t=a,\ \Np_a(t)\ge u).
@@ -1645,24 +1683,17 @@ Adding the two sums gives the decomposition.
 \subsubsection{Proof of Lemma~\ref{lem:ucb-terms}}\label{sec:proof-ucb-terms}
 
 \begin{proof}
-\uses{lem:stack, def:ucb, def:models}
-By Lemma~\ref{lem:stack} (\emph{rewards by count}), for each arm $b$ the variables $\Yc_{b,1},\Yc_{b,2},\dots$
-are independent with the law $\nu_b\in\Punit$, so Hoeffding's inequality gives, for every $s\ge1$ and
+\uses{lem:stack, def:ucb, def:models, lem:ucb-decomp, lem:ucb-basic}
+By Lemma~\ref{lem:stack} (\emph{rewards by count}), the variables $\Yc_{a,1},\Yc_{a,2},\dots$ are
+independent with the law $\nu_a\in\Punit$, so Hoeffding's inequality gives, for every $s\ge1$ and
 $x\ge0$,
 \begin{equation}\label{eq:hoeffding}
-  \Pru\big(\bY_{b,s}-\marm_b\le-x\big)\le e^{-2sx^2},\qquad\Pru\big(\bY_{b,s}-\marm_b\ge x\big)\le e^{-2sx^2}.
+  \Pru\big(\bY_{a,s}-\marm_a\ge x\big)\le e^{-2sx^2}.
 \end{equation}
 
-\emph{Term $\mathsf A$.} Let $1\le t\le T-1$. On $E_t$, $s:=\Np_{\as}(t)\in\{1,\dots,t\}$ and, by
-Lemma~\ref{lem:stack}, $\Uix_{\as}(t)=\bY_{\as,s}+\sqrt{2\log(t+1)/s}$. A union bound over the
-possible values of $s$ and \eqref{eq:hoeffding} with $x=\sqrt{2\log(t+1)/s}$ give
-\begin{align*}
-  \Pru(E_t)&\le\sum_{s=1}^{t}\Pru\Big(\bY_{\as,s}-\ms\le-\sqrt{\frac{2\log(t+1)}{s}}\Big)
-  \le\sum_{s=1}^{t}e^{-4\log(t+1)}=\frac{t}{(t+1)^4}\le\frac{1}{(t+1)^3}.
-\end{align*}
-Hence
+\emph{Term $\mathsf A$.} By Lemma~\ref{lem:ucb-basic}(b),
 \begin{equation*}
-  \E[\mathsf A]\le\sum_{t=1}^{\infty}\frac{1}{(t+1)^3}=\zeta(3)-1\le\frac14.
+  \E[\mathsf A]=\sum_{t=1}^{T-1}\Pru(E_t)\le\sum_{t=1}^{\infty}\frac{1}{(t+1)^3}=\zeta(3)-1\le\frac14.
 \end{equation*}
 
 \emph{Term $\mathsf B$.} By \eqref{eq:hoeffding} with $x=\gap/2$, and since $e^y-1\ge y$,
@@ -1754,11 +1785,16 @@ unique optimal arm $c$, and $b$ is suboptimal in it.
 \subsection{Proof of Proposition~\ref{prop:ucb-tails}}\label{sec:proof-ucb-tails}
 
 \begin{proof}
-\uses{def:ucb, def:tails, def:models, lem:stack, lem:tails}
+\uses{def:ucb, def:tails, def:models, lem:stack, lem:tails, lem:ucb-basic}
 \emph{Setting.} $\nu\in\powc{\Punit}$, $a$ a suboptimal arm, $\gap:=\gap_a\in(0,1]$, $\as$ an optimal
-arm, $T\ge2$; we work on the enlarged run of Lemma~\ref{lem:stack}, and $E_t$ is the event
-$\{\Np_{\as}(t)\ge1,\ \Uix_{\as}(t)\le\ms\}$ of Subsection~\ref{sec:proof-ucb}. \emph{Goal.}
+arm, $T\ge2$; we work on the enlarged run of Lemma~\ref{lem:stack}, and $E_t$ is the event of
+Lemma~\ref{lem:ucb-basic} that $\as$ is underestimated at round $t$. \emph{Goal.}
 $\Pru(\Np_a(T)\ge x)\le(\log T)^{-2}$, where $x:=10\log T/\gap^2$.
+
+\emph{Idea.} If $a$ is pulled at least $x$ times, it is pulled once with exactly $s\approx x$ samples.
+At that round, either the mean of its first $s$ samples is too large, or $\as$ is underestimated at
+a round $t\ge s$; Hoeffding's inequality bounds the first event, and
+Lemma~\ref{lem:ucb-basic}(b), summed over $t\ge s$, the second.
 
 \emph{Step 1: a single count.} Let $u:=\lceil x\rceil$ and $s:=u-1$. Since $\gap\le1$ and
 $2\log2>1$,
@@ -1769,8 +1805,8 @@ As $\Np_a$ is an integer, $\{\Np_a(T)\ge x\}=\{\Np_a(T)\ge u\}$. On this event, 
 by one at each pull of $a$, some round $t\le T-1$ has $\Ap_t=a$ and $\Np_a(t)=s$; then $t\ge s$, since
 $\Np_a(t)\le t$.
 
-\emph{Step 2: the event at that round.} Almost surely $\Ap_t\in M_t(\Hist_t)$ for every $t$ (as in
-the proof of Lemma~\ref{lem:ucb-decomp}). Let $t$ be as in Step 1. Since $s\ge1$, $\Uix_a(t)<\infty$, so
+\emph{Step 2: the event at that round.} Almost surely $\Ap_t\in M_t(\Hist_t)$ for every $t$
+(Lemma~\ref{lem:ucb-basic}(a)). Let $t$ be as in Step 1. Since $s\ge1$, $\Uix_a(t)<\infty$, so
 $\Np_{\as}(t)\ge1$ (otherwise $\Uix_{\as}(t)=+\infty>\Uix_a(t)$). If $E_t$ fails, then, by
 Lemma~\ref{lem:stack} and $t+1\le T$,
 \begin{equation*}
@@ -1784,9 +1820,8 @@ that is $\bY_{a,s}-\marm_a>\gap/2$. Hence
 
 \emph{Step 3: the probabilities.} By Lemma~\ref{lem:stack}, the $\Yc_{b,j}$ are independent with laws
 $\nu_b\in\Punit$, and Hoeffding's inequality gives
-$\Pru(\bY_{a,s}-\marm_a>\gap/2)\le e^{-s\gap^2/2}\le e^{-4\log T}=T^{-4}$. For $t\ge1$, on $E_t$ the
-count $j:=\Np_{\as}(t)$ lies in $\{1,\dots,t\}$ and $\bY_{\as,j}-\ms\le-\sqrt{2\log(t+1)/j}$, so a
-union bound over $j$ and Hoeffding's inequality give $\Pru(E_t)\le t\,(t+1)^{-4}\le(t+1)^{-3}$. Since
+$\Pru(\bY_{a,s}-\marm_a>\gap/2)\le e^{-s\gap^2/2}\le e^{-4\log T}=T^{-4}$. By
+Lemma~\ref{lem:ucb-basic}(b), $\Pru(E_t)\le(t+1)^{-3}$ for every $t\ge s\ge1$. Since
 $(t+1)^{-3}\le\int_t^{t+1}y^{-3}\,dy$,
 \begin{equation*}
   \sum_{t=s}^{T-1}\Pru(E_t)\le\int_s^\infty y^{-3}\,dy=\frac1{2s^2}\le\frac{\gap^4}{128(\log T)^2}\le\frac1{128(\log T)^2}.
@@ -1817,13 +1852,14 @@ of the corresponding definition for $\pi$.
 \toprule
 Technique (where) & Earliest source found \\
 \midrule
-Data processing for a $[0,1]$-valued variable (Lemma~\ref{lem:kinf-unit}(ii)) & \citet[Lemma~1]{GMS19}; the resulting bound $\Kinf\ge\kl$ on $\Punit$ is in \citet[Section~6.1]{CGMMS13} \\
-Mixing with a Dirac mass to raise the mean (Lemmas~\ref{lem:mix}, \ref{lem:kinf-unit}, \ref{lem:kinf-p1}, \ref{lem:semi}) & source not known; see also the mixing step of \citet[Appendix~B.1]{GHMS22}, the dual formula of \citet[Theorem~8]{HT10} (the same upper bound by Jensen's inequality) and, for $\Kinf=0$, \citet[Exercise~16.4]{LS} \\
+Mixing with a Dirac mass to raise the mean (Lemmas~\ref{lem:mix}, \ref{lem:kinf-p1}, \ref{lem:semi}) & source not known; see also the mixing step of \citet[Appendix~B.1]{GHMS22}, the same step for laws on $[0,1]$ in the setting paper of batched bandits \citep[Proposition~4.2]{INC-P006}, the dual formula of \citet[Theorem~8]{HT10} (the same upper bound by Jensen's inequality) and, for $\Kinf=0$, \citet[Exercise~16.4]{LS} \\
 Weight $\infty$ on the optimal arm, alternatives keeping its law (Lemma~\ref{lem:gl-reduction}) & the constraint set of \citet[Theorem~1]{CMP17}; see also \citet{ATA89,GL97} \\
 Alternatives moving one arm (Theorem~\ref{thm:main}, Step 1) & \citet{LR85}, \citet[proof of Theorem~1]{BK96}; in this form, the proof of \citet[Theorem~1]{GMS19} \\
 Feasibility of the rates $1/\Kinf$ through one arm above $\ms$ (Theorem~\ref{thm:main}, Step 3) & \citet[Section~4]{CMP17} (parametric), \citet[Example~3]{VPG24} (finite set of rewards) \\
 Truncation in time for rewards by count (Lemma~\ref{lem:stack}) & the formalisation in \citet{LML}; see also \citet{D36} and \citet[Section~4.6]{LS} \\
-Decomposition and Hoeffding bounds for \ucb{} (Propositions~\ref{prop:ucb} and~\ref{prop:ucb-tails}) & \citet[Theorem~1]{ACF02} \\
+Decomposition and Hoeffding bounds for \ucb{} (Proposition~\ref{prop:ucb}) & \citet[Theorem~1]{ACF02} \\
+Tail of a count at a single count: Hoeffding at that count, and the optimal arm underestimated at the later rounds (Proposition~\ref{prop:ucb-tails}) & \citet[Theorem~8 and its proof, with Theorem~2, (12)]{AMS09} \\
+Tails of the counts imply tails of the pseudo-regret by a union bound (Lemma~\ref{lem:tails}(i)) & \citet[Proposition~2.1]{SA11} (for their regret) \\
 Gaussian closed form of $\Kinf$ (Lemma~\ref{lem:kinf-gauss}) & \citet[Section~4.4]{BK96} \\
 Uniform, constant and switching learners as exclusions (Lemmas~\ref{lem:constant}, \ref{lem:gms-classes}, \ref{lem:tails}) & elementary; source not known \\
 \bottomrule
@@ -1856,6 +1892,7 @@ $\Np_a(t)$, $\hm_a(t)$ & count and empirical mean before round $t$ & Definition~
 $\hR_T$, $\Reg_T(\pi,\nu)$ & pseudo-regret, regret & Definition~\ref{def:regret} \\
 $\Zc_{a,s}$, $\taup_{a,s}$, $\Yc_{a,s}$, $\bY_{a,s}$ & auxiliary array, pull times, rewards by count & Lemma~\ref{lem:stack} \\
 $\Uix_a(t)$ & index of \ucb{} & \eqref{eq:ucb} \\
+$E_t$ & an optimal arm underestimated at round $t$ & Lemma~\ref{lem:ucb-basic} \\
 $\Cons^b$, $\pi^{\mathrm{u}}$ & constant and uniform learners & Lemma~\ref{lem:constant} \\
 $\nu'\preccurlyeq\nu$ & the other arms of $\nu'$ are worse & before Definition~\ref{def:monotonic} \\
 $\gap_{\min}$ & smallest gap & before Definition~\ref{def:tails} \\

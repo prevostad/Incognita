@@ -28,7 +28,7 @@ stated). The `formalize-statements` session records the final names in `blueprin
 | $\mathcal K_{\inf}$ | `def:kinf` | reuse `LMLExplore.Bandits.dInf D P μ` | same definition (strict inequality, `ℝ≥0∞`, `⨅` over an empty set is `⊤`); **pitfall**: LMLExplore's mean is the Bochner integral `Q[id]`, which is `0` for a law without a finite mean, so `dInf` agrees with `def:kinf` only for models `D ⊆ 𝒫₁` (as in the paper, where a model is a subset of $\mathcal P_1$) |
 | unstructured class | `def:product` | `productClass (D : α → Set (Measure ℝ)) : Set (Kernel α ℝ)` | LMLExplore's `LaiRobbins.lean` has no name: it writes the set inline, `{ν \| ∀ a, ν a ∈ M a}`; `productClass` is a definition equal to that set (prove `productClass D = {ν \| ∀ a, ν a ∈ D a}` by `rfl`), so the LMLExplore theorems apply verbatim |
 | structured class | `def:product` | `Set (Kernel α ℝ)` | no new type (roadmap, Appendix A) |
-| models: laws on $[0,1]$ | `def:models` ($\mathcal P[0,1]$) | `unitLaws : Set (Measure ℝ)` | probability measures with `∀ᵐ x ∂P, x ∈ Set.Icc 0 1`, the LMLExplore hypothesis `hν` of `klucb_regret_le`; BatchedBandits reuses it (owner decision 1 of the roadmap) |
+| models: laws on $[0,1]$ | `def:models` ($\mathcal P[0,1]$); P006 `def:instance` ($\mathcal M$) | reuse `Incognita.BatchedBandits.unitLaws : Set (Measure ℝ)` (P006, merged before this paper) | probability measures with `∀ᵐ x ∂P, x ∈ Set.Icc 0 1`, the LMLExplore hypothesis `hν` of `klucb_regret_le`; the roadmap's row says that when BatchedBandits is merged first, this roadmap reuses its object (referee SC2.1); `depends_on` records P006v1 `def:instance`, `def:kinf`, `prop:kinf` |
 | models: Bernoulli | `def:models` ($\mathcal B$) | `bernoulliLaws` | image of `[0,1]` under the Bernoulli law of LMLExplore; must contain $\delta_0,\delta_1$ (means 0 and 1) |
 | models: semi-bounded | `def:models` ($\mathcal S$) | `semiBoundedLaws` | probability measures, integrable, `∀ᵐ x ∂P, x ≤ 1` |
 | models: $\mathcal L_{\varepsilon,B}$ | `def:models` | `momentLaws ε B` | probability measures with `∫ x, |x|^(1+ε) ∂P ≤ B` **and** `Integrable (fun x ↦ |x|^(1+ε)) P` (otherwise the Bochner integral is 0 junk) |
@@ -55,7 +55,7 @@ stated). The `formalize-statements` session records the final names in `blueprin
 
 | Definition | Witness (node) | Known case (node) | Exclusion (node) |
 |---|---|---|---|
-| $\mathcal K_{\inf}$ | finite positive on $\mathcal P[0,1]$ below 1 (`lem:kinf-unit`(ii)) | Bernoulli: $\mathrm{kl}(p,\mu)$ (`lem:kinf-unit`(iii)), Gaussian: $\frac12\log(1+(\mu-\mu_0)^2/v)$ (`lem:kinf-gauss`); LMLExplore's `dInf_range_bernoulliMeasure`, `dInf_range_gaussianReal` (known variance) | vanishes identically on $\mathcal P_1$ (`lem:kinf-p1`); $+\infty$ above the support (`lem:kinf-unit`(i)) |
+| $\mathcal K_{\inf}$ | finite positive on $\mathcal P[0,1]$ below 1 (`lem:kinf-unit`(i), from `cite:INC-P006-prop:kinf`(iii)) | Bernoulli: $\mathrm{kl}(p,\mu)$ (`lem:kinf-unit`(ii)), Gaussian: $\frac12\log(1+(\mu-\mu_0)^2/v)$ (`lem:kinf-gauss`); LMLExplore's `dInf_range_bernoulliMeasure`, `dInf_range_gaussianReal` (known variance) | vanishes identically on $\mathcal P_1$ (`lem:kinf-p1`); $+\infty$ above the support (`cite:INC-P006-prop:kinf`(i)) |
 | models | $\mathrm{Ber}(1/2)$, $\delta_0$, $\mathcal N(0,1)$ (`lem:kurt`(iii), `lem:semi`(iv)) | $\mathcal B\subseteq\mathcal P[0,1]\subseteq\mathcal S\subseteq\mathcal P_1$ (text after `def:models`) | $\delta_x\notin\mathcal H_\kappa$, skewed Bernoulli $\notin\mathcal H_\kappa$, $\delta_x\notin\mathcal L_{\varepsilon,B}$ for large $\lvert x\rvert$, $\mathcal N(\cdot,0)$ excluded from $\mathcal G$ by definition |
 | consistency | `UCB` on $\mathcal P[0,1]^\alpha$ and $\mathcal B^\alpha$ (`prop:ucb`) | — | constant learner `π^b` (`lem:constant`) |
 | $\gamma$-consistency | `UCB` (0-consistent) | consistency = 0-consistency (`def:consistent`) | `π^b`, `π^u` for every `γ < 1` (`lem:constant`) |
@@ -63,7 +63,7 @@ stated). The `formalize-statements` session records the final names in `blueprin
 | smarter than uniform | uniform learner `π^u` (`lem:constant`) | — | `π^b` on an instance where $b$ is suboptimal (`lem:constant`) |
 | pairwise symmetric for optimal arms | `π^u` on every class (`lem:gms-classes`(i)) | — | `π^b` on $\mathcal B^\alpha$ (all arms $\mathrm{Ber}(1/2)$) (`lem:gms-classes`(ii)) |
 | monotonic | `π^u` on every class (`lem:gms-classes`(i)) | — | the switching learner `π^sw` on $\mathcal B^\alpha$ (`lem:gms-classes`(iii)); note that `π^b` **is** monotonic (both sums are $T$ or $0$), so it is not an exclusion here |
-| $f$-upper tailed counts / pseudo-regret | `UCB` on $\mathcal P[0,1]^\alpha$ with $f=\log^2$, constants $10,1$ (counts) and $10(K-1),K-1$ (`prop:ucb-tails`, `lem:tails`(i)) | counts imply pseudo-regret (`lem:tails`(i)), as [SA11, Proposition 2.1] | `π^b`, every unbounded $f$ (`lem:tails`(ii)) |
+| $f$-upper tailed counts / pseudo-regret | `UCB` on $\mathcal P[0,1]^\alpha$ with $f=\log^2$, constants $10,1$ (counts) and $10(K-1),K-1$ (`prop:ucb-tails`, `lem:tails`(i)); a weaker form of [AMS09, Theorem 8] ($\log^3$ for the same index) | counts imply pseudo-regret (`lem:tails`(i)), as [SA11, Proposition 2.1] | `π^b`, every unbounded $f$ (`lem:tails`(ii)) |
 | family versions | constant family of `UCB` (`lem:family` + `prop:ucb`) | constant family = the learner (`lem:family`) | constant family of `π^b` (`lem:family` + `lem:constant`) |
 | product class | $\mathcal B^\alpha$ | — | $\mathcal E_2$ of the example after `prop:gl-zero` is not a product class |
 | Graves–Lai constant | positive on $\mathcal B^\alpha$ (`thm:main` + `lem:kinf-unit`) | product identity (`thm:main`), agreement with [CMP17, Theorem 1] (`lem:gl-reduction`) | $C=0$ on $\mathcal E_2$ (`prop:gl-zero`); $C=\infty$ on $\mathcal P_1^\alpha$ (`lem:kinf-p1` + `thm:main`) |
@@ -145,18 +145,38 @@ transfer through an equivalence `α ≃ Fin K` is needed, or a proof of `prop:uc
   $\gamma$-consistency is taken for $\gamma\in[0,1)$.
 - The paper writes $\mathcal N(\mu,v)$ with $v$ the variance (as Mathlib's `gaussianReal μ v`).
 
-### Users of these definitions (open pull requests read on 2026-11-16)
+### Users of these definitions, and the library papers (updated 2026-11-17)
 
-- P004 (`owner/p004-imed-moments`): semi-bounded laws $\mathcal S$ (`def:model` there, same set;
-  P004 adds $\mathcal S_r$, $\mathcal M_r$ of its own), $\mathcal K_{\inf}(P,\mu;\mathcal D)$ with the
-  strict inequality (same), runs in a stack model with rounds from 0 (`lem:stack` here makes the
-  link with runs defined by conditional laws), consistency [LS, Def. 16.1] and uniform fast
+- **P004** (IMED with finite variance, accepted, v1): semi-bounded laws $\mathcal S$ (`def:model`
+  there, same set; P004 adds $\mathcal S_r$, $\mathcal M_r$ of its own), $\mathcal K_{\inf}(P,\mu;\mathcal D)$
+  with the strict inequality (same), runs in a stack model with rounds from 0 (`lem:stack` here makes
+  the link with runs defined by conditional laws), consistency [LS, Def. 16.1] and uniform fast
   convergence [GMS19, Def. 1] (same as `def:consistent`, `def:ufc` with $\mathcal E=\mathcal D^\alpha$),
-  regret $\sum_a\Delta_a\mathbb EN_a(T)$ (same).
-- P005 (`owner/p005-kurtosis`): $\mathcal H_\kappa$ (same set, $\kappa>1$), kurtosis and variance
-  (same), information function $\mathcal K_{\inf}(P,\mu;\mathcal D)$ (same), rounds numbered from 1
-  with $N_a(T)$ the pulls among the first $T$ rounds (the same quantity as ours, said in the text
-  after `def:regret`), stack model (`lem:stack`), consistency over $\mathcal D^\alpha$ (same).
+  regret $\sum_a\Delta_a\mathbb EN_a(T)$ (same). *Overlap with library nodes* (referee SC2.3):
+  P004 `lem:dualfacts`(a) is `lem:kinf-basic`(i) on $\mathcal S$; `lem:dualfacts`(b) contains
+  `lem:kinf-basic`(iv) on $\mathcal S$, the value $+\infty$ of `lem:semi`(i) for $\mu\ge1$, and the
+  value $0$ at the mean (which `lem:semi`(i) gives through its upper bound $\log1=0$).
+- **P005** (bounded kurtosis, accepted, v1): $\mathcal H_\kappa$ (same set, $\kappa>1$), kurtosis and
+  variance (same), $\mathcal K_{\inf}(P,\mu;\mathcal D)$ (same), rounds numbered from 1 with $N_a(T)$
+  the pulls among the first $T$ rounds (the same quantity as ours, said in the text after
+  `def:regret`), stack model (`lem:stack`), consistency over $\mathcal D^\alpha$ (same). *Overlap*:
+  P005 `lem:mixkl` ($Q'\ge\theta Q$ gives $\mathrm{KL}(P,Q')\le\mathrm{KL}(P,Q)+\log(1/\theta)$) implies
+  `lem:mix` (take $Q=P$, $\theta=1-\eta$); P005 `cor:largegap` ($\mathcal K_{\inf}(P,m+\Delta)=
+  \mathcal K_{\inf}(P_0,\Delta/\sigma)$ on $\mathcal H_\kappa$) is the location–scale identity of
+  `lem:kurt`(ii) with $\phi(x)=m+\sigma x$, stated by P005 for the standardised law.
+- **Why P004 and P005 are not cited in `paper.tex`.** A citation of a library paper requires a
+  `depends_on` entry (AGENTS.md §5.6, checked by CI), which records a result *used*, and makes this
+  paper conditional on that paper's certification and subject to its dependency checks. Nothing of
+  P004 or P005 is used here: the overlaps are one-line facts proved here in two or three lines, and
+  P004, P005 are users of this paper's definitions, not sources. So the comparison is recorded here
+  for the referees and the formalisers (who can prove one from the other in Lean), and not in the
+  paper. (Referee SC2.3 asked for "see also"; see the notebook, 2026-11-17, round 2.)
+- **P006** (BatchedBandits F0, accepted, v1): laws on $[0,1]$ $\mathcal M$ (`def:instance` there) =
+  our $\mathcal P[0,1]$; its $\mathcal K_{\inf}(P,\mu)$ (`def:kinf` there) = our
+  $\mathcal K_{\inf}(P,\mu;\mathcal P[0,1])$; its `prop:kinf` (i)–(v) is restated as
+  `cite:INC-P006-prop:kinf` and used by `lem:kinf-unit` (which keeps only the two consequences and
+  the Bernoulli model $\mathcal B$, absent from P006) and in the remarks and examples. P006's rounds
+  start at 1 (ours at 0): not used by the cited node.
 
 ## Closest known
 
@@ -204,8 +224,10 @@ transfer through an equivalence `α ≃ Fin K` is needed, or a proof of `prop:uc
   is already [BK96, §4.4] (read 2026-11-17, note `literature/notes/BK96.md`; BK96's parameter set
   allows $\sigma_a^2=0$, our $\mathcal G$ excludes it).
 - **[CGMMS13, §6.1, after Lemma 1]**: $d_{\rm BER}(E(\nu),E(\nu'))\le\mathrm{KL}(\nu,\nu')$ on
-  $\mathfrak M_1([0,1])$, hence $\mathcal K_{\inf}\ge d_{\rm BER}$: the lower bound of `lem:kinf-unit`(ii),
-  credited in the remark after the lemma (the proof uses [GMS19, Lemma 1]). The source prints its
+  $\mathfrak M_1([0,1])$, hence $\mathcal K_{\inf}\ge d_{\rm BER}$: the lower bound of
+  `cite:INC-P006-prop:kinf`(iii), credited in the paragraph before `lem:kinf-unit` (P006 proves it
+  with [GMS19, Lemma 1]; this paper no longer proves it, and no longer has the node
+  `cite:GMS19-lem1`). The source prints its
   two "standard results" without the logarithm of the moment generating function (a slip; see the
   note), and does not state the monotonicity of $d_{\rm BER}(\mu_a,\cdot)$ that the step to
   $\mathcal K_{\inf}$ needs (our `lem:kl`).
@@ -214,7 +236,24 @@ transfer through an equivalence `α ≃ Fin K` is needed, or a proof of `prop:uc
   $2/\Delta^2+5/4$ is worse for small gaps, it comes from summing over the samples of $a$ only).
 - **K33** ([SA11, Theorem 3.3]: no anytime policy is $f$-w$\mathcal T$ for $f$ growing faster than
   every power of $\log$, as the roadmap transcribes it): `prop:ucb-tails` gives $f=\log^2$ for UCB,
-  which is consistent with it.
+  which is consistent with it. [SA11, §2] states that UCB1 is $\log^3$-$\mathcal T$ and
+  $\log^3$-$\mathcal R$ (credited to AMS09), so `prop:ucb-tails` is weaker than the published bound;
+  the paper says so in the remark after it. `lem:tails`(i) is the union-bound step of [SA11,
+  Proposition 2.1], credited in the remark after `lem:tails`.
+- **K32** ([AMS09], read 2026-11-17 in this revision, authors' version, §5.1: Theorems 7–8 with their
+  proofs, Lemma 3, and Theorem 2 (10)–(12) of §3.2): for UCB1 with index
+  $\bar X_{k,s}+b\sqrt{\rho\log t/s}$, $\rho>1/2$, rewards in $[0,b]$, the proof of Theorem 8 gives
+  $\mathbb P(T_k(n)>(1+\rho v_k\log n)x)\le n^{-2\rho x+1}+((1+\rho v_k\log n)x)^{1-2\rho}/(2\rho-1)$,
+  $v_k=(2b/\Delta_k)^2$, by inequality (12) at the single count $u_k$: Hoeffding for arm $k$ at that
+  count plus the optimal arm underestimated at the rounds $u_k+s$. With $b=1$, $\rho=2$ (the index of
+  `eq:ucb`, their round $t+1$ being our round $t$), $x=1$: $\mathbb P(N_a(n)>1+8\log n/\Delta^2)\le
+  n^{-3}+\frac13(1+8\log n/\Delta^2)^{-3}$. *Attempt to derive `prop:ucb-tails` from it:* the event
+  $\{N_a(T)\ge10\log T/\Delta^2\}$ is contained in $\{N_a(T)>1+8\log T/\Delta^2\}$ only when
+  $2\log T/\Delta^2\ge1$, which holds ($T\ge2$, $\Delta\le1$); then the bound
+  $T^{-3}+\frac13(8\log T)^{-3}\Delta^6$ is at most $(\log T)^{-2}$, so `prop:ucb-tails` follows from
+  AMS09 up to the translation of conventions (rounds from 0, arbitrary tie rule, the enlarged run).
+  The paper keeps its self-contained proof (same argument, credited to AMS09) because the formalisers
+  need it in these conventions, and says that it is a weaker form (referee SC2.2).
 - **K11** ([HT15, Theorem 2]): the dual formula is not proved here (deferred); `lem:semi`(iii) is the
   trivial inequality.
 - **K43** (ii) ([LS, Exercise 16.4]): $d_{\inf}=0$ for sub-Gaussian laws with unknown constant;
@@ -223,7 +262,10 @@ transfer through an equivalence `α ≃ Fin K` is needed, or a proof of `prop:uc
   `klucb`, `isConsistent_of_eventually_le_mul_log`; LML: `Algorithm`, `IsAlgEnvSeq`, `pullCount`,
   `regret`, `gap`, `ucbAlgorithm`, `rewardByCount`. Reused, never restated as new.
 
-No library paper is cited (`depends_on = []`).
+One library paper is cited: P006 (`depends_on = ["P006v1:def:instance", "P006v1:def:kinf",
+"P006v1:prop:kinf"]`), for the values of $\mathcal K_{\inf}$ on laws on $[0,1]$
+(`cite:INC-P006-prop:kinf`, referee SC2.1). P004 and P005 overlap with one-line facts and are not
+cited (Users, above).
 
 ## Sanity checks
 
@@ -258,8 +300,9 @@ No library paper is cited (`depends_on = []`).
    measurable $c$, which is right but compact. LML proves the same statement in Lean
    (`hasLaw_rewardByCount_infinitePi`), which is the safety net.
 2. `prop:ucb-tails`, Steps 1–2: the reduction of $\{N_a(T)\ge10\log T/\Delta^2\}$ to one count $s$ and
-   to the rounds $t\ge s$ (where an optimal arm is underestimated) is the only new argument of the
-   revision. (The former weak point on `def:ufc`/`def:smarter` is resolved: [GMS19, Definitions 2 and
+   to the rounds $t\ge s$ (where an optimal arm is underestimated). It is the argument of [AMS09,
+   proof of Theorem 8] (K32 above), checked by referee-proofs in round 2; the facts it shares with
+   `prop:ucb` are now the node `lem:ucb-basic` (referee PF2.1). (The former weak point on `def:ufc`/`def:smarter` is resolved: [GMS19, Definitions 2 and
    6] are now verbatim in the note, and they agree with ours, $T\ge1$ and $T\ge2$.)
 3. `def:monotonic` and `def:tails` are interpretations of their sources at two points, declared in
    the paper: [GMS19, Definition 4] has no quantifier on $T$ (we require every $T\ge1$, as for
@@ -267,7 +310,12 @@ No library paper is cited (`depends_on = []`).
    the optimal arm, which we replace by the pseudo-regret pinned by the roadmap (so the regret part of
    `def:tails` is a different predicate from SA11's $f$-$\mathcal R$; the counts part is the same). A
    later paper that cites a tail result of SA11 for the regret must translate it.
-4. `cite:GMS19-thm1`: the restatement restricts the source's "for all bandit problems" to instances
+4. `cite:INC-P006-prop:kinf`: restated in our notation with the renaming paragraph; its item (v)
+   is P006's for the class $\mathcal P$ = instances of $\mathcal P[0,1]^\alpha$ with $m^\star<1$, and
+   P006's $\mathrm{kl}$ conventions at the endpoints ($\mathrm{kl}(p,q)=+\infty$ for $q\in\{0,1\}$,
+   $q\ne p$) agree with `def:laws` ($y\log(y/0)=+\infty$ for $y>0$). The restatement is item by item
+   that of P006 v1.
+5. `cite:GMS19-thm1`: the restatement restricts the source's "for all bandit problems" to instances
    of $\mathcal D^\alpha$, and translates strategies with uniform randomisation into kernels (the
    renaming paragraph); this is weaker than the source, never stronger, but the translation of
    learners is argued in one sentence.
@@ -296,6 +344,12 @@ No library paper is cited (`depends_on = []`).
   the paper "Doob, Ignatov and optional skipping" (Simons, Yang, Yao, Ann. Probab. 2002) was found
   but could not be opened. The novelty searches of referee-scope (report of 2026-11-17, "Queries")
   found VPG24 and no statement of `thm:main` with degenerate values.
+- Revision round 2 (2026-11-17, Claude Opus 5.5, revise): the authors' version of AMS09
+  (sites.ualberta.ca/~szepesva/papers/ucbtuned-journal.pdf, text layer): §3.2 Theorem 2 with
+  (10)–(12), §5 opening, §5.1 in full (index (25), Theorem 7 and Lemma 3 with proofs, Theorem 8 with
+  its proof and the remark after it). P006 `paper.tex` (v1, on `main`) for `def:instance`, `def:kinf`
+  and `prop:kinf` (numbers 3.1, 3.2 and 4.2 from its reader build); P004 `lem:dualfacts` and P005
+  `lem:mixkl`, `cor:largegap` (v1, on `main`).
 - No further web search for novelty: the objects are classical (F item).
 
 ## Reading notes

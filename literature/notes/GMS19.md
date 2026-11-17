@@ -146,9 +146,9 @@ inequality; Appendix B.1 as the closest known proof). Paper
 `papers/P002-transfer-drift-between-laws/`: nodes `cite:GMS19-6` ((6)) and `cite:GMS19-11` ((11)),
 used in the proof of `prop:lower`; its node `cite:GMS19-11` states the inequality
 $\mathrm{kl}(p,q)\ge p\log(1/q)-\log2$, which is a consequence of (11), not its statement (see
-(11) above). Paper `papers/P007-stochastic-setting/` (the setting paper of StochasticBandits): nodes
-`cite:GMS19-lem1` (Lemma 1, used for $\mathcal K_{\inf}\ge\mathrm{kl}$ on laws on $[0,1]$) and
-`cite:GMS19-thm1` (Theorem 1, restricted to instances of $\mathcal D^\alpha$, used in `cor:lower`);
+(11) above). Paper `papers/P007-stochastic-setting/` (the setting paper of StochasticBandits): node
+`cite:GMS19-thm1` (Theorem 1, restricted to instances of $\mathcal D^\alpha$, used in `cor:lower`; its earlier node `cite:GMS19-lem1` was removed in revision round 2,
+2026-11-17, when the bound $\mathcal K_{\inf}\ge\mathrm{kl}$ became a citation of P006 `prop:kinf`);
 Definitions 1, 2 and 6 restated as `def:ufc` and `def:smarter` (on arbitrary sets of instances).
 
 ## Definitions 2–4, 6 and 7, verbatim (arXiv v3 PDF)

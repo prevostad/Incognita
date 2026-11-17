@@ -103,3 +103,61 @@ agents, which wrote the notes `literature/notes/VPG24.md`, `SA11.md`, `ACF02.md`
   Nothing of `papers/P007-stochastic-setting/` changed; `paper.tex` untouched, so no node changed.
 - Both builds compile (reader 29 pages, blueprint 30), no error, no undefined, no multiply defined;
   `certify.py check --base origin/main` passes.
+
+## 2026-11-17, revise (round 2), claude-opus-5-5
+
+Answers to referee-scope (SC2.1–SC2.5) and referee-proofs (PF2.1) on `742ab09f7c0a`; referee-proofs
+accepted. No rebase needed (`origin/main` = 326680c is the base).
+
+- **SC2.1 (L), fixed.** New cited node `cite:INC-P006-prop:kinf` (P006 v1, Proposition 4.2, items
+  (i)–(v), in our notation, with a renaming paragraph: $\mathcal M=\mathcal P[0,1]$,
+  $\mathcal K_{\inf}(P,\mu)=\mathcal K_{\inf}(P,\mu;\mathcal P[0,1])$, $\mathcal P$ = instances of
+  $\mathcal P[0,1]^\alpha$ with $m^\star<1$; P006's kl conventions at the endpoints agree with ours).
+  `depends_on = ["P006v1:def:instance", "P006v1:def:kinf", "P006v1:prop:kinf"]`. `lem:kinf-unit` keeps
+  only what P006 lacks: (i) the two consequences ($0<\mathcal K_{\inf}<\infty$ for $m(P)<\mu<1$;
+  $0$ at the mean) and (ii) the Bernoulli model $\mathcal B$ (with P006 (iv) for $\mathcal P[0,1]$).
+  **Renumbered items**: old (iii) is now (ii); old (i) and the bounds of old (ii) are now the cited
+  node (i), (iii). References updated: Degenerate values after `thm:main`, the example after
+  `prop:gl-zero`, `sec:examples`, the proof of `lem:semi` (no longer refers to `lem:kinf-unit`; same
+  mixing argument written out, `\uses` without `lem:kinf-unit`). Node `cite:GMS19-lem1` removed (no
+  user left; label not to be reused). Abstract and contributions reworded (the bounds on $[0,1]$
+  are recalled, not proved). DOSSIER: reuse of `Incognita.BatchedBandits.unitLaws`, the wrong
+  "BatchedBandits reuses it" corrected.
+- **SC2.2 (L), fixed.** AMS09 read (authors' version, §3.2 Theorem 2 (10)–(12), §5.1 in full;
+  new note `literature/notes/AMS09.md`, index row extended). Credited as the source of the argument
+  of `prop:ucb-tails` (remark after it, `sec:related` "Gap with the literature", contributions,
+  `sec:attribution` new row), with the comparison: $b=1$, $\rho=2$ is our index (their round $t+1$
+  is our round $t$), $x=1$ gives $\mathbb P(N_a(n)>1+8\log n/\Delta^2)\le n^{-3}+\frac13(1+8\log n/\Delta^2)^{-3}$,
+  a $(\log n)^{-3}$ tail; SA11 §2 "log³-T and log³-R". `prop:ucb-tails` is called a weaker,
+  self-contained form. Check (DOSSIER, K32): AMS09's bound implies ours, since
+  $10\log T/\Delta^2>1+8\log T/\Delta^2$ ($2\log2>1$) and $T^{-3}+\frac13\Delta^6(8\log T)^{-3}\le(\log T)^{-2}$
+  for $T\ge2$. Statement and proof of `prop:ucb-tails` unchanged in substance.
+- **SC2.3 (P), partly fixed, partly disputed.** Fixed: "see also" [SA11, Proposition 2.1] after
+  `lem:tails` and in `sec:attribution`; DOSSIER "Users" rewritten (P004, P005, P006 accepted),
+  with the node-by-node comparison with P004 `lem:dualfacts`(a)–(b), P005 `lem:mixkl`,
+  `cor:largegap`. **Disputed** (the "see also" to P004 and P005 in `paper.tex`): any `\cite{INC-P…}`
+  requires a `depends_on` entry (AGENTS.md §5.6, CI), which records a result *used* and makes this
+  paper conditional on P004 and P005 and subject to their dependency checks; nothing of them is used
+  (one-line facts, proved here in two lines), and they are users of these definitions. So the
+  comparison is in DOSSIER only.
+- **SC2.4 (P), fixed.** "Idea." paragraph in the proof of `prop:ucb-tails`.
+- **SC2.5 (P), fixed.** refs.bib: `note` on VPG24 (numbering of arXiv:2007.07302v3); in passing the
+  same for SA11 (arXiv:1107.4506v2, whose Proposition 2.1 is Proposition 3 in the ALT version, per
+  referee-scope's query) and for the new AMS09 entry (authors' version).
+- **PF2.1 (P), fixed.** New node `lem:ucb-basic` (statement self-contained: a run of UCB on
+  $\mathcal P[0,1]^\alpha$, an optimal arm $a^\star$, $E_t$ defined for $t\ge1$): (a) $A_t\in M_t(H_t)$
+  for every $t$ a.s.; (b) $\mathbb P(E_t)\le(t+1)^{-3}$, with its proof (moved from the proof of
+  `lem:ucb-terms`, Term A, with the union bound over $j=N_{a^\star}(t)$). Used (`\uses`) by
+  `lem:ucb-decomp` (statement and proof), `lem:ucb-terms` (statement and proof; Term A now one line;
+  \eqref{eq:hoeffding} keeps only the upper tail for arm $a$, the lower tail being in
+  `lem:ucb-basic`) and the proof of `prop:ucb-tails` (Setting, Step 2, Step 3). E_t added to the
+  notation table.
+- **SC1.10 (P)** stays as in round 1 (`thm:main` on p. 8; reason in the round-1 entry).
+- Nodes to re-check: `lem:kinf-unit` (statement and proof), `cite:INC-P006-prop:kinf` (new),
+  `lem:semi` (proof wording, item (i)), `lem:ucb-basic` (new), `lem:ucb-decomp`, `lem:ucb-terms`
+  (statements' `\uses` and proofs), `prop:ucb-tails` (proof: Setting, Idea, Steps 2–3); removed:
+  `cite:GMS19-lem1`. Remarks changed (not nodes): after `lem:tails`, after `prop:ucb-tails`, before
+  and after `lem:kinf-unit`, `sec:related`, `sec:overview`, `sec:attribution`, `sec:cited` intro.
+- **Dead end avoided:** writing the AMS09 index as "ours up to $\log(t+1)$ instead of $\log t$": with
+  rounds from 0, our $\log(t+1)$ at round $t$ is exactly their $\log t$ at their round $t$; the
+  indices coincide.
