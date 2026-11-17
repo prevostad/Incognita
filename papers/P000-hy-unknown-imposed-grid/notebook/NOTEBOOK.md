@@ -251,3 +251,100 @@ statement, hypothesis or conclusion changed; no node added or removed. Details: 
 
 Build: reader and blueprint, no error, no undefined reference or citation, no duplicate label; two overfull
 displays of about 7pt, as before.
+
+## 2026-11-17, presentation revision, version 3: numerical experiments (role revise, Claude Opus 5.5)
+
+At the owner's request (criterion W16): `experiments.py` simulates HY with its default parameters
+($w_0=1$, $\beta=2$; $\omega_\ell=1$ and $\gamma_\ell=1/2$ at these horizons) and four published
+algorithms (IMED and kl-UCB with frozen statistics and current counts, batched Thompson sampling of
+KO21b, BaSE of GHRZ19 with $\gamma=1$ given the grid and $T$), on 10 pairs (instance, grid),
+$T=2\cdot10^4$, 64 runs, 218 s in all. Outputs: `results/*.csv` (mean, 95% band, median at 160
+log-spaced rounds and at every batch end), `results/log.txt`, figures `fig1`–`fig5` (PDF).
+
+What was learned.
+
+- Every ingredient of HY is computable; the only cost is $K_{\inf}$ at each end (bisection on the dual
+  variable). Rewards with finitely many values keep it exact: the multinomial counts of a batch are
+  drawn at its end (same law as round by round, since every policy only reads the rewards at the
+  ends). A Beta law would need all samples at every end (too slow for the constant grid with 199
+  ends); the second law is therefore $\mathrm{Bin}(10,p)/10$.
+- Activation is rare at $T=2\cdot10^4$: only after $t_1=4$ on $t_\ell=4\ell^3$, after $16$ and $256$ on
+  $2^{2^\ell}$ (paced from $6519$), after $200$ on the irregular grid. Elsewhere HY is IMED with frozen
+  statistics, the weight $x_\ell^2$ and the pseudo-count, and its curves follow frozen IMED.
+- On $2^{2^\ell}$ (instance A) the means are dominated by rare wrong leaders at $256$ (medians 53 IMED,
+  134 HY; means 757 IMED, 476 HY, bands overlapping). On instance C (low variance), the weight
+  $y_\ell=4$ makes HY explore more than needed at this horizon (38 versus 18 for IMED).
+- BaSE with $\gamma=12$ (its theorem) would eliminate nothing before $T$ on these instances, hence
+  $\gamma=1$ (its experiments). kl-UCB with $c=3$ is slow (bisection at every round: 20 s per pair).
+- Dead end: a first version plotted Figure 3 with a logarithmic regret axis and all batch ends of the
+  irregular grid; unreadable, replaced by a linear axis, a median row and the three ends around the
+  long batches.
+
+### Same day: BABA on its own grid (owner's follow-up)
+
+- BABA (JTXHXG21, Algorithms 1-6), $\alpha=3$, $I_1=2000$ (their §6). Its grid is static and does
+  not depend on $T$: ends 16, 74, 306, 538, 2000, 2020, 2166, 2750, 3334, then $(3334, I_2=171650]$.
+  All algorithms run on it (A, B, C), BABA too: `fig6_baba_grid.pdf`.
+- Readings of the pseudo-code (listed in DOSSIER §10): $\lceil\log^2I_r\rceil$, $I_0=0$, $c_0$ = label 1,
+  loops stop at the target, $\mathrm{kl}_+$ in (7), clipping, test (8) at the end of Step III's batch.
+- Since $c_0$ = label 1 would be the optimal arm in our instances, every run now relabels the arms by a
+  uniform permutation; this also removed the advantage of the "smallest label" tie rules, and every
+  number of the section was recomputed (292 s in all).
+- At $T=2\cdot10^4$ the test (8) of epoch 2 has threshold $\approx0.117>\mathrm{kl}(0.4,0.5)$: Step IV
+  explores uniformly (146 pulls per arm), the step 2750-3334 of BABA's curve; then it commits until
+  $I_2$. Means at $T$, instance A: HY 56, IMED 57, KL-UCB 111, BABA 203, TS 203, BaSE 304.
+- No batch of HY is activated on this grid before $T$ ($s_9=160660$).
+
+## 2026-11-17, version 3, revision round 1 (role revise, Claude Opus 5.5)
+
+Reports on head 196eae3: `referee-scope` major (SC1.1-SC1.10, one L, nine P), `referee-proofs`
+accept (PF1.1, PF1.2, both P). Branch rebased on `origin/main` (no conflict). Presentation only.
+
+- SC1.1 (L) fixed: `sec:experiments`, end of "Algorithms": PRCS16 (read) for "chooses its own grid",
+  EKMM21 and KMS21 as "see also" (not read; not fetched this session).
+- SC1.2 fixed: BaSE item. Rerun of BaSE alone with $\gamma=1$ and $\gamma=12$, same seeds
+  (`.agents/scratch/base12.py`, not committed). Mean number of eliminated arms and mean regret at $T$:
+  A-const 3 / 208 vs 2 / 1880; A-poly 3 / 260 vs 2 / 1981; A-geom 3 / 328 vs 2 / 2048; A-irr 2.98 / 910
+  vs 0.98 / 1112; A-dexp2 0.09 / 347 vs 0 / 347; A-dexp15 1.47 / 168 vs 0 / 168; B-geom 0.95 / 476 vs
+  0 / 496; B-dexp2 0 / 396 both; C-geom 3 / 314 vs 2 / 2048; C-dexp2 0 / 38 both; A-baba 2.56 / 304 vs
+  0 / 500; B-baba 0.02 / 178 vs 0 / 157; C-baba 2.73 / 304 vs 0 / 500. The $\gamma=1$ numbers equal
+  `results/log.txt`. The line of the section above, "BaSE with $\gamma=12$ would eliminate nothing
+  before $T$", was wrong: it holds only on the doubly exponential grids and BABA's grid. The
+  referee's arithmetic agrees: $\sqrt{12\log(8\cdot10^4)/4096}\approx0.18<0.2$.
+- SC1.3 fixed: interpretation of Fig. 2. $\mathfrak R(t_\ell)/\log t_\ell$ from the CSVs: geometric, HY
+  2.39, 3.29, 4.44, 5.30, 5.81, 6.04, 6.02, 6.16 for $\ell=6..13$, IMED 2.28 ... 5.35; polynomial, both in
+  $[5.0,5.9]$ from $\ell=6$.
+- SC1.4 fixed (`-{}-figures`). SC1.5: no change needed; AGENTS.md §5.3 (0c5a3ee, on `main` since this
+  morning) allows exactly this sentence.
+- SC1.6 fixed (contributions item 4), SC1.7 fixed (abstract about 210 words; ingredients sentence
+  removed, the introduction has them).
+- SC1.8 fixed: Figures 4-6 and their interpretations moved to a new last Appendix
+  `sec:app-experiments`, with a two-sentence summary in `sec:experiments`; the main text now ends on
+  p. 15 (was 17). Moving §7.2 instead was rejected: it holds the explicit instance and the special
+  cases, the sanity checks of the theorems, which belong in the main text.
+- SC1.9 fixed: `\Reg`, `\tl` in captions need `\protect` (first build failed: "Argument of
+  \Hy@tempa has an extra }", the `\hyperlink` inside `\sy`). Legends: `shown()` maps "kl-UCB" to
+  "KL-UCB" at drawing time, so the CSV keys and saved results stay as they are; figures redrawn
+  with `--figures` (the PDFs are 30-67 kB).
+- SC1.10 fixed: `lem:amb` Step 6, a `\why` on each line of the `align` (first version 38 pt too wide;
+  shortened).
+- PF1.1 fixed in the interpretation of Fig. 6 and in "Grids": batch 10 of BABA's grid is activated
+  ($171650>s_9=160660$), only its paced phase is after $T$. The last line of the section "BABA on its
+  own grid" above ("No batch of HY is activated on this grid") was wrong in the same way.
+- PF1.2 fixed: interpretation of Fig. 1, the values of $y_\ell$ in the first batches.
+
+## 2026-11-17, version 3, revision round 2 (role revise, Claude Opus 5.5)
+
+Reports on head 4f6778a: `referee-scope` major (SC2.1 G, SC2.2 P), `referee-proofs` accept (PF2.1
+P). Branch rebased on `origin/main` (a56b2e9, no conflict). Presentation only.
+
+- SC2.1 (G, on prose, no node) fixed: `sec:experiments`, last sentence of "Algorithms". The referee
+  is right; I checked arXiv:1505.00369v3: §2.2 "We employ a two-armed bandit framework", §3.3 "The
+  generic etc policy uses a deterministic grid T that is fixed beforehand", Figure 1 "Generic
+  explore-then-commit policy with grid T" (input: the grid), Proposition 1 "run with a given set of
+  times". So PRCS16's ETC could be run on an imposed grid, given $T$, like BaSE; what excludes it
+  is $K=2$. Round 1's sentence ("chooses its own grid") came from reading "the learner chooses the
+  grid" (true of §4, the optimised grids) as a property of the policy itself.
+- SC2.2 (P) fixed: `lem:decompA` Step (b), `\why` on the last line. First attempt as a third
+  column: 399 pt, then 110 pt too wide (the second line of the `align` is long); put on its own row.
+- PF2.1 (P) fixed: "about eight to ten times" (7.7 to 10.3).

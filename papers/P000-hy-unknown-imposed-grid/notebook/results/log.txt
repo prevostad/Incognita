@@ -1,0 +1,72 @@
+A-const HY: final mean regret 45.9 (1.3 s); HY activated after the ends []
+A-const IMED (frozen statistics): final mean regret 52.0 (0.7 s)
+A-const kl-UCB (frozen statistics): final mean regret 108.8 (18.2 s)
+A-const Thompson sampling (batched): final mean regret 131.5 (0.4 s)
+A-const BaSE (knows the grid and $T$): final mean regret 207.9 (0.3 s)
+A-poly HY: final mean regret 50.0 (0.8 s); HY activated after the ends [4]
+A-poly IMED (frozen statistics): final mean regret 58.7 (0.5 s)
+A-poly kl-UCB (frozen statistics): final mean regret 117.0 (19.2 s)
+A-poly Thompson sampling (batched): final mean regret 136.3 (0.4 s)
+A-poly BaSE (knows the grid and $T$): final mean regret 260.4 (0.3 s)
+A-geom HY: final mean regret 62.5 (0.8 s); HY activated after the ends []
+A-geom IMED (frozen statistics): final mean regret 54.6 (0.5 s)
+A-geom kl-UCB (frozen statistics): final mean regret 119.3 (21.7 s)
+A-geom Thompson sampling (batched): final mean regret 154.5 (0.4 s)
+A-geom BaSE (knows the grid and $T$): final mean regret 328.2 (0.3 s)
+A-irr HY: final mean regret 107.8 (1.1 s); HY activated after the ends [200]
+A-irr IMED (frozen statistics): final mean regret 174.4 (0.5 s)
+A-irr kl-UCB (frozen statistics): final mean regret 205.2 (22.2 s)
+A-irr Thompson sampling (batched): final mean regret 401.1 (0.4 s)
+A-irr BaSE (knows the grid and $T$): final mean regret 909.8 (0.2 s)
+A-dexp2 HY: final mean regret 514.0 (1.0 s); HY activated after the ends [16, 256]
+A-dexp2 IMED (frozen statistics): final mean regret 832.9 (0.9 s)
+A-dexp2 kl-UCB (frozen statistics): final mean regret 1099.6 (23.3 s)
+A-dexp2 Thompson sampling (batched): final mean regret 1308.4 (0.9 s)
+A-dexp2 BaSE (knows the grid and $T$): final mean regret 346.9 (0.2 s)
+A-dexp15 HY: final mean regret 261.5 (1.1 s); HY activated after the ends []
+A-dexp15 IMED (frozen statistics): final mean regret 347.2 (0.5 s)
+A-dexp15 kl-UCB (frozen statistics): final mean regret 167.0 (23.8 s)
+A-dexp15 Thompson sampling (batched): final mean regret 441.9 (0.4 s)
+A-dexp15 BaSE (knows the grid and $T$): final mean regret 167.5 (0.1 s)
+B-geom HY: final mean regret 170.1 (0.9 s); HY activated after the ends []
+B-geom IMED (frozen statistics): final mean regret 161.2 (0.5 s)
+B-geom kl-UCB (frozen statistics): final mean regret 259.0 (20.2 s)
+B-geom Thompson sampling (batched): final mean regret 253.9 (0.4 s)
+B-geom BaSE (knows the grid and $T$): final mean regret 475.6 (0.3 s)
+B-dexp2 HY: final mean regret 486.4 (1.0 s); HY activated after the ends [16, 256]
+B-dexp2 IMED (frozen statistics): final mean regret 500.0 (0.5 s)
+B-dexp2 kl-UCB (frozen statistics): final mean regret 562.0 (22.8 s)
+B-dexp2 Thompson sampling (batched): final mean regret 519.6 (0.4 s)
+B-dexp2 BaSE (knows the grid and $T$): final mean regret 396.4 (0.1 s)
+C-geom HY: final mean regret 14.8 (0.8 s); HY activated after the ends []
+C-geom IMED (frozen statistics): final mean regret 13.9 (0.7 s)
+C-geom kl-UCB (frozen statistics): final mean regret 115.4 (18.2 s)
+C-geom Thompson sampling (batched): final mean regret 143.7 (0.4 s)
+C-geom BaSE (knows the grid and $T$): final mean regret 314.4 (0.3 s)
+C-dexp2 HY: final mean regret 37.8 (0.8 s); HY activated after the ends [16, 256]
+C-dexp2 IMED (frozen statistics): final mean regret 17.9 (0.5 s)
+C-dexp2 kl-UCB (frozen statistics): final mean regret 122.2 (17.5 s)
+C-dexp2 Thompson sampling (batched): final mean regret 997.2 (0.4 s)
+C-dexp2 BaSE (knows the grid and $T$): final mean regret 38.4 (0.1 s)
+grid of BABA below T: [16, 74, 306, 538, 2000, 2020, 2166, 2750, 3334]; epochs (I_(r-1), I_r): [(0, 2000), (2000, 171650)]
+A-baba HY: final mean regret 55.9 (0.8 s); HY activated after the ends []
+A-baba IMED (frozen statistics): final mean regret 57.0 (0.5 s)
+A-baba kl-UCB (frozen statistics): final mean regret 111.1 (17.7 s)
+A-baba Thompson sampling (batched): final mean regret 203.3 (0.4 s)
+A-baba BaSE (knows the grid and $T$): final mean regret 303.8 (0.2 s)
+A-baba BABA (on its own grid): final mean regret 203.0 (0.4 s)
+grid of BABA below T: [16, 74, 306, 538, 2000, 2020, 2166, 2750, 3334]; epochs (I_(r-1), I_r): [(0, 2000), (2000, 171650)]
+B-baba HY: final mean regret 182.3 (0.8 s); HY activated after the ends []
+B-baba IMED (frozen statistics): final mean regret 165.6 (0.5 s)
+B-baba kl-UCB (frozen statistics): final mean regret 278.1 (17.1 s)
+B-baba Thompson sampling (batched): final mean regret 345.6 (0.4 s)
+B-baba BaSE (knows the grid and $T$): final mean regret 177.9 (0.2 s)
+B-baba BABA (on its own grid): final mean regret 231.2 (0.4 s)
+grid of BABA below T: [16, 74, 306, 538, 2000, 2020, 2166, 2750, 3334]; epochs (I_(r-1), I_r): [(0, 2000), (2000, 171650)]
+C-baba HY: final mean regret 14.5 (0.8 s); HY activated after the ends []
+C-baba IMED (frozen statistics): final mean regret 15.1 (0.5 s)
+C-baba kl-UCB (frozen statistics): final mean regret 112.3 (20.4 s)
+C-baba Thompson sampling (batched): final mean regret 185.9 (0.4 s)
+C-baba BaSE (knows the grid and $T$): final mean regret 304.4 (0.2 s)
+C-baba BABA (on its own grid): final mean regret 184.3 (0.6 s)
+total 292 s, T = 20000, R = 64, seed 20261117

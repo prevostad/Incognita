@@ -9,6 +9,9 @@ source. Numbers "Theorem 1.1", "Section 3", … below are those of the version-1
 it; the paper's labels are given everywhere, and the last section maps every label of version 1 to
 its place in version 2.
 
+Version 3 (2026-11-17, presentation revision requested by the owner) adds the numerical experiments
+(criterion W16 of `docs/writing.md`); section 10 below lists what changed. No node changed.
+
 ## 1. Roadmap correspondence
 
 `META.toml`: roadmap BatchedBandits, `directions = ["F4", "F1"]`.
@@ -147,6 +150,9 @@ related work of the introduction and in Table 1.
   `lem:onebatch` with $\log t_{\ell+1}=2\log t_\ell$, not a new result).
   Arithmetic: $d_a=\mathrm{kl}(0.3,0.5)=0.3\log0.6+0.7\log1.4\approx0.08228$, $4/d_a\approx48.61$,
   $2/d_a\approx24.31$, $1/d_a\approx12.15$.
+- Simulations (version 3): Subsection `sec:experiments` of the paper, figures made by
+  `notebook/experiments.py` (section 10 below). They illustrate the behaviour of HY and of five
+  published batched algorithms at the horizon $2\cdot10^4$, never the first-order constant.
 - Consistency with the `[Lean]` entries of KNOWN.md: KNOWN.md of BatchedBandits has no entry, hence
   no `[Lean]` entry.
 - Consistency with the roadmap: the statements agree with Appendix A, items 1–2, of the roadmap
@@ -173,6 +179,16 @@ be the hardest to see.
    $x_\ell\to1$, including short batches alternating with long ones.
 
 ## 5. Searches
+
+Version 3 (2026-11-17) ran no web search. To implement the baselines it re-read, from the arXiv PDFs,
+Algorithm 1 of KO21b (arXiv:2110.00158v1, §II.B: the Gaussian prior and posterior, updates at the
+batch ends) and Algorithm 1, Theorem 4 and §4 (experiments, $\gamma=1$) of GHRZ19 (arXiv:1904.01763v3);
+both were already recorded as read in full in `literature/index.md`. For BABA (added the same day at the
+owner's request) it re-read the PMLR PDF of JTXHXG21 (proceedings.mlr.press/v139/jin21c/jin21c.pdf):
+§2.3, §3 (Algorithms 1-6, (4)-(8), the grid of §3.1) and §6 (experiments: $\alpha=3$, $I_1=2000$); the
+main paper was already recorded as read in full. The IMED and kl-UCB indices are
+those of `literature/notes/HT15.md` (Algorithm 1) and `literature/notes/CGMMS13.md` (Corollary 1,
+$f(t)=\log t+3\log\log t$).
 
 The revision of version 2 of 2026-11-16 ran no web search. The scope report of 2026-11-16 found, with
 its own queries (listed in that report), one concurrent work: Qiao and Wu, *Adversarially Batched
@@ -244,9 +260,9 @@ PDF). Version 2 removed every "(to be checked)", as follows.
 | H63 | nothing recorded | classic (Hoeffding's inequality), cited as is (`lem:hoeffding` and Appendix A) |
 | LS | §9.2, §15.1 Lemma 15.1, §16, §25, §36 notes; not §4.6 | classic (Lattimore–Szepesvári), cited as is for reward stacks (§4.6, `def:stacks`, proof of `lem:stacks`) and the chain rule (Lemma 15.1) |
 | BK96 | abstract only | classic (Burnetas–Katehakis, listed in AGENTS.md §5.2), cited as is for the sequential lower bound: "[BK96, Proposition 1], as recalled by [HT10, (2)]" in Section 2 ("Sequential bandits on [0,1]"), Table 1, the paragraph "The classical sequential result" of Section 5 and the Examples ("Batches of size one"); [HT10, Theorem 8] for the identification of the divergence with the dual formula. HT10 §2 introduces (2) as "Proposition 1 (Proposition 1 of Burnetas and Katehakis (1996))" (read by the scope referee on 2026-11-16 and recorded in index.md as read: "§2 definition of $D_{\inf}$, (2)"). The first submission of v2 had weakened BK96 to "see also" (SC1.1 of the scope report of 2026-11-16) |
-| EKMM21 | not read | "see also" (Motivation; chosen-grid paragraph) |
+| EKMM21 | not read | "see also" (Motivation; chosen-grid paragraph; end of the paragraph "Algorithms" of `sec:experiments`, since 2026-11-17) |
 | JXXG21 | not read | "see also" (chosen-grid paragraph) |
-| KMS21 | not read | "see also … for Thompson sampling" (the title says so) |
+| KMS21 | not read | "see also … for Thompson sampling" (the title says so); "see also" at the end of the paragraph "Algorithms" of `sec:experiments` (since 2026-11-17) |
 | P26 | not read (the author's own unpublished manuscript) | "see also" in three places: everything used from it is proved again here; the water-level technique comes from it (the author's statement, as in his readable version); the attribution row |
 | LS17 | §1–4, Theorem 10 statement, §8–9 (not the algorithm sections) | dropped (it was "also [LS17] (to be checked)" in the attribution row of the paced targets) |
 | H60 | abstract | kept: "evaluating the expected sample size at a parameter between the two hypotheses goes back to Hoeffding [H60]" rests on the abstract |
@@ -603,3 +619,172 @@ boxes; `thm:lower`, `thm:upper`: headings and box placement; `lem:service`: its 
 
 New labels in v2: `alg:hy` (1), `lem:primal` (A.2), `sec:cited` (A), `sec:examples` (7), `sec:overview` (6), `tab:related` (1),
 `sec:related` (2) and `sec:discussion` (5.4), the last two added in the revision of 2026-11-16.
+
+## 10. Presentation revision v3 (2026-11-17): numerical experiments
+
+Done on 2026-11-17 (role revise, Claude Opus 5.5), at the owner's request, after the new criterion
+W16 of `docs/writing.md` (numerical experiments compared with the literature). **No node changed**:
+every definition, lemma, proposition, theorem and open question keeps its label, its environment and
+its text; no proof changed; no label was removed or renamed.
+
+What changed in `paper.tex`:
+
+- **Abstract**: one sentence announcing the simulations (HY run as defined, with its default
+  parameters, compared at a finite horizon with batched IMED, KL-UCB, Thompson sampling and BaSE).
+- **Introduction**: a fourth item in "Our contributions" (the experiments, pointing to
+  `sec:experiments`, "the figures show its behaviour at this horizon only"); the outline names the
+  experiments.
+- **Section `sec:examples`** (labels `sec:examples` and `sec:sanity` kept): retitled "Numerical
+  experiments and examples"; a new Subsection "Numerical experiments" (`sec:experiments`: what the
+  experiments can show, algorithms, instances, grids, protocol and reproduction, six figures
+  `fig:x1`, `fig:ends`, `fig:long`, `fig:hard`, `fig:binomial`, `fig:baba`, each followed by a paragraph
+  "Interpretation of Figure N"); the former paragraphs (explicit instance, batches of size one,
+  constant finite and positive, boundary of the class, several optimal arms, every arm observed)
+  unchanged in a Subsection "An explicit instance and special cases" (`sec:special`). The paragraph
+  "Why no numerical experiments" is removed: its true content (the remainders are existential, few
+  ends below a feasible horizon when $x>1$, no activated batch on $t_\ell=2^{\ell+1}$) is now in the
+  first paragraph of `sec:experiments` and in its paragraph "Grids".
+- Preamble: `\usepackage{graphicx}` (allowed by AGENTS.md §5.2 for figures of the notebook); a
+  comment line for version 3.
+
+What the experiments are (`notebook/experiments.py`, outputs in `notebook/results/`, figures
+`notebook/fig1_x1_grids.pdf` to `notebook/fig6_baba_grid.pdf`, each under 75 kB):
+
+- **HY exactly as in `def:hy`/`alg:hy`, default parameters** ($w_0=1$, $\beta=2$,
+  $\omega^{\mathrm{dy}}_\ell$, $\vartheta_\ell$, $\gamma_\ell$ of the box); for $t_\ell\le2\cdot10^4$ these take
+  the values $\omega_\ell=1$ (since $k_\ell=0$ while $\log t_\ell<16$) and $\gamma_\ell=\frac12$. Ties: the
+  smallest arm index, the leader first among the minimisers of the IMED phase (the theorems allow any
+  fixed tie rule, Properties (ii)). Every ingredient was computable: $K_{\inf}$ of the empirical
+  distributions with the pseudo-observation is computed by bisection on the dual variable (rewards
+  take finitely many values), checked against $\mathrm{kl}$ for Bernoulli laws to $10^{-12}$ and
+  against a grid search for a law without mass at $1$ (maximiser on the boundary).
+- **Baselines**, from their papers: IMED with frozen statistics (HT15, Algorithm 1; empirical
+  distributions of the last end, current counts in the index); kl-UCB with frozen statistics
+  (CGMMS13, Algorithm 1 with the Bernoulli divergence of Corollary 1, $f(t)=\log t+3\log\log t$; means
+  of the last end, current counts and current round in the index); batched Thompson sampling
+  (KO21b, Algorithm 1: prior $\mathcal N(0,1)$, posterior $\mathcal N(S/(1+N),1/(1+N))$ updated at the
+  ends); BaSE (GHRZ19, Algorithm 1, $\gamma=1$ of their §4; given the imposed grid and $T$ as its
+  input grid; $\tau_m$ taken as the smallest count of an active arm and the means over all observed
+  pulls, a simplification of their footnote 1 on rounding). The "frozen statistics" versions of
+  IMED and kl-UCB are a batched reading of these sequential algorithms (the published papers are
+  sequential); the choice of the current counts in the index is stated in the paper. Algorithms that
+  are not in this paper are not compared. BABA (below) is run on its own grid only; the other batched
+  algorithms that choose their own grid (PRCS16, EKMM21, KMS21) cannot be run on an imposed grid; the
+  paper says so.
+- **BABA** (JTXHXG21, Algorithms 1-6, added at the owner's request of 2026-11-17), run on its own
+  static grid, with the parameters of their §6: $\alpha=3$, $I_1=2000$ (condition (6) holds for $K=4$:
+  $16+9\cdot57.8<2000$). The grid does not depend on $T$ (BABA is anytime): $I_2=f(2000)=171650$ and
+  the ends below $T$ are 16, 74, 306, 538, 2000, 2020, 2166, 2750, 3334. All the algorithms are run on
+  this grid (an imposed grid for them; BaSE again gets the grid and $T$), and BABA too. The
+  divergence is the Bernoulli kl (BABA is written for exponential families; on instance C, as for
+  kl-UCB, the Bernoulli kl is the natural choice on $[0,1]$). Readings where the paper leaves a choice,
+  stated in the paper too: $\log^2I_r$ rounded up (they assume $\log I_r\in\mathbb N$ "for ease of
+  presentation"); $I_0:=0$; $c_0$ the arm of smallest label (their "$c_0\leftarrow1$"); the loops
+  "while $T_i(t)\le m$" stop at $T_i(t)=m$ (their text: "till reaching a total of"; the pseudo-code
+  read literally would pull one more time); in (7) the divergence is $\mathrm{kl}_+$, so that
+  $\delta_{i,r}=+\infty$ when $\hat\mu_{a_{i,r},g(I_r)}+\epsilon_r>\hat\mu_{a_{1,r},s_1}-\epsilon_r$ (the pseudo-code
+  writes kl, which would make $\delta_{i,r}$ finite for an arm that looks better); the shifted means
+  are clipped to $[0,1]$; the test (8), written inside Step III after its pulls, is evaluated at the
+  end of that batch, when the rewards it uses are observed (it is used only by Step IV). BABA's means
+  of the first $s$ pulls are read from explicit reward stacks drawn at the start of each run.
+- **Instances** ($K=4$, all in $\mathcal P$): A Bernoulli $(0.5,0.4,0.3,0.2)$; B Bernoulli
+  $(0.5,0.48,0.46,0.44)$ (small gaps); C rewards $\mathrm{Bin}(10,p_c)/10$ with
+  $p=(0.5,0.4,0.3,0.2)$ (a law on $[0,1]$ other than Bernoulli; a law with finitely many values keeps
+  $K_{\inf}$ of the empirical distribution exact and cheap, which a continuous law such as a Beta would
+  not). $C_1\approx8.95$, $45.8$, $2.00$.
+- **Grids**: constant $B_\ell=100$, polynomial $t_\ell=4\ell^3$, geometric $t_\ell=2^{\ell+1}$ (all $x=1$);
+  doubly exponential $t_\ell=2^{2^\ell}$ ($x=2$) and $t_\ell=\lceil2^{3\cdot1.5^{\ell-1}}\rceil$ ($x\to1.5$);
+  an irregular grid (short batches, two long ones). The geometric grid $t_\ell=2^{\ell+1}$ has
+  $x_\ell\to1$; the grids with $x>1$ are the doubly exponential ones.
+- **Protocol**: $T=2\cdot10^4$, $64$ runs per pair (13 pairs: the 10 above and A, B, C on the grid of
+  BABA), seeds `[20261117, config, algorithm]`; in every run the arms are labelled by an independent
+  uniform permutation (added with BABA, whose $c_0$ is the arm of label 1 and would otherwise be the
+  optimal arm; it also removes the advantage that tie rules towards the smallest label gave to the
+  optimal arm in the first run of version 3, so every number of the paper was recomputed);
+  rewards of a batch drawn at its end as multinomial counts (same law); mean with a $95\%$ normal band
+  and median. Run time of the whole campaign: 292 s on one core of a laptop (kl-UCB, with a
+  bisection at every round, takes most of it; BABA about 1 s per instance). The activated batches of HY at this horizon are
+  printed in `notebook/results/log.txt`.
+
+Claims checked against the outputs (`notebook/results/*.csv`, last row): every number quoted in the
+interpretations is the mean or median at $T$ rounded to the unit. The interpretations never say that
+the curves confirm the constant $x^2/K_{\inf}$; that of Figure 2 says that a value below $C_1$ at the
+last ends does not contradict the lower bound.
+
+Weak points of this revision: (i) the batched versions of IMED and kl-UCB with current counts are a
+choice (frozen counts too would make the index constant inside a batch); (ii) BaSE is given more
+information than HY (the grid and $T$), which the paper states; (iii) BABA needs several readings of its
+pseudo-code (listed above), and at $T=2\cdot10^4$ only its first two epochs are seen; (iv) the
+reproduction sentence of the paper names the notebook directory, which AGENTS.md §5.3 otherwise keeps out of `paper.tex`; W16
+(2026-11-17) asks the paper to say how to reproduce, and this sentence is the only such reference.
+
+### Revision of 2026-11-17 (answer to the reports of round 1 on version 3)
+
+Role revise, Claude Opus 5.5; reports `referee-scope` (major, SC1.1-SC1.10) and `referee-proofs`
+(accept, PF1.1-PF1.2) on head 196eae3. Presentation only: no statement changed. The one proof that
+changed is that of `lem:amb` (Step 6: a justification added on each line of one `align`, rule
+B10; no step changed).
+
+Changes, node by node and paragraph by paragraph:
+
+- **Abstract** (SC1.7): the sentence listing the three ingredients of HY is removed (the
+  introduction gives them, paragraph "The algorithm in a nutshell"), and the sentence on the
+  simulations is shortened: about 210 words instead of about 270.
+- **Introduction**, contributions item 4 (SC1.6): "compared with batched versions of IMED and
+  KL-UCB and with three published batched algorithms" (TS of KO21b, BaSE, BABA), instead of "five
+  published algorithms". Outline: the new Appendix `sec:app-experiments` is listed.
+- **`sec:experiments`**:
+  - BaSE item (SC1.2): the false remark "with $\gamma\ge12$ no arm would be eliminated before $T$" is
+    replaced by what the code gives with $\gamma=12$ (same seeds, `BaSE(gamma=12)` of
+    `experiments.py`): on instance A with constant batches, polynomial and geometric ends, and on
+    instance C with geometric ends, BaSE eliminates 2 arms on average instead of 3 and ends at
+    $1880$-$2048$ instead of $208$-$328$; on the doubly exponential grids it eliminates nothing with
+    either value, and on the irregular grid 1 arm instead of 3 (1112 instead of 910). The paper says
+    "1900 to 2050 against 200 to 330" on the first four pairs, and that $\gamma=1$ favours BaSE.
+  - Last sentence of "Algorithms" (SC1.1): only PRCS16 (read) supports "chooses its own grid";
+    EKMM21 and KMS21 are now "see also" (both "not read" in `literature/index.md`).
+  - "Grids" (PF1.1): on BABA's grid, batch 10 $(3334,I_2]$ is activated
+    ($t_{10}=171650>s_9=160660$), but its paced phase starts after $T$; the paragraph says so.
+  - "Protocol and reproduction": `-{}-figures` (SC1.4, the option printed as an en dash). The sentence
+    naming `experiments.py` and the notebook directory is kept (SC1.5): AGENTS.md §5.3 now allows
+    exactly this one sentence (commit 0c5a3ee on `main`), so weak point (iv) above is settled. Two
+    sentences point to Appendix `sec:app-experiments` and summarise what it shows.
+  - Interpretation of Figure 1 (PF1.2): the weight $y_\ell=x_\ell^2$ tends to 1 but is not close to 1
+    in the first batches ($y_2=2.25$ and $y_{13}\approx1.16$ on $2^{\ell+1}$, $y_2=6.25$ on $4\ell^3$).
+  - Interpretation of Figure 2 (SC1.3): flat from $\ell\approx6$ on the polynomial grid and from
+    $\ell\approx10$ on the geometric grid, between 5 and 6.2 (values of $\mathfrak R(t_\ell)/\log t_\ell$
+    recomputed from `A-geom.csv` and `A-poly.csv`: HY 5.81-6.16 and IMED 5.09-5.35 for
+    $\ell=10,\dots,13$ on the geometric grid; 5.0-5.9 for both from $\ell=6$ on the polynomial grid).
+  - Captions (SC1.9): `\Reg` and `\tl` (with `\protect`, as the captions are moving arguments); the
+    legends of the figures now say "KL-UCB" (the function `shown` of `experiments.py`, figures
+    redrawn with `--figures` from the saved results; no simulation rerun, no number changed).
+- **New Appendix `sec:app-experiments`** "Further numerical experiments" (SC1.8: the main text ended
+  on p. 17, it now ends on p. 15): Figures `fig:hard`, `fig:binomial`, `fig:baba` and their
+  interpretations, moved verbatim from `sec:experiments`, except the captions (SC1.9) and the
+  sentence on HY in the interpretation of `fig:baba` (PF1.1). It is the last appendix, so that the
+  letters of the others do not change.
+- **`lem:amb`**, proof, Step 6 (SC1.10): a `\why` on each of the five lines of the `align` (the
+  bound on $1-e^{-\zeta'_\ell/4}$ above it, the definitions of $A_1$, $\zeta'_\ell$, $c_1$,
+  $n^{\mathrm g}_\ell$, $C_2$, $\nu_\ell$, $c_2$, and $1/(1-e^{-v})\le1+1/v$). The statement and the
+  steps are unchanged.
+
+### Revision of 2026-11-17 (answer to the reports of round 2 on version 3)
+
+Role revise, Claude Opus 5.5; reports `referee-scope` (major, SC2.1 G, SC2.2 P) and
+`referee-proofs` (accept, PF2.1 P) on head 4f6778a. Presentation only: no statement changed. The
+one proof that changed is that of `lem:decompA` (a justification added on one line, rule B10; no
+step changed).
+
+- **`sec:experiments`**, last sentence of "Algorithms" (SC2.1): the sentence "the batched algorithm
+  of PRCS16 also chooses its own grid, and cannot be run on an imposed one" misstated the source.
+  The generic explore-then-commit policy of PRCS16 (§3.3, Figure 1, "Generic explore-then-commit
+  policy with grid T"; Proposition 1, "run with a given set of times") takes a grid and the horizon
+  as input, as BaSE does; only the grids of its §4 are chosen. It is not among the baselines because
+  it is defined for two arms (§2.2, "We employ a two-armed bandit framework"), and every instance has
+  $K=4$. The sentence now says this; EKMM21 and KMS21 stay "see also". Checked on arXiv:1505.00369v3
+  (§2.2, §3.3 and Figure 1, Proposition 1) this session.
+- **`sec:experiments`**, last sentence of "Protocol and reproduction" (PF2.1): "about eight to ten
+  times smaller" (the ratios are $115/15\approx7.7$ to $144/14\approx10.3$).
+- **`lem:decompA`**, proof, Step (b) (SC2.2): the last line of the `align` gets a `\why`
+  ($\max(p+s,q)\le\max(p,q)+s$ for $s\ge0$; definitions of $S_k$ and $Y_k$), on a row of its own
+  because the line above leaves no room in the justification column (110 pt too wide there).
