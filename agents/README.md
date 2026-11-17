@@ -177,8 +177,8 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    PRs or when it ran; `CI_JQ` in `scripts/lib.sh`); trusted
    statuses on `H` (created by OWNER, not by a workflow) accepting it; every changed path in an enabled
    category of `INCOGNITA_AUTOMERGE` (`papers` — both referees; `literature`; `proofs` — lemmas and
-   theorems only, no `def`/`structure`/`instance`/…; `exploration`; `directions`; `statements` is off
-   for the first nights); the whitelist of the role checked again; for `.lean`/`.lock` changes,
+   theorems only, no `def`/`structure`/`instance`/…; `exploration`; `directions`; `statements` — once
+   `review-statements` approved, enabled by the owner on 2026-11-17); the whitelist of the role checked again; for `.lean`/`.lock` changes,
    `main` an ancestor of `H`. Anything else waits for the owner (listed in the night report).
    A pull request that waits for the owner is still kept rebased (the check "Lean changes on top of
    `main`" comes first).
@@ -316,7 +316,7 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 | `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `3600` / `14400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` (for example `INCOGNITA_TIMEOUT_WRITE_PAPER`); `INCOGNITA_TIMEOUT_REFEREE_SCOPE` is `7200`, `_REFEREE_PROOFS` `14400`; always capped by the night's end |
 | `INCOGNITA_CAP_WATCH` | `600` s | during a session, the weekly usage is read this often; at the cap the session is stopped (its commits kept as an `incomplete` draft); `0`: never |
 | `INCOGNITA_MIN_REVIEW` / `_MIN_WRITE` | `900` / `2400` s | a task starts only with this much time left |
-| `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions` | merge categories; add `statements` later (D15); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
+| `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions,statements` | merge categories (D15; `statements` since 2026-11-17); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
 | `INCOGNITA_VETO_NIGHTS` | `2` | nights of veto window before a proposal inside an existing domain is approved |
 | `INCOGNITA_PROPOSE_EVERY` | `0` | nights between two periodic roadmap proposals; `0` (the default for the first nights): never (proposals of exhausted roadmaps still happen) |
 | `INCOGNITA_ROADMAPS_WAITING_MAX` | `2` | approved roadmaps whose KNOWN.md the owner has not reviewed, beyond which only extensions are proposed |

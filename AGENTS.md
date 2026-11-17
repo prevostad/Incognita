@@ -508,7 +508,7 @@ the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a fig
 
 Accepted paper (its accepted open questions become candidate directions, §4.1) →
 `formalize-statements` (statements pull request, reviewed by `review-statements`, merged by the
-owner during the first nights) → statements frozen → `prove` (proof pull requests, reviewed by
+loop once `review-statements` approves it, since 2026-11-17; by the owner before) → statements frozen → `prove` (proof pull requests, reviewed by
 `review-pr`) → verified when every frozen statement of the paper is proved → re-verified by
 gardening (§8). Its certification (§9) follows these steps.
 

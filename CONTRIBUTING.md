@@ -96,8 +96,9 @@ proposals after their scripted approval (section 1).
 Everything else waits for the owner:
 
 - roadmaps written by humans, roadmap proposals in a new domain, and KNOWN.md;
-- statements pull requests, during the first nights (a wrong frozen statement can only be fixed by a
-  non-additive change), then automatically once the owner enables it;
+- statements pull requests only if `statements` is removed from `INCOGNITA_AUTOMERGE` (the owner enabled their
+  automatic merge on 2026-11-17, after `review-statements` approves; a wrong frozen statement can only be fixed by
+  a non-additive change, so the owner may veto or revert one);
 - any non-additive change under `Statements/` (a removed or modified file or lock), and dependency
   bumps (LMLExplore, Mathlib), which re-lock the statements and list the affected ones. The
   placeholder `Statements/Basic.lean` (from version 1) is exempted by the audit

@@ -114,8 +114,8 @@ Each item becomes a paper (AGENTS.md §5.1) whose novelty is not checked, only i
 source; then it is formalised. In order:
 
 - **F0. The setting** (the setting paper of this roadmap, kind `definitions`): the Definitions above, their basic
-  relations, witnesses and exclusions. Its statements pull request is merged by the owner, who may
-  instead port his private definitions (decision pending).
+  relations, witnesses and exclusions. Its statements pull request is merged by the loop once `review-statements`
+  approves it (the owner may instead port his private definitions, decision pending).
 - **F1. The one-batch lower bound**, Appendix A, item 1, case $x = 1$ (kind `internal`, source: this
   roadmap): every batched learner consistent at batch ends, even one that knows the grid, has
   $\liminf_\ell \mathbb E N_a(t_\ell)/L_\ell \ge 1/d_a$, on every grid. It rests on the
