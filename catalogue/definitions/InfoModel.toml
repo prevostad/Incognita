@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.InfoModel"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:infomodel"
+meaning = "A family pi : Grid K -> Algorithm of learners, one per grid, is in the information model M_k (k in N u {infinity}) if each pi g is batched on g and, during batch l + 1, the policy depends on the grid only through t 1, ..., t (l + k)."
+conventions = "k : ENat; for k = top the condition on policies is void (it forces g = g')."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.infoModel_firstRewardAlg", "Incognita.BatchedBandits.infoModel_parityAlg", "Incognita.BatchedBandits.infoModel_const"]
+known_cases = ["Incognita.BatchedBandits.infoModel_const_iff"]
+exclusion = ["Incognita.BatchedBandits.not_infoModel_parityAlg"]
+non_vacuity = ["Incognita.P006.infoModel_mono_satisfiable", "Incognita.P006.infoModel_strict_satisfiable", "Incognita.P006.isBatched_iff_exists_infoModel_top_satisfiable"]

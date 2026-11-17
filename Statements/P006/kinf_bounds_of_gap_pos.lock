@@ -1,0 +1,7 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P006.kinf_bounds_of_gap_pos
+sha256 97acf8c25778767a49ca15cb42fb7d4c50ef0c8b47314dcc41d5034ac9e48a17
+constant def Incognita.BatchedBandits.unitBandits
+constant def Incognita.BatchedBandits.unitLaws
+constant theorem Incognita.Statements.P006.kinf_bounds_of_gap_pos

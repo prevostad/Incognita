@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.IsFiner"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:grid"
+meaning = "A grid g is finer than a grid g' if every batch end of g' is a batch end of g: Set.range g'.t is contained in Set.range g.t."
+conventions = "Both ranges contain t 0 = 0."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.P006.sequential_two_isFiner_doublyExp_two", "Incognita.BatchedBandits.Grid.isFiner_refl"]
+known_cases = ["Incognita.BatchedBandits.Grid.sequential_isFiner"]
+exclusion = ["Incognita.BatchedBandits.Grid.not_sequential_succ_isFiner"]
+non_vacuity = ["Incognita.P006.isBatched_of_isFiner_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_of_isFiner_satisfiable"]

@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.batchOf"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:grid"
+meaning = "The batch of a round n (rounds from 0): the least l >= 1 with n < t l, the paper's b(n + 1)."
+conventions = "Rounds numbered from 0; batchOf n = l + 1 iff t l <= n < t (l + 1)."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.sequential_batchOf"]
+known_cases = ["Incognita.BatchedBandits.Grid.batchOf_eq_iff"]
+exclusion = ["Incognita.BatchedBandits.Grid.one_le_batchOf"]
+non_vacuity = ["Incognita.P006.isBatched_sequential_iff_satisfiable"]

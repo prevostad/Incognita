@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.SeesRewardsUpTo"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:batched"
+meaning = "The policy of round n (rounds from 0) takes the same value on two histories with the same actions and the same rewards at the rounds i < r; for r = 0 it ignores the rewards."
+conventions = "Rounds numbered from 0: it is the paper's \"pi_(n+1) sees the rewards up to r\"."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.seesRewardsUpTo_const"]
+known_cases = ["Incognita.BatchedBandits.seesRewardsUpTo_self"]
+exclusion = ["Incognita.BatchedBandits.not_isBatched_reactAlg"]
+non_vacuity = ["Incognita.P006.isBatched_sequential_iff_satisfiable"]

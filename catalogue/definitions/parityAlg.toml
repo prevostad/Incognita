@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.parityAlg"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exlearners"
+meaning = "The learner Par^(k),g: at a round of batch b it pulls c1 if t (b + k) is even and c2 otherwise; it ignores the history."
+conventions = "The family over grids is in M_(k+1) and not in M_k."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.infoModel_parityAlg"]
+known_cases = ["Incognita.BatchedBandits.parityAlg_policy"]
+exclusion = ["Incognita.BatchedBandits.not_infoModel_parityAlg"]
+non_vacuity = ["Incognita.P006.infoModel_mono_satisfiable"]

@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.doublyExp"
+module = "Incognita.BatchedBandits.Grid"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exgrids"
+meaning = "The doubly exponential grid D_s: t l = s^(2^(l-1)) for l >= 1; its ratios are all 2."
+conventions = "Requires max 2 K <= s."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.P006.sequential_two_isFiner_doublyExp_two"]
+known_cases = ["Incognita.BatchedBandits.Grid.ratio_doublyExp", "Incognita.BatchedBandits.Grid.logEnd_doublyExp"]
+exclusion = []
+non_vacuity = ["Incognita.P006.isBatched_of_isFiner_satisfiable"]

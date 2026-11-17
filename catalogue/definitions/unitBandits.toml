@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.unitBandits"
+module = "Incognita.BatchedBandits.Instances"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:instance"
+meaning = "The class P of instances: kernels nu : Kernel alpha R whose arms all have laws in unitLaws and whose largest mean (iSup over arms of (nu a)[id]) is below 1."
+conventions = "Instances are LML bandits; members are Markov kernels (isMarkovKernel_of_mem_unitBandits)."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.P006.example_instance"]
+known_cases = ["Incognita.BatchedBandits.bernoulliBandit_mem_unitBandits"]
+exclusion = ["Incognita.BatchedBandits.not_mem_unitBandits_of_integral_eq_one"]
+non_vacuity = ["Incognita.P006.kinf_bounds_of_gap_pos_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_of_isFiner_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_sequential_iff_satisfiable"]

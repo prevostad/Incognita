@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.IsConsistentAtBatchEnds"
+module = "Incognita.BatchedBandits.Consistency"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:consistent"
+meaning = "A learner is consistent at the batch ends of a grid g on a class E: for every Markov kernel nu in E, every arm c with gap nu c > 0 and every p > 0, E_nu[pullCount c (t l)] / (t l)^p tends to 0 as l tends to infinity."
+conventions = "pullCount counts the rounds 0, ..., t - 1 (the paper's rounds 1, ..., t): no shift at the batch ends; the limit runs over all l in N."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.isConsistentAtBatchEnds_const"]
+known_cases = ["LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds"]
+exclusion = ["Incognita.BatchedBandits.not_isConsistentAtBatchEnds_const"]
+non_vacuity = ["Incognita.P006.isConsistentAtBatchEnds_of_isFiner_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_sequential_iff_satisfiable"]

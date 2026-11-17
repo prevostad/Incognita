@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.firstRewardNext"
+module = "Incognita.BatchedBandits.Batched"
+roadmap = "BatchedBandits"
+paper = "P006-batched-setting"
+label = "def:exlearners"
+meaning = "The action of the learner firstRewardAlg c1 c2 g at round n: c1 during the first batch (n < t 1); afterwards c2 if the reward of round 0 is below 1/2, c1 otherwise."
+conventions = "Rounds numbered from 0."
+source = "roadmap BatchedBandits, Definitions; [INC-P006]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.measurable_firstRewardNext"]
+known_cases = []
+exclusion = []
+non_vacuity = []
