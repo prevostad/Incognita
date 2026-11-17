@@ -20,5 +20,6 @@ public import Incognita.TransferBandits.Consistency
 public import Incognita.TransferBandits.Examples
 public import Incognita.TransferBandits.Means
 public import Incognita.TransferBandits.PriorGame
+public import Incognita.TransferBandits.Relations
 public import Incognita.TransferBandits.Setting
 public import Incognita.TransferBandits.SizeRules
