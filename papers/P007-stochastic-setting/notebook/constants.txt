@@ -1,0 +1,14 @@
+﻿Bernoulli instance (0.7, 0.5, 0.3)
+  arm mean 0.5: Delta = 0.2, kl = 0.087177, Delta/kl = 2.294191
+  arm mean 0.3: Delta = 0.4, kl = 0.338919, Delta/kl = 1.180223
+  C = 3.474414
+Gaussian instance N(0,1), N(-1,1)
+  unknown variance: Kinf = 0.346574, C = 2.885390
+  known variance:   Kinf = 0.500000, C = 2.000000
+Three-point law P = (0.2 d_0 + 0.5 d_0.5 + 0.3 d_1), mean m(P) = 0.55, mu = 0.8
+  lower bound kl(m(P), mu) = 0.158837
+  upper bound log((1-m(P))/(1-mu)) = 0.810930
+UCB bound 13 log T / Delta^2 versus log T / kl, Bernoulli (0.7, 0.5)
+  13/Delta^2 = 325.0, 1/kl = 11.471
+check 13/4 <= 5 log 2: 3.25 3.4657359027997265
+zeta(3) - 1 = 0.20205690314709435

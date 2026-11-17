@@ -146,4 +146,137 @@ inequality; Appendix B.1 as the closest known proof). Paper
 `papers/P002-transfer-drift-between-laws/`: nodes `cite:GMS19-6` ((6)) and `cite:GMS19-11` ((11)),
 used in the proof of `prop:lower`; its node `cite:GMS19-11` states the inequality
 $\mathrm{kl}(p,q)\ge p\log(1/q)-\log2$, which is a consequence of (11), not its statement (see
-(11) above).
+(11) above). Paper `papers/P007-stochastic-setting/` (the setting paper of StochasticBandits): nodes
+`cite:GMS19-lem1` (Lemma 1, used for $\mathcal K_{\inf}\ge\mathrm{kl}$ on laws on $[0,1]$) and
+`cite:GMS19-thm1` (Theorem 1, restricted to instances of $\mathcal D^\alpha$, used in `cor:lower`);
+Definitions 1, 2 and 6 restated as `def:ufc` and `def:smarter` (on arbitrary sets of instances).
+
+## Definitions 2–4, 6 and 7, verbatim (arXiv v3 PDF)
+
+Added by Claude Opus 5.5 (revise, P007), 2026-11-17. Read: the PDF of arXiv:1602.07182v3
+(stamp "arXiv:1602.07182v3 [math.ST] 13 Oct 2018", INFORMS layout, header "Mathematics of
+Operations Research DOI: 10.1287/moor.2017.0928"), page images of pp. 1–4, 8–17 and 22–26: §3
+opening (p. 10), §3.1 Definition 2 and Theorem 2 (pp. 10–11), §3.2 Definition 3, Theorem 3 and its
+proof (pp. 11–12), §3.3 Definition 4, Theorem 4 and its proof, Lemma 2 (pp. 13–14), §3.4 (p. 14),
+§4 opening, Definition 5, Definition 6 and the paragraphs after it, §4.1, Theorem 5, Remark 3
+(pp. 15–17), Appendix B.2 with Definition 7 and Theorems 7–8 (pp. 22–25), Appendix C and Theorem 9
+(pp. 25–26). The LaTeX source could not be unpacked in this session (no archive tool), so the
+displays below are retyped from the page images, in the notation of the PDF ($\underline\nu$ is the
+underlined $\nu$, $\geqslant$/$\leqslant$ as printed); words are as printed, including typos. The
+ar5iv rendering numbers these definitions differently (section-based numbers): cite the PDF numbers.
+
+### Notation they rely on (from §1.1, p. 3, and §3.3, p. 13)
+
+- Arms $a\in\{1,\ldots,K\}$; rounds $t\geqslant1$; $N_{\psi,a}(T)=\sum_{t=1}^T\mathbb I_{\{A_t=a\}}$ (see
+  "Setting (§1.1)" above). "we denote by $E(\nu_a)=\mu_a$ the expected payoff of arm $a$ and by
+  $\Delta_a$ its gap to an optimal arm: $\mu^\star=\max_{a=1,\ldots,K}\mu_a$ and $\Delta_a=\mu^\star-\mu_a$."
+  Suboptimal arms are "all arms $a$ such that $\Delta_a>0$" (Definition 1). Optimal arms are not
+  defined further; §3.3 writes $\mathcal A^\star(\underline\nu)$ for "the set of its optimal arms".
+- Model (§1.2, p. 3): "We consider a bandit model $\mathcal D$, i.e., a collection of possible
+  distributions $\nu_a$ associated with the arms. (That is, $\mathcal D$ is a subset of the set of all
+  possible distributions over $\mathbb R$ with an expectation.)" "Bandit problems $\underline\nu$ in
+  $\mathcal D$" are those whose arm distributions all lie in $\mathcal D$ (same $\mathcal D$ for every arm).
+- No permutation of a bandit problem is used by Definitions 2–4. Permutations appear only in
+  Definition 7 (Appendix B.2), quoted below, which the sentence introducing Definition 3 refers to.
+
+### §3 opening (p. 10), paragraph "Minimal restrictions on the considered strategies"
+
+"We prove these lower bounds under minimal assumptions on the considered strategies: either some
+mild symmetry (much milder than asking for symmetry under permutation of the arms, see
+Definition 3); or the fact that for suboptimal arms $a$, the number of pulls
+$\mathbb E_{\underline\nu}\big[N_{\psi,a}(T)\big]$ should decrease as $\mu_a$ decreases, all other
+distributions of arms being fixed (see Definitions 2 and 4). These assumptions are satisfied by all
+well-performing strategies we could think of: the UCB strategy of Auer et al. [2], the KL-UCB
+strategy of Cappé et al. [11], Thompson [24] Sampling, EXP3 of Auer et al. [3], etc."
+
+"Note that the assumption of uniform fast convergence (Definition 1), though classical and well
+accepted, is quite strong. Note that it is necessary for a strategy to satisfy some symmetry and to
+be smarter than the uniform strategy in the limit (not for all $T$, see Definition 2) to be uniformly
+fast convergent. Hence, the class of strategies we consider is essentially much larger than the
+subset of uniformly fast convergent strategies."
+
+(This paraphrase of monotonicity, one suboptimal arm whose mean decreases, is not what Definition 4
+says: see below.)
+
+### Definition 2, §3.1 "Absolute lower bound for a suboptimal arm" (p. 10)
+
+"The uniform strategy is the one that pulls an arm uniformly at random at each round.
+
+**Definition 2.** A strategy $\psi$ is smarter than the uniform strategy on a model $\mathcal D$ if for all
+bandit problems $\underline\nu$ in $\mathcal D$, for all optimal arms $a^\star$, for all $T\geqslant1$,
+$$\mathbb E_{\underline\nu}\big[N_{\psi,a^\star}(T)\big]\geqslant\frac TK\,."$$
+
+### Definition 3, §3.2 "Relative lower bound" (p. 11)
+
+"Our proof will be based on an assumption of symmetry (milder than requiring that if the arms are
+permuted in a bandit problem, the algorithm behaves the same way, as in Definition 7).
+
+**Definition 3.** A strategy $\psi$ is pairwise symmetric for optimal arms on $\mathcal D$ if for all bandit
+problems $\underline\nu$ in $\mathcal D$, for each pair of optimal arms $a^\star$ and $a_\star$, the equality
+$\nu_{a^\star}=\nu_{a_\star}$ entails that, for all $T\geqslant1$,
+$$\big(N_{\psi,a^\star}(T),\,N_{\psi,a_\star}(T)\big)\qquad\text{and}\qquad\big(N_{\psi,a_\star}(T),\,N_{\psi,a^\star}(T)\big)$$
+have the same distribution.
+
+Note that the required symmetry is extremely mild as only pairs of *optimal* arms with the *same*
+distribution are to be considered. What the equality of distributions means is that the strategy
+should be based only on payoffs and not on the values of the indexes of the arms."
+
+The definition compares two laws under the same $\mathbb P_{\underline\nu}$; no permuted problem is
+involved, and it does not say that $a^\star\ne a_\star$ (the case $a^\star=a_\star$ is trivial).
+
+### Definition 4, §3.3 "Collective lower bound" (p. 13)
+
+"In this section, for any given bandit problem $\underline\nu$, we denote by $\mathcal A^\star(\underline\nu)$ the set
+of its optimal arms and by $\mathcal W(\underline\nu)$ the set of its worst arms, i.e., the ones associated with
+the distributions with the smallest expectation among all distributions for the arms. We also let
+$A^\star_{\underline\nu}$ be the cardinality of $\mathcal A^\star(\underline\nu)$.
+
+We define the following partial order $\preccurlyeq$ on bandit problems: $\underline\nu'\preccurlyeq\underline\nu$ if
+$$\forall a\in\mathcal A^\star(\underline\nu),\quad\nu_a=\nu'_a\qquad\text{and}\qquad\forall a\notin\mathcal A^\star(\underline\nu),\quad E(\nu'_a)\leqslant E(\nu_a)\,.$$
+In particular, $\mathcal A^\star(\underline\nu)=\mathcal A^\star(\underline\nu')$ in this case. The definition models the fact
+that the bandit problem $\underline\nu'$ should be easier than $\underline\nu$, as non-optimal arms in $\underline\nu'$ are
+farther away from the optimal arms (in expectation) that in $\underline\nu$. Any reasonable strategy should
+perform better on $\underline\nu'$ than on $\underline\nu$, which leads to the following definition, where we
+measure performance in the expected number of times optimal arms are pulled. (Recall that the sets
+of optimal arms are identical for $\underline\nu$ and $\underline\nu'$.)
+
+**Definition 4.** A strategy $\psi$ is monotonic on a model $\mathcal D$ if for all bandit problems
+$\underline\nu'\preccurlyeq\underline\nu$ in $\mathcal D$,
+$$\sum_{a^\star\in\mathcal A^\star(\underline\nu')}\mathbb E_{\underline\nu'}\big[N_{\psi,a^\star}(T)\big]\geqslant\sum_{a^\star\in\mathcal A^\star(\underline\nu)}\mathbb E_{\underline\nu}\big[N_{\psi,a^\star}(T)\big]\,."$$
+
+Remarks. (i) Definition 4 has **no quantifier on $T$** (nor does Theorem 4, which uses it: "for all
+bandit problems $\underline\nu$ in $\mathcal D$, suboptimal arms are collectively sampled at least
+$T\big(1-\ldots\big)$"); reading it "for all $T\geqslant1$" is an interpretation. (ii) The laws of the
+non-optimal arms of $\underline\nu'$ are arbitrary in $\mathcal D$ (only their means are constrained), several
+of them may change at once, and the inequality is on the total expected count of the optimal arms,
+not on each suboptimal arm. (iii) The proof of Theorem 4 (p. 13) applies monotonicity to
+$\underline{\underline\nu}\preccurlyeq\underline\nu$, where $\underline{\underline\nu}$ replaces every suboptimal arm by
+$\nu_{\widetilde w}$, a worst arm of $\underline\nu$; and uses pairwise symmetry on the problem
+$\underset{\sim}{\nu}$ whose arms are all $\nu_{\widetilde w}$ (all optimal), to get
+$\mathbb E[N_{\psi,a}(T)]=T/K$ for all $a$.
+
+### Definition 6, §4 "Non-asymptotic bounds for large T" (p. 16)
+
+§4 opens (p. 15): "We restrict our attention to well-behaved models and uniformly super-fast
+convergent strategies."
+
+"**Definition 6.** A strategy $\psi$ is uniformly super-fast convergent on a model $\mathcal D$ if there exists
+a constant $C_{\psi,\mathcal D}$ such that for all bandit problems $\underline\nu$ in $\mathcal D$, for all suboptimal arms
+$a$, for all $T\geqslant2$,
+$$\mathbb E_{\underline\nu}\big[N_{\psi,a}(T)\big]\leqslant C_{\psi,\mathcal D}\frac{\ln T}{\Delta_a^2}\,.$$
+Uniform super-fast convergence is a refinement of the notion of uniform fast convergence based on
+two considerations. First, that there exist such strategies, for instance, the UCB strategy of
+Auer et al. [2] on any bounded model $\mathcal D$, i.e., a model with distributions all supported within
+a common bounded interval $[m,M]$."
+
+### Definition 7, Appendix B.2 (p. 24), the permutation invariance referred to by §3.2
+
+"These properties of symmetry and invariance by translation are most natural requirements. To
+define them, for all $c\in\mathbb R$ and all distributions $\nu$, we denote by $\tau_c(\nu)$ the distribution of
+$Y+c$ when $Y\sim\nu$.
+
+**Definition 7.** A strategy $\psi$ for $K$–armed bandits is symmetric and invariant by translation of
+the payoffs if for all permutations $\sigma$ of $\{1,\ldots,K\}$, all $c\in\mathbb R$, and all $T\geqslant1$, the
+distribution of $\big(N_{\psi,1}(T),\ldots,N_{\psi,K}(T)\big)$ in the bandit problem $(\nu_1,\ldots,\nu_K)$ is equal to
+the one of $\big(N_{\psi,\sigma^{-1}(1)}(T),\ldots,N_{\psi,\sigma^{-1}(K)}(T)\big)$ in the bandit problem
+$\big(\tau_c(\nu_{\sigma(1)}),\ldots,\tau_c(\nu_{\sigma(K)})\big)$."

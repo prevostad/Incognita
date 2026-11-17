@@ -399,6 +399,45 @@
     "identifiers": {},
     "version": ""
   },
+  "ATA89": {
+    "uri": "https://doi.org/10.1109/9.16415",
+    "citation": {
+      "id": "ATA89",
+      "type": "article-journal",
+      "title": "Asymptotically efficient adaptive allocation schemes for controlled i.i.d. processes: finite parameter space",
+      "author": [
+        {
+          "family": "Agrawal",
+          "given": "R."
+        },
+        {
+          "family": "Teneketzis",
+          "given": "D."
+        },
+        {
+          "family": "Anantharam",
+          "given": "V."
+        }
+      ],
+      "container-title": "IEEE Transactions on Automatic Control",
+      "volume": "34",
+      "issue": "3",
+      "page": "258-267",
+      "DOI": "10.1109/9.16415",
+      "issued": {
+        "date-parts": [
+          [
+            1989,
+            3
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1109/9.16415"
+    },
+    "version": ""
+  },
   "Adu25": {
     "uri": "https://doi.org/10.3982/ECTA21075",
     "citation": {
@@ -1460,6 +1499,37 @@
     },
     "identifiers": {
       "arxiv": "cs/0501034"
+    },
+    "version": ""
+  },
+  "D36": {
+    "uri": "https://doi.org/10.2307/1968449",
+    "citation": {
+      "id": "D36",
+      "type": "article-journal",
+      "title": "Note on Probability",
+      "author": [
+        {
+          "family": "Doob",
+          "given": "J. L."
+        }
+      ],
+      "container-title": "The Annals of Mathematics",
+      "volume": "37",
+      "issue": "2",
+      "page": "363-367",
+      "DOI": "10.2307/1968449",
+      "issued": {
+        "date-parts": [
+          [
+            1936,
+            4
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.2307/1968449"
     },
     "version": ""
   },
@@ -3677,6 +3747,17 @@
     },
     "version": ""
   },
+  "LML": {
+    "uri": "https://github.com/LeanMachineLearning/LML",
+    "citation": {
+      "id": "LML",
+      "type": "software",
+      "title": "LML: a Lean library for machine learning (LeanMachineLearning)",
+      "URL": "https://github.com/LeanMachineLearning/LML"
+    },
+    "identifiers": {},
+    "version": "commit efbe5d2"
+  },
   "LR85": {
     "uri": "",
     "citation": {
@@ -4938,6 +5019,42 @@
     },
     "identifiers": {},
     "version": ""
+  },
+  "VPG24": {
+    "uri": "https://doi.org/10.1287/mnsc.2020.02108",
+    "citation": {
+      "id": "VPG24",
+      "type": "article-journal",
+      "title": "Optimal Learning for Structured Bandits",
+      "author": [
+        {
+          "family": "Van Parys",
+          "given": "Bart"
+        },
+        {
+          "family": "Golrezaei",
+          "given": "Negin"
+        }
+      ],
+      "container-title": "Management Science",
+      "volume": "70",
+      "issue": "6",
+      "page": "3951-3998",
+      "DOI": "10.1287/mnsc.2020.02108",
+      "issued": {
+        "date-parts": [
+          [
+            2024,
+            6
+          ]
+        ]
+      }
+    },
+    "identifiers": {
+      "doi": "10.1287/mnsc.2020.02108",
+      "arxiv": "2007.07302"
+    },
+    "version": "arXiv:2007.07302v3 (10 Jul 2023)"
   },
   "Vog60": {
     "uri": "https://doi.org/10.1214/aoms/1177705907",
