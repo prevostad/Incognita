@@ -323,7 +323,7 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 | `INCOGNITA_PAPERS_IN_REVIEW` / `_PAPERS_MAX` | `3` / `6` | papers in open PRs per roadmap (normal / fallback) |
 | `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` | `1` | `write-paper` runs in a roadmap only while it has fewer accepted papers (setting papers excepted) not Lean-verified than this (D5); `1` (owner, 2026-11-17): formalise everything accepted before writing a new paper |
 | `INCOGNITA_MAX_FAILS` | `2` | failed attempts (and sessions without a commit) per role and target per night |
-| `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `3`, `4` | fix rounds of a non-paper PR, then `needs-human`; revision rounds of a paper, then `rejected`. Sessions cut by a quota count for neither |
+| `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `10`, `4` | fix rounds of a non-paper PR (statements, proofs, literature…), then `needs-human` (`3` until 2026-11-17: a Lean pull request often needs several review rounds); revision rounds of a paper, then `rejected`. Sessions cut by a quota count for neither |
 | `INCOGNITA_PARK_AFTER` | `4` | failures of a role on a paper or a pull request, all nights, before it is parked (listed in the night report); a roadmap or `-` is never parked |
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |
