@@ -20,3 +20,9 @@ it), dropped.
 - Statement: Let $x>1$, a grid with $\xg_\ell\to x$, a batched learner consistent on $\cP$, $\nu\in\cP$ and a sub-optimal arm $a$. Does $\liminf_\ell\E_\nu[\Ng_a(\tl_\ell)]/\log\tl_\ell\ge x^2/\Ki(\nu_a,\m^\star)$ hold without the assumption $\E_\nu[\Ng_a(\tl_\ell)]=O(\log\tl_\ell)$ of Theorem~\ref{thm:lower}(ii), or is there a consistent learner that violates it?
 - Source: papers/P000-hy-unknown-imposed-grid, version 1, label oq:liminf
 - Rating: interest medium; novelty open (round-1 queries; this round's fourth query); fit F4 (Appendix A, item 1) (referee-scope, pull request #17, head e09963353b3a)
+
+## C3 (2026-11-17, from P000v3 oq:random)
+- Title: random batch ends
+- Statement: Let the batch ends $\tl_1<\tl_2<\cdots$ be random, independent of the rewards and of the learner's randomization, with $\log\tl_\ell/\log\tl_{\ell-1}\to x\in[1,\infty)$ almost surely, each end being revealed when it happens. Is $x^2/\Ki(\nu_a,\m^\star)$ still the optimal first-order constant of $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell$: a lower bound for every consistent batched learner that knows the law of the grid, attained by \HY?
+- Source: papers/P000-hy-unknown-imposed-grid, version 3, label oq:random
+- Rating: interest medium; novelty open (Qiao–Wu 2611.17500: adversarial ends, orders only); fit F4 (referee-scope, pull request #58, head b7cab77c1a18)
