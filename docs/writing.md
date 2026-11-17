@@ -68,8 +68,9 @@ of its statements and the way its proofs are written (section 2a below). In this
    `\texttt{}`.
 5. **How the proofs work** (`sec:overview`), mandatory beyond 10 pages: the decomposition, the key
    lemmas, how they combine, where the difficulty lies, and a map of the appendices.
-6. **Numerical experiments or examples** (`sec:examples`; criterion W16: simulations when the algorithm can be run, otherwise a paragraph saying why): the setup in a paragraph, a table or a
-   figure, then `\paragraph{Interpretation of Figure 1}`; one explicit instance satisfying all the
+6. **Numerical experiments** (`sec:examples`; criterion W16: simulations that compare with the published
+   algorithms, almost always; a paper without them must say why, for one of the reasons W16 allows): the setup in a paragraph, figures of curves (tables only for summaries),
+   then `\paragraph{Interpretation of Figure 1}`; one explicit instance satisfying all the
    hypotheses at once; the degenerate cases.
 7. **Conclusion and open questions** (`sec:open`): what is shown, the limitations, then the
    `openquestion` environments, each stated completely (every quantifier, the class, the criterion,
@@ -258,18 +259,37 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
   with its link macro and defined with `:=`; pick five places where a result is used and check the
   `\ref`. A failure that makes a proof hard to follow (a dense paragraph of relations, a chain
   without its steps, a result used without saying which) is R.
-- **W16 (P) Numerical experiments, or why not** (owner, 2026-11-16). A paper that proposes or
-  analyses an algorithm that can be run has a section "Numerical experiments" (as in
-  arXiv:2610.21582): the setup (instances, horizon, number of runs, the algorithms compared, among
-  them the closest published ones), a table or a figure, and a paragraph interpreting it. The
-  scripts and their outputs are committed in `notebook/` and the paper says how to reproduce the
-  numbers; runs stay small (no campaign of thousands of runs: the agents' machines are modest).
-  Simulations **illustrate**: never present them as evidence for an asymptotic constant or a
-  second-order term (a horizon of $10^5$ does not show a $\ln\ln T$ term). When simulations are
-  not possible or not meaningful (a lower bound, an impossibility, a constant without an algorithm,
-  an index that cannot be computed reliably), the section says why in a paragraph and gives what
-  can be computed instead (for example the constants on explicit instances). *Test*: is there an
-  experiments section with reproducible numbers, or a paragraph that justifies its absence?
+- **W16 (R) Numerical experiments, compared with the literature** (owner, 2026-11-16, reinforced
+  2026-11-17). Every paper has a section "Numerical experiments" (as in arXiv:2610.21582), not only
+  those that propose an algorithm:
+  - **Compare with the literature.** The algorithms of the paper (or, for a lower bound or an
+    impossibility, the best published algorithms of the setting) against **at least two published
+    algorithms** of the same setting, the closest ones (for example KL-UCB, IMED, Thompson sampling,
+    the batched algorithms of the literature), implemented from their papers; for a lower bound, plot
+    the bound against the regret of these algorithms.
+  - **Curves, not tables.** Figures of curves: the regret (or the counts, or the quantity the
+    theorem is about) against the time or the horizon, the mean over the runs with a confidence band,
+    a logarithmic time axis when the theory is in $\ln T$; one figure per message, a legend that
+    names every algorithm. A table only summarises numbers that a figure already shows.
+  - **Practical versions.** When the algorithm of the paper has constants too large to run (an
+    existence proof), run a practical version with the same structure, say exactly what differs,
+    and compare it with the literature all the same.
+  - **Setup and reproduction.** The instances (including at least one hard instance of the
+    theorem), the horizon, the number of runs, the seeds, the algorithms and their parameters; the
+    scripts and their outputs in `notebook/`, the figures as PDF made by a committed script, and how
+    to reproduce them. Runs stay small: the whole campaign takes at most about thirty minutes on four
+    cores (fewer runs, a shorter horizon, a coarser grid of horizons otherwise).
+  - **Simulations illustrate.** Never present them as evidence for an asymptotic constant or a
+    second-order term (a horizon of $10^5$ does not show a $\ln\ln T$ term); say what they show at
+    finite horizon, and only that.
+  - **Valid reasons for no simulation** (a paragraph in the section says which): a setting paper
+    (kind `definitions`); a paper whose setting has no algorithm and no quantity that can be
+    computed. "The result is asymptotic", "the algorithm is only an existence proof" and "the
+    constants are not explicit" are **not** valid reasons.
+  *Test*: is there a figure of curves comparing the paper's algorithms (or its bound) with at least
+  two published algorithms, with reproducible scripts, or a paragraph giving one of the valid
+  reasons? A missing section, or a missing comparison, without a valid reason is **R** (major); a
+  table where a curve was needed, too few runs or a missing confidence band is P.
 
 ## 4. When a presentation defect blocks
 

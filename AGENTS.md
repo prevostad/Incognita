@@ -347,8 +347,11 @@ General rules:
   5. **How the proofs work** (`sec:overview`), mandatory when the paper exceeds 10 pages: the
      decomposition, the key lemmas, how they combine, where the difficulty lies, and a map of the
      appendices.
-  6. **Numerical experiments or examples** (`sec:examples`): one explicit instance satisfying all the
-     hypotheses at once, the degenerate cases, worked numbers, figures and their interpretation.
+  6. **Numerical experiments** (`sec:examples`, criterion W16): curves comparing the paper's
+     algorithms (or its bound) with at least two published algorithms, from committed scripts; one
+     explicit instance satisfying all the hypotheses at once, the degenerate cases, and the
+     interpretation of each figure. Only a setting paper, or a setting with no algorithm and nothing
+     computable, may omit the simulations, and says why.
   7. **Conclusion and open questions** (`sec:open`): the limitations, then one to five questions the
      paper leaves open, each an environment `openquestion` labelled `oq:<name>`, precise enough to be
      the main result of a next paper (quantifiers, class, criterion), with why the paper's method
