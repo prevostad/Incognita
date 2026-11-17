@@ -1,0 +1,41 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P000.hy_tendsto_regret
+sha256 325dc10b255de2be9ba859292589840457f885e46a06f28adb9141761dd8455e
+constant inductive Incognita.BatchedBandits.Grid
+constant def Incognita.BatchedBandits.hy
+constant def Incognita.BatchedBandits.hyAlg
+constant def Incognita.BatchedBandits.unitBandits
+constant def Incognita.BatchedBandits.unitLaws
+constant def Incognita.BatchedBandits.Grid.batchOf
+constant theorem Incognita.BatchedBandits.Grid.exists_lt_t
+constant def Incognita.BatchedBandits.Grid.hyGamma
+constant def Incognita.BatchedBandits.Grid.hyOmega
+constant def Incognita.BatchedBandits.Grid.hyTheta
+constant def Incognita.BatchedBandits.Grid.imedEnd
+constant def Incognita.BatchedBandits.Grid.logEnd
+constant constructor Incognita.BatchedBandits.Grid.mk
+constant def Incognita.BatchedBandits.Grid.netSize
+constant def Incognita.BatchedBandits.Grid.ratio
+constant def Incognita.BatchedBandits.Grid.t
+constant def Incognita.BatchedBandits.HY.IsWellSampled
+constant def Incognita.BatchedBandits.HY.count
+constant def Incognita.BatchedBandits.HY.imedArm
+constant def Incognita.BatchedBandits.HY.imedIndex
+constant def Incognita.BatchedBandits.HY.imedKinf
+constant def Incognita.BatchedBandits.HY.ind
+constant def Incognita.BatchedBandits.HY.leader
+constant def Incognita.BatchedBandits.HY.next
+constant def Incognita.BatchedBandits.HY.pacedArm
+constant def Incognita.BatchedBandits.HY.pseudoKinf
+constant def Incognita.BatchedBandits.HY.pseudoLogMean
+constant def Incognita.BatchedBandits.HY.pseudoMean
+constant def Incognita.BatchedBandits.HY.reference
+constant def Incognita.BatchedBandits.HY.target
+constant def Incognita.BatchedBandits.HY.testKinf
+constant def Incognita.BatchedBandits.HY.threshold
+constant theorem Incognita.BatchedBandits.hyAlg._proof_1
+constant theorem Incognita.Statements.P000.hy_tendsto_regret
+constant theorem Incognita.BatchedBandits.Grid.hyOmega._proof_1
+constant theorem Incognita.BatchedBandits.Grid.hyOmega._proof_2
+constant theorem Incognita.BatchedBandits.HY.next._proof_1

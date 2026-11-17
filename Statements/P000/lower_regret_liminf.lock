@@ -1,0 +1,17 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P000.lower_regret_liminf
+sha256 3758a3195fa131e471640f1f30f69a191a07fe0d560ef0fe9dcf12b800c60848
+constant inductive Incognita.BatchedBandits.Grid
+constant def Incognita.BatchedBandits.IsBatched
+constant def Incognita.BatchedBandits.IsConsistentAtBatchEnds
+constant def Incognita.BatchedBandits.SeesRewardsUpTo
+constant def Incognita.BatchedBandits.unitBandits
+constant def Incognita.BatchedBandits.unitLaws
+constant def Incognita.BatchedBandits.Grid.batchOf
+constant theorem Incognita.BatchedBandits.Grid.exists_lt_t
+constant def Incognita.BatchedBandits.Grid.logEnd
+constant constructor Incognita.BatchedBandits.Grid.mk
+constant def Incognita.BatchedBandits.Grid.ratio
+constant def Incognita.BatchedBandits.Grid.t
+constant theorem Incognita.Statements.P000.lower_regret_liminf

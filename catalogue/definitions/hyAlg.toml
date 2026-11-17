@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.hyAlg"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The algorithm HY(w0, beta, omega, theta, gamma) on a grid g, as a deterministic LML algorithm: batch 1 pulls the arms in turn; in batch l + 1 it plays IMED rounds with the statistics frozen at t_l (pseudo-count w0, weight y_l = x_l^2) up to the round s_l = floor(t_l^(1 + theta_l)), then the paced plan of the test of the arms against the best well-sampled arm."
+conventions = "Rounds numbered from 0: the paper's round t in (t_l, t_(l+1)] is the round n = t - 1; N_c(t - 1) = pullCount' n h c; statistics at t_l use the rounds < t l; tie rules are LML's argmax / argmin and the enumeration Fintype.equivFin; K_inf by the dual formula with rational lambda."
+source = "[INC-P000, Definition def:hy]; roadmap BatchedBandits, Appendix A"
+
+[checks]
+witness = ["Incognita.BatchedBandits.hy_exists_next_eq", "Incognita.BatchedBandits.HY.measurable_next"]
+known_cases = ["Incognita.BatchedBandits.HY.next_of_lt_t_one"]
+exclusion = ["Incognita.BatchedBandits.hy_exists_next_eq"]
+non_vacuity = ["Incognita.P000.hy_infoModel_zero_satisfiable", "Incognita.P000.hy_isConsistent_satisfiable", "Incognita.P000.hy_tendsto_count_satisfiable", "Incognita.P000.hy_tendsto_regret_satisfiable"]

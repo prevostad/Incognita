@@ -1,0 +1,14 @@
+lean = "Incognita.BatchedBandits.Grid.hyGamma"
+module = "Incognita.BatchedBandits.HY"
+roadmap = "BatchedBandits"
+paper = "P000-hy-unknown-imposed-grid"
+label = "def:hy"
+meaning = "The default consistency margins of HY: gamma_l = min(1/2, max(L_l, 1)^(-1/4))."
+conventions = "Real power; a function of t_l only."
+source = "[INC-P000, Definition def:hy, default parameters]"
+
+[checks]
+witness = ["Incognita.BatchedBandits.Grid.hyGamma_mem"]
+known_cases = ["Incognita.BatchedBandits.Grid.hyOmega_hyGamma_of_logEnd_le_one"]
+exclusion = []
+non_vacuity = ["Incognita.P000.hy_isConsistent_satisfiable"]
