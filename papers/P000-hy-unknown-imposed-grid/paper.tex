@@ -8,6 +8,9 @@
 % frame and the prose of the author's readable version of 4 November 2026; every node keeps its
 % label and its mathematical content (DOSSIER.md, "Presentation revision v2: statement
 % correspondence").
+% Version 3 (2026-11-17): presentation revision of version 2: the paragraph "Why no numerical
+% experiments" is replaced by numerical experiments (Subsection sec:experiments, criterion W16 of
+% docs/writing.md); figures made by notebook/experiments.py. No node changed (DOSSIER.md, section 10).
 % Compile (as CI): python3 scripts/certify.py bib, then
 %   latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex            (reader)
 %   latexmk -pdf -jobname=paper-blueprint -usepretex='\def\IncognitaBlueprint{}' -cd papers/<P>/paper.tex
@@ -25,6 +28,7 @@
 \usepackage{enumitem,booktabs,tcolorbox}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage[round]{natbib}
@@ -199,6 +203,11 @@
 % the Setting/Goal blocks of the proofs (rules of redaction-preuves.md)
 \newtcolorbox{setgoal}{colback=gray!5,colframe=gray!55,boxrule=0.4pt,left=5pt,right=5pt,top=3pt,bottom=3pt,sharp corners,before skip=6pt,after skip=6pt}
 \setlength{\emergencystretch}{3em}
+% float placement for the figures of Subsection sec:experiments
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
 
 \title{Batched bandits on an unknown imposed grid:\\ the optimal constant $x^2/\mathcal K_{\inf}$ for every $x\ge1$}
 \author{Adrien Prevost\thanks{Submitted by its author to the Incognita library (roadmap BatchedBandits, item F4) on
@@ -218,10 +227,9 @@ regret at the ends of the batches, and assume only that $x_\ell:=\log t_\ell/\lo
 constant is $x^2/\mathcal K_{\inf}(\nu_a,\mathbf m^\star)$ for every $x\ge1$. The lower bound holds for every consistent batched learner, even one that knows the grid
 (for the $\limsup$; for the $\liminf$ when $x=1$ or when the counts are logarithmic): the exploration needed at the end of batch $\ell+2$ must be done before the end of
 batch $\ell$. The upper bound is attained by a single algorithm, HY, which knows nothing about the grid nor about the instance and is optimal \emph{simultaneously} on every
-grid with $x_\ell\to x$, including $x=1$ with batches of arbitrary sizes (its remainder terms depend on the grid). HY combines three ingredients: a paced exploration plan that
-follows $x_\ell^2\log t$ at every round, an IMED phase at the start of every long batch, and a consistency threshold that compares the evidence against an arm
-with its own evidence one test earlier. HY is a proof of existence: its
-remainder terms are astronomical.
+grid with $x_\ell\to x$, including $x=1$ with batches of arbitrary sizes (its remainder terms depend on the grid). HY is a proof of existence: its
+remainder terms are astronomical. Simulations at a finite horizon compare HY, run as defined, with batched versions of IMED, KL-UCB and Thompson sampling,
+with BaSE and with BABA.
 \end{abstract}
 
 \setcounter{tocdepth}{1}
@@ -261,6 +269,9 @@ every instance with rewards in $[0,1]$ and $\m^\star<1$, for \emph{every} grid w
 alternating with long ones are all allowed.
 \item \emph{Optimality} (Theorem~\ref{thm:main}). The two theorems give the same constant, so that $x^2/\Ki$ is the optimal constant, attained by one learner of $\Mz$
 simultaneously on every convergent grid.
+\item \emph{Numerical experiments} (Section~\ref{sec:experiments}). \HY, run exactly as defined, with its default parameters, is compared with
+batched versions of IMED and KL-UCB and with three published batched algorithms, on imposed grids with $x=1$ and $x>1$ (BABA on its own grid), at the horizon
+$2\cdot10^4$; the figures show its behaviour at this horizon only.
 \end{itemize}
 For $x>1$, the classical change of measure at the ends of the batches only gives $x/\Ki(\nu_a,\m^\star)$ (Lemma~\ref{lem:onebatch}), and the closest published lower
 bound, \citet[Theorem~4]{JTXHXG21}, shows for exponential families, without a constant, that the sequential constant cannot be attained on such grids. This
@@ -275,7 +286,7 @@ deterministic ``water level'' that makes the leader reliable when $x=1$, whateve
 evidence has dropped, since the previous test, below the evidence it had then; this keeps the test robust when the IMED rounds lag behind $\log t$.
 
 \paragraph{Outline.} Section~\ref{sec:related} compares our results with the related work, Section~\ref{sec:setting} describes the model, Section~\ref{sec:algo} the algorithm, Section~\ref{sec:main} the results, and
-Section~\ref{sec:overview} explains how the proofs work. Section~\ref{sec:examples} gives an explicit instance and special cases, and Section~\ref{sec:open} the open
+Section~\ref{sec:overview} explains how the proofs work. Section~\ref{sec:examples} gives numerical experiments, an explicit instance and special cases, and Section~\ref{sec:open} the open
 questions. All the proofs are in the appendices:
 \begin{itemize}[leftmargin=*,nosep]
 \item Appendix~\ref{sec:cited}: the two results of the literature that the proofs use;
@@ -286,7 +297,8 @@ questions. All the proofs are in the appendices:
 \item Appendix~\ref{sec:app-xone}: the upper bound when $x=1$;
 \item Appendix~\ref{sec:app-end}: the end of the proof of Theorem~\ref{thm:upper};
 \item Appendix~\ref{sec:attribution}: the sources of the techniques;
-\item Appendix~\ref{sec:notation}: a table of notation.
+\item Appendix~\ref{sec:notation}: a table of notation;
+\item Appendix~\ref{sec:app-experiments}: further numerical experiments (a hard instance, a law that is not Bernoulli, the grid of BABA).
 \end{itemize}
 The proof of Theorem~\ref{thm:upper} goes through two intermediate propositions: Proposition~\ref{prop:dyA} for $x>1$, and the non-asymptotic Proposition~\ref{prop:fixedC} for $x=1$.
 
@@ -746,10 +758,141 @@ hold from some rank on for every grid with $\xg_\ell\to1$, including short batch
 failure probability is summable only thanks to the sparsity of the activated batches (Lemma~\ref{lem:sparse}).
 
 %======================================================================
-\section{Examples and special cases}\label{sec:examples}\label{sec:sanity}
+\section{Numerical experiments and examples}\label{sec:examples}\label{sec:sanity}
 
-This section computes the constant on an explicit instance, checks the results on special and boundary cases, and says why we give no
-simulations.
+This section first compares \HY{} with published batched algorithms in simulations (Subsection~\ref{sec:experiments}), then computes the
+constant on an explicit instance and checks the results on special and boundary cases (Subsection~\ref{sec:special}).
+
+\subsection{Numerical experiments}\label{sec:experiments}
+
+\paragraph{What the experiments can show.} The theorems describe the limit of $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell$ along the batch ends, behind remainder
+terms that are existential and astronomically large (the remark on constants in Subsection~\ref{sec:discussion}). A run of feasible length cannot
+separate the first-order constant from these terms, and the figures below are not evidence for it: they show how \HY{} and other batched algorithms
+behave at the horizon $T=2\cdot10^4$ on imposed grids, and nothing more. When $x>1$ few batch ends fall below any feasible horizon: on
+$\tl_\ell=2^{2^\ell}$ they are $4$, $16$ and $256$.
+
+\paragraph{Algorithms.} The first five are run on every grid, as imposed grids; at a round of batch $\ell+1$ they use only the rewards of the rounds
+$1,\dots,\tl_\ell$, and every one of them except BaSE uses neither $\tl_{\ell+1}$ nor the horizon. The sixth, BABA, chooses its grid, and is run on its own
+grid only.
+\begin{itemize}[leftmargin=*]
+\item \HY{} exactly as in Definition~\ref{def:hy} and Algorithm~\ref{alg:hy}, with the default parameters of Theorems~\ref{thm:upper} and~\ref{thm:main}(b):
+$\wz=1$, $\beta=2$, $\om_\ell=\ody_\ell$, $\thv_\ell$ and $\gam_\ell$ as in the box of Definition~\ref{def:hy}, ties broken towards the smallest arm index
+(the leader first in the IMED phase). For $\tl_\ell\le2\cdot10^4$ these defaults take the values $\ody_\ell=1$ and $\gam_\ell=\frac12$.
+\item \emph{IMED with frozen statistics}: the IMED index of \citet[Algorithm~1]{HT15}, $\Ng_c(t-1)\,\Ki(\hnu_c(\tl_\ell),\hm^\star(\tl_\ell))+\log\Ng_c(t-1)$,
+minimised at every round $t$ of batch $\ell+1$, where $\hm^\star(\tl_\ell):=\max_c\hm_c(\tl_\ell)$: the empirical distributions are those of the last end,
+the counts are the current ones. This is the IMED phase of \HY{} without the weight $\yg_\ell$ and without the pseudo-observation, and with no paced phase.
+\item \emph{KL-UCB with frozen statistics}: the index of \citet[Algorithm~1]{CGMMS13} with the Bernoulli divergence, which is valid for rewards in $[0,1]$
+\citep[Corollary~1]{CGMMS13}, and $f(t)=\log t+3\log\log t$: the arm maximising $\max\{q:\Ng_c(t-1)\,\kl(\hm_c(\tl_\ell),q)\le f(t-1)\}$.
+\item \emph{Batched Thompson sampling} of \citet[Algorithm~1]{KO21b}, designed for batch ends imposed by the environment: prior $\mathcal N(0,1)$
+on every mean and posterior $\mathcal N\big(S_c/(1+N_c),1/(1+N_c)\big)$, where $N_c$ and $S_c$ are the number and the sum of the rewards of $c$ observed at $\tl_\ell$;
+one sample per arm at every round, the largest is pulled.
+\item \emph{BaSE} \citep[Algorithm~1]{GHRZ19}, batched successive elimination. Its Algorithm~1 takes a grid as input; we give it the imposed grid and the
+horizon $T$, which \HY{} does not know. The active arms are pulled in turn; at every end $\tl_\ell<T$ an arm is eliminated if its mean is below the best active
+mean by at least $\sqrt{\gamma\log(TK)/\tau}$, where $\tau$ is the smallest count of an active arm; after the last end before $T$ it commits to the active
+arm of largest mean. We take $\gamma=1$, the value of their experiments \citep[Section~4]{GHRZ19}; their Theorem~4 asks $\gamma\ge12$, with which BaSE eliminates
+fewer arms before $T$ and, on the three grids with $x=1$ (instance A) and on the geometric grid (instance C), ends with a regret of $1900$
+to $2050$ at $T$, against $200$ to $330$ with $\gamma=1$: the value $\gamma=1$ favours BaSE.
+\item \emph{BABA}, the anytime batched algorithm of \citet[Algorithms~1--6]{JTXHXG21}, written for one-parameter exponential families; we use the
+Bernoulli divergence, as for KL-UCB. Its grid is static and does not depend on the horizon: with $f(x):=\max\{\lceil x^{1+1/(1+\mathrm{ilog}^\alpha x)}\rceil,2x\}$,
+where $\mathrm{ilog}^\alpha$ is the logarithm iterated $\alpha$ times, $g(x):=\lceil\log x/\log\log x\rceil$ and $I_r:=f(I_{r-1})$, epoch $r$ consists of five
+batches, of $Kg(I_r)$, $\log^2I_r$, $K\log^2I_r$ and $K\log^2I_r$ rounds, then up to the round $I_r$ \citep[Section~3.1]{JTXHXG21}. We take the parameters of their
+experiments, $\alpha=3$ and $I_1=2000$ \citep[Section~6]{JTXHXG21}, which satisfy their condition~(6) for $K=4$; then $I_2=171650$, and the ends below $T$ are
+$16,74,306,538,2000,2020,2166,2750,3334$. Where the paper leaves a choice we take the most natural reading: $\log^2I_r$ is rounded up (they assume
+$\log I_r$ integer), the first epoch starts at round $0$, the initial arm $c_0$ is the arm of smallest label, the loops ``while $T_i(t)\le m$'' stop when
+$T_i(t)=m$, as their text says, the divergence in the definition~(7) of $\delta_{i,r}$ is $\kl$ restricted to ordered pairs ($\delta_{i,r}=+\infty$ when the
+shifted means are in the wrong order), the shifted means are clipped to $[0,1]$, and the test~(8) is made at the end of the batch of Step~III, when the
+rewards it uses are observed.
+\end{itemize}
+The explore-then-commit policy of \citet[Figure~1]{PRCS16} also takes a grid and $T$ as input, as BaSE does, but it is defined for two arms
+\citep[Section~2.2]{PRCS16}, and our instances have $K=4$ arms (for other batched algorithms, see also \citealp{EKMM21,KMS21}).
+
+\paragraph{Instances.} $K=4$ and $\m^\star=\frac12<1$ in all three instances, so that they belong to $\cP$; in every run the arms are labelled by an
+independent uniform random permutation, so that no tie rule and no initial arm favours the optimal arm (below, the arms are listed by decreasing mean):
+\begin{itemize}[leftmargin=*,nosep]
+\item instance A: Bernoulli rewards of means $(0.5,0.4,0.3,0.2)$; $C_1\approx8.95$;
+\item instance B (small gaps): Bernoulli rewards of means $(0.5,0.48,0.46,0.44)$; $C_1\approx45.8$;
+\item instance C: rewards $X=Y/10$ with $Y$ binomial of parameters $10$ and $p_c$, $p=(0.5,0.4,0.3,0.2)$, a law on $\{0,0.1,\dots,1\}$; here
+$\Ki(\nu_c,\frac12)\approx0.143,0.312,0.456$ for the arms $2,3,4$, against $\kl(\m_c,\frac12)\approx0.020,0.082,0.193$, and $C_1\approx2.00$.
+\end{itemize}
+$C_x=x^2\sum_{c:\Dg_c>0}\Dg_c/\Ki(\nu_c,\m^\star)$ is the constant of Theorem~\ref{thm:main}, so that $C_x=x^2C_1$.
+
+\paragraph{Grids.} Seven grids, each given by its ends below $T$ (the horizon cuts the last batch, whose end no algorithm but BaSE and BABA knows):
+\begin{itemize}[leftmargin=*,nosep]
+\item $x=1$: constant batches $\Bg_\ell=100$; polynomial ends $\tl_\ell=4\ell^3$; geometric ends $\tl_\ell=2^{\ell+1}$;
+\item $x>1$: the doubly exponential ends $\tl_\ell=2^{2^\ell}$ ($\xg_\ell=2$) and $\tl_\ell=\lceil2^{3\cdot1.5^{\ell-1}}\rceil$ ($\xg_\ell\to1.5$; ends $8,23,108,1117$);
+\item an irregular grid: $25$ batches of size $8$, a long batch $(200,6000]$, $20$ batches of size $100$, then the batch $(8000,T]$. It is the prefix of grids with
+$x=1$ and of grids with $x>1$: below a finite horizon a grid does not determine its limit;
+\item the grid of BABA above. Since $\log I_{r+1}/\log I_r\le1+1/(1+\mathrm{ilog}^3I_r)+\log2/\log I_r+1/I_r\to1$, it has
+$x=1$, but slowly: $\log I_2/\log I_1\approx1.59$, and below $T$ it ends with the long batch $(3334,I_2]$.
+\end{itemize}
+At this horizon, the activated batches of \HY{} (Definition~\ref{def:hy-vocab}) are batch~$2$ of the polynomial grid (paced rounds $17$ to $32$), batches $3$ and $4$
+of $\tl_\ell=2^{2^\ell}$ (paced rounds $243$ to $256$, and $6519$ to $T$, since $\sA_3=\lfloor256^{1+\thv_3}\rfloor=6518$), and the batch $(200,6000]$ of the irregular
+grid (paced rounds $4798$ to $6000$). On the other grids every round of \HY{} before $T$ is an IMED round with frozen statistics (on the grid of BABA, batch~$10$ is activated,
+but its paced phase starts after $T$, since $\sA_9=\lfloor3334^{1+\thv_9}\rfloor=160660$): on $\tl_\ell=2^{\ell+1}$, for instance,
+$\tl_\ell^{1+\thv_\ell}\ge2\tl_\ell=\tl_{\ell+1}$ (the computation of the paragraph on batches of size one, Subsection~\ref{sec:special}).
+
+\paragraph{Protocol and reproduction.} Thirteen pairs (instance, grid): instance A on the six imposed grids, instances B and C on $\tl_\ell=2^{\ell+1}$ and on
+$\tl_\ell=2^{2^\ell}$, and the three instances on the grid of BABA. For each pair and each algorithm, $64$ independent runs of horizon $T=2\cdot10^4$, with fixed seeds. Since every policy uses only the
+rewards observed at the ends, the rewards of the pulls of a batch are drawn at its end, as multinomial counts over the finitely many values of the
+rewards; this gives the same law as drawing them round by round (the reward stacks of Definition~\ref{def:stacks}), and $\Ki$ of an empirical distribution is
+computed exactly, by bisection on its dual variable. BABA uses the means of the first $s$ pulls of an arm, and reads its rewards from reward stacks drawn
+at the start of each run. The figures show the mean of the pseudo-regret $\Reg(t)$ over the runs with a $95\%$ confidence band
+(mean $\pm1.96$ standard errors), on a logarithmic time axis, and the curve $C_x\log t$ for reference only. The figures and the numbers quoted below are
+produced by the script \texttt{experiments.py} of the directory \texttt{notebook} of this paper in the Incognita repository, with NumPy and Matplotlib
+(\texttt{python experiments.py}; about five minutes on one core of a laptop; \texttt{python experiments.py -{}-figures} redraws the figures from the saved results).
+Figures~\ref{fig:x1}--\ref{fig:long} below concern instance~A on the imposed grids; instances B and C and the grid of BABA are in
+Appendix~\ref{sec:app-experiments} (Figures~\ref{fig:hard}--\ref{fig:baba}). In short: on instance B every algorithm is still exploring at $T$; on
+instance C, whose law is not Bernoulli, \HY{} and IMED, which use $\Ki$ of the empirical distributions, have on the geometric grid a regret about eight to ten
+times smaller than KL-UCB and Thompson sampling; on its own grid BABA ends above \HY{} and IMED on instances A and C.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{notebook/fig1_x1_grids.pdf}
+\caption{Instance A on three grids with $x=1$: mean regret $\protect\Reg(t)$ over $64$ runs against the round $t$ (logarithmic axis), with $95\%$ confidence bands.}\label{fig:x1}
+\end{figure}
+
+\paragraph{Interpretation of Figure~\ref{fig:x1}.} On the three grids with $x=1$, \HY{} and IMED with frozen statistics have close regrets at every round
+(at $T$: $46$ and $52$ with constant batches, $50$ and $59$ on the polynomial grid, $63$ and $55$ on the geometric grid, with overlapping bands). This is
+expected from the definition: on these grids \HY{} plays IMED rounds with the weight $\yg_\ell=\xg_\ell^2$, which tends to $1$ but is not close to $1$ in the first batches
+($\yg_2=2.25$ and still $\yg_\ell\approx1.16$ at the last end below $T$ on $\tl_\ell=2^{\ell+1}$, $\yg_2=6.25$ on $\tl_\ell=4\ell^3$); its only paced rounds are the $16$ rounds of batch~$2$
+of the polynomial grid. KL-UCB with $f(t)=\log t+3\log\log t$ and Thompson sampling with Gaussian posteriors end two to three
+times higher, and BaSE pays its round-robin exploration until it eliminates the sub-optimal arms. At this horizon the curves of \HY{} and IMED lie below
+$C_1\log t$; the lower-order terms are not negligible at $T=2\cdot10^4$, and the position of a curve with respect to $C_1\log t$ at a finite horizon says
+nothing about the first-order constant.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{notebook/fig2_batch_ends.pdf}
+\caption{Instance A: the quantity of the theorems, $\protect\Reg(\protect\tl_\ell)/\log\protect\tl_\ell$ at the batch ends, against the batch index $\ell$, on two grids with $x=1$ (mean over
+$64$ runs, $95\%$ confidence bands); the horizontal line is $C_1$.}\label{fig:ends}
+\end{figure}
+
+\paragraph{Interpretation of Figure~\ref{fig:ends}.} At the batch ends, the normalised regret of \HY{} and of IMED with frozen statistics is nearly flat
+from $\ell\approx6$ on the polynomial grid and from $\ell\approx10$ on the geometric grid, between $5$ and $6.2$, while those of KL-UCB and Thompson sampling still increase at the last ends, and that of BaSE decreases after its
+eliminations. A value below $C_1\approx8.95$ at the last ends does not contradict the lower bound, which is a statement on $\liminf_\ell$: it says that at
+$\tl_\ell\le2\cdot10^4$ the remainder terms are of the same order as the first-order term.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{notebook/fig3_long_batches.pdf}
+\caption{Instance A on grids with long batches; vertical lines: batch ends (for the irregular grid, the ends around the long batches). Top: mean regret
+with $95\%$ confidence bands; bottom: median regret over the $64$ runs.}\label{fig:long}
+\end{figure}
+
+\paragraph{Interpretation of Figure~\ref{fig:long}.} On $\tl_\ell=2^{2^\ell}$ the batch $(256,T]$ holds almost $99\%$ of the rounds, and every algorithm plays it with the
+rewards of the first $256$ rounds. Thompson sampling keeps a frozen posterior, hence a constant probability of pulling each sub-optimal arm, and its
+regret grows linearly in both rows (mean $1308$ at $T$). For the index algorithms the mean and the median differ widely: at $T$ the medians are $81$ (IMED),
+$111$ (\HY) and $266$ (KL-UCB), and the means $833$, $514$ and $1100$, with wide bands; the mean is driven by the few runs in which the arm favoured at $\tl_3=256$
+is sub-optimal, and these runs cost a fraction of the whole batch. \HY{} explores more than IMED inside the batch (the weight $\yg_3=4$ on the logarithm,
+then the paced phase from round $6519$), which puts its median above that of IMED and, on this instance, its mean below it; the bands of the two means overlap. BaSE, which
+knows the grid and $T$, commits at $256$ after a uniform exploration and has the lowest mean ($347$) and median ($38$) here. On
+$\tl_\ell=\lceil2^{3\cdot1.5^{\ell-1}}\rceil$ no batch of \HY{} is activated before $T$ ($\sA_4=40957$), and \HY{} plays IMED rounds with $\yg_\ell\approx2.25$: the medians
+at $T$ are $67$ (IMED), $101$ (\HY) and $126$ (KL-UCB), the means $347$, $261$ and $167$, with wide bands, and BaSE, which commits at $1117$, ends at $168$. On the
+irregular grid the long batch $(200,6000]$ is activated for \HY{}; at $T$ the means are $108$ (\HY), $174$ (IMED), $205$ (KL-UCB), $401$ (Thompson sampling) and $910$
+(BaSE, which explores uniformly until $8000$), and the medians of \HY{} and IMED are $56$ and $58$. These numbers concern one instance at one horizon; they illustrate the cost of a wrong decision before a
+long batch, which is the mechanism of Theorem~\ref{thm:lower}, and they do not measure the constant $x^2/\Ki$.
+
+\subsection{An explicit instance and special cases}\label{sec:special}
 
 \paragraph{An explicit instance.} Let $K=2$, $\nu_1:=\Ber(1/2)$ and $\nu_2:=\Ber(3/10)$, so that $\nu\in\cP$ ($\m^\star=1/2<1$) and $a=2$. For $0<p<\mu<1$ the dual
 formula gives $\Ki(\Ber(p),\mu)=\kl(p,\mu)$ (the maximizer is $\lambda^\star=(\mu-p)/(\mu(1-\mu))\in\Lset{\mu}$, where $1-\lambda^\star(1-\mu)=p/\mu$ and
@@ -782,16 +925,6 @@ particular tie rule (Section~\ref{sec:algo}, Properties~(ii)).
 
 \paragraph{Every arm is observed.} Batch $1$ has $\Bg_1\ge K$ rounds, so every count is at least $1$ at every end (Definition~\ref{def:hy-vocab}): no $\log0$ and no empty
 empirical distribution occurs.
-
-\paragraph{Why no numerical experiments.} \HY{} can be run, but a run of feasible length would not illustrate the theorems, and we give no
-simulations. The theorems describe the limit of $\E[\Ng_a(\tl_\ell)]/\log\tl_\ell$ along the batch ends, behind remainder terms that are existential
-and astronomically large (the remark on constants in Subsection~\ref{sec:discussion}): a finite run cannot separate the constant from them, and
-must not be read as evidence for it. When $x>1$ the grid is doubly exponential: on the grid $\tl_\ell=2^{2^\ell}$ above, the ends below $10^9$
-are $4$, $16$, $256$ and $65536$, too few for a limit along the ends. When $x=1$, on the geometric grid $\tl_\ell=2^{\ell+1}$ above, no batch is
-activated, since $\tl_\ell^{1+\thv_\ell}\ge2\tl_\ell=\tl_{\ell+1}$ by the computation of the paragraph on batches of size one: \HY{} only plays IMED
-rounds with the statistics of the last end, and a run would show a batched IMED, not the paced phase and the consistency threshold, which act only
-in activated batches. The lower bound concerns every consistent learner and cannot be simulated. What can be computed is the constant itself on
-explicit instances, as above.
 
 %======================================================================
 \section{Conclusion and open questions}\label{sec:open}
@@ -2725,7 +2858,8 @@ $\Ld_\ell$ is optimal, so $a\ne\Ld_\ell$, and $\Kt_\ell(a)\ge\varepsilon'^2/8$.
 \begin{align*}
 \Ng_a(\tl_{k+1})\ &\le\ \max\big(\Ng_a(\tl_k),\ \bar M,\ 2\Ug_{k+1}\1(\Gg_k(\varepsilon_k)^c)\big)+\Bg_{k+1}\1(\Fg_k(\varepsilon'))&&\why{\eqref{eq:DA}}\\
 &\le\ \max\big(\max(\Ng_a(\tl_{i_0}),\bar M,\Yg_{k-1})+S_{k-1},\ \bar M,\ 2\Ug_{k+1}\1(\Gg_k(\varepsilon_k)^c)\big)+\Bg_{k+1}\1(\Fg_k(\varepsilon'))&&\why{induction}\\
-&\le\ \max\big(\Ng_a(\tl_{i_0}),\ \bar M,\ \Yg_k\big)+S_k .
+&\le\ \max\big(\Ng_a(\tl_{i_0}),\ \bar M,\ \Yg_k\big)+S_k .\\
+&\qquad\why{$\max(p+s,q)\le\max(p,q)+s$ for $s\ge0$; definitions of $S_k$ and $\Yg_k$}
 \end{align*}
 
 \noindent\emph{Conclusion.} For $t\in(\tl_j,\tl_{j+1}]$,~\eqref{eq:DA} at $j$, the claim at $k=j$ and $t-\tl_j\le\Bg_{j+1}$ give
@@ -3872,11 +4006,11 @@ C_2:=3+\frac{512}{\da a_0(1-\m^\star)},\quad c_2:=\frac{1-\dl}{\kap(\m^\star+\va
 \end{gather*}
 Since $1-e^{-v}\ge\min(v,1)/2$ for $v\ge0$ and $y^{-1/4}\le1$, $1-e^{-\zetp_\ell/4}\ge\frac{a_0}2y^{-1/4}$. Hence, using $\log y\ge\log16$,
 \begin{align*}
-R'_\ell\ &\le\ \kap(\m^\star)+\log\frac2{a_0}+\frac14\log y\ \le\ A_1\log y,\\
-\rho'_\ell\ &=\ \frac{\zetp_\ell^{\,2}}{2R_\ell'^2}\ \ge\ \frac{\da^2y^{-1/2}}{2048A_1^2\log^2y}\ =\ \frac{c_1y^{-1/2}}{\log^2y},\\
-\frac1{1-e^{-\rho'_\ell}}\ &\le\ 1+\frac1{\rho'_\ell}\ \le\ \Big(1+\frac1{c_1}\Big)y^{1/2}\log^2y,\\
-1+n^{\mathrm g}_\ell\ &\le\ 3+\frac8{\frac{\da}{32}y^{-1/4}\cdot\frac{a_0}2y^{-1/4}(1-\m^\star)}\ \le\ C_2\,y^{1/2},\\
-\nl_\ell\ &\ge\ c_2\,y .
+R'_\ell\ &\le\ \kap(\m^\star)+\log\frac2{a_0}+\frac14\log y\ \le\ A_1\log y,&&\why{bound above, $\log y\ge\log16$, definition of $A_1$}\\
+\rho'_\ell\ &=\ \frac{\zetp_\ell^{\,2}}{2R_\ell'^2}\ \ge\ \frac{\da^2y^{-1/2}}{2048A_1^2\log^2y}\ =\ \frac{c_1y^{-1/2}}{\log^2y},&&\why{definitions of $\zetp_\ell$, $c_1$; line above}\\
+\frac1{1-e^{-\rho'_\ell}}\ &\le\ 1+\frac1{\rho'_\ell}\ \le\ \Big(1+\frac1{c_1}\Big)y^{1/2}\log^2y,&&\why{$\tfrac1{1-e^{-v}}\le1+\tfrac1v$; line above}\\
+1+n^{\mathrm g}_\ell\ &\le\ 3+\frac8{\frac{\da}{32}y^{-1/4}\cdot\frac{a_0}2y^{-1/4}(1-\m^\star)}\ \le\ C_2\,y^{1/2},&&\why{definitions of $n^{\mathrm g}_\ell$, $C_2$; bound above}\\
+\nl_\ell\ &\ge\ c_2\,y .&&\why{definitions of $\nl_\ell$ and $c_2$}
 \end{align*}
 Therefore
 \[
@@ -4073,5 +4207,54 @@ $\Cpi(\varepsilon)$, $\RHo(\varepsilon)$ & summed probabilities, remainder & Lem
 \bottomrule
 \end{tabular}
 \end{center}
+
+%======================================================================
+\section{Further numerical experiments}\label{sec:app-experiments}
+
+This appendix completes Subsection~\ref{sec:experiments}, with the same algorithms, horizon, number of runs and protocol: instance B (small gaps) and
+instance C (a law that is not Bernoulli) on $\tl_\ell=2^{\ell+1}$ and on $\tl_\ell=2^{2^\ell}$, and the three instances on the grid of BABA, with BABA itself.
+As in Subsection~\ref{sec:experiments}, the figures show the behaviour of the algorithms at the horizon $T=2\cdot10^4$ only.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{notebook/fig4_hard_instance.pdf}
+\caption{Instance B (small gaps): mean regret over $64$ runs with $95\%$ confidence bands, on $\protect\tl_\ell=2^{\ell+1}$ ($x=1$) and $\protect\tl_\ell=2^{2^\ell}$ ($x=2$).}\label{fig:hard}
+\end{figure}
+
+\paragraph{Interpretation of Figure~\ref{fig:hard}.} With gaps $0.02$ to $0.06$, $\log T/\Ki(\nu_2,\m^\star)\approx1.2\cdot10^4$: at $T=2\cdot10^4$ every algorithm is
+still in its exploration regime, and the curves lie far below $C_x\log t$, which is not yet relevant. On the geometric grid, IMED ($161$ at $T$) and \HY{} ($170$)
+are ahead of Thompson sampling ($254$), KL-UCB ($259$) and BaSE ($476$). On $\tl_\ell=2^{2^\ell}$ the means at $T$ are $396$ (BaSE), $486$ (\HY), $500$ (IMED),
+$520$ (Thompson sampling) and $562$ (KL-UCB), with overlapping bands.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.75\textwidth]{notebook/fig5_binomial_law.pdf}
+\caption{Instance C (rewards $Y/10$, $Y$ binomial): mean regret over $64$ runs with $95\%$ confidence bands, logarithmic axes, on $\protect\tl_\ell=2^{\ell+1}$ and
+$\protect\tl_\ell=2^{2^\ell}$.}\label{fig:binomial}
+\end{figure}
+
+\paragraph{Interpretation of Figure~\ref{fig:binomial}.} The rewards of instance C are less dispersed than Bernoulli rewards with the same means, and $\Ki$ is
+$2$ to $7$ times larger than $\kl$ of the means. \HY{} and IMED, whose indices use $\Ki$ of the empirical distributions, have a regret of $15$ and $14$ at $T$ on
+the geometric grid, against $115$ for KL-UCB with the Bernoulli divergence and $144$ for Thompson sampling with unit-variance Gaussian posteriors, which do
+not use the shape of the laws. On $\tl_\ell=2^{2^\ell}$, IMED ends at $18$, \HY{} and BaSE at $38$, KL-UCB at $122$ and Thompson sampling at $997$: on this easy
+instance the arm favoured at $256$ is almost always optimal, and the extra exploration of \HY{} (the weight $\yg_\ell=4$, made to explore two batches ahead) is a
+cost that the instance does not require at this horizon.
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth]{notebook/fig6_baba_grid.pdf}
+\caption{The three instances on the static grid of BABA ($\alpha=3$, $I_1=2000$; vertical lines: its batch ends), with BABA itself. Top: mean regret over $64$
+runs with $95\%$ confidence bands; bottom: median regret.}\label{fig:baba}
+\end{figure}
+
+\paragraph{Interpretation of Figure~\ref{fig:baba}.} On its own grid the regret of BABA grows by steps: its exploration batches (Steps~I, III and~IV of each
+epoch) cost regret, its exploitation batches (Steps~II and~V) almost none. For $r=2$ the threshold of its test~(8) is
+$\log(I_2\lceil\log^2I_2\rceil)/s_i\approx0.117$ for $s_i=146$, larger than $\kl(0.4,0.5)\approx0.020$; on instances A and C, Step~IV then pulls every arm
+$146$ times, which is the step between the ends $2750$ and $3334$, and after $3334$ BABA commits to one arm until $I_2=171650$, so that its curve is flat. At
+$T$ the means are, on instance A, $56$ (\HY), $57$ (IMED), $111$ (KL-UCB), $203$ (BABA and Thompson sampling) and $304$ (BaSE); on instance B, $166$ (IMED), $178$
+(BaSE), $182$ (\HY), $231$ (BABA, median $120$), $278$ (KL-UCB) and $346$ (Thompson sampling), with overlapping bands for the first four; on instance C, $14$ (\HY),
+$15$ (IMED), $112$ (KL-UCB), $184$ (BABA), $186$ (Thompson sampling) and $304$ (BaSE). On this grid no paced round of \HY{} falls before $T$: batch~$10$, $(3334,I_2]$, is
+activated, but its paced phase starts at round $\sA_9+1=160661$; below $T$ \HY{} plays IMED rounds with frozen statistics, as IMED does. BABA is built for an asymptotic guarantee with few batches, and at $T=2\cdot10^4$ the cost of its first
+two epochs dominates its regret; the figure says nothing about the limits of BABA or of \HY.
 
 \end{document}
