@@ -124,7 +124,10 @@ algorithms, in figures of curves, is a major (R) defect unless it gives one of t
 W16; ask for the experiments you would want to see (instances, algorithms, horizons), and check
 that the scripts in `notebook/` produce the figures and run the paper's algorithm exactly as its
 theorems state it (parameters inside the range they cover; a variant only as an extra, labelled
-curve):
+curve). **Apply the ten-line test of B10** (the owner, 2026-11-17): pick ten lines of `align` at
+random in the appendix proofs and report, in the W11 line, how many transform the expression
+without a justification on the line; a load-bearing step without one, or more than a third of the
+lines tested, is R; otherwise P. For each defect:
 
 - its class is **R** (readability) when it prevents an expert from understanding or checking what
   is proved, or hides or distorts what is claimed; **P** when an expert could fix it without anyone
