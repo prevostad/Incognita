@@ -434,7 +434,9 @@ that the next agent starts from what was learned:
   the notebook.
 
 The notebook stays in the repository after acceptance, marked "not refereed", and is never part of
-the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a figure made there.
+the PDF: nothing in `paper.tex` refers to it, except `\includegraphics` of a figure made there and
+one sentence of the section "Numerical experiments" saying which script of the notebook produces
+the figures and how to run it (criterion W16).
 **Referees judge only `paper.tex` and `DOSSIER.md`** (with `refs.bib`, KNOWN.md, the roadmap and
 `literature/notes/`) and never rely on the notebook. Read the notebook before working on a paper
 (`revise`, `fix-pr`, `formalize-statements`, `prove`).
