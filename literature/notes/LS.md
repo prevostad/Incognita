@@ -4,8 +4,8 @@
 |---|---|
 | Work | T. Lattimore, Cs. Szepesvári, *Bandit Algorithms*, Cambridge University Press, 2020 |
 | Identifiers | DOI 10.1017/9781108571401 |
-| Read | Session of 2026-11-15 (Claude Opus 5.5, revise, P001): the free online edition, https://tor-lattimore.com/downloads/book/book.pdf ("This is the (free) online edition"; PDF dated 12 Aug 2024), read as extracted text (via r.jina.ai), not as page images; page numbers are those of this edition, inferred from running headers, and the online edition states that its page numbers differ from the print edition. Parts read: Chapter 4 title; §4.6 heading, first two sentences and the stack-of-rewards passage; Chapter 9 title; §9.1 Algorithm "MOSS" (numbered Algorithm 7 in this edition) and Theorem 9.1; Chapter 15 title; text before Theorem 15.2, Theorem 15.2 and the paragraph after it; Exercise 15.2 (setup, displays of parts (a)–(c), part (d)). Read earlier, see index.md: §9.2; §9.3 Notes 1–3; §15.1 Lemma 15.1 statement; §16.1–16.4 parts; Exercise 16.4; §25; §36.5–36.6. Not read: the proofs of Theorems 9.1 and 15.2. Session of 2026-11-16 (Claude Opus 5.5, write-paper, P005): the free online PDF (text layer): §3.3 Theorem 3.9 (maximal inequality); §16.1 Definition 16.1, the definition of $d_{\inf}$ and Theorem 16.2 with the start of its proof; §16.3 Notes 1–3; §16.4 |
-| By, date | agent (roadmap draft), 2026-11-14; Claude Opus 5.5 (revise, P001), 2026-11-15; Claude Opus 5.5 (write-paper, P005), 2026-11-16 (the results from §3.3 and §16) |
+| Read | Session of 2026-11-15 (Claude Opus 5.5, revise, P001): the free online edition, https://tor-lattimore.com/downloads/book/book.pdf ("This is the (free) online edition"; PDF dated 12 Aug 2024), read as extracted text (via r.jina.ai), not as page images; page numbers are those of this edition, inferred from running headers, and the online edition states that its page numbers differ from the print edition. Parts read: Chapter 4 title; §4.6 heading, first two sentences and the stack-of-rewards passage; Chapter 9 title; §9.1 Algorithm "MOSS" (numbered Algorithm 7 in this edition) and Theorem 9.1; Chapter 15 title; text before Theorem 15.2, Theorem 15.2 and the paragraph after it; Exercise 15.2 (setup, displays of parts (a)–(c), part (d)). Read earlier, see index.md: §9.2; §9.3 Notes 1–3; §15.1 Lemma 15.1 statement; §16.1–16.4 parts; Exercise 16.4; §25; §36.5–36.6. Not read: the proofs of Theorems 9.1 and 15.2. Session of 2026-11-16 (Claude Opus 5.5, write-paper, P005): the free online PDF (text layer): §3.3 Theorem 3.9 (maximal inequality); §16.1 Definition 16.1, the definition of $d_{\inf}$ and Theorem 16.2 with the start of its proof; §16.3 Notes 1–3; §16.4. Session of 2026-11-17 (Claude Opus 5.5, revise, P006): the free online PDF (text layer): §4.6 pp. 63–65 in full (Definition 4.7, conditions (a)–(b), Proposition 4.8, the density (4.7), the random-table and reward-stack models and the sentence on their equivalence); §4.10 Exercises 4.1–4.4 (p. 69) |
+| By, date | agent (roadmap draft), 2026-11-14; Claude Opus 5.5 (revise, P001), 2026-11-15; Claude Opus 5.5 (write-paper, P005), 2026-11-16 (the results from §3.3 and §16); Claude Opus 5.5 (revise, P006), 2026-11-17 (§4.6 in full, Exercises 4.1–4.4) |
 
 ## Results
 
@@ -21,6 +21,31 @@ image before it is quoted as printed.
   $P_i$." This "corresponds to sampling a stack of rewards for each arm at the beginning of the
   game. Each time the learner chooses an action, they receive the reward on top of the stack."
   (p. 65), with $X_t = X_{T_{A_t}(t),A_t}$ (extracted as "Xt = XTAt (t),A t").
+- **§4.6, the rest, pp. 64–65 (read 2026-11-17, Claude Opus 5.5, revise, P006; text layer of the
+  online PDF).** Definition 4.7: "A policy π is a sequence $(\pi_t)_{t=1}^n$, where $\pi_t$ is a
+  probability kernel from $(\Omega_{t-1},\mathcal F_{t-1})$ to $([k],2^{[k]})$", with
+  $\Omega_t=([k]\times\mathbb R)^t$. The two conditions: "(a) the conditional distribution of action
+  $A_t$ given $A_1,X_1,\dots,A_{t-1},X_{t-1}$ is $\pi_t(\cdot\mid A_1,X_1,\dots,A_{t-1},X_{t-1})$
+  almost surely. (b) the conditional distribution of reward $X_t$ given $A_1,X_1,\dots,A_t$ is
+  $P_{A_t}$ almost surely." Proposition 4.8 (proof: Exercise 4.2): "Suppose that P and Q are
+  probability measures on an arbitrary measurable space $(\Omega,\mathcal F)$ and
+  $A_1,X_1,\dots,A_n,X_n$ are random variables on Ω, where $A_t\in[k]$ and $X_t\in\mathbb R$. If both
+  P and Q satisfy (a) and (b), then the law of the outcome $(A_1,X_1,\dots,A_n,X_n)$ under P is the
+  same as under Q". The canonical measure is given by the density (4.7),
+  $p_{\nu\pi}=\prod_t\pi(a_t\mid a_1,x_1,\dots)p_{a_t}(x_t)$ with respect to $(\rho\times\lambda)^n$.
+  The random-table model ($X_t=X_{tA_t}$) and the reward-stack model ($X_t=X_{T_{A_t}(t),A_t}$),
+  with $(X_{si})_{s\in[n],i\in[k]}$ independent, $X_{ti}$ of law $P_i$, then: "All of these models
+  are convenient from time to time. The important thing is that it does not matter which model we
+  choose because the quantity of ultimate interest (usually the regret) only depends on the law of
+  $A_1,X_1,\dots,A_n,X_n$, and this is the same for all choices (Exercise 4.4)." Infinite horizon
+  (p. 66): existence "follows directly from the theorem of Ionescu–Tulcea (Theorem 3.3)".
+- **§4.10, Exercises, p. 69.** "4.2 (Uniqueness of law) Prove Proposition 4.8." "4.3 (Definition of
+  canonical probability measure) Prove that the measure defined in terms of the density in Eq. (4.7)
+  satisfies the conditions (a) and (b) in Section 4.6." "4.4 (Random table versus stacked-reward
+  models) Show that both the random-table and the stacked-reward models give rise to a probability
+  distribution that satisfy the condition (b) in Section 4.6. Hint When reasoning about the
+  stacked-reward model, use Doob's optional stopping theorem (Theorem 3.8), which continues to hold
+  if N in the theorem is replaced by [t] for some t ∈ N+ assuming that τ ≤ t".
 - **Chapter 9, "The Upper Confidence Bound Algorithm: Minimax Optimality"; §9.1, "The MOSS Algorithm",
   Algorithm 7 (MOSS) of this edition, p. 123.** Index: $A_t = \operatorname{argmax}_i\ \hat\mu_i(t-1) +
   \sqrt{\frac{4}{T_i(t-1)}\log^+\!\left(\frac{n}{kT_i(t-1)}\right)}$, where $\log^+(x) = \log\max\{1,x\}$
