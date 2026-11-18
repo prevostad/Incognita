@@ -1,0 +1,37 @@
+# Relations between results of the library, found by gardening (format: catalogue/README.md).
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.BatchedBandits.isBatched_sequential_iff"
+to = "Incognita.BatchedBandits.IsBatched.seesRewardsUpTo_zero"
+lean = "Incognita.BatchedBandits.Relations.isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff"
+justification = "P006 thm:main (iii) first claim (general form of Incognita.P006.isBatched_sequential_iff) together with (ii) first claim (IsBatched.of_isFiner, general form of Incognita.P006.isBatched_of_isFiner), applied to S_{t 1}, finer than g: a learner batched on g ignores the rewards in the rounds < t 1. Same conclusion, same hypotheses (any action and feedback types, any K); no constants"
+date = "2026-11-17"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "same-object"
+from = "Incognita.TransferBandits.IsConsistentOnUnit"
+to = "Incognita.BatchedBandits.IsConsistentAtBatchEnds"
+lean = "Incognita.TransferBandits.Relations.isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential"
+justification = "P003 def:consistency (bandit part) on P^K is P006 def:consistent at the batch ends of the sequential grid S_s on P^K, for every s >= max 2 K (finitely many arms); 'suboptimal' (some larger mean) is 'gap > 0' (Relations.gap_pos_iff_exists_lt)"
+date = "2026-11-17"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "same-object"
+from = "Incognita.TransferBandits.IsConsistentOnUnit"
+to = "LMLExplore.Bandits.IsConsistent"
+lean = "Incognita.TransferBandits.Relations.isConsistentOnUnit_iff_isConsistent"
+justification = "P003 def:consistency (bandit part, pull counts) is LMLExplore's regret-based consistency [LS, Definition 16.1] on E = Incognita.TransferBandits.unitBandits α (finitely many arms, measurable singletons); proved through S_2 and the general form of P006 thm:main (iii), which does not assume E ⊆ 𝒫"
+date = "2026-11-17"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "duplicate"
+from = "LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds"
+to = "Incognita.P003.isConsistentOnUnit_of_isConsistent"
+lean = "Incognita.TransferBandits.Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds"
+justification = "the same computation Δ_a E[N_a(T)] <= E[R_T] (LML's integral_regret_eq_sum_gap_mul_integral_pullCount) in Incognita/BatchedBandits/Consistency.lean and Incognita/P003/Witnesses.lean; the P003 lemma is proved again, with the same type, from the BatchedBandits one on S_2. Migration left to the owner"
+date = "2026-11-17"
+by = "claude-opus-5-5"

@@ -190,4 +190,23 @@ lemma isConsistentAtBatchEnds_sequential_iff [Finite α] [MeasurableSingletonCla
 
 end Consistency
 
+/-! ### Relations found by gardening
+
+`garden` records each relation below in `catalogue/relations.toml`. -/
+
+namespace Relations
+
+variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] {K : ℕ}
+
+/-- **Implication** [INC-P006, Theorem `thm:main`(ii) and (iii), first claims]: refining a grid
+preserves batching (`IsBatched.of_isFiner`), and on `𝖲_s` batching means ignoring the rewards in
+the rounds `< s` (`isBatched_sequential_iff`). Together they give the known case
+`IsBatched.seesRewardsUpTo_zero`, with the same hypotheses: `𝖲_{t 1}` is finer than `g`, so a
+learner batched on `g` ignores the rewards in the rounds `< t 1`, the first batch of `g`. -/
+lemma isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff {alg : Algorithm Unit 𝓐 𝓨}
+    {g : Grid K} (h : IsBatched alg g) {n : ℕ} (hn : n < g.t 1) : SeesRewardsUpTo alg n 0 :=
+  (isBatched_sequential_iff g.le_t_one).mp (h.of_isFiner (Grid.sequential_isFiner le_rfl)) n hn
+
+end Relations
+
 end Incognita.BatchedBandits
