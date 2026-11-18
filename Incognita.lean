@@ -2,13 +2,25 @@ module  -- shake: keep-all --deprecated_module: ignore
 
 public import Incognita.Basic
 public import Incognita.BatchedBandits.Batched
+public import Incognita.BatchedBandits.ChangeOfMeasure
 public import Incognita.BatchedBandits.Consistency
 public import Incognita.BatchedBandits.Grid
 public import Incognita.BatchedBandits.HY
+public import Incognita.BatchedBandits.HYInfoModel
 public import Incognita.BatchedBandits.Instances
 public import Incognita.BatchedBandits.KInf
+public import Incognita.BatchedBandits.LowerBound
+public import Incognita.BatchedBandits.LowerBoundAssembly
+public import Incognita.BatchedBandits.MaskedHistory
+public import Incognita.BatchedBandits.OneBatchAhead
 public import Incognita.BatchedBandits.Relations
+public import Incognita.BatchedBandits.TwoBatchesAhead
+public import Incognita.ForLML.InformationTheory.KullbackLeibler.Convex
+public import Incognita.ForLML.Probability.HasCondDistrib
+public import Incognita.ForLML.SequentialLearning.Algorithm
 public import Incognita.ForMathlib.InformationTheory.KullbackLeibler.Basic
+public import Incognita.P000.InfoModel
+public import Incognita.P000.LowerBound
 public import Incognita.P000.Witnesses
 public import Incognita.P003.Cyclic
 public import Incognita.P003.Drift

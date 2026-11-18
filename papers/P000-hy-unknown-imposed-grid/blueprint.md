@@ -33,7 +33,7 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | lem:kinf | lemma | (added by prove) | P006 froze `kinf_bounds`, `kinf_bounds_of_gap_pos`; `HY.pseudoKinf_eq_zero_of_le_pseudoMean` is item "mean ≥ level ⇒ 0" for the dual form |
 | lem:pseudo, lem:hoeffding, lem:grid, lem:single, lem:pair, lem:theta, lem:lowerdev, lem:upperdev, lem:stacks, lem:sums, lem:diag, lem:distinct, lem:chain | lemma | (added by prove) | |
 | def:empkinf | definition | (proof-internal, not defined) | the empirical $\mathcal K_{\inf}$ is `HY.pseudoKinf`; $\Phi$, $\Psi$ are proof-internal |
-| lem:tilts, lem:com, lem:typ, lem:twobatches | lemma | (added by prove) | |
+| lem:tilts, lem:com, lem:typ | lemma | (not formalised) | not needed by the Lean route to `lem:twobatches`(ii), see `flem:twobatches` of `formalisation.tex` and the Open problems |
 | def:tilt, def:Q | definition | (proof-internal, not defined) | |
 | lem:imedround, lem:service, lem:W, lem:sparse | lemma | (added by prove) | |
 | def:backlog, def:water | definition | (proof-internal, not defined) | |
@@ -43,6 +43,31 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | def:constC, def:ranksC, def:evC, def:amb, def:high | definition | (proof-internal, not defined) | |
 | lem:constC, lem:decompC, lem:controlC, lem:sumC, lem:lowmass, lem:growth, lem:levelC, lem:goodhigh, lem:highC, lem:fewC, lem:logcountC, lem:optW, lem:pullsC, lem:amb | lemma | (added by prove) | |
 | prop:fixedC | proposition | (added by prove) | non-asymptotic bound for $x=1$; not frozen (not a headline) |
+| lem:onebatch | lemma (general form) | Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_succ | proved; route in `formalisation.tex` (Bretagnolle–Huber in place of data processing; the strict primal formula in place of `lem:kinf`(v) and `lem:primal`) |
+| thm:lower | theorem, (i) (general form) | Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t | proved on every grid (the hypothesis $x_\ell\to1$ is not used) |
+| thm:lower | theorem, (ii) second claim (general form) | Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_of_isBigO | proved for every $x>0$; first claim through `lower_limsup` (Case B: `flem:caseB`) |
+| thm:lower | theorem, (iii) (general form) | Incognita.BatchedBandits.eventually_lt_regret_div_log_t_of_forall | from the per-arm bounds; $x=1$: `flem:regret-one` |
+| lem:twobatches | lemma, (ii) (general form) | Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_add_two | proved at the index $\ell+1$, by the route `flem:twobatches` of `formalisation.tex`; (i) not formalised (not needed) |
+| thm:main | theorem, (b) first claim (general form) | Incognita.BatchedBandits.infoModel_zero_hy | proved for all real $w_0$, $\beta$ |
+| flem:masked-law | lemma (formalisation.tex) | Incognita.BatchedBandits.map_history_maskFeedback_eq, Incognita.BatchedBandits.isAlgEnvSeqUntil_maskFeedback | "the actions up to $t_{\ell+1}$ are $\mathcal H_\ell$-measurable" of `sec:app-lower`, as an equality of laws |
+| flem:switch-kl | lemma (formalisation.tex) | Incognita.BatchedBandits.klDiv_map_hist_switch | Step 2 of the proof of `lem:onebatch` |
+| flem:onebatch-finite | lemma (formalisation.tex) | Incognita.BatchedBandits.exp_neg_le_of_seesRewardsUpTo | Steps 2–4 of the proof of `lem:onebatch`, at a finite horizon |
+| flem:mean-lt-one | lemma (formalisation.tex) | Incognita.BatchedBandits.integral_id_lt_one_of_klDiv_ne_top | "$H\ne\delta_1$" in Step 1 of the proof of `lem:onebatch` |
+| flem:hy-congr | lemma (formalisation.tex) | Incognita.BatchedBandits.HY.next_congr, Incognita.BatchedBandits.isBatched_hyAlg | HY is batched, for all parameters |
+| flem:hy-grid | lemma (formalisation.tex) | Incognita.BatchedBandits.HY.next_hy_eq_of_t_eq | HY with the default parameters reads only $t_0,\dots,t_\ell$ in batch $\ell+1$ |
+| flem:liminf-sum | lemma (formalisation.tex) | Incognita.BatchedBandits.eventually_lt_sum_mul | `thm:lower`(iii), "the liminf of a finite sum" |
+| flem:liminf-mul | lemma (formalisation.tex) | Incognita.BatchedBandits.eventually_lt_mul_of_tendsto | |
+| flem:log-ratio | lemma (formalisation.tex) | Incognita.BatchedBandits.Grid.tendsto_log_t_add_two_div_log_t | $\log t_{\ell+2}/\log t_\ell=x_{\ell+1}x_{\ell+2}\to x^2$ |
+| flem:caseA | lemma (formalisation.tex) | Incognita.BatchedBandits.eventually_lt_div_log_t_of_eventually_lt_div_log_t_add_two | Case A of the proof of `thm:lower`(ii), from the conclusion of `lem:twobatches`(ii) |
+| flem:caseB | lemma (formalisation.tex) | Incognita.BatchedBandits.frequently_lt_div_log_t_of_not_isBigO | Case B of the proof of `thm:lower`(ii) |
+| flem:regret-one | lemma (formalisation.tex) | Incognita.BatchedBandits.eventually_lt_regret_div_log_t | `thm:lower`(iii) for $x=1$, on every grid |
+| flem:com-one-sided | lemma (formalisation.tex) | Incognita.BatchedBandits.withDensity_map_hist_le, Incognita.BatchedBandits.setLIntegral_stepKernel_le | one-sided change of measure for the histories of a run |
+| flem:switch-kl-left | lemma (formalisation.tex) | Incognita.BatchedBandits.klDiv_map_hist_switch_left, Learning.IsAlgEnvSeq.isAlgEnvSeqUntil_of_feedback_eq | the switched environment with the bandit on the right |
+| flem:dp | lemma (formalisation.tex) | Incognita.BatchedBandits.exp_neg_div_le_of_klBer_le | data processing, multiplicative form |
+| flem:alt-laws | lemma (formalisation.tex) | Incognita.BatchedBandits.exists_unitLaws_mean_mem_Ioo, Incognita.BatchedBandits.mix_mem_unitLaws, InformationTheory.klDiv_mix_le, Incognita.BatchedBandits.exists_two_alternatives | the alternative instances $\kappa^+,\kappa^-$ (replaces `lem:tilts`) |
+| flem:twobatches-finite | lemma (formalisation.tex) | Incognita.BatchedBandits.two_batches_finite | the finite-horizon inequality two batches ahead |
+| flem:twobatches | lemma (formalisation.tex) | Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_add_two, Incognita.BatchedBandits.two_batches_step, Incognita.BatchedBandits.two_batches_arith, Incognita.BatchedBandits.rhs_le_of_counts_le | `lem:twobatches`(ii) |
+| flem:regret-caseB | lemma (formalisation.tex) | Incognita.BatchedBandits.frequently_lt_regret_div_log_t_of_not_isBigO | the regret `limsup` when some count is not logarithmic |
 
 The satisfiability witnesses are in `Incognita/P000/Witnesses.lean`
 (`Incognita.P000.<name>_satisfiable`, one per frozen statement).
@@ -191,3 +216,10 @@ the grid and consistent at its batch ends on `unitBandits α`).
   `def:ranksC`, `def:evC`, `def:amb`, `def:high`, `def:hy-vocab`) are not defined: proof pull
   requests add only lemmas and theorems, so `prove` will either write them inline or ask for a
   statements pull request.
+- **Lemma `lem:twobatches`(i) (the form with tightness in probability) and Lemmas `lem:tilts`,
+  `lem:com`, `lem:typ` are not formalised** (prove, 2026-11-17): the Lean route to
+  `lem:twobatches`(ii) (`formalisation.tex`, `flem:twobatches`) does not use them. It replaces the
+  boundary tilt and the typical values of the log-likelihood ratios by a one-sided change of
+  measure (`flem:com-one-sided`: $\rho^-\ge(1-s)\rho^+$ costs a factor $1-s$ per pull of $a$ in
+  batch $\ell+1$) and multiplicative data processing (`flem:dp`); no concentration is needed. The
+  paper uses part (i) only to prove part (ii).
