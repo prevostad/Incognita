@@ -125,7 +125,9 @@
         ]
       }
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1137/S0097539701398375"
+    },
     "version": ""
   },
   "AG12": {
@@ -479,7 +481,7 @@
     "version": "v16"
   },
   "B62": {
-    "uri": "",
+    "uri": "https://doi.org/10.1080/01621459.1962.10482149",
     "citation": {
       "id": "B62",
       "type": "article-journal",
@@ -500,9 +502,12 @@
       },
       "volume": "57",
       "issue": "297",
-      "page": "33-45"
+      "page": "33-45",
+      "DOI": "10.1080/01621459.1962.10482149"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1080/01621459.1962.10482149"
+    },
     "version": ""
   },
   "BCL13": {
@@ -544,7 +549,7 @@
     "version": ""
   },
   "BCZ97": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/aos/1069362389",
     "citation": {
       "id": "BCZ97",
       "type": "article-journal",
@@ -552,23 +557,23 @@
       "author": [
         {
           "family": "Berry",
-          "given": "D."
+          "given": "Donald A."
         },
         {
           "family": "Chen",
-          "given": "R."
+          "given": "Robert W."
         },
         {
           "family": "Zame",
-          "given": "A."
+          "given": "Alan"
         },
         {
           "family": "Heath",
-          "given": "D."
+          "given": "David C."
         },
         {
           "family": "Shepp",
-          "given": "L."
+          "given": "Larry A."
         }
       ],
       "container-title": "The Annals of Statistics",
@@ -580,13 +585,17 @@
             1997
           ]
         ]
-      }
+      },
+      "page": "2103-2116",
+      "DOI": "10.1214/aos/1069362389"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/aos/1069362389"
+    },
     "version": ""
   },
   "BEZ20": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/20-AAP1565",
     "citation": {
       "id": "BEZ20",
       "type": "article-journal",
@@ -594,15 +603,15 @@
       "author": [
         {
           "family": "Bayraktar",
-          "given": "E."
+          "given": "Erhan"
         },
         {
           "family": "Ekren",
-          "given": "I."
+          "given": "Ibrahim"
         },
         {
           "family": "Zhang",
-          "given": "Y."
+          "given": "Yili"
         }
       ],
       "container-title": "The Annals of Applied Probability",
@@ -614,9 +623,13 @@
             2020
           ]
         ]
-      }
+      },
+      "page": "2517-2546",
+      "DOI": "10.1214/20-AAP1565"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/20-AAP1565"
+    },
     "version": ""
   },
   "BK18": {
@@ -652,7 +665,7 @@
     "version": "v1"
   },
   "BK65": {
-    "uri": "",
+    "uri": "https://doi.org/10.1090/S0002-9947-1965-0198524-1",
     "citation": {
       "id": "BK65",
       "type": "article-journal",
@@ -677,17 +690,20 @@
       },
       "volume": "120",
       "issue": "1",
-      "page": "108-123"
+      "page": "108-123",
+      "DOI": "10.1090/S0002-9947-1965-0198524-1"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1090/S0002-9947-1965-0198524-1"
+    },
     "version": ""
   },
   "BK96": {
-    "uri": "",
+    "uri": "https://doi.org/10.1006/aama.1996.0007",
     "citation": {
       "id": "BK96",
       "type": "article-journal",
-      "title": "Optimal adaptive policies for sequential allocation problems",
+      "title": "Optimal Adaptive Policies for Sequential Allocation Problems",
       "author": [
         {
           "family": "Burnetas",
@@ -748,29 +764,30 @@
     "version": ""
   },
   "BP13": {
-    "uri": "",
+    "uri": "https://papers.nips.cc/paper/5109-two-target-algorithms-for-infinite-armed-bandits-with-bernoulli-rewards",
     "citation": {
       "id": "BP13",
       "type": "paper-conference",
-      "title": "Two-target algorithms for infinite-armed bandits with Bernoulli rewards",
+      "title": "Two-Target Algorithms for Infinite-Armed Bandits with Bernoulli Rewards",
       "author": [
         {
           "family": "Bonald",
-          "given": "T."
+          "given": "Thomas"
         },
         {
           "family": "Proutière",
-          "given": "A."
+          "given": "Alexandre"
         }
       ],
-      "container-title": "Advances in Neural Information Processing Systems (NeurIPS)",
+      "container-title": "Advances in Neural Information Processing Systems 26 (NIPS 2013)",
       "issued": {
         "date-parts": [
           [
             2013
           ]
         ]
-      }
+      },
+      "volume": "26"
     },
     "identifiers": {},
     "version": ""
@@ -810,7 +827,7 @@
     "version": "v3"
   },
   "BW88": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/lnms/1215466210",
     "citation": {
       "id": "BW88",
       "type": "book",
@@ -836,9 +853,12 @@
             1988
           ]
         ]
-      }
+      },
+      "DOI": "10.1214/lnms/1215466210"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/lnms/1215466210"
+    },
     "version": ""
   },
   "Bat83": {
@@ -938,7 +958,7 @@
     "version": ""
   },
   "Bil99": {
-    "uri": "",
+    "uri": "https://doi.org/10.1002/9780470316962",
     "citation": {
       "id": "Bil99",
       "type": "book",
@@ -957,13 +977,17 @@
             1999
           ]
         ]
-      }
+      },
+      "collection-title": "Wiley Series in Probability and Statistics",
+      "DOI": "10.1002/9780470316962"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1002/9780470316962"
+    },
     "version": ""
   },
   "Bro86": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/lnms/1215466757",
     "citation": {
       "id": "Bro86",
       "type": "book",
@@ -982,13 +1006,16 @@
             1986
           ]
         ]
-      }
+      },
+      "DOI": "10.1214/lnms/1215466757"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/lnms/1215466757"
+    },
     "version": ""
   },
   "CB97": {
-    "uri": "",
+    "uri": "https://doi.org/10.1145/258128.258179",
     "citation": {
       "id": "CB97",
       "type": "article-journal",
@@ -996,27 +1023,27 @@
       "author": [
         {
           "family": "Cesa-Bianchi",
-          "given": "N."
+          "given": "Nicolò"
         },
         {
           "family": "Freund",
-          "given": "Y."
+          "given": "Yoav"
         },
         {
           "family": "Haussler",
-          "given": "D."
+          "given": "David"
         },
         {
           "family": "Helmbold",
-          "given": "D."
+          "given": "David P."
         },
         {
           "family": "Schapire",
-          "given": "R."
+          "given": "Robert E."
         },
         {
           "family": "Warmuth",
-          "given": "M."
+          "given": "Manfred K."
         }
       ],
       "container-title": "Journal of the ACM",
@@ -1028,9 +1055,13 @@
             1997
           ]
         ]
-      }
+      },
+      "page": "427-485",
+      "DOI": "10.1145/258128.258179"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1145/258128.258179"
+    },
     "version": ""
   },
   "CBL06": {
@@ -1340,11 +1371,11 @@
     "version": ""
   },
   "CP14": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v32/combes14.html",
     "citation": {
       "id": "CP14",
       "type": "paper-conference",
-      "title": "Unimodal bandits: regret lower bounds and optimal algorithms",
+      "title": "Unimodal Bandits: Regret Lower Bounds and Optimal Algorithms",
       "author": [
         {
           "family": "Combes",
@@ -1355,14 +1386,28 @@
           "given": "Alexandre"
         }
       ],
-      "container-title": "Proceedings of the 31st International Conference on Machine Learning (ICML)",
+      "container-title": "Proceedings of the 31st International Conference on Machine Learning",
       "issued": {
         "date-parts": [
           [
             2014
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "32",
+      "issue": "1",
+      "page": "521-529",
+      "editor": [
+        {
+          "family": "Xing",
+          "given": "Eric P."
+        },
+        {
+          "family": "Jebara",
+          "given": "Tony"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "1405.5096"
@@ -1484,11 +1529,11 @@
     "version": ""
   },
   "Cur03": {
-    "uri": "https://doi.org/10.2178/bsl.1052669287",
+    "uri": "https://doi.org/10.2178/bsl/1052669287",
     "citation": {
       "id": "Cur03",
       "type": "article-journal",
-      "title": "Symmetry and interactivity in programming",
+      "title": "Symmetry and Interactivity in Programming",
       "author": [
         {
           "family": "Curien",
@@ -1506,7 +1551,7 @@
           ]
         ]
       },
-      "DOI": "10.2178/bsl.1052669287"
+      "DOI": "10.2178/bsl/1052669287"
     },
     "identifiers": {
       "arxiv": "cs/0501034"
@@ -1545,7 +1590,7 @@
     "version": ""
   },
   "DP16": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v48/degenne16.html",
     "citation": {
       "id": "DP16",
       "type": "paper-conference",
@@ -1553,31 +1598,44 @@
       "author": [
         {
           "family": "Degenne",
-          "given": "R."
+          "given": "Rémy"
         },
         {
           "family": "Perchet",
-          "given": "V."
+          "given": "Vianney"
         }
       ],
-      "container-title": "Proceedings of the 33rd International Conference on Machine Learning (ICML)",
+      "container-title": "Proceedings of The 33rd International Conference on Machine Learning",
       "issued": {
         "date-parts": [
           [
             2016
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "editor": [
+        {
+          "family": "Balcan",
+          "given": "Maria Florina"
+        },
+        {
+          "family": "Weinberger",
+          "given": "Kilian Q."
+        }
+      ],
+      "volume": "48",
+      "page": "1587-1595"
     },
     "identifiers": {},
     "version": ""
   },
   "DSK20": {
-    "uri": "",
+    "uri": "https://proceedings.mlr.press/v119/degenne20b.html",
     "citation": {
       "id": "DSK20",
       "type": "paper-conference",
-      "title": "Structure adaptive algorithms for stochastic bandits",
+      "title": "Structure Adaptive Algorithms for Stochastic Bandits",
       "author": [
         {
           "family": "Degenne",
@@ -1592,14 +1650,27 @@
           "given": "Wouter M."
         }
       ],
-      "container-title": "Proceedings of the 37th International Conference on Machine Learning (ICML)",
+      "container-title": "Proceedings of the 37th International Conference on Machine Learning",
       "issued": {
         "date-parts": [
           [
             2020
           ]
         ]
-      }
+      },
+      "collection-title": "Proceedings of Machine Learning Research",
+      "volume": "119",
+      "page": "2443-2452",
+      "editor": [
+        {
+          "family": "Daumé III",
+          "given": "Hal"
+        },
+        {
+          "family": "Singh",
+          "given": "Aarti"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "2007.00969"
@@ -1607,7 +1678,7 @@
     "version": ""
   },
   "EK86": {
-    "uri": "",
+    "uri": "https://doi.org/10.1002/9780470316658",
     "citation": {
       "id": "EK86",
       "type": "book",
@@ -1629,9 +1700,13 @@
             1986
           ]
         ]
-      }
+      },
+      "collection-title": "Wiley Series in Probability and Statistics",
+      "DOI": "10.1002/9780470316658"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1002/9780470316658"
+    },
     "version": ""
   },
   "EKMM21": {
@@ -1752,15 +1827,15 @@
     "citation": {
       "id": "FG21",
       "type": "article",
-      "title": "Diffusion approximations for Thompson sampling",
+      "title": "Diffusion Approximations for Thompson Sampling",
       "author": [
         {
           "family": "Fan",
-          "given": "L."
+          "given": "Lin"
         },
         {
           "family": "Glynn",
-          "given": "P."
+          "given": "Peter W."
         }
       ],
       "container-title": "arXiv preprint",
@@ -1770,15 +1845,16 @@
             2021
           ]
         ]
-      }
+      },
+      "note": "Title of arXiv v1 (19 May 2021); v6 (21 Apr 2026) is titled 'Diffusion Approximations for Thompson Sampling in the Small Gap Regime'"
     },
     "identifiers": {
       "arxiv": "2105.09232"
     },
-    "version": ""
+    "version": "v1"
   },
   "FG24": {
-    "uri": "https://arxiv.org/abs/2109.13595",
+    "uri": "https://doi.org/10.1287/opre.2023.0283",
     "citation": {
       "id": "FG24",
       "type": "article-journal",
@@ -1798,13 +1874,19 @@
       "issued": {
         "date-parts": [
           [
-            2024
+            2025,
+            11
           ]
         ]
-      }
+      },
+      "volume": "73",
+      "issue": "6",
+      "page": "3173-3198",
+      "note": "The key keeps the year 2024 (arXiv v8, 12 Nov 2024, 'To appear'); the issue is November 2025 (Crossref)"
     },
     "identifiers": {
-      "arxiv": "2109.13595"
+      "arxiv": "2109.13595",
+      "doi": "10.1287/opre.2023.0283"
     },
     "version": ""
   },
@@ -1813,7 +1895,7 @@
     "citation": {
       "id": "FN71",
       "type": "article-journal",
-      "title": "Probability inequalities for sums of independent random variables",
+      "title": "Probability Inequalities for Sums of Independent Random Variables",
       "author": [
         {
           "family": "Fuk",
@@ -2123,11 +2205,11 @@
     "version": ""
   },
   "GL97": {
-    "uri": "",
+    "uri": "https://doi.org/10.1137/S0363012994275440",
     "citation": {
       "id": "GL97",
       "type": "article-journal",
-      "title": "Asymptotically efficient adaptive choice of control laws in controlled Markov chains",
+      "title": "Asymptotically Efficient Adaptive Choice of Control Laws in Controlled Markov Chains",
       "author": [
         {
           "family": "Graves",
@@ -2147,9 +2229,13 @@
         ]
       },
       "volume": "35",
-      "issue": "3"
+      "issue": "3",
+      "DOI": "10.1137/S0363012994275440",
+      "page": "715-743"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1137/S0363012994275440"
+    },
     "version": ""
   },
   "GLR97": {
@@ -2263,35 +2349,40 @@
     "version": ""
   },
   "GPS16": {
-    "uri": "",
+    "uri": "https://doi.org/10.1137/1.9781611974331.ch39",
     "citation": {
       "id": "GPS16",
       "type": "paper-conference",
-      "title": "Towards optimal algorithms for prediction with expert advice",
+      "title": "Towards Optimal Algorithms for Prediction with Expert Advice",
       "author": [
         {
           "family": "Gravin",
-          "given": "N."
+          "given": "Nick"
         },
         {
           "family": "Peres",
-          "given": "Y."
+          "given": "Yuval"
         },
         {
           "family": "Sivan",
-          "given": "B."
+          "given": "Balasubramanian"
         }
       ],
-      "container-title": "Proceedings of the ACM-SIAM Symposium on Discrete Algorithms (SODA)",
+      "container-title": "Proceedings of the Twenty-Seventh Annual ACM-SIAM Symposium on Discrete Algorithms (SODA 2016)",
       "issued": {
         "date-parts": [
           [
             2016
           ]
         ]
-      }
+      },
+      "publisher": "Society for Industrial and Applied Mathematics",
+      "page": "528-547",
+      "DOI": "10.1137/1.9781611974331.ch39"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1137/1.9781611974331.ch39"
+    },
     "version": ""
   },
   "GR97": {
@@ -2872,7 +2963,8 @@
           ]
         ]
       },
-      "DOI": "10.1007/978-1-4612-4190-4"
+      "DOI": "10.1007/978-1-4612-4190-4",
+      "note": "Same work as Kec95 (two keys, from P003 and P001)"
     },
     "identifiers": {
       "isbn": "9781461241904"
@@ -2947,11 +3039,11 @@
     "version": "v5"
   },
   "KKM12": {
-    "uri": "",
+    "uri": "https://doi.org/10.1007/978-3-642-34106-9_18",
     "citation": {
       "id": "KKM12",
       "type": "paper-conference",
-      "title": "Thompson sampling: an asymptotically optimal finite-time analysis",
+      "title": "Thompson Sampling: An Asymptotically Optimal Finite-Time Analysis",
       "author": [
         {
           "family": "Kaufmann",
@@ -2966,17 +3058,22 @@
           "given": "Rémi"
         }
       ],
-      "container-title": "Proceedings of the 23rd International Conference on Algorithmic Learning Theory (ALT)",
+      "container-title": "Algorithmic Learning Theory (ALT 2012)",
       "issued": {
         "date-parts": [
           [
             2012
           ]
         ]
-      }
+      },
+      "collection-title": "Lecture Notes in Computer Science",
+      "publisher": "Springer Berlin Heidelberg",
+      "page": "199-213",
+      "DOI": "10.1007/978-3-642-34106-9_18"
     },
     "identifiers": {
-      "arxiv": "1205.4217"
+      "arxiv": "1205.4217",
+      "doi": "10.1007/978-3-642-34106-9_18"
     },
     "version": ""
   },
@@ -2989,15 +3086,15 @@
       "author": [
         {
           "family": "Korda",
-          "given": "N."
+          "given": "Nathaniel"
         },
         {
           "family": "Kaufmann",
-          "given": "E."
+          "given": "Emilie"
         },
         {
           "family": "Munos",
-          "given": "R."
+          "given": "Rémi"
         }
       ],
       "container-title": "Advances in Neural Information Processing Systems 26 (NIPS 2013)",
@@ -3016,7 +3113,7 @@
     "version": ""
   },
   "KLVS21": {
-    "uri": "https://arxiv.org/abs/2011.05944",
+    "uri": "https://proceedings.mlr.press/v134/kirschner21a.html",
     "citation": {
       "id": "KLVS21",
       "type": "paper-conference",
@@ -3039,7 +3136,7 @@
           "given": "Csaba"
         }
       ],
-      "container-title": "Proceedings of the 34th Conference on Learning Theory (COLT)",
+      "container-title": "Proceedings of Thirty Fourth Conference on Learning Theory",
       "collection-title": "Proceedings of Machine Learning Research",
       "volume": "134",
       "publisher": "PMLR",
@@ -3049,7 +3146,18 @@
             2021
           ]
         ]
-      }
+      },
+      "page": "2777-2821",
+      "editor": [
+        {
+          "family": "Belkin",
+          "given": "Mikhail"
+        },
+        {
+          "family": "Kpotufe",
+          "given": "Samory"
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "2011.05944"
@@ -3134,15 +3242,15 @@
       "author": [
         {
           "family": "Kolnogorov",
-          "given": "A."
+          "given": "Alexander"
         },
         {
           "family": "Nazin",
-          "given": "A."
+          "given": "Alexander"
         },
         {
           "family": "Shiyan",
-          "given": "D."
+          "given": "Dmitry"
         }
       ],
       "container-title": "arXiv preprint",
@@ -3214,7 +3322,8 @@
             2021
           ]
         ]
-      }
+      },
+      "note": "Proceedings version: 2021 IEEE International Symposium on Information Theory (ISIT), 539-544, DOI 10.1109/ISIT45174.2021.9517843 (Crossref; arXiv journal-ref)"
     },
     "identifiers": {
       "arxiv": "2110.00158"
@@ -3313,19 +3422,19 @@
     "version": ""
   },
   "KW24": {
-    "uri": "",
+    "uri": "https://doi.org/10.1287/mnsc.2023.4964",
     "citation": {
       "id": "KW24",
       "type": "article-journal",
-      "title": "Weak signal asymptotics for sequentially randomized experiments",
+      "title": "Weak Signal Asymptotics for Sequentially Randomized Experiments",
       "author": [
         {
           "family": "Kuang",
-          "given": "X."
+          "given": "Xu"
         },
         {
           "family": "Wager",
-          "given": "S."
+          "given": "Stefan"
         }
       ],
       "container-title": "Management Science",
@@ -3335,43 +3444,51 @@
             2024
           ]
         ]
-      }
+      },
+      "volume": "70",
+      "issue": "10",
+      "page": "7024-7041",
+      "DOI": "10.1287/mnsc.2023.4964"
     },
     "identifiers": {
-      "arxiv": "2101.09855"
+      "arxiv": "2101.09855",
+      "doi": "10.1287/mnsc.2023.4964"
     },
     "version": ""
   },
   "KZ21": {
-    "uri": "",
+    "uri": "https://proceedings.neurips.cc/paper/2021/hash/49ef08ad6e7f26d7f200e1b2b9e6e4ac-Abstract.html",
     "citation": {
       "id": "KZ21",
       "type": "paper-conference",
-      "title": "A closer look at the worst-case behavior of multi-armed bandit algorithms",
+      "title": "A Closer Look at the Worst-case Behavior of Multi-armed Bandit Algorithms",
       "author": [
         {
           "family": "Kalvit",
-          "given": "A."
+          "given": "Anand"
         },
         {
           "family": "Zeevi",
-          "given": "A."
+          "given": "Assaf J."
         }
       ],
-      "container-title": "Advances in Neural Information Processing Systems (NeurIPS)",
+      "container-title": "Advances in Neural Information Processing Systems 34 (NeurIPS 2021)",
       "issued": {
         "date-parts": [
           [
             2021
           ]
         ]
-      }
+      },
+      "volume": "34"
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "2106.02126"
+    },
     "version": ""
   },
   "Kal02": {
-    "uri": "",
+    "uri": "https://doi.org/10.1007/978-1-4757-4015-8",
     "citation": {
       "id": "Kal02",
       "type": "book",
@@ -3390,13 +3507,17 @@
             2002
           ]
         ]
-      }
+      },
+      "collection-title": "Probability and Its Applications",
+      "DOI": "10.1007/978-1-4757-4015-8"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1007/978-1-4757-4015-8"
+    },
     "version": ""
   },
   "Kec95": {
-    "uri": "",
+    "uri": "https://doi.org/10.1007/978-1-4612-4190-4",
     "citation": {
       "id": "Kec95",
       "type": "book",
@@ -3414,9 +3535,14 @@
             1995
           ]
         ]
-      }
+      },
+      "collection-title": "Graduate Texts in Mathematics",
+      "DOI": "10.1007/978-1-4612-4190-4",
+      "note": "Same work as K95 (two keys, from P001 and P003)"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1007/978-1-4612-4190-4"
+    },
     "version": ""
   },
   "Kie57": {
@@ -3635,7 +3761,7 @@
       "author": [
         {
           "family": "Kolnogorov",
-          "given": "A. V."
+          "given": "Alexander V."
         }
       ],
       "container-title": "arXiv preprint",
@@ -3676,7 +3802,8 @@
             2020
           ]
         ]
-      }
+      },
+      "note": "Russian original: Problemy Peredachi Informatsii 56(3), 86-111, DOI 10.31857/S0555292320030055 (Math-Net.ru page ppi2323)"
     },
     "identifiers": {
       "mathnet": "ppi2323"
@@ -3706,7 +3833,8 @@
             2025
           ]
         ]
-      }
+      },
+      "note": "English translation: Proceedings of the Steklov Institute of Mathematics (Supplement Issues) 331, suppl. 1, S56-S70, DOI 10.1134/S0081543826600067 (Math-Net.ru page timm2202)"
     },
     "identifiers": {
       "mathnet": "timm2202"
@@ -3761,13 +3889,14 @@
             2018
           ]
         ]
-      }
+      },
+      "issue": "20"
     },
     "identifiers": {},
     "version": ""
   },
   "L83": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/aos/1176346064",
     "citation": {
       "id": "L83",
       "type": "article-journal",
@@ -3788,9 +3917,12 @@
       },
       "volume": "11",
       "issue": "1",
-      "page": "129-140"
+      "page": "129-140",
+      "DOI": "10.1214/aos/1176346064"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/aos/1176346064"
+    },
     "version": ""
   },
   "LFCK26": {
@@ -4275,7 +4407,7 @@
     "citation": {
       "id": "Nag79",
       "type": "article-journal",
-      "title": "Large deviations of sums of independent random variables",
+      "title": "Large Deviations of Sums of Independent Random Variables",
       "author": [
         {
           "family": "Nagaev",
@@ -4356,7 +4488,7 @@
     "version": ""
   },
   "Obl04": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/154957804100000060",
     "citation": {
       "id": "Obl04",
       "type": "article-journal",
@@ -4364,7 +4496,7 @@
       "author": [
         {
           "family": "Obłój",
-          "given": "J."
+          "given": "Jan"
         }
       ],
       "container-title": "Probability Surveys",
@@ -4375,9 +4507,13 @@
             2004
           ]
         ]
-      }
+      },
+      "page": "321-392",
+      "DOI": "10.1214/154957804100000060"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/154957804100000060"
+    },
     "version": ""
   },
   "P26": {
@@ -4427,7 +4563,8 @@
             2026
           ]
         ]
-      }
+      },
+      "note": "arXiv journal-ref: 2026 IEEE International Symposium on Information Theory (ISIT 2026); proceedings version not checked"
     },
     "identifiers": {
       "arxiv": "2604.14876"
@@ -4465,7 +4602,8 @@
             2021
           ]
         ]
-      }
+      },
+      "note": "arXiv comment: 'To appear at the workshop on the Ecological Theory of Reinforcement Learning, NeurIPS 2021'"
     },
     "identifiers": {
       "arxiv": "2111.02071"
@@ -4503,7 +4641,8 @@
             2022
           ]
         ]
-      }
+      },
+      "note": "arXiv comment (v2): 'This is a longer version of the paper published at ICDM'22' (the ICDM version not checked)"
     },
     "identifiers": {
       "arxiv": "2202.06657"
@@ -4728,7 +4867,7 @@
     "version": ""
   },
   "RH17": {
-    "uri": "",
+    "uri": "https://arxiv.org/abs/2310.19244",
     "citation": {
       "id": "RH17",
       "type": "report",
@@ -4736,11 +4875,11 @@
       "author": [
         {
           "family": "Rigollet",
-          "given": "P."
+          "given": "Philippe"
         },
         {
           "family": "Hütter",
-          "given": "J.-C."
+          "given": "Jan-Christian"
         }
       ],
       "genre": "Lecture notes",
@@ -4751,9 +4890,12 @@
             2017
           ]
         ]
-      }
+      },
+      "note": "Posted as arXiv:2310.19244 (v1, 30 Oct 2023), comment 'This is the 2017 version of these notes, uploaded to arXiv without any change'"
     },
-    "identifiers": {},
+    "identifiers": {
+      "arxiv": "2310.19244"
+    },
     "version": ""
   },
   "RH20": {
@@ -4799,7 +4941,7 @@
     "version": ""
   },
   "RY99": {
-    "uri": "",
+    "uri": "https://doi.org/10.1007/978-3-662-06400-9",
     "citation": {
       "id": "RY99",
       "type": "book",
@@ -4822,9 +4964,13 @@
             1999
           ]
         ]
-      }
+      },
+      "collection-title": "Grundlehren der mathematischen Wissenschaften",
+      "DOI": "10.1007/978-3-662-06400-9"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1007/978-3-662-06400-9"
+    },
     "version": ""
   },
   "Rio23": {
@@ -4868,15 +5014,15 @@
     "version": ""
   },
   "Rod78": {
-    "uri": "",
+    "uri": "https://doi.org/10.1214/aop/1176995533",
     "citation": {
       "id": "Rod78",
       "type": "article-journal",
-      "title": "On the many-armed bandit problem",
+      "title": "On the Many-armed Bandit Problem",
       "author": [
         {
           "family": "Rodman",
-          "given": "L."
+          "given": "Leiba"
         }
       ],
       "container-title": "The Annals of Probability",
@@ -4889,9 +5035,12 @@
             1978
           ]
         ]
-      }
+      },
+      "DOI": "10.1214/aop/1176995533"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1214/aop/1176995533"
+    },
     "version": ""
   },
   "SA11": {
@@ -4929,11 +5078,11 @@
     "version": ""
   },
   "SAE13": {
-    "uri": "",
+    "uri": "https://www.jmlr.org/papers/v14/salomon13a.html",
     "citation": {
       "id": "SAE13",
       "type": "article-journal",
-      "title": "Lower bounds and selectivity of weak-consistent policies in stochastic multi-armed bandit problem",
+      "title": "Lower Bounds and Selectivity of Weak-Consistent Policies in Stochastic Multi-Armed Bandit Problem",
       "author": [
         {
           "family": "Salomon",
@@ -4956,7 +5105,9 @@
           ]
         ]
       },
-      "volume": "14"
+      "volume": "14",
+      "issue": "6",
+      "page": "187-207"
     },
     "identifiers": {},
     "version": ""
@@ -5345,7 +5496,7 @@
           ]
         ]
       },
-      "note": "arXiv comment: 'Accepted to UAI 2025'; proceedings version not checked"
+      "note": "Proceedings version: Proceedings of the Forty-first Conference on Uncertainty in Artificial Intelligence, PMLR 286:4715-4730, 2025 (editors Chiappa and Magliacane; PMLR page proceedings.mlr.press/v286/yang25b.html); its numbering not compared with arXiv v1"
     },
     "identifiers": {
       "arxiv": "2505.23165"
