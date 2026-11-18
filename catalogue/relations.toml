@@ -35,3 +35,39 @@ lean = "Incognita.TransferBandits.Relations.isConsistentOnUnit_of_isConsistent_o
 justification = "the same computation Δ_a E[N_a(T)] <= E[R_T] (LML's integral_regret_eq_sum_gap_mul_integral_pullCount) in Incognita/BatchedBandits/Consistency.lean and Incognita/P003/Witnesses.lean; the P003 lemma is proved again, with the same type, from the BatchedBandits one on S_2. Migration left to the owner"
 date = "2026-11-17"
 by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.P006.kinf_bounds"
+to = "Incognita.P006.kinf_bounds_of_gap_pos"
+lean = "Incognita.BatchedBandits.Relations.kinf_bounds_of_gap_pos_of_kinf_bounds"
+justification = "P006 prop:kinf (iii), taken as a hypothesis in the form of its frozen statement, gives (v) at P = nu_a, mu = m*: the same constants (2 Delta_a^2, kl, log((1 - m_a)/(1 - m*))), hypotheses no stronger (m_a <= m* < 1 on the class P); (v) only adds 0 < 2 Delta_a^2 from Delta_a > 0. The frozen proof of (v) already goes this way"
+date = "2026-11-18"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.BatchedBandits.dInf_unitLaws_eq_top_of_one_le"
+to = "LMLExplore.Bandits.dInf_range_bernoulliMeasure_of_one_le"
+lean = "Incognita.BatchedBandits.Relations.dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le"
+justification = "P006 prop:kinf (i), general form (any P, mu >= 1: K_inf over the laws on [0, 1] is infinite), gives LMLExplore's value of d_inf over the Bernoulli laws for m >= 1, same hypotheses, since the Bernoulli laws are laws on [0, 1] and dInf is antitone in the class (dInf_anti); identity, no constants"
+date = "2026-11-18"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "duplicate"
+from = "LMLExplore.Identification.klBer_le_kInfUpper_of_subset_unitIntervalLaws"
+to = "Incognita.BatchedBandits.klBer_le_dInf_unitLaws"
+lean = "Incognita.BatchedBandits.Relations.klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper"
+justification = "the same computation (data processing to the reward, LMLExplore.klBer_integral_le_klDiv, then the monotonicity of kl(p, .)) in LMLExplore/Identification/Task/RealLaws.lean (for K+, competitors of mean >= mu) and in Incognita/BatchedBandits/KInf.lean (for K_inf, mean > mu, the lower bound of P006 prop:kinf (iii)); ours proved again, with the same type, from LMLExplore's and K+ <= K_inf (Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws). Migration left to the owner"
+date = "2026-11-18"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "same-object"
+from = "Incognita.BatchedBandits.unitLaws"
+to = "LMLExplore.Identification.unitIntervalLaws"
+lean = "Incognita.BatchedBandits.Relations.unitLaws_eq_image_unitIntervalLaws"
+justification = "P006 def:instance, the set M of laws on [0, 1] (a Set (Measure R) with an IsProbabilityMeasure field), is LMLExplore's unitIntervalLaws (a Set (ProbabilityMeasure R)) seen in Measure R: unitLaws = ProbabilityMeasure.toMeasure '' unitIntervalLaws"
+date = "2026-11-18"
+by = "claude-opus-5-5"

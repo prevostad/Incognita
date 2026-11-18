@@ -6,6 +6,8 @@ Authors: Incognita contributors
 module
 
 public import Incognita.BatchedBandits.Consistency
+public import Incognita.BatchedBandits.KInf
+public import LMLExplore.Identification.Task.RealLaws
 
 /-! # Relations between the information models, the grids and consistency
 
@@ -206,6 +208,84 @@ learner batched on `g` ignores the rewards in the rounds `< t 1`, the first batc
 lemma isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff {alg : Algorithm Unit 𝓐 𝓨}
     {g : Grid K} (h : IsBatched alg g) {n : ℕ} (hn : n < g.t 1) : SeesRewardsUpTo alg n 0 :=
   (isBatched_sequential_iff g.le_t_one).mp (h.of_isFiner (Grid.sequential_isFiner le_rfl)) n hn
+
+section KInf
+
+open LMLExplore LMLExplore.Identification
+open scoped ENNReal unitInterval
+
+/-- **Implication** [INC-P006, Proposition `prop:kinf`, (iii) implies (v)]: the bounds
+`2 (μ - p)² ≤ kl(p, μ) ≤ 𝒦_inf(P, μ) ≤ log ((1 - p) / (1 - μ))`, `𝒦_inf(P, μ) < ∞`, for every law
+`P` on `[0, 1]` of mean `p ≤ μ < 1` (item (iii), taken here as the hypothesis `h3`, in the form of
+the frozen statement `Incognita.Statements.P006.kinf_bounds`) give item (v) at `P = ν_a`,
+`μ = m⋆`: `0 < 2 Δ_a² ≤ K_a ≤ log ((1 - m_a) / (1 - m⋆)) < ∞` for `ν ∈ 𝒫` and a suboptimal arm `a`.
+Same constants (`2`, the same logarithm), hypotheses no stronger (`m_a ≤ m⋆ < 1` on `𝒫`). The
+proof of the frozen (v), `Incognita.P006.kinf_bounds_of_gap_pos`, already goes this way; here the
+implication is stated with (iii) as a hypothesis, so it does not depend on how (iii) is proved. -/
+lemma kinf_bounds_of_gap_pos_of_kinf_bounds
+    (h3 : ∀ {P : Measure ℝ}, P ∈ unitLaws → ∀ {μ : ℝ}, ∫ x, id x ∂P ≤ μ → μ < 1 →
+      ENNReal.ofReal (2 * (μ - ∫ x, id x ∂P) ^ 2) ≤ klBer (∫ x, id x ∂P) μ ∧
+        klBer (∫ x, id x ∂P) μ ≤ LMLExplore.Bandits.dInf unitLaws P μ ∧
+        LMLExplore.Bandits.dInf unitLaws P μ ≤
+          ENNReal.ofReal (Real.log ((1 - ∫ x, id x ∂P) / (1 - μ))) ∧
+        LMLExplore.Bandits.dInf unitLaws P μ ≠ ⊤)
+    {α : Type*} [Finite α] [MeasurableSpace α] {ν : Kernel α ℝ} (hν : ν ∈ unitBandits α) {a : α}
+    (ha : 0 < gap ν a) :
+    0 < ENNReal.ofReal (2 * gap ν a ^ 2) ∧
+      ENNReal.ofReal (2 * gap ν a ^ 2) ≤
+        LMLExplore.Bandits.dInf unitLaws (ν a) (⨆ b, ∫ x, id x ∂(ν b)) ∧
+      LMLExplore.Bandits.dInf unitLaws (ν a) (⨆ b, ∫ x, id x ∂(ν b)) ≤
+        ENNReal.ofReal
+          (Real.log ((1 - ∫ x, id x ∂(ν a)) / (1 - ⨆ b, ∫ x, id x ∂(ν b)))) ∧
+      LMLExplore.Bandits.dInf unitLaws (ν a) (⨆ b, ∫ x, id x ∂(ν b)) ≠ ⊤ := by
+  have hle : ∫ x, id x ∂(ν a) ≤ ⨆ b, ∫ x, id x ∂(ν b) :=
+    le_ciSup (Finite.bddAbove_range fun b ↦ ∫ x, id x ∂(ν b)) a
+  obtain ⟨h1, h2, h3, h4⟩ := h3 (hν.1 a) hle hν.2
+  exact ⟨ENNReal.ofReal_pos.2 (by positivity), h1.trans h2, h3, h4⟩
+
+/-- **Implication** [INC-P006, Proposition `prop:kinf`(i), general form
+`dInf_unitLaws_eq_top_of_one_le`] gives LMLExplore's
+`LMLExplore.Bandits.dInf_range_bernoulliMeasure_of_one_le` [LS, Table 16.1] (to be checked), with
+the same hypotheses (any `P`, `m ≥ 1`): the Bernoulli laws are laws on `[0, 1]`, and `dInf` is
+antitone in the class (`dInf_anti`), so `∞ = 𝒦_inf(P, m) ≤ d_inf^{Ber}(P, m)`. -/
+lemma dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le (P : Measure ℝ)
+    {m : ℝ} (hm : 1 ≤ m) :
+    LMLExplore.Bandits.dInf (Set.range fun q : I ↦ Ber((1 : ℝ), 0, q)) P m = ∞ :=
+  top_le_iff.1 ((dInf_unitLaws_eq_top_of_one_le P hm).symm.le.trans
+    (dInf_anti (Set.range_subset_iff.2 bernoulliMeasure_mem_unitLaws) P m))
+
+/-- **Same object**: the set `𝓜 = unitLaws` of laws on `[0, 1]` [INC-P006, Definition
+`def:instance`] is LMLExplore's `unitIntervalLaws`, a set of `ProbabilityMeasure ℝ`, seen in
+`Measure ℝ`. -/
+lemma unitLaws_eq_image_unitIntervalLaws :
+    unitLaws = ProbabilityMeasure.toMeasure '' unitIntervalLaws := by
+  ext Q
+  constructor
+  · intro hQ
+    exact ⟨⟨Q, hQ.1⟩, mem_unitIntervalLaws_iff.2 hQ.2, rfl⟩
+  · rintro ⟨Q', hQ', rfl⟩
+    exact ⟨inferInstance, mem_unitIntervalLaws_iff.1 hQ'⟩
+
+/-- LMLExplore's transportation cost `K⁺(P, μ)` over the laws on `[0, 1]` (competitors of mean
+`≥ μ`) is at most `𝒦_inf(P, μ) = dInf unitLaws P μ` (competitors of mean `> μ`). -/
+lemma kInfUpper_unitIntervalLaws_le_dInf_unitLaws (P : ProbabilityMeasure ℝ) (μ : ℝ) :
+    kInfUpper ProbabilityMeasure.toMeasure unitIntervalLaws (fun Q ↦ (Q : Measure ℝ)[id]) P μ ≤
+      LMLExplore.Bandits.dInf unitLaws (P : Measure ℝ) μ :=
+  LMLExplore.Bandits.le_dInf_iff.2 fun Q hQ hm ↦
+    kInfUpper_le (κ := ProbabilityMeasure.toMeasure) (m := fun Q ↦ (Q : Measure ℝ)[id])
+      (y := (⟨Q, hQ.1⟩ : ProbabilityMeasure ℝ)) (mem_unitIntervalLaws_iff.2 hQ.2) hm.le
+
+/-- **Duplicate**: `klBer_le_dInf_unitLaws` [INC-P006, Proposition `prop:kinf`(iii), lower bound]
+repeats the computation of LMLExplore's `klBer_le_kInfUpper_of_subset_unitIntervalLaws` (data
+processing to the reward, `klBer_integral_le_klDiv`, then the monotonicity of `kl(p, ·)`); proved
+again, with the same type, from it and `kInfUpper_unitIntervalLaws_le_dInf_unitLaws`. -/
+lemma klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper {P : Measure ℝ} (hP : P ∈ unitLaws) {μ : ℝ}
+    (hpμ : P[id] ≤ μ) : klBer P[id] μ ≤ LMLExplore.Bandits.dInf unitLaws P μ :=
+  (klBer_le_kInfUpper_of_subset_unitIntervalLaws (P := ⟨P, hP.1⟩) subset_rfl
+    (mem_unitIntervalLaws_iff.2 hP.2) hpμ).trans
+    (kInfUpper_unitIntervalLaws_le_dInf_unitLaws ⟨P, hP.1⟩ μ)
+
+end KInf
 
 end Relations
 
