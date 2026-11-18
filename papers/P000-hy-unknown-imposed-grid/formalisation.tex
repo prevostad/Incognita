@@ -353,6 +353,68 @@ $c'\KL(\nu_a,\kappa^+_a)\le1-\gamma$; hence $\E_\nu[N_a(t_\ell)]>c'\log M$ once
 $(\gamma/4)\log M>\lambda+\log2+1$.
 \end{proof}
 
+\subsection{Upper bound}
+
+\begin{lemma}[the rational and the real suprema of HY's dual formula]\label{flem:rational-sup}
+\lean{Incognita.BatchedBandits.HY.pseudoKinf_eq_iSup_real, Incognita.BatchedBandits.HY.ofReal_pseudoLogMean_le_pseudoKinf, Incognita.BatchedBandits.HY.continuousAt_pseudoLogMean, Incognita.BatchedBandits.HY.pseudoKinf_le_of_forall}
+\uses{def:kinf, def:hy}
+Let the rewards of a history be at most $1$, $\mu\in[0,1)$, and, for an arm $c$, a cutoff $r$ and a
+pseudo-count $w_0$, let $F(\lambda)=\E_{\tilde\nu_c}[\log(1-\lambda(X-\mu))]$ for the
+pseudo-empirical law $\tilde\nu_c$ of the rewards of $c$ before $r$. Then
+$\sup\{F(\lambda):\lambda\in[0,\frac1{1-\mu})\cap\mathbb Q\}=\sup\{F(\lambda):\lambda\in[0,\frac1{1-\mu})\}$
+(both truncated at $0$): the divergence $\Kinf(\tilde\nu_c,\mu)$ that HY computes with rational
+$\lambda$ is the one of Definition~\ref{def:kinf}.
+\end{lemma}
+
+\begin{proof}
+\uses{def:kinf, def:hy}
+On $[0,\frac1{1-\mu})$ every argument $1-\lambda(y-\mu)$ ($y\le1$) and $1+\lambda\mu$ is positive,
+so $F$ is continuous there; for $\lambda$ in the interval and $a<F(\lambda)$, a rational
+$\lambda'\in(\lambda,\frac1{1-\mu})$ close enough to $\lambda$ has $F(\lambda')>a$.
+\end{proof}
+
+\begin{lemma}[the statistics of HY are frozen along a run]\label{flem:frozen}
+\lean{Incognita.BatchedBandits.HY.count_history, Incognita.BatchedBandits.HY.pseudoMean_history, Incognita.BatchedBandits.HY.pseudoKinf_history, Incognita.BatchedBandits.HY.leader_history, Incognita.BatchedBandits.HY.imedKinf_history, Incognita.BatchedBandits.HY.reference_history, Incognita.BatchedBandits.HY.testKinf_history, Incognita.BatchedBandits.HY.threshold_history, Incognita.BatchedBandits.HY.target_history, Incognita.BatchedBandits.HY.imedIndex_history, Incognita.BatchedBandits.HY.imedIndex_history_mono, Incognita.BatchedBandits.hyAlg_ae_action_eq, Incognita.BatchedBandits.HY.next_of_imedPhase, Incognita.BatchedBandits.HY.next_of_pacedPhase, Incognita.BatchedBandits.hyAlg_ae_imedIndex_action_le}
+\uses{def:hy, def:learner, def:grid}
+On a run, for $r\le n$, the statistics of HY at the cutoff $r$ computed from the history of the
+rounds $<n$ (counts, pseudo-means, divergences, leader, reference, test divergences, threshold,
+paced targets) are those computed from the history of the rounds $<r$; the count $N_c(r)$ is the
+number of pulls of $c$ in the rounds $<r$. Along almost every run, the action of every round is
+HY's rule applied to the history of the previous rounds; at a round of the IMED phase of batch
+$\ell+1$ the pulled arm minimises the index $N_c(t-1)\tilde K_\ell(c)+y_\ell\log N_c(t-1)$ with
+$\tilde K_\ell$ frozen at $t_\ell$, and this index is non-decreasing in $t$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:hy, def:learner}
+Every statistic at the cutoff $r$ is a function of the actions and rewards of the rounds $<r$;
+the actions of a deterministic learner are almost surely its policy applied to the history. The
+index is non-decreasing since $\tilde K_\ell(c)\ge0$, $y_\ell\ge0$ and the counts grow.
+\end{proof}
+
+\begin{lemma}[the upper bound gives Theorem~\ref{thm:upper}]\label{flem:upper-assembly}
+\lean{Incognita.BatchedBandits.isBigO_log_t_of_eventually_div_lt, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_isBigO, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_upper, Incognita.BatchedBandits.tendsto_div_log_t_of_upper, Incognita.BatchedBandits.tendsto_regret_div_log_t_of_tendsto, Incognita.BatchedBandits.hy_isConsistent_of_upper, Incognita.BatchedBandits.hy_tendsto_count_of_upper, Incognita.BatchedBandits.hy_tendsto_regret_of_upper}
+\uses{thm:lower, def:ass-x, def:model, def:learner, def:grid, def:kinf, def:hy}
+Let the grid be convergent with limit $x\ge1$ and let a batched learner satisfy
+$\limsup_\ell\E_\nu[N_c(t_\ell)]/\log t_\ell\le x^2/\Kinf(\nu_c,\mathbf m^\star)$ for every $\nu\in\cP$
+and every sub-optimal arm $c$. Then it is consistent on $\cP$, and for every $\nu\in\cP$ and every
+sub-optimal arm $a$, $\E_\nu[N_a(t_\ell)]/\log t_\ell\to x^2/\Kinf(\nu_a,\mathbf m^\star)$ and
+$\mathfrak R(t_\ell)/\log t_\ell\to C_x$. In particular, for HY (which is batched on every grid,
+Lemma~\ref{flem:hy-congr}), this $\limsup$ bound gives the three claims of
+Theorem~\ref{thm:upper}.
+\end{lemma}
+
+\begin{proof}
+\uses{thm:lower, flem:hy-congr, def:learner, def:grid, def:kinf}
+The bound gives $\E_\nu[N_c(t_\ell)]=O(\log t_\ell)$ for every $\nu\in\cP$ and sub-optimal $c$, and
+$\log t_\ell=o(t_\ell^p)$ for every $p>0$: the learner is consistent. Theorem~\ref{thm:lower} with
+logarithmic counts then gives $\liminf_\ell\E_\nu[N_a(t_\ell)]/\log t_\ell\ge
+x^2/\Kinf(\nu_a,\mathbf m^\star)$, hence the limit; the regret is the finite sum of the limits
+weighted by the gaps (the arms of gap $0$ contribute $0$). This is the end of the paper's proof of
+Theorem~\ref{thm:upper} (Subsection~\ref{sec:app-proofupper}), with the upper bound of
+Propositions~\ref{prop:dyA} and~\ref{prop:fixedC} as a hypothesis.
+\end{proof}
+
 \section{New decompositions of the paper's proofs}
 
 \begin{proof}[Formal route to Lemma~\ref{lem:onebatch}]
