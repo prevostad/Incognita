@@ -392,6 +392,92 @@ the actions of a deterministic learner are almost surely its policy applied to t
 index is non-decreasing since $\tilde K_\ell(c)\ge0$, $y_\ell\ge0$ and the counts grow.
 \end{proof}
 
+\begin{lemma}[the leader when $x>1$, on a run]\label{flem:leaderA-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_leaderA, Incognita.BatchedBandits.hyAlg_ae_testLevel_le, Incognita.BatchedBandits.HY.reference_spec, Incognita.BatchedBandits.HY.pseudoMean_le_leader, Incognita.BatchedBandits.HY.ofReal_le_mul_pseudoKinf_zero_add}
+\uses{lem:structA, lem:thrA, lem:pseudo, lem:kinf, def:hy, def:model, def:constA, def:ranksA, def:evA}
+Let $\ell\ge3$ be such that (R2) of Definition~\ref{def:ranksA} holds at $\ell-1$ and $\ell$,
+with $\omega_{\ell-2},\omega_{\ell-1}\ge0$; let $\varepsilon>0$, an optimal arm $a^\star$ and
+a real $\bar m$ with $\mathbf m_c\le\bar m$ for every sub-optimal $c$, such that
+$\mathbf m^\star+\varepsilon<1$, $\bar m+\varepsilon<\mathbf m^\star-2\varepsilon$ and
+$\mathbf m_c+\varepsilon<\mathbf m^\star-3\varepsilon$ for every sub-optimal $c$; let
+$2w_0\le\varepsilon U_\ell$, and $z$ with
+$z+w_0\kappa(\mathbf m^\star+\varepsilon)\le(1-\gamma_{\ell-1})y_{\ell-2}\mathsf L_{\ell-1}$.
+Along almost every run of HY on $\nu\in\cP$, assume:
+(A) for $j\in\{\ell-1,\ell\}$, every arm $c$ with $N_c(t_j)\ge\frac12U_j$ has
+$|\hat{\mathbf m}_c(t_j)-\mathbf m_c|\le\varepsilon$;
+(V) it is not the case that $N_{a^\star}(t_\ell)<\frac12U_\ell$ and
+$N_{a^\star}(t_{\ell-1})\Kinf(\hat\nu_{a^\star}(t_{\ell-1}),\bar m+\varepsilon)\ge z$;
+(P) no sub-optimal $c$ has $N_c(t_\ell)<\frac12U_\ell$,
+$N_c(t_{\ell-1})\Kinf(\hat\nu_c(t_{\ell-1}),\mathbf m^\star+\varepsilon)\ge z$ and
+$\hat{\mathbf m}_c(t_\ell)\ge\mathbf m^\star-3\varepsilon$
+($\hat\nu_c(t_j)$, $\hat{\mathbf m}_c(t_j)$ the empirical law and mean of the rewards of $c$
+before $t_j$). Then (i)--(iii) of Lemma~\ref{lem:leaderA} hold, and
+$\hat\mu_{\ell-1}\le\mathbf m^\star+\varepsilon$ holds under (A) at $j=\ell-1$ alone (with
+(R2) at $\ell-1$ only).
+\end{lemma}
+
+\begin{proof}
+\uses{lem:structA, lem:thrA, lem:pseudo, lem:kinf, def:hy, def:model, def:evA}
+The paper's proof of Lemma~\ref{lem:leaderA}, with the events of Definition~\ref{def:evA} read on
+the run: on a run, $\hat\nu_c(t_j)$ is $\hat\nu_{c,N_c(t_j)}$ of the stack of $c$, with
+$1\le N_c(t_{\ell-1})\le N_c(t_\ell)$, so an outcome of
+$\mathcal A_{\ell-1}\cap\mathcal A_\ell\cap\mathcal V_\ell^c\cap\Pi_\ell^c$ satisfies (A), (V)
+and (P) (with $\bar m=\mathbf m_2$ and the paper's $z_\ell$). The reference maximises the
+pseudo-mean over the well-sampled arms and is well sampled when one is; the leader maximises it
+over all arms; a rejected arm satisfies (eq:rejA) of the paper's proof for every level in
+$[\hat\mu_{\ell-1},1)$.
+\end{proof}
+
+\begin{lemma}[a good batch when $x>1$, on a run]\label{flem:goodA-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_goodA, Incognita.BatchedBandits.HY.testKinf_le_imedKinf, Incognita.BatchedBandits.HY.target_le_of_rejected, Incognita.BatchedBandits.hyAlg_ae_pullCount_le_max'}
+\uses{lem:structA, lem:thrA, lem:imedround, lem:pseudo, lem:kinf, def:hy, def:model, def:constA, def:ranksA}
+Let $\ell\ge2$ be such that (R2) holds at $\ell$ and $\ell+1$, with $\omega_{\ell-1},\omega_\ell\ge0$,
+$\gamma_\ell\ge0$; let $a$ be sub-optimal, $\varepsilon,D>0$, $K^+\ge0$, $x_+$ with
+$K^++2\varepsilon\le(1+\omega_{\ell-1})D$, $D\mathsf L_{\ell-1}^{\beta-1}\ge2x_+^3$,
+$x_{\ell-1},x_\ell\le x_+$, $0\le\mathbf m^\star-2\varepsilon$ and $\mathbf m^\star+\varepsilon<1$.
+Along almost every run of HY on $\nu\in\cP$, assume the facts of Step~1 of the paper's proof of
+Lemma~\ref{lem:goodA}: $\hat c_\ell$ is optimal,
+$\mathbf m^\star-2\varepsilon\le\hat\mu_\ell\le\mathbf m^\star+\varepsilon$,
+$\hat\mu_{\ell-1}\le\mathbf m^\star+\varepsilon$,
+$\Kinf(\hat\nu_a(t_\ell),\mathbf m^\star-2\varepsilon)\ge D$,
+$\Kinf(\hat\nu_a(t_{\ell-1}),\mathbf m^\star+\varepsilon)\le K^++\varepsilon$ and
+$w_0\kappa(\mathbf m^\star+\varepsilon)\le\varepsilon N_a(t_{\ell-1})$. Then $a$ is rejected at
+$t_\ell$, $\hat K_\ell(a)\ge D$, and every round $t\in(t_\ell,t_{\ell+1}]$ has
+$N_a(t)\le\max(N_a(t_\ell),K+(1+\omega_\ell)y_\ell\log t/D)$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:leaderA-run, lem:countsA, lem:structA, lem:thrA, lem:imedround, lem:pseudo, lem:kinf,
+  def:hy, def:model, def:evA, def:constA, def:ranksA}
+Steps~2--4 of the paper's proof of Lemma~\ref{lem:goodA}. With $D=\Delta_\varepsilon$ and
+$K^+=\Kinf(\nu_a,\mathbf m^\star+\varepsilon)$, the hypotheses are Step~1 of the paper: they
+follow, on $\mathcal G_\ell(\varepsilon)$, from Lemma~\ref{flem:leaderA-run} at $\ell-1$ and
+$\ell$, Lemma~\ref{lem:countsA} and the traces of $\mathcal L_\ell^c$, $\mathcal U_\ell^c$ at the
+counts $N_a(t_\ell),N_a(t_{\ell-1})\ge u_\ell(\varepsilon)$, with (T3). In the IMED phase,
+Lemma~\ref{lem:imedround} is used with $\tilde K_\ell(a)\ge\hat K_\ell(a)\ge D$ in
+$[0,\infty]$ ($\tilde K_\ell(a)=\infty$ is allowed: an arm pulled at an IMED round has a finite
+divergence); in the paced phase the target of a rejected arm with $\hat K_\ell(a)\ge D$ is at
+most $K+(1+\omega_\ell)y_\ell\log t/D$.
+\end{proof}
+
+\begin{lemma}[the pieces of the decomposition when $x>1$]\label{flem:decompA-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_net_le, Incognita.BatchedBandits.pullCount_le_add_sub, Incognita.BatchedBandits.le_max_add_sum_of_step}
+\uses{lem:structA, lem:imedround, def:hy, def:ranksA}
+(Case~2 of (a).) Let (R2) hold at $\ell+1$, $\omega_\ell\ge0$, $x_\ell\le x_+$ and
+$K+1+8x_+^2\mathsf L_{\ell+1}/\varepsilon'^2\le U_{\ell+1}$. Along almost every run of HY on
+$\nu\in\cP$, an arm $a\ne\hat c_\ell$ with $\tilde K_\ell(a)\ge\varepsilon'^2/8$ has
+$N_a(t)\le\max(N_a(t_\ell),2U_{\ell+1})$ for $t\in[t_\ell,t_{\ell+1}]$.
+(Case~3 of (a).) For any sequence of actions, $N_c(t)\le N_c(s)+(t-s)$ for $s\le t$.
+((b).) A real sequence with $N_{k+1}\le\max(N_k,\bar M,Y)+S_k$ and $S_k\ge0$ for $i_0\le k<j$ has
+$N_k\le\max(N_{i_0},\bar M,Y)+\sum_{i_0\le i<k}S_i$ for $i_0\le k\le j$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:structA, lem:imedround, def:hy}
+Cases~2 and~3 and the induction of the paper's proof of Lemma~\ref{lem:decompA}, with a bound $Y$
+of the nets in place of their running maximum.
+\end{proof}
+
 \begin{lemma}[the upper bound gives Theorem~\ref{thm:upper}]\label{flem:upper-assembly}
 \lean{Incognita.BatchedBandits.isBigO_log_t_of_eventually_div_lt, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_isBigO, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_upper, Incognita.BatchedBandits.tendsto_div_log_t_of_upper, Incognita.BatchedBandits.tendsto_regret_div_log_t_of_tendsto, Incognita.BatchedBandits.hy_isConsistent_of_upper, Incognita.BatchedBandits.hy_tendsto_count_of_upper, Incognita.BatchedBandits.hy_tendsto_regret_of_upper}
 \uses{thm:lower, def:ass-x, def:model, def:learner, def:grid, def:kinf, def:hy}

@@ -9,11 +9,15 @@ public import Incognita.BatchedBandits.Deviations
 public import Incognita.BatchedBandits.DualGrid
 public import Incognita.BatchedBandits.Grid
 public import Incognita.BatchedBandits.HY
+public import Incognita.BatchedBandits.HYEvents
+public import Incognita.BatchedBandits.HYGoodBatch
 public import Incognita.BatchedBandits.HYGrid
 public import Incognita.BatchedBandits.HYImed
 public import Incognita.BatchedBandits.HYInfoModel
 public import Incognita.BatchedBandits.HYKinf
+public import Incognita.BatchedBandits.HYRanks
 public import Incognita.BatchedBandits.HYRun
+public import Incognita.BatchedBandits.HYStructure
 public import Incognita.BatchedBandits.HighBatches
 public import Incognita.BatchedBandits.Instances
 public import Incognita.BatchedBandits.KInf
