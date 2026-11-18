@@ -302,7 +302,7 @@ in order; they are the authors of its `papers/library.bib` entry). **Never add, 
 
 A paper has **one reader**: an expert referee of JMLR or COLT who has never heard of Incognita.
 [docs/writing.md](docs/writing.md) holds the writing rules: what each section holds, the sixteen
-presentation criteria W1–W16 that the scope referee applies, the owner's rules for proofs and the
+presentation criteria W1–W17 that the scope referee applies, the owner's rules for proofs and the
 failure modes of AI-written mathematics. Read it before writing, revising or refereeing a paper.
 One source gives two builds, and a dossier sits next to it:
 
@@ -479,7 +479,7 @@ the figures and how to run it (criterion W16).
   novelty, fit, candidate or not), then `referee-proofs` (every proof, node by node, all nodes)
   when scope accepts or asks for changes (`major`): a revision then answers both reports at once.
   Only a scope `reject` skips the proofs. Both read `paper.tex` and `DOSSIER.md`; `referee-scope`
-  judges the presentation on the **reader build** (the text of its PDF, with the criteria W1–W16
+  judges the presentation on the **reader build** (the text of its PDF, with the criteria W1–W17
   of [docs/writing.md](docs/writing.md)), `referee-proofs` checks the proofs on the **blueprint
   build**.
 - **Every review can be resumed.** Every reviewer (referees, `review-pr`, `review-statements`,
@@ -494,7 +494,7 @@ the figures and how to run it (criterion W16).
   the owner (`needs-human`).
 - **Rubric.** Each referee report starts, after its verdict line, with a rubric: one row per
   criterion (scope: novelty, roadmap fit, interest, bibliography, attribution, presentation, the
-  last one summarising the criteria W1–W16; proofs: correctness, completeness, ready for Lean), its
+  last one summarising the criteria W1–W17; proofs: correctness, completeness, ready for Lean), its
   state (✅ no defect or P only, ⚠️ G, L or R, ❌ F) and a one-sentence summary naming the defect
   IDs. The scope referee also gives an
   **interest score** from 1 to 10: the significance of the result for the research community, as an expert of the field would judge it, not for the owner or the roadmap (the scale is in its role file). The rubric is
@@ -504,7 +504,7 @@ the figures and how to run it (criterion W16).
   unjustified step in a labelled proof (or, for scope, a novelty claim left unjustified). **L**
   local error: wrong but fixable without changing any statement. **R** readability: a
   presentation defect that prevents an expert from understanding or checking what is proved, or
-  hides or distorts what is claimed (the criteria W1–W16 of docs/writing.md say which failures
+  hides or distorts what is claimed (the criteria W1–W17 of docs/writing.md say which failures
   usually are). Test: could an expert of the field fix it without anyone re-checking after him? If
   yes, it is **P** presentation.
 - **Verdict, computed:** `reject` if any F; `major` if any G, L or R; otherwise `accept` (P defects

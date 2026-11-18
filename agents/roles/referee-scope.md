@@ -18,7 +18,7 @@ nothing else.
   `latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`, then read
   `pdftotext papers/<P>/paper.pdf -` (the text of the PDF, without the source). You judge the
   presentation on it.
-- `docs/writing.md`: the target reader, the structure, the sixteen criteria W1–W16, the rules for
+- `docs/writing.md`: the target reader, the structure, the seventeen criteria W1–W17, the rules for
   proofs, the failure modes of AI-written mathematics.
 - `roadmaps/<Roadmap>/ROADMAP.md`; KNOWN.md (path in task.md) and every private file listed in
   task.md.
@@ -44,7 +44,7 @@ affected".
 
 **A presentation revision** (task.md says so: a pull request of the owner, role `revise`, that
 rewrites an accepted paper as its next version, AGENTS.md §5.6) is judged on its presentation,
-with the whole reader build and the sixteen criteria, as a new paper. Novelty and interest are not
+with the whole reader build and the seventeen criteria, as a new paper. Novelty and interest are not
 judged again; instead, check against the version on `main` (`git show
 origin/main:papers/<P>/paper.tex`, and its `DOSSIER.md` or former sections) that **nothing else
 changed in scope**: the same main results and claims (no claim added, strengthened or weakened),
@@ -116,8 +116,8 @@ scope is **G** (to be undone). New citations are checked as below.
 ## 3. Presentation (the reader build)
 
 Read the text of the reader build (`pdftotext papers/<P>/paper.pdf -`) as its reader will: an
-expert referee of JMLR or COLT who has never heard of Incognita. Then apply the sixteen criteria
-of `docs/writing.md` §3, **W1 to W16, one by one** (W15: compare with the owner's model paper arXiv:2610.21582), each with its yes/no test, and report each
+expert referee of JMLR or COLT who has never heard of Incognita. Then apply the seventeen criteria
+of `docs/writing.md` §3, **W1 to W17, one by one** (W15: compare with the owner's model paper arXiv:2610.21582), each with its yes/no test, and report each
 failure as a defect with its criterion (`W6: …` in the Defect column). **Insist on W16** (the
 owner, 2026-11-17): a paper without numerical experiments compared with at least two published
 algorithms, in figures of curves, is a major (R) defect unless it gives one of the valid reasons of
@@ -127,7 +127,10 @@ theorems state it (parameters inside the range they cover; a variant only as an 
 curve). **Apply the ten-line test of B10** (the owner, 2026-11-17): pick ten lines of `align` at
 random in the appendix proofs and report, in the W11 line, how many transform the expression
 without a justification on the line; a load-bearing step without one, or more than a third of the
-lines tested, is R; otherwise P. For each defect:
+lines tested, is R; otherwise P. **Apply the notation count of W17** (the owner, 2026-11-18): list the
+symbols of the main text with their number of uses and report, in the W17 line, those used fewer
+than three times, those used in one proof only and the near-homonyms, then count the local symbols
+of three appendix proofs (W17 applies to proofs too). For each defect:
 
 - its class is **R** (readability) when it prevents an expert from understanding or checking what
   is proved, or hides or distorts what is claimed; **P** when an expert could fix it without anyone
@@ -195,7 +198,7 @@ Verdict: accept | major | reject
 | Interest | <n>/10 | <why this score> |
 | Bibliography | ✅/⚠️/❌ | <references, notes, keys> |
 | Attribution | ✅/⚠️/❌ | <earliest source of each technique> |
-| Presentation | ✅/⚠️/❌ | <the criteria W1–W16 that fail, by number (R or P), and the reader test> |
+| Presentation | ✅/⚠️/❌ | <the criteria W1–W17 that fail, by number (R or P), and the reader test> |
 
 | ID | Class | Node | Step | Defect | Fix |
 |---|---|---|---|---|---|
@@ -220,7 +223,7 @@ Paper: <P>. Head: <SHA from task.md>. Round: <n>.
 
 ## Presentation
 The three-sentence summary of the reader test (setting, main result, difference from the closest
-prior work), or where you got lost; then W1–W16, one line each: met, or the defect IDs.
+prior work), or where you got lost; then W1–W17, one line each: met, or the defect IDs.
 
 ## Open questions
 | Question | Interest | Novelty | Fit | Candidate | Reason |
