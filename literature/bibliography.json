@@ -2275,7 +2275,19 @@
             1997
           ]
         ]
-      }
+      },
+      "editor": [
+        {
+          "family": "Lin",
+          "given": "D. Y."
+        },
+        {
+          "family": "Fleming",
+          "given": "T. R."
+        }
+      ],
+      "publisher-place": "New York, NY",
+      "ISBN": "9780387949925"
     },
     "identifiers": {},
     "version": ""
@@ -3274,11 +3286,11 @@
     "version": "v1"
   },
   "KO21a": {
-    "uri": "",
+    "uri": "https://proceedings.neurips.cc/paper/2021/hash/fb647ca6672b0930e9d00dc384d8b16f-Abstract.html",
     "citation": {
       "id": "KO21a",
       "type": "paper-conference",
-      "title": "Batched Thompson sampling",
+      "title": "Batched Thompson Sampling",
       "author": [
         {
           "family": "Kalkanlı",
@@ -3297,7 +3309,31 @@
           ]
         ]
       },
-      "volume": "34"
+      "volume": "34",
+      "page": "29984-29994",
+      "publisher": "Curran Associates, Inc.",
+      "editor": [
+        {
+          "family": "Ranzato",
+          "given": "M."
+        },
+        {
+          "family": "Beygelzimer",
+          "given": "A."
+        },
+        {
+          "family": "Dauphin",
+          "given": "Y."
+        },
+        {
+          "family": "Liang",
+          "given": "P. S."
+        },
+        {
+          "family": "Wortman Vaughan",
+          "given": "J."
+        }
+      ]
     },
     "identifiers": {
       "arxiv": "2110.00202"
@@ -3978,11 +4014,11 @@
     "citation": {
       "id": "LML",
       "type": "software",
-      "title": "LML: a Lean library for machine learning (LeanMachineLearning)",
+      "title": "LML: The Lean Machine Learning Library",
       "URL": "https://github.com/LeanMachineLearning/LML"
     },
     "identifiers": {},
-    "version": "commit efbe5d2"
+    "version": "commit efbe5d2 (efbe5d25120c34fd5c9aa3b8b6971b4f2d4028af, 2026-11-03)"
   },
   "LR85": {
     "uri": "https://doi.org/10.1016/0196-8858(85)90002-8",
