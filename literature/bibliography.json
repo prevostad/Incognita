@@ -25,7 +25,7 @@
     "version": "final version, December 2022"
   },
   "AB09": {
-    "uri": "",
+    "uri": "https://www.cs.mcgill.ca/~colt2009/papers/022.pdf",
     "citation": {
       "id": "AB09",
       "type": "paper-conference",
@@ -33,21 +33,22 @@
       "author": [
         {
           "family": "Audibert",
-          "given": "J.-Y."
+          "given": "Jean-Yves"
         },
         {
           "family": "Bubeck",
-          "given": "S."
+          "given": "Sébastien"
         }
       ],
-      "container-title": "Proceedings of the 22nd Annual Conference on Learning Theory (COLT)",
+      "container-title": "Proceedings of the 22nd Annual Conference on Learning Theory (COLT 2009)",
       "issued": {
         "date-parts": [
           [
             2009
           ]
         ]
-      }
+      },
+      "event-place": "Montreal, Canada"
     },
     "identifiers": {},
     "version": ""
@@ -941,18 +942,20 @@
       "author": [
         {
           "family": "Billingsley",
-          "given": "P."
+          "given": "Patrick"
         }
       ],
       "edition": "3",
-      "publisher": "Wiley",
+      "publisher": "Wiley-Interscience",
       "issued": {
         "date-parts": [
           [
             1995
           ]
         ]
-      }
+      },
+      "collection-title": "Wiley Series in Probability and Mathematical Statistics",
+      "ISBN": "9780471007104"
     },
     "identifiers": {},
     "version": ""
@@ -1488,14 +1491,16 @@
           "given": "T."
         }
       ],
-      "container-title": "Transactions of the Fourth Prague Conference on Information Theory",
+      "container-title": "Transactions of the Fourth Prague Conference on Information Theory, Statistical Decision Functions, Random Processes (Prague, 1965)",
       "issued": {
         "date-parts": [
           [
-            1966
+            1967
           ]
         ]
-      }
+      },
+      "publisher": "Academia",
+      "publisher-place": "Prague"
     },
     "identifiers": {},
     "version": ""
@@ -3363,7 +3368,7 @@
     "version": ""
   },
   "KS91": {
-    "uri": "",
+    "uri": "https://doi.org/10.1007/978-1-4612-0949-2",
     "citation": {
       "id": "KS91",
       "type": "book",
@@ -3371,24 +3376,29 @@
       "author": [
         {
           "family": "Karatzas",
-          "given": "I."
+          "given": "Ioannis"
         },
         {
           "family": "Shreve",
-          "given": "S. E."
+          "given": "Steven E."
         }
       ],
       "edition": "2",
-      "publisher": "Springer",
+      "publisher": "Springer New York",
       "issued": {
         "date-parts": [
           [
             1991
           ]
         ]
-      }
+      },
+      "collection-title": "Graduate Texts in Mathematics",
+      "ISBN": "9780387976556",
+      "DOI": "10.1007/978-1-4612-0949-2"
     },
-    "identifiers": {},
+    "identifiers": {
+      "doi": "10.1007/978-1-4612-0949-2"
+    },
     "version": ""
   },
   "KT26": {
