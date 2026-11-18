@@ -57,6 +57,7 @@ public import Incognita.P003.SourceIgnoring
 public import Incognita.P003.TwoArms
 public import Incognita.P003.Witnesses
 public import Incognita.P006.KInf
+public import Incognita.P006.KnownCases
 public import Incognita.P006.Main
 public import Incognita.P006.Witnesses
 public import Incognita.TransferBandits.Checks
