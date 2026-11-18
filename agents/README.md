@@ -23,6 +23,20 @@ settings, the setup and the launch.
 | `garden` | `garden` | `Incognita/` (theorems), `catalogue/relations.toml`, `catalogue/garden.md` (rows appended); `Dropped` lines under existing entries of `roadmaps/*/directions.md`; entries of `papers/*/errata.md`, `statement-corrections.md` after a failed re-check | author | 90 min |
 | `propose-roadmap` | `propose-roadmap <Roadmap>` (no free item left) or `propose-roadmap -` (periodic) | one new `roadmaps/<Name>/ROADMAP.md` + `KNOWN.md`, or one new `roadmaps/<Roadmap>/extensions/X<k>.md` (status `proposed`); `literature/` | author | 90 min |
 | `review-roadmap` | `review-roadmap <PR>` | report + status `Incognita review` | reviewer | 30 min |
+| `rubric-<name>` | `rubric-<name> <PR>` (a Lean PR; `<name>` one of Tau Ceti's 11 rubrics, [rubrics/](rubrics/README.md)) | report + status `Incognita rubric/<name>` | reviewer | 60 min |
+
+**Lean pull requests** (role `prove` or `formalize-statements`, or any other PR whose diff changes
+a `.lean` file under `Incognita/` or `Statements/`; `is_lean_pr` in `scripts/lib.sh`) are reviewed
+like LMLExplore's (owner, 2026-11-17; AGENTS.md §6.8): after their Incognita review (`review-pr` or
+`review-statements`), the rubrics of `INCOGNITA_RUBRICS`, one session each, in Tau Ceti's order
+(`correctness`, `reuse`, `scope`, `attribution`, `api-design`, `generality`, `placement`, `naming`,
+`documentation`, `proof-quality`, `quality-pass`), on the same head. Their prompt is Tau Ceti's,
+from `main` ([rubrics/README.md](rubrics/README.md): `tauceti/_common.md`, Incognita's
+`_incognita.md`, the pull request, the rubric); their tools are read-only. A `request_changes` does
+not stop the round (one fix round then answers every report); a `block` does (a fix round, then
+`needs-human` after `INCOGNITA_BLOCK_LIMIT` blocked heads). Such a PR merges only when every rubric
+approves its current head; the authors report Tau Ceti's quality pass in the description (section
+`## Quality pass`, replaced by each fix round's).
 
 This column is a summary of the table of [AGENTS.md](../AGENTS.md) §2, which `role_allows` in
 `scripts/lib.sh` follows line for line (`scripts/test-lib.sh` tests each line). Every writing role
@@ -114,7 +128,10 @@ and `scripts/agent.sh` refuses to start without it.
    hidden marker `<!-- incognita:<role>:<H> -->`, then the commit statuses are set on `H` with the
    description `role=<r> verdict=<v> pr=<n>`: `Incognita review` (review-pr, review-statements), or
    `Referee scope`, `Referee proofs` and the aggregate `Incognita review` (success only when both
-   referees accept the same head). Lines `Ask-owner: …` of a report or of a writer's summary (even
+   referees accept the same head); a rubric sets `Incognita rubric/<name>` (`role=rubric-<name>
+   verdict=approve|request_changes|block`; success only for `approve`). A fix round on a Lean PR
+   whose summary has a section `## Quality pass` replaces that section of the PR's description
+   (`replace_section`). Lines `Ask-owner: …` of a report or of a writer's summary (even
    without a commit) go to the pinned issue "Questions for the owner".
 6. **Sanitising.** Every agent text posted to GitHub: control and bidi characters removed, anything
    like a secret redacted (a Claude token `sk-ant-…`, a GitHub token `gh[pousr]_…` or
@@ -139,14 +156,16 @@ report; for a paper, its directory only), `owner-answers.md` (the owner's commen
 `$INCOGNITA_PRIVATE_KNOWN/<Roadmap>.md`, only if that variable is set), `items.md` (write-paper,
 propose-roadmap: the roadmap's items D, F, C and their state, `scripts/certify.py items`),
 `roadmaps.md` (propose-roadmap: every roadmap, its status, domain, KNOWN.md, extensions, free
-items, and the existing domains). The prompt is the role file
+items, and the existing domains), `quality-pass.md` (prove, formalize-statements, garden, fix-pr and
+the rubric quality-pass: Tau Ceti's PR template, `agents/rubrics/tauceti/pull_request_template.md`
+of main). The prompt is the role file (for a rubric: Tau Ceti's prompt, [rubrics/README.md](rubrics/README.md))
 verbatim (no substitution), followed by a pointer to `task.md`. Writing roles write
 `.agents/summary.md`.
 
 Paper verdicts: `Verdict: accept|major|reject`, computed by the referee from its defect table
 (`reject` if any F, `major` if any G or L, `accept` if only P: an accepted paper keeps no error;
 `minor` is read as `major`); other reviews (`review-roadmap` included):
-`Verdict: approve|request_changes|reject`. The runner
+`Verdict: approve|request_changes|reject`; rubrics: `Verdict: approve|request_changes|block`. The runner
 reads the first line starting with `Verdict: `. A paper is rejected (PR closed with the label
 `rejected`) on a `reject` (a roadmap proposal too), or on a `major` after `INCOGNITA_REVISION_ROUNDS` (4) revision rounds (only
 `revise` rounds answering a referee's `major` count; repairs of a paper PR are fix rounds, comment
@@ -178,7 +197,9 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    statuses on `H` (created by OWNER, not by a workflow) accepting it; every changed path in an enabled
    category of `INCOGNITA_AUTOMERGE` (`papers` — both referees; `literature`; `proofs` — lemmas and
    theorems only, no `def`/`structure`/`instance`/…; `exploration`; `directions`; `statements` — once
-   `review-statements` approved, enabled by the owner on 2026-11-17); the whitelist of the role checked again; for `.lean`/`.lock` changes,
+   `review-statements` approved, enabled by the owner on 2026-11-17); for a Lean PR, `approve` of
+   every rubric of `INCOGNITA_RUBRICS` on `H` itself (a verdict on an older head is stale; the
+   trailer `Incognita-Reviews` lists them, `rubrics=<name>:<verdict>,…`); the whitelist of the role checked again; for `.lean`/`.lock` changes,
    `main` an ancestor of `H`. Anything else waits for the owner (listed in the night report).
    A pull request that waits for the owner is still kept rebased (the check "Lean changes on top of
    `main`" comes first).
@@ -204,15 +225,17 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
 5. **Mechanical rebase** (no Claude) of conflicting agents' PRs and of ready Lean PRs behind main;
    conflicts on root import files are resolved by the sorted union of their import lines; any other
    conflict goes to `fix-pr`. Statuses are copied to the new head only if the pull request changes
-   the same thing (`diff_signature`): every changed path has the same blob, except the root import
+   the same thing (`diff_signature`; the rubrics' statuses too): every changed path has the same blob, except the root import
    files (the same import lines added and removed) and `literature/` (the same lines added and
    removed), which other pull requests change too.
 6. **One agent task**, the first available after the filters (target not busy in an open PR, fewer
    than `INCOGNITA_MAX_FAILS` failures tonight for this role and target, not parked, enough time
    before the deadline), in the order of AGENTS.md §3: `fix-pr main` if main is red; repairs and
    revisions — `revise` for paper PRs (referees' `major`, failed build, failed rebase, incomplete
-   draft), `fix-pr` for the others (changes requested, failed build, failed rebase, incomplete draft);
-   reviews (`referee-scope`, then `referee-proofs`; `review-statements`; `review-pr`); every
+   draft), `fix-pr` for the others (changes requested, failed build, failed rebase, incomplete draft;
+   for a Lean PR, once every rubric judged the head, or at once after a rubric's `block`);
+   reviews (`referee-scope`, then `referee-proofs`; `review-statements`; `review-pr`; then, for a
+   Lean PR, the first rubric without a verdict on the head, `rubric-<name>`); every
    `INCOGNITA_ROTATION_EVERY` tasks a `garden` (only once a proof marker `catalogue/results/*.toml`
    exists) or `bibliographer` task; `prove` (frozen statements still open and not superseded; the
    papers with the most dependants first, then the oldest: `certify.py dependants`);
@@ -324,6 +347,8 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
 | `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` | `1` | `write-paper` runs in a roadmap only while it has fewer accepted papers (setting papers excepted) not Lean-verified than this (D5); `1` (owner, 2026-11-17): formalise everything accepted before writing a new paper |
 | `INCOGNITA_MAX_FAILS` | `2` | failed attempts (and sessions without a commit) per role and target per night |
 | `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `10`, `4` | fix rounds of a non-paper PR (statements, proofs, literature…), then `needs-human` (`3` until 2026-11-17: a Lean pull request often needs several review rounds); revision rounds of a paper, then `rejected`. Sessions cut by a quota count for neither |
+| `INCOGNITA_RUBRICS` | `correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass` | Tau Ceti's rubrics that review the Lean PRs (always run in this order, whatever the order given; unknown names ignored); empty: none, a Lean PR then merges on its Incognita review alone. Each is a review session (`INCOGNITA_MODEL_REVIEWER`, `INCOGNITA_TIMEOUT_REVIEW`; per rubric `INCOGNITA_MODEL_RUBRIC_<NAME>`, `INCOGNITA_TIMEOUT_RUBRIC_<NAME>`, e.g. `INCOGNITA_TIMEOUT_RUBRIC_API_DESIGN`) |
+| `INCOGNITA_BLOCK_LIMIT` | `2` | heads of a Lean PR on which a rubric gave `block` (counted from the trusted reports), then `needs-human`; `1`: the first block goes to the owner |
 | `INCOGNITA_PARK_AFTER` | `4` | failures of a role on a paper or a pull request, all nights, before it is parked (listed in the night report); a roadmap or `-` is never parked |
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |

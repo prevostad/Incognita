@@ -21,7 +21,9 @@ never by a workflow:
 papers (roles write-paper, revise) "Referee scope" and "Referee proofs" (verdict accept) and
 "Incognita review"; roadmap proposals (role propose-roadmap) "Incognita review" (verdict approve
 of review-roadmap) and then "Incognita loop" (verdict approved: the scripted approval); other pull
-requests "Incognita review" (verdict approve).
+requests "Incognita review" (verdict approve), and for a Lean pull request (prove,
+formalize-statements, or a .lean file changed under Incognita/ or Statements/) "Incognita
+rubric/<name>" of every rubric of Tau Ceti (verdict approve; INCOGNITA_RUBRICS, all by default).
 Pull requests from forks get the label `fork` and no state: the agents ignore them.
 The labels set by the loop (scripts/lib.sh, ensure_labels) are created here with the same colours
 and never removed: incomplete (a draft whose session stopped), rejected (a paper closed by the
@@ -61,6 +63,10 @@ ROLE_LINE = re.compile(r"^Role: `([a-z-]+)`\. Target: `([^`]*)`\.")
 ROLES = {"write-paper", "revise", "formalize-statements", "prove", "fix-pr", "bibliographer", "garden",
          "propose-roadmap"}
 PAPER_ROLES = {"write-paper", "revise"}
+# Tau Ceti's rubrics (RUBRICS_ALL in scripts/lib.sh), in its order; the Lean files that make a Lean PR.
+RUBRICS = ["correctness", "reuse", "scope", "attribution", "api-design", "generality", "placement",
+           "naming", "documentation", "proof-quality", "quality-pass"]
+LEAN_PATH = re.compile(r"^(Incognita|Statements)/.+\.lean$")
 BAD = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ERROR"}   # cancelled: rerun by the loop after 2 h
 GOOD = {"SUCCESS", "NEUTRAL", "SKIPPED"}
 
@@ -167,11 +173,43 @@ def state_of(pr, role, repo, me):
             return "awaiting-review"
         return "ready-to-merge" if verdict(sts, "Incognita loop", {"loop"}) == "approved" else "veto-window"
     v = verdict(sts, "Incognita review", {"review-pr", "review-statements"})
+    if is_lean(repo, pr, role):
+        # Tau Ceti's rubrics too, on the same head (AGENTS.md 6.8; rubrics_state in scripts/lib.sh).
+        rv = [verdict(sts, f"Incognita rubric/{r}", {f"rubric-{r}"}) for r in rubrics_enabled()]
+        if v == "reject" or "block" in rv:
+            return "awaiting-author"
+        if v is None or any(x not in ("approve", "request_changes") for x in rv):
+            return "awaiting-review"
+        if v == "request_changes" or "request_changes" in rv:
+            return "awaiting-author"
+        return "ready-to-merge"
     if v == "approve":
         return "ready-to-merge"
     if v in ("request_changes", "reject"):
         return "awaiting-author"
     return "awaiting-review"
+
+
+def rubrics_enabled():
+    """INCOGNITA_RUBRICS, in Tau Ceti's order (scripts/lib.sh); unset or empty here: all of them
+    (the labels are for humans; the loop reads its own setting)."""
+    names = {x.strip() for x in (os.environ.get("INCOGNITA_RUBRICS") or ",".join(RUBRICS)).split(",")}
+    return [r for r in RUBRICS if r in names]
+
+
+def is_lean(repo, pr, role):
+    """A Lean pull request (is_lean_pr in scripts/lib.sh): prove, formalize-statements, or another
+    agent pull request whose files include a .lean file under Incognita/ or Statements/."""
+    if role in ("prove", "formalize-statements"):
+        return True
+    if role is None or role in PAPER_ROLES or role == "propose-roadmap":
+        return False
+    try:
+        files = gh("api", "--paginate", f"repos/{repo}/pulls/{pr['number']}/files?per_page=100",
+                   "--jq", ".[].filename").split()
+    except subprocess.CalledProcessError:
+        return False
+    return any(LEAN_PATH.match(f) for f in files)
 
 
 def main():

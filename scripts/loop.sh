@@ -102,6 +102,25 @@ load_sts() {  # sha: STS_CUR = its statuses (cached for the pass)
   STS_CUR=${STS[$1]}
 }
 has_label() { case ",$1," in *",$2,"*) return 0 ;; *) return 1 ;; esac; }
+# lean_row <pr> <H> <role>: 0 if the pull request is a Lean pull request (is_lean_pr: Tau Ceti's
+# rubrics review it too), 1 if not, 2 if unknown (its head could not be fetched). Cached for the pass.
+declare -A LEAN=()
+lean_row() {
+  local k="$1 $2" mb
+  if [ -z "${LEAN[$k]+x}" ]; then
+    case "$3" in
+      prove|formalize-statements) LEAN[$k]=1 ;;
+      *) case "$(pr_kind "$3")" in
+           paper|roadmap|scripted) LEAN[$k]=0 ;;
+           *) if { repo_git cat-file -e "$2^{commit}" 2>/dev/null || fetch_pr_head "$1" "$2"; } \
+                  && mb=$(repo_git merge-base origin/main "$2"); then
+                if is_lean_pr "$3" "$mb" "$2"; then LEAN[$k]=1; else LEAN[$k]=0; fi
+              else LEAN[$k]=unknown; fi ;;
+         esac ;;
+    esac
+  fi
+  case "${LEAN[$k]}" in 1) return 0 ;; 0) return 1 ;; *) return 2 ;; esac
+}
 is_busy() {  # role target (target "*" = any)
   if [ "$2" = "*" ]; then grep -q "^$1 " "$BUSY"; else grep -qxF "$1 $2" "$BUSY"; fi
 }
@@ -273,7 +292,7 @@ candidates_pass() {
 # merge_trailers <role> <target> <H> <statuses>: the trailers of a merge commit, read by
 # scripts/certify.py (which referees accepted a paper).
 merge_trailers() {
-  local reviews
+  local reviews rb
   case "$(pr_kind "$1")" in
     paper) reviews="referee-scope=$(verdict_in "$4" "Referee scope" referee-scope) referee-proofs=$(verdict_in "$4" "Referee proofs" referee-proofs)" ;;
     statements) reviews="review-statements=$(verdict_in "$4" "Incognita review" review-statements)" ;;
@@ -281,6 +300,9 @@ merge_trailers() {
     scripted) reviews="loop=$(verdict_in "$4" "Incognita loop" loop)" ;;
     *) reviews="review-pr=$(verdict_in "$4" "Incognita review" review-pr)" ;;
   esac
+  # Tau Ceti's rubrics, for a Lean pull request: rubrics=<rubric>:<verdict>,...
+  rb=$(rubric_verdicts "$4" | awk '$2 != "none" { printf "%s%s:%s", s, $1, $2; s = "," }')
+  [ -n "$rb" ] && reviews="$reviews rubrics=$rb"
   printf 'Incognita-Role: %s\nIncognita-Target: %s\nIncognita-Head: %s\nIncognita-Reviews: %s\n' "$1" "$2" "$3" "$reviews"
 }
 
@@ -321,6 +343,9 @@ try_merge() {
     esac
     fetch_pr_head "$n" "$H" || continue
     mb=$(repo_git merge-base origin/main "$H") || continue
+    # A Lean pull request: every rubric of INCOGNITA_RUBRICS approves this very head (owner,
+    # 2026-11-17: as in LMLExplore); a verdict on an older head is stale and does not count.
+    if is_lean_pr "$role" "$mb" "$H" && [ "$(rubrics_state "$STS_CUR")" != approve ]; then continue; fi
     # Lean changes merge only on top of main (D13); checked first, so that a pull request that waits
     # for the owner is kept rebased too.
     if repo_git diff --name-only --no-renames "$mb" "$H" | grep -qE '\.(lean|lock)$' \
@@ -521,7 +546,8 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
     local ctx state trusted desc
     while IFS=$'\t' read -r ctx state trusted desc; do
       [ "$trusted" = yes ] || continue
-      case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review"|"Incognita loop") ;; *) continue ;; esac
+      # The rubrics' statuses too: the pull request changes the same thing, blob for blob.
+      case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review"|"Incognita loop"|"Incognita rubric/"*) ;; *) continue ;; esac
       set_status "$newh" "$ctx" "$state" "${desc%% copied-from=*} copied-from=${h:0:12}" && copied=yes
     done <<< "$STS_CUR"
   fi
@@ -676,7 +702,7 @@ pick_write_paper() {  # cap: fewer than this many papers in review in the roadma
 
 choose_task() {
   T_ROLE="" T_TARGET="" T_HEAD="" T_NOTE="" T_BUDGET=0
-  local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes fixer reopened
+  local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes fixer reopened lean rb lr bh
   local fixes_list="" reviews_list=""
   # 1. main is red: one fix-main task.
   if [ "$MAIN_RED" = 1 ] && ! is_busy fix-pr main; then
@@ -713,6 +739,11 @@ choose_task() {
       continue
     fi
     load_sts "$H" || continue
+    lean=0 rb=approve
+    if [ "$kind" = generic ] || [ "$kind" = statements ]; then
+      lr=0; lean_row "$n" "$H" "$role" || lr=$?
+      case "$lr" in 0) lean=1; rb=$(rubrics_state "$STS_CUR") ;; 1) ;; *) continue ;; esac
+    fi
     if [ "$kind" = paper ]; then
       sc=$(verdict_in "$STS_CUR" "Referee scope" referee-scope)
       pv=$(verdict_in "$STS_CUR" "Referee proofs" referee-proofs)
@@ -749,7 +780,21 @@ choose_task() {
         close_rejected "$n" "$H" "review-roadmap rejected the proposal"; continue
       fi
       if [ "$rv" = reject ]; then escalate "$n" "review verdict reject"; continue; fi
-      if [ "$rv" = request_changes ]; then
+      # A Lean pull request (Tau Ceti's rubrics, owner 2026-11-17): a `block` stops the round on this
+      # head: a fix round answers it (Tau Ceti: the author narrows or repairs the pull request, or
+      # contests the finding); a block on INCOGNITA_BLOCK_LIMIT heads goes to the owner.
+      if [ "${rb%% *}" = block ]; then
+        bh=$(trusted_comments "$n" | rubric_blocked_heads) && [[ "$bh" =~ ^[0-9]+$ ]] || continue
+        if [ "$bh" -ge "$INCOGNITA_BLOCK_LIMIT" ]; then
+          escalate "$n" "the rubric ${rb#block } blocked it (a block on $INCOGNITA_BLOCK_LIMIT heads)"; continue
+        fi
+        if [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then escalate "$n" "$fixes fix rounds without approval"; continue; fi
+        fixes_list="$fixes_list fix-pr:$n:$H:block-${rb#block }"
+        continue
+      fi
+      # Otherwise every rubric judges the head before a fix round, so that one round answers all the
+      # reports (as in Tau Ceti, where only a block stops the round).
+      if { [ "$rv" = request_changes ] || [ "$rb" = changes ]; } && [ "$rv" != none ] && [ "${rb%% *}" != next ]; then
         if [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then escalate "$n" "$fixes fix rounds without approval"; continue; fi
         fixes_list="$fixes_list fix-pr:$n:$H:review"
         continue
@@ -766,6 +811,11 @@ choose_task() {
       roadmap) [ "$rv" = none ] && reviews_list="$reviews_list review-roadmap:$n:$H:-" ;;
       *) [ "$rv" = none ] && reviews_list="$reviews_list review-pr:$n:$H:-" ;;
     esac
+    # A Lean pull request: its Incognita review first, then Tau Ceti's rubrics, one session each, in
+    # order, on the same head.
+    if [ "$lean" = 1 ] && [ "$rv" != none ] && [ "${rb%% *}" = next ]; then
+      reviews_list="$reviews_list rubric-${rb#next }:$n:$H:-"
+    fi
   done < "$ROWS"
   local it r t h why note
   for it in $fixes_list $reviews_list; do
@@ -774,7 +824,8 @@ choose_task() {
       build) note="The build failed on the head (after one automatic rerun)." ;;
       conflict) note="The branch conflicts with main and the mechanical rebase failed: rebase it (\`git rebase origin/main\`)." ;;
       incomplete) note="Continue the incomplete work of this draft." ;;
-      review) note="The reviewer requested changes on the head: address the latest report." ;;
+      review) note="The reviewers requested changes on the head: address the latest report of each (for a Lean pull request, its Incognita review and every rubric, \`rubric-<name>\`, in \`reports.md\`)." ;;
+      block-*) note="The rubric \`${why#block-}\` (Tau Ceti's review) blocked the head: answer its latest report (\`reports.md\`, kind \`rubric-${why#block-}\`). Fix the problem within the purpose of the pull request; if it cannot be fixed there, or the finding is wrong, change nothing it concerns and say why in the summary (an \`Ask-owner:\` line if the owner must decide)." ;;
       referees) note="The referees found gaps on the head: address their latest reports." ;;
       *) note="" ;;
     esac
@@ -848,7 +899,7 @@ choose_task() {
 # ---------------------------------------------------------------- one pass
 MAIN_RED=0 AUDIT="" AUDIT_OK=0
 one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure failure, 3 logged out, 6 weekly cap
-  STS=()
+  STS=() LEAN=()
   NEEDS_REBASE=""
   set_activity "pass: reading GitHub"
   local M rc did=0 n H br draft mg role target labels ci k

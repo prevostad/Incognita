@@ -407,6 +407,92 @@ on_main Statements/P002/b.lock x
 mkdir -p "$t/home/state/audit"; printf 'P001 a open\nP002 b open\n' > "$t/home/state/audit/$(git -C "$t/w" rev-parse main).txt"
 pass "prove: the paper others depend on first" "== task: prove P002-b"
 
+# Lean pull requests (owner, 2026-11-17): reviewed like LMLExplore's, by Tau Ceti's 11 rubrics, one
+# session each, in order, after the Incognita review; merged only when every rubric approves the head.
+RUBRICS="correctness reuse scope attribution api-design generality placement naming documentation proof-quality quality-pass"
+rubrics() {  # sha verdict state rubric...: trusted statuses of these rubrics on this head
+  local h=$1 v=$2 s=$3 r; shift 3
+  for r in "$@"; do status "$h" "Incognita rubric/$r" "rubric-$r" "$v" "$s"; done
+}
+LEAN='mkdir -p Incognita/P001; printf "theorem t : True := trivial\n" > Incognita/P001/T.lean'
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 81 prove P001-x "$LEAN")
+pass "a Lean pull request: its Incognita review first" "== task: review-pr 81"
+status "$h" "Incognita review" review-pr approve success
+pass "then the first rubric (correctness)" "== task: rubric-correctness 81"
+pass "task.md of a rubric session names its rubric" 'You are the rubric `correctness` of Tau Ceti'
+nopass "approved by review-pr alone: not merged" "would merge #81"
+rubrics "$h" approve success correctness
+pass "the rubrics run in Tau Ceti's order" "== task: rubric-reuse 81"
+rubrics "$h" approve success reuse scope attribution api-design generality placement naming documentation proof-quality
+pass "the last rubric: quality-pass" "== task: rubric-quality-pass 81"
+nopass "one rubric without a verdict: not merged" "would merge #81"
+rubrics "$h" approve success quality-pass
+pass "every rubric approves the head: merged" "would merge #81 (generic, categories: proofs)"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 82 prove P001-x "$LEAN")
+old=$(git -C "$t/w" rev-parse main)
+status "$h" "Incognita review" review-pr approve success
+# shellcheck disable=SC2086
+rubrics "$old" approve success $RUBRICS
+nopass "a rubric verdict on another head is stale: not merged" "would merge #82"
+pass "a stale verdict does not count: the rubrics run again on the head" "== task: rubric-correctness 82"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 83 prove P001-x "$LEAN")
+status "$h" "Incognita review" review-pr approve success
+rubrics "$h" approve success correctness
+rubrics "$h" block failure reuse
+pass "a block stops the round: a fix round answers it" "== task: fix-pr 83"
+pass "the fixer is told which rubric blocked" 'The rubric `reuse` (Tau Ceti'"'"'s review) blocked the head'
+nopass "no rubric runs after a block" "== task: rubric-scope 83"
+comment 83 owner "<!-- incognita:rubric-reuse:$old -->" "Verdict: block" "2026-11-14T09:00:00Z"
+comment 83 owner "<!-- incognita:rubric-reuse:$h -->" "Verdict: block" "2026-11-14T10:00:00Z"
+pass "a block on INCOGNITA_BLOCK_LIMIT (2) heads goes to the owner" "would label #83 needs-human"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 84 prove P001-x "$LEAN")
+status "$h" "Incognita review" review-pr approve success
+rubrics "$h" request_changes failure correctness
+pass "a request_changes does not stop the round" "== task: rubric-reuse 84"
+nopass "no fix round before every rubric has judged the head" "== task: fix-pr 84"
+rubrics "$h" approve success reuse scope attribution api-design generality placement naming documentation proof-quality quality-pass
+pass "then one fix round answers every report" "== task: fix-pr 84"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 85 prove P001-x "$LEAN")
+status "$h" "Incognita review" review-pr request_changes failure
+pass "the Incognita review asked for changes: the rubrics still judge the head" "== task: rubric-correctness 85"
+# shellcheck disable=SC2086
+rubrics "$h" approve success $RUBRICS
+pass "then the fix round" "== task: fix-pr 85"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 86 garden - "$LEAN")
+status "$h" "Incognita review" review-pr approve success
+pass "a garden pull request that changes Incognita/*.lean gets the rubrics" "== task: rubric-correctness 86"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 87 formalize-statements P001-x 'mkdir -p Statements/P001; echo s > Statements/P001/a.lean')
+pass "a statements pull request: review-statements first" "== task: review-statements 87"
+status "$h" "Incognita review" review-statements approve success
+pass "then the rubrics" "== task: rubric-correctness 87"
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 88 bibliographer -)
+status "$h" "Incognita review" review-pr approve success
+pass "a pull request without Lean: merged on its Incognita review alone" "would merge #88"
+nopass "and no rubric" "== task: rubric-"
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 89 prove P001-x "$LEAN")
+status "$h" "Incognita review" review-pr approve success
+export INCOGNITA_RUBRICS="scope, correctness"
+pass "INCOGNITA_RUBRICS trims the list (Tau Ceti's order kept)" "== task: rubric-correctness 89"
+rubrics "$h" approve success correctness
+pass "the next rubric of the trimmed list" "== task: rubric-scope 89"
+rubrics "$h" approve success scope
+pass "every rubric of the trimmed list approves: merged" "would merge #89"
+export INCOGNITA_RUBRICS=
+world "Reviewed by owner: 2026-11-14"
+h=$(prx 90 prove P001-x "$LEAN")
+status "$h" "Incognita review" review-pr approve success
+pass "an empty INCOGNITA_RUBRICS: merged on the Incognita review" "would merge #90"
+unset INCOGNITA_RUBRICS
+
 # The weekly cap (INCOGNITA_WEEKLY_CAP), read before every task, a dry run included: a fake sudo
 # reads the throwaway env file, a fake curl answers the usage endpoint with $FAKE/weekly percent.
 mkdir -p "$FAKE/capbin"

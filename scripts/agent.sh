@@ -7,7 +7,7 @@
 #   referee-scope <PR>             referee-proofs <PR>              review-statements <PR>
 #   review-pr <PR>                 revise <PR> | revise <Paper>     fix-pr <PR> | fix-pr main
 #   bibliographer [<Paper>|-]      garden                           propose-roadmap <Roadmap> | -
-#   review-roadmap <PR>
+#   review-roadmap <PR>             rubric-<name> <PR> (Tau Ceti's rubric <name>, a Lean PR)
 #
 # Run by the user `lean` in its clone of main (never edited by hand), normally from scripts/loop.sh.
 # The loop never runs git or lake inside the agent's clone, and never opens a file the agent wrote
@@ -78,6 +78,9 @@ case "$role" in
   # Numerical experiments in .agents/scratch/ (a reviewer's files are never collected).
   referee-proofs) tools="$read_tools,$exec_tools,Write,Bash(mkdir:*)" ;;
   review-statements|review-pr) tools="$read_tools,$lean_tools,Write" ;;
+  # Tau Ceti's rubrics judge from the sources (its reviewers are read-only, without a shell); CI
+  # has built the head.
+  rubric-*) tools="$read_tools,Write" ;;
   fix-pr|revise) tools="$write_tools,$rebase_tools" ;;
   *) tools=$write_tools ;;
 esac
@@ -134,7 +137,7 @@ paper_of_ref() {  # ref: the paper directories a PR adds or changes (merge-base(
 case "$role:$target" in
   fix-pr:main)
     eff_role=fix-main ;;
-  referee-*:*|review-*:*|fix-pr:*|revise:[0-9]*)
+  referee-*:*|review-*:*|rubric-*:*|fix-pr:*|revise:[0-9]*)
     [[ "$target" =~ ^[0-9]+$ ]] || { echo "$role needs a pull request number" >&2; exit 2; }
     pr=$target
     info=$(ghr pr view "$pr" --json number,title,body,headRefName,headRefOid,isCrossRepository,state,isDraft,labels,author,baseRefName) \
@@ -168,6 +171,9 @@ case "$role:$target" in
       review-statements) [ "$kind" = statements ] || finish skip "not-a-statements-pr" ;;
       review-roadmap) [ "$kind" = roadmap ] || finish skip "not-a-roadmap-pr" ;;
       review-pr) [ "$kind" = generic ] || finish skip "not-a-generic-pr" ;;
+      rubric-*)
+        is_lean_pr "$pr_role" "$(repo_git merge-base "$M" "$H")" "$H" || finish skip "not-a-lean-pr"
+        in_list "${role#rubric-}" "$(rubrics_enabled | tr '\n' ' ')" || finish skip "rubric-not-in-INCOGNITA_RUBRICS" ;;
     esac
     paper=$(paper_of_ref "$H" | head -n 1)
     case "$pr_role" in
@@ -278,6 +284,18 @@ if [ -n "$pr" ]; then
   rounds=$(jq "$SINCE_REJECTED_JQ"' since_rejected | [.[] | select(.kind == "revise")] | length' <<<"$comments")
   fixes=$(jq "$SINCE_REJECTED_JQ"' since_rejected | [.[] | select(.kind == "fix-pr" or .kind == "fix-pr-nochange" or .kind == "revise-fix" or .kind == "revise-fix-nochange")] | length' <<<"$comments")
 fi
+# A Lean pull request (scripts/lib.sh, is_lean_pr): reviewed by Tau Ceti's rubrics too; its
+# description carries Tau Ceti's quality pass (agents/rubrics/README.md).
+lean_pr=0
+[ -n "$pr" ] && is_lean_pr "$pr_role" "$mb" "$H" && lean_pr=1
+# Tau Ceti's pull request template (its "Quality pass:" block and the checks behind it), from main:
+# for the writing roles that change Lean, and for the rubric quality-pass.
+case "$role" in
+  prove|formalize-statements|garden|fix-pr|rubric-quality-pass)
+    if repo_git show "$M:agents/rubrics/tauceti/pull_request_template.md" > "$ctx/quality-pass.md" 2>/dev/null; then
+      files="$files quality-pass.md"
+    else rm -f "$ctx/quality-pass.md"; fi ;;
+esac
 # revise on a paper PR: a revision round answers a referee's `major` on the head (it counts towards
 # INCOGNITA_REVISION_ROUNDS, comment kind `revise`); otherwise it is a repair (failed build,
 # conflict, incomplete draft: kind `revise-fix`, counted as a fix round). A `reject` on the head
@@ -469,6 +487,21 @@ if [ -n "$pr" ] && [ "$pr_role" = revise ] && [ "${branch#owner/}" != "$branch" 
   esac
 fi
 [ "$role" = fix-pr ] && [ -n "$pr" ] && add_situation "Fix round $(( fixes + 1 )); the pull request was opened by the role \`$pr_role\` (target \`$pr_target\`): keep its purpose, and its paths (AGENTS.md §2, line \`$eff_role\`)."
+# Tau Ceti's rubrics and its quality pass (owner, 2026-11-17).
+if is_rubric_role "$role"; then
+  add_situation "You are the rubric \`${role#rubric-}\` of Tau Ceti's review (one independent session per rubric; the other rubrics, the Incognita review \`$( [ "$kind" = statements ] && echo review-statements || echo review-pr )\` and CI cover the other angles). Runner-verified CI status: the check \"Build and check\" (workflow CI) succeeded on the head \`${H:0:12}\` (the loop schedules reviews only then)."
+  [ "$role" = rubric-quality-pass ] && add_situation "The PR template whose \`Quality pass:\` block you check is \`.agents/quality-pass.md\` (Tau Ceti's \`.github/pull_request_template.md\`); the description is \`.agents/pr.txt\` (its section \`## Quality pass\`)."
+fi
+case "$role" in
+  prove|formalize-statements)
+    add_situation "Your pull request changes Lean: Tau Ceti's rubrics review it after the Incognita review. Run Tau Ceti's quality pass (\`.agents/quality-pass.md\`) over every declaration you add or change, and report it in \`.agents/summary.md\`, section \`## Quality pass\` (AGENTS.md section 1)." ;;
+  garden)
+    add_situation "If your pull request changes a \`.lean\` file under \`Incognita/\` or \`Statements/\`, Tau Ceti's rubrics review it too: run Tau Ceti's quality pass (\`.agents/quality-pass.md\`) and report it in \`.agents/summary.md\`, section \`## Quality pass\` (AGENTS.md section 1)." ;;
+  fix-pr)
+    if [ "$lean_pr" = 1 ] || [ "$eff_role" = fix-main ]; then
+      add_situation "This is a Lean pull request (Tau Ceti's rubrics review it): run Tau Ceti's quality pass (\`.agents/quality-pass.md\`) again over what you add or change, and write the whole block, as the pull request will stand, in \`.agents/summary.md\`, section \`## Quality pass\`; the script replaces the section \`## Quality pass\` of the description with it$( [ -z "$pr" ] && echo " (here: it goes in the description of the new pull request)")."
+    fi ;;
+esac
 [ "$eff_role" = fix-main ] && [ -z "$pr" ] && add_situation "The build of \`main\` is red (see \`ci-log.txt\`): repair it with the smallest change; a new pull request \"fix main\" is opened."
 if [ "$role" = revise ] && [ -z "$pr" ]; then
   cur_version=$(show_main "papers/$paper/META.toml" | sed -n -E 's/^version[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' | head -n 1)
@@ -505,6 +538,7 @@ in_list owner-answers.md "$files" && add_situation "The owner's answers to earli
 if is_review_role "$role"; then
   case "$role" in
     referee-*) vlist='accept|major|reject' ;;
+    rubric-*) vlist='approve|request_changes|block' ;;
     *) vlist='approve|request_changes|reject' ;;
   esac
   vrule=""
@@ -553,7 +587,26 @@ end_local=$(date -d "@$task_end" '+%H:%M' 2>/dev/null || echo "?")
 
 # ---------------------------------------------------------------- prompt
 prompt=$in/prompt.md
-if ! repo_git show "$M:agents/roles/$role.md" > "$tmp/role.md" 2>/dev/null; then
+if is_rubric_role "$role"; then
+  # Tau Ceti's prompt (rubrics/README.md): the shared protocol, then the pull request, then the angle
+  # last; Incognita's adaptations right after the protocol; for `naming`, Mathlib's naming conventions
+  # after the angle, as in Tau Ceti. All from main, verbatim (agents/rubrics/README.md).
+  rn=${role#rubric-}
+  rd=agents/rubrics/tauceti
+  ref=/dev/null
+  [ "$rn" = naming ] && ref=$tmp/rubric-ref.md
+  if repo_git show "$M:$rd/_common.md" > "$tmp/rubric-common.md" 2>/dev/null \
+      && repo_git show "$M:agents/rubrics/_incognita.md" > "$tmp/rubric-incognita.md" 2>/dev/null \
+      && repo_git show "$M:$rd/$rn.md" > "$tmp/rubric-angle.md" 2>/dev/null \
+      && { [ "$rn" != naming ] || repo_git show "$M:$rd/references/naming-conventions.md" > "$ref" 2>/dev/null; }; then
+    { cat "$tmp/rubric-common.md"; printf '\n\n'; cat "$tmp/rubric-incognita.md"; printf '\n\n'
+      printf '# The pull request\n\nThe pull request is in `.agents/`: `task.md` (the pull request, its head, its paper and roadmap), `pr.txt` (its title and description), `pr.diff` (its diff), `reports.md` (the earlier reports on it, if any); the working tree is its head.\n\n'
+      cat "$tmp/rubric-angle.md"
+      [ "$rn" = naming ] && { printf '\n\n'; cat "$ref"; }
+    } > "$tmp/role.md"
+  elif is_dry; then log "dry run: no rubric $rd/$rn.md on main (the session would fail)"; echo "(missing)" > "$tmp/role.md"
+  else finish fail "no-prompt $rd/$rn.md"; fi
+elif ! repo_git show "$M:agents/roles/$role.md" > "$tmp/role.md" 2>/dev/null; then
   if is_dry; then log "dry run: no agents/roles/$role.md on main (the session would fail)"; echo "(missing)" > "$tmp/role.md"
   else finish fail "no-prompt agents/roles/$role.md"; fi
 fi
@@ -715,6 +768,7 @@ if is_review_role "$role"; then
     referee-*:accept|referee-*:major|referee-*:reject) ;;
     referee-*:minor) verdict=major ;;   # reject if any F, major if any G or L, accept if P only
     review-*:approve|review-*:request_changes|review-*:reject) ;;
+    rubric-*:approve|rubric-*:request_changes|rubric-*:block) ;;
     *)
       # A review stopped before its verdict hands its report so far (.agents/report.md, read as the
       # agent user) to the next session of the same role on this head (AGENTS.md 5.4).
@@ -749,6 +803,11 @@ if is_review_role "$role"; then
     review-pr|review-statements|review-roadmap)
       if [ "$verdict" = approve ]; then st=success; else st=failure; fi
       set_status "$H" "Incognita review" "$st" "$desc" ;;
+    # Tau Ceti's rubrics: one status each; the loop reads them (rubrics_state) for the next rubric,
+    # a fix round, a block, and the merge.
+    rubric-*)
+      if [ "$verdict" = approve ]; then st=success; else st=failure; fi
+      set_status "$H" "$(rubric_context "${role#rubric-}")" "$st" "$desc" ;;
     referee-scope)
       if [ "$verdict" = accept ]; then st=success; else st=failure; fi
       set_status "$H" "Referee scope" "$st" "$desc"
@@ -898,6 +957,16 @@ if [ -n "$pr" ]; then
   [ "$failed_session" = true ] && title="$title The session stopped before the end ($subtype): the pull request is marked \`incomplete\`."
   { printf '%s\n\n' "$title"; cat "$summary"; footer "$sq"; } > "$tmp/body.md"
   post_comment "$pr" "$ckind" "$sq" "$tmp/body.md" >/dev/null
+  # A Lean pull request: the quality pass of the round replaces the one of the description (Tau
+  # Ceti's rubric quality-pass judges the block as the pull request now stands).
+  if [ "$role" = fix-pr ] && grep -qx '## Quality pass' "$summary"; then
+    jq -r '.body // ""' <<<"$info" > "$tmp/prbody-old.md"
+    if replace_section "$tmp/prbody-old.md" "$summary" "Quality pass" > "$tmp/prbody-new.md" \
+        && ! cmp -s "$tmp/prbody-old.md" "$tmp/prbody-new.md"; then
+      gh pr edit "$pr" --body-file "$tmp/prbody-new.md" >/dev/null 2>&1 \
+        || log "could not update the quality pass of the description of #$pr"
+    fi
+  fi
   if [ "$failed_session" = true ]; then
     ensure_labels
     gh pr edit "$pr" --add-label incomplete >/dev/null 2>&1

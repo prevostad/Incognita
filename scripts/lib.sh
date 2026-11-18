@@ -41,6 +41,10 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_REVIEW_FAIL_LIMIT:=3}"       # reviews without a verdict on a PR, then needs-human
 : "${INCOGNITA_REVIEW_PARTIAL_LIMIT:=4}"    # review sessions stopped with a partial report, then needs-human
 : "${INCOGNITA_REVISION_ROUNDS:=4}"         # revision rounds of a paper, then rejected (owner, 2026-11-14)
+# Tau Ceti's review rubrics for the Lean pull requests (owner, 2026-11-17; agents/rubrics/): the ones
+# that run, comma-separated (always in the order of RUBRICS_ALL below); empty: none.
+: "${INCOGNITA_RUBRICS=correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass}"
+: "${INCOGNITA_BLOCK_LIMIT:=2}"             # heads of a Lean PR blocked by a rubric, then needs-human (1: the first block)
 : "${INCOGNITA_PARK_AFTER:=4}"              # failed attempts on a target (all nights), then parked
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task
 : "${INCOGNITA_IDLE_SLEEP:=1200}"
@@ -68,8 +72,13 @@ fi
 export GH_REPO=$INCOGNITA_GH_REPO
 export GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1
 
-ROLES="write-paper referee-scope referee-proofs revise formalize-statements review-statements prove review-pr fix-pr bibliographer garden propose-roadmap review-roadmap"
-REVIEW_ROLES="referee-scope referee-proofs review-statements review-pr review-roadmap"
+# Tau Ceti's rubrics (TauCetiProject/TauCetiReview, rubrics/README.md), in its review order: the
+# angles that may block first. Each one is the review role rubric-<name>: one session of its own per
+# head of a Lean pull request, status "Incognita rubric/<name>" (agents/rubrics/README.md).
+RUBRICS_ALL="correctness reuse scope attribution api-design generality placement naming documentation proof-quality quality-pass"
+RUBRIC_ROLES=$(for r in $RUBRICS_ALL; do printf 'rubric-%s ' "$r"; done)
+ROLES="write-paper referee-scope referee-proofs revise formalize-statements review-statements prove review-pr fix-pr bibliographer garden propose-roadmap review-roadmap ${RUBRIC_ROLES% }"
+REVIEW_ROLES="referee-scope referee-proofs review-statements review-pr review-roadmap ${RUBRIC_ROLES% }"
 ROOT_FILES="Incognita.lean Statements.lean Exploration.lean"
 
 # ---------------------------------------------------------------- small helpers
@@ -80,6 +89,7 @@ is_dry() { [ "$INCOGNITA_DRY_RUN" = 1 ]; }
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 is_review_role() { in_list "$1" "$REVIEW_ROLES"; }
 is_role() { in_list "$1" "$ROLES"; }
+is_rubric_role() { in_list "$1" "$RUBRIC_ROLES"; }
 key_of() { printf '%s' "$*" | tr -c 'A-Za-z0-9._-' '_'; }
 repo_git() { git -C "$INCOGNITA_REPO" -c core.hooksPath=/dev/null -c core.fsmonitor=false "$@"; }
 
@@ -1229,6 +1239,74 @@ pr_kind() {
   esac
 }
 automerge_enabled() { case ",$INCOGNITA_AUTOMERGE," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+
+# ---------------------------------------------------------------- Tau Ceti's rubrics (owner, 2026-11-17)
+# A Lean pull request is reviewed like a pull request of LMLExplore: besides its Incognita review
+# (review-pr or review-statements), each rubric of INCOGNITA_RUBRICS judges its head in a session of
+# its own (role rubric-<name>), in the order of RUBRICS_ALL; a `block` stops the round; it merges
+# only when every rubric approves its current head (agents/rubrics/README.md).
+#
+# is_lean_pr <role> <base> <head>: a pull request of the role `prove` or `formalize-statements`, or
+# any other one (garden, fix-pr...) whose diff base..head changes a .lean file under Incognita/ or
+# Statements/. Papers, roadmap proposals and the loop's own pull requests never are.
+is_lean_pr() {
+  case "$(pr_kind "$1")" in paper|roadmap|scripted) return 1 ;; esac
+  case "$1" in prove|formalize-statements) return 0 ;; esac
+  repo_git diff --name-only --no-renames "$2" "$3" | grep -qE '^(Incognita|Statements)/.+\.lean$'
+}
+# rubrics_enabled: the rubrics of INCOGNITA_RUBRICS, one per line, in the order of RUBRICS_ALL
+# (unknown names are ignored).
+rubrics_enabled() {
+  local r l=",${INCOGNITA_RUBRICS// /},"
+  for r in $RUBRICS_ALL; do case "$l" in *",$r,"*) echo "$r" ;; esac; done
+}
+rubric_context() { printf 'Incognita rubric/%s' "$1"; }
+# rubric_verdicts <statuses>: "<rubric> <verdict|none>" for each enabled rubric, from the trusted
+# statuses of one head (statuses_of): a verdict on another head never counts.
+rubric_verdicts() {
+  local r
+  for r in $(rubrics_enabled); do
+    printf '%s %s\n' "$r" "$(verdict_in "$1" "$(rubric_context "$r")" "rubric-$r")"
+  done
+}
+# rubrics_state <statuses>: where the rubrics of this head stand.
+#   block <rubric>   a rubric blocked it: the round stops (the rubrics after it do not run)
+#   next <rubric>    the first rubric, in order, without a verdict: its session is the next review
+#   changes          every rubric judged it, one at least asked for changes
+#   approve          every rubric approved it (also when INCOGNITA_RUBRICS is empty)
+rubrics_state() {
+  rubric_verdicts "$1" | awk '
+    $2 == "block" && b == "" { b = $1 }
+    ($2 == "none" || ($2 != "approve" && $2 != "request_changes" && $2 != "block")) && n == "" { n = $1 }
+    $2 == "request_changes" { c = 1 }
+    END { if (b != "") print "block " b; else if (n != "") print "next " n; else if (c) print "changes"; else print "approve" }'
+}
+# rubric_blocked_heads: from trusted comments (JSON of trusted_comments) on stdin, the number of
+# distinct heads on which a rubric report's verdict was `block`.
+rubric_blocked_heads() {
+  jq '[.[] | select((.kind | test("^rubric-[a-z-]+$")) and ((.kind | endswith("-partial")) | not)
+         and (.body | split("\n") | map(select(startswith("Verdict: "))) | (first // "") | test("^Verdict: *`?block")))
+       | .sha] | unique | length'
+}
+# replace_section <body> <summary> <heading>: the text <body> with its section "## <heading>" (up to
+# the next "## " heading or the line "Opened by `scripts/agent.sh`...") replaced by the one of
+# <summary>; added before that line, or at the end, when <body> has none. Prints the new text; 1 if
+# <summary> has no such section. (A fix round updates the quality pass of a Lean pull request's
+# description: Tau Ceti's rubric judges the block as the pull request now stands.)
+replace_section() {
+  local sec
+  sec=$(awk -v h="## $3" '$0 == h { on = 1; print; next } on && /^## / { exit } on { print }' "$2")
+  [ -n "$sec" ] || return 1
+  # The section through the environment: awk -v would expand its backslashes (Lean, LaTeX).
+  SEC=$sec awk -v h="## $3" '
+    function put() { if (!done) { print ENVIRON["SEC"]; print ""; done = 1 } }
+    $0 == h { put(); skip = 1; next }
+    skip && (/^## / || /^Opened by `scripts\/agent\.sh`/) { skip = 0 }
+    skip { next }
+    /^Opened by `scripts\/agent\.sh`/ { put() }
+    { print }
+    END { if (!done) { print ""; print ENVIRON["SEC"] } }' "$1"
+}
 
 # A proof PR adds only lemmas and theorems (SPEC 1.3): no new def/structure/class/instance/axiom...
 adds_only_theorems() {  # base new

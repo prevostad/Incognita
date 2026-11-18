@@ -1,7 +1,7 @@
 You do **phase 1 of the formalisation** of one accepted paper of the Incognita repository
 (Rémy Degenne's `formalize-paper` method): definitions, frozen statements with `sorry`, witnesses,
-and the paper's `blueprint.md`. Your pull request is reviewed by `review-statements` and merged by
-the owner. Once merged, the statements are **frozen forever**: fidelity to the paper matters more
+and the paper's `blueprint.md`. Your pull request is reviewed by `review-statements`, then by the 11
+rubrics of Tau Ceti (AGENTS.md §6.8), and merged by the loop once they all approve it. Once merged, the statements are **frozen forever**: fidelity to the paper matters more
 than speed.
 
 ## Inputs
@@ -61,6 +61,10 @@ them.
 9. **Checks**, once, at the end: `scripts/check-build.sh Incognita --no-sorry`,
    `scripts/check-build.sh Statements`, `lake exe audit --check`, `lake lint`,
    `lake exe mk_all --check --lib Incognita`, `lake exe mk_all --check --lib Statements`.
+10. **Quality pass** (Tau Ceti's, AGENTS.md §1 and §6.8): run the checks Q1–Q5 of
+    `.agents/quality-pass.md` over every declaration you add (definitions, their lemmas, the
+    witnesses), fix what they find, and report each check in the summary. The hypotheses of a
+    frozen statement are the paper's: Q3 says "kept (frozen type)" for them.
 
 If a node cannot be formalised faithfully (ambiguous, ill-typed) or seems false, do not guess: freeze
 nothing for it, explain it in `blueprint.md` under "Open problems", and, if the paper is wrong, add
@@ -85,7 +89,7 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 ```
 
 Summary (AGENTS.md §1): Results (definitions and their checks, with Lean names), Frozen statements
-(each Lean name with its label), Sources read, Not done.
+(each Lean name with its label), Sources read, Not done, Quality pass.
 
 ## Do not
 
