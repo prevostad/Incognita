@@ -34,9 +34,9 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | def:exlearners | definition | Learning.Algorithm.const, Incognita.BatchedBandits.reactAlg, Incognita.BatchedBandits.parityAlg | `Const_c` = `Algorithm.const (Measure.dirac c)` (LML, reused); `React`, `Par^{(k),g}` new; `RR`, `FL^g`, `UCB` not defined in this pull request (see Open problems); in place of `FL^g` as a witness that uses the rewards, the new learner `Incognita.BatchedBandits.firstRewardAlg` (not a node of the paper); $\mathcal P_c$ written inline as `{ν \| ν ∈ unitBandits α ∧ gap ν c = 0}` |
 | prop:witnesses | witnesses | (not frozen) | the checks of the definitions (AGENTS.md 6.4), proved in `Incognita/BatchedBandits/` as lemmas; item by item below |
 | cor:ucb | corollary | (not frozen) | see Open problems |
-| cite:GMS19-lem1 | cited | (added by prove) | data processing for `klDiv`; used only in the proof of prop:kinf(iii) |
+| cite:GMS19-lem1 | cited | LMLExplore.klBer_integral_le_klDiv | reused (LMLExplore), in the form used by the paper ($Z=\mathrm{id}$, laws on $[0,1]$); used only in the proof of prop:kinf(iii) |
 | cite:ACF02-thm1 | cited | (not formalised) | used only by cor:ucb |
-| lem:kl | lemma | (added by prove) | LMLExplore has `monotoneOn_klBer`, `tendsto_klBer_nhdsGT` |
+| lem:kl | lemma | LMLExplore.monotoneOn_klBer, LMLExplore.tendsto_klBer_nhdsGT, LMLExplore.klBer_self, LMLExplore.ofReal_two_mul_sq_le_klBer | reused (LMLExplore): monotonicity, right-continuity on $[p,1)$, $\mathrm{kl}(p,p)=0$, Pinsker |
 | flem:infomodel-mono | lemma (formalisation.tex) | Incognita.BatchedBandits.InfoModel.mono | thm:main (i), inclusions |
 | flem:grid-eq | lemma (formalisation.tex) | Incognita.BatchedBandits.Grid.eq_of_forall_one_le_t_eq | |
 | flem:infomodel-top | lemma (formalisation.tex) | Incognita.BatchedBandits.infoModel_top_iff | $\mathcal M_\infty$ = families of batched learners |
@@ -48,6 +48,11 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | flem:batched-seq | lemma (formalisation.tex) | Incognita.BatchedBandits.isBatched_sequential_iff | thm:main (iii), batching |
 | flem:seq-cons-of-ends | lemma (formalisation.tex) | Incognita.BatchedBandits.IsConsistentAtBatchEnds.isConsistent_of_sequential | thm:main (iii), consistency, (⇒); replaces the route through lem:consist-regret |
 | flem:ends-of-seq | lemma (formalisation.tex) | LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds | already in the library (`Incognita/BatchedBandits/Consistency.lean`); thm:main (iii), consistency, (⇐) |
+| flem:kl-density | lemma (formalisation.tex) | Incognita.klDiv_le_ofReal_neg_log_of_smul_le | `Incognita/ForMathlib/InformationTheory/KullbackLeibler/Basic.lean`; $cP\le Q\Rightarrow\mathrm{KL}(P,Q)\le\log(1/c)$ |
+| flem:kl-mixture | lemma (formalisation.tex) | Incognita.klDiv_le_ofReal_neg_log_smul_add_smul | $\mathrm{KL}(P,(1-u)P+uR)\le\log(1/(1-u))$ |
+| flem:mixture-in-M | lemma (formalisation.tex) | Incognita.BatchedBandits.smul_add_smul_dirac_one_mem_unitLaws, Incognita.BatchedBandits.integral_id_smul_add_smul_dirac_one | $(1-u)P+u\delta_1\in\mathcal M$, its mean |
+| flem:dinf-anti | lemma (formalisation.tex) | Incognita.BatchedBandits.dInf_anti | |
+| prop:kinf, items | lemma | Incognita.BatchedBandits.dInf_unitLaws_eq_top_of_one_le, Incognita.BatchedBandits.dInf_unitLaws_eq_zero_of_lt_integral, Incognita.BatchedBandits.klBer_le_dInf_unitLaws, Incognita.BatchedBandits.dInf_unitLaws_le_ofReal_log, Incognita.BatchedBandits.dInf_unitLaws_bernoulliMeasure | general forms of (i)-(iv) in `Incognita/BatchedBandits/KInf.lean`; the frozen proofs are in `Incognita/P006/KInf.lean` (route: formalisation.tex, "Formal route to Proposition prop:kinf") |
 
 ### prop:witnesses, item by item
 

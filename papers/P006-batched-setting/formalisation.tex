@@ -22,6 +22,7 @@
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Mk}[1]{\mathcal M_{#1}}
 \newcommand{\Sq}{\mathsf S}
+\newcommand{\KL}{\mathrm{KL}}
 
 \title{Formalisation notes for P006-batched-setting}
 \author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
@@ -192,7 +193,84 @@ For a suboptimal $c$, $0\le\Delta_c\,\E[N_c(t_\ell)]\le\mathcal R(t_\ell)$
 $t_\ell\to\infty$.
 \end{proof}
 
+\begin{lemma}[relative entropy under a bounded density]\label{flem:kl-density}
+\lean{Incognita.klDiv_le_ofReal_neg_log_of_smul_le}
+\uses{def:kinf}
+Let $P,Q$ be probability measures on a measurable space and $c>0$ with $cP\le Q$. Then
+$\KL(P,Q)\le\log\frac1c$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:kinf}
+$P\ll Q$, and $c\,\frac{dP}{dQ}\le1$ $Q$-almost everywhere (the density of $cP\le Q$ is at most
+$1$), hence $P$-almost everywhere; so $\log\frac{dP}{dQ}\le\log\frac1c$, $P$-almost everywhere.
+The log-likelihood ratio is bounded above by a constant and below by $1-\frac{dQ}{dP}$
+($\log t\ge1-\frac1t$), so it is $P$-integrable, and
+$\KL(P,Q)=\int\log\frac{dP}{dQ}\,dP\le\log\frac1c$.
+\end{proof}
+
+\begin{lemma}[relative entropy to a mixture]\label{flem:kl-mixture}
+\lean{Incognita.klDiv_le_ofReal_neg_log_smul_add_smul}
+\uses{def:kinf}
+For probability measures $P,R$ and $u\in[0,1)$, $\KL\big(P,(1-u)P+uR\big)\le\log\frac1{1-u}$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:kl-density}
+$(1-u)P+uR$ is a probability measure and $(1-u)P\le(1-u)P+uR$; apply
+Lemma~\ref{flem:kl-density} with $c=1-u>0$.
+\end{proof}
+
+\begin{lemma}[the mixture with $\delta_1$ is in $\mathcal M$]\label{flem:mixture-in-M}
+\lean{Incognita.BatchedBandits.smul_add_smul_dirac_one_mem_unitLaws, Incognita.BatchedBandits.integral_id_smul_add_smul_dirac_one}
+\uses{def:instance}
+For $P\in\mathcal M$ and $u\in[0,1]$, $Q_u:=(1-u)P+u\delta_1\in\mathcal M$ and
+$m(Q_u)=(1-u)m(P)+u$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:instance}
+$Q_u$ has total mass $(1-u)+u=1$ and gives no mass outside $[0,1]$; the mean is linear in the
+measure, and the identity is $P$-integrable since it is bounded on $[0,1]$.
+\end{proof}
+
+\begin{lemma}[$\mathcal K_{\inf}$ is antitone in the class]\label{flem:dinf-anti}
+\lean{Incognita.BatchedBandits.dInf_anti}
+\uses{def:kinf}
+If $\mathcal M'\subseteq\mathcal M''$, the infimum of Definition~\ref{def:kinf} over $\mathcal M''$
+is at most the one over $\mathcal M'$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:kinf}
+An infimum over a larger set is smaller.
+\end{proof}
+
 \section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:kinf}]
+\proves{prop:kinf}
+\uses{def:instance, def:kinf, cite:GMS19-lem1, lem:kl, flem:kl-mixture, flem:mixture-in-M, flem:dinf-anti}
+The paper's proof, item by item; each frozen statement (\texttt{Incognita.P006.<name>}) is a
+specialisation of a lemma of \texttt{Incognita.BatchedBandits.KInf}.
+(i) \texttt{dInf\_unitLaws\_eq\_top\_of\_one\_le}: the hypothesis $P\in\mathcal M$ is not used.
+(ii) \texttt{dInf\_unitLaws\_eq\_zero\_of\_lt\_integral}.
+(iii) The lower bound \texttt{klBer\_le\_dInf\_unitLaws} uses Lemma~\ref{cite:GMS19-lem1} in the
+form $Z=\mathrm{id}$ for laws on $[0,1]$ (LMLExplore's \texttt{klBer\_integral\_le\_klDiv}, proved
+there through the kernel $x\mapsto\mathrm{Ber}(x)$ rather than the clamp
+$\min(\max(x,0),1)$) and the monotonicity of Lemma~\ref{lem:kl} (LMLExplore's
+\texttt{monotoneOn\_klBer}); the quadratic bound is LMLExplore's
+\texttt{ofReal\_two\_mul\_sq\_le\_klBer}. The upper bound \texttt{dInf\_unitLaws\_le\_ofReal\_log}
+is the paper's argument: the mixtures $Q_u$ of Lemma~\ref{flem:mixture-in-M} are competitors for
+$u\in(u_0,1)$, Lemma~\ref{flem:kl-mixture} with $R=\delta_1$ bounds $\KL(P,Q_u)$, and
+$u\downarrow u_0$.
+(iv) \texttt{dInf\_unitLaws\_bernoulliMeasure}: the lower bound is (iii); the upper bound is
+LMLExplore's \texttt{dInf\_range\_bernoulliMeasure} (the infimum over the Bernoulli laws, which uses
+the continuity of Lemma~\ref{lem:kl}, LMLExplore's \texttt{tendsto\_klBer\_nhdsGT}) with
+Lemma~\ref{flem:dinf-anti}, since the Bernoulli laws are in $\mathcal M$.
+(v) (iii) at $\mu=m^\star$, with $m_a\le m^\star<1$ and $\Delta_a=m^\star-m_a>0$; the hypothesis
+$K\ge2$ is not needed.
+\end{proof}
 
 \begin{proof}[Formal route to Theorem~\ref{thm:main}]
 \proves{thm:main}

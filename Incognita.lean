@@ -6,13 +6,16 @@ public import Incognita.BatchedBandits.Consistency
 public import Incognita.BatchedBandits.Grid
 public import Incognita.BatchedBandits.HY
 public import Incognita.BatchedBandits.Instances
+public import Incognita.BatchedBandits.KInf
 public import Incognita.BatchedBandits.Relations
+public import Incognita.ForMathlib.InformationTheory.KullbackLeibler.Basic
 public import Incognita.P000.Witnesses
 public import Incognita.P003.Cyclic
 public import Incognita.P003.Drift
 public import Incognita.P003.Exclusions
 public import Incognita.P003.PriorGame
 public import Incognita.P003.Witnesses
+public import Incognita.P006.KInf
 public import Incognita.P006.Main
 public import Incognita.P006.Witnesses
 public import Incognita.TransferBandits.Checks
