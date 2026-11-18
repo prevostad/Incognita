@@ -594,8 +594,11 @@ accepted_unverified() {  # roadmap: papers on main not verified yet (D5 cap)
   echo "$c"
 }
 in_review() { grep -cxF "write-paper $1" "$BUSY"; }
-has_material() {  # something verified to garden: a proof marker (not the README)
-  ls_main catalogue/results | grep -q '\.toml$'
+has_material() {  # something to garden: a paper on main whose frozen statements are all proved
+  # (level 2; owner, 2026-11-17: no gardening before a paper is entirely Lean-verified)
+  local p
+  for p in $(papers_on_main); do [ "$(statements_state "$p")" = verified ] && return 0; done
+  return 1
 }
 bib_targets() {  # the papers that wait for the bibliographer: external papers without source notes,
                  # verified internal papers without an attribution audit

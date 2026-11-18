@@ -15,8 +15,11 @@ material is re-read, not only stored.
 ## Steps
 
 1. **Choose** 2 to 4 related items (same roadmap, same quantity or the same class): items never
-   examined in `catalogue/garden.md` first, then those examined longest ago. Items are accepted
-   papers and proof markers of `catalogue/results/`.
+   examined in `catalogue/garden.md` first, then those examined longest ago. Items are the
+   **Lean-verified papers** (certification level 2 or 3: every frozen statement proved; see
+   `python3 scripts/certify.py report`) and their proof markers. Accepted papers that are not yet
+   Lean-verified are not gardened (candidate directions still are, as below) (the owner, 2026-11-17: gardening
+   starts once a paper is entirely verified; the loop runs no pass before).
 2. **For each pair of items:**
    1. **Implication.** Compare quantifiers, classes, constants and regime. If one plausibly implies
       the other with quantitative content at least as good (same constants, same order, hypotheses

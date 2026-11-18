@@ -145,6 +145,11 @@ pass "task.md gives the number of the new paper" 'a new directory `papers/P000-<
 pass "task.md gives the roadmap and its KNOWN.md" 'KNOWN.md: `roadmaps/BB/KNOWN.md`'
 world "Reviewed by owner: no (draft)"
 pass "KNOWN not reviewed: no paper, fallback bibliographer" "== task: bibliographer -"
+on_main catalogue/results/P001-x.toml "$(printf 'paper = "P001-x"
+label = "thm:main"
+status = "proved"
+')"
+nopass "a proof marker but no paper entirely Lean-verified: no gardening (owner, 2026-11-17)" "== task: garden -"
 world "Reviewed by owner: 2026-11-14" P001-old definitions
 pass "formalisation before writing" "== task: formalize-statements P001-old"
 # L6: the definitions paper and the dependencies are frozen first; one statements PR per roadmap.
