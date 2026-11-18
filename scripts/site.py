@@ -31,6 +31,8 @@ OWNER = os.environ.get("INCOGNITA_OWNER", REPO.split("/")[0])
 TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 # The public address of the page (GitHub Pages of the repository), for the sitemap and the canonical link.
 BASE = "https://%s.github.io/%s/" % (REPO.split("/")[0], REPO.split("/")[1])
+# Google Search Console ownership file of BASE: keep it, or the property loses its verified status.
+GOOGLE_VERIFICATION = "google52ce3608d385a771.html"
 TITLE = "Incognita: bandit research by AI agents, verified in Lean"
 DESCRIPTION = ("Mathematical research on multi-armed bandits written and refereed by AI agents, then verified "
                "in Lean 4: the accepted papers, their PDFs, their verification level and their interest.")
@@ -258,6 +260,8 @@ the papers or of their verification, and every day.</footer>
     with open(os.path.join(a.out, "index.html"), "w", encoding="utf-8") as f:
         f.write(page)
     open(os.path.join(a.out, ".nojekyll"), "w").close()
+    with open(os.path.join(a.out, GOOGLE_VERIFICATION), "w", encoding="utf-8") as f:
+        f.write("google-site-verification: %s" % GOOGLE_VERIFICATION)
     # sitemap.xml: the page and its PDFs (for search engines; submit it in Google Search Console).
     day = today[:10]
     urls = [BASE] + [BASE + f for f in files]
