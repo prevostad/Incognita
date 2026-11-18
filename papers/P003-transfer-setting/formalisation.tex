@@ -24,7 +24,7 @@
 \title{Formalisation notes for P003-transfer-setting}
 \author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
   are this file's; other numbers refer to the paper.}}
-\date{2026-11-17}
+\date{2026-11-18}
 
 \begin{document}
 \maketitle
@@ -106,6 +106,204 @@ By Lemma~\ref{flem:box-claim}, they satisfy the hypothesis of Lemma~\ref{flem:bo
 concludes.
 \end{proof}
 
+\begin{lemma}[The online law of a source-ignoring learner]\label{flem:online-ofAlgorithm}
+\lean{Incognita.TransferBandits.pairsHist_histPairs,
+  Incognita.TransferBandits.measurable_histPairs,
+  Incognita.TransferBandits.map_snd_stepKernel_bandit,
+  Incognita.TransferBandits.map_compProd_stepKernel_bandit,
+  Incognita.TransferBandits.onlineKernel_ofAlgorithm_apply,
+  Incognita.TransferBandits.onlineKernel_ofAlgorithm}
+\uses{def:instance, def:learner, def:game}
+Let $\sigma$ be a bandit algorithm with kernels on real-valued histories (an algorithm of LML), let
+$\nu$ be a Markov kernel from $[K]$ to $\mathbb R$, and let $(A_t,Y_t)_{t\ge1}$ be the actions and
+rewards of an algorithm--environment sequence of LML of $\sigma$ against the bandit $\nu$, on a
+probability space. Then for every $T\in\mathbb N$ and every $s\in\mathcal S$, the kernel
+$\kappa^T_{\pi^\sigma,\nu}(s)$ of Definition~\ref{def:game} is the law of $(A_t,Y_t)_{t\le T}$. In
+particular $\kappa^T_{\pi^\sigma,\nu}$ does not depend on $s$: it is the law of the first $T$
+(action, reward) pairs under LML's law of the trajectory of $\sigma$ against $\nu$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:instance, def:learner, def:game}
+This is Lemma~\ref{lem:lml-history} for the learner $\pi^\sigma$, without the clamp $c$: in the
+Lean setting the kernels of a learner are already defined on real histories. Forgetting the
+observations of an LML history, which take a single value, is a measurable bijection onto
+$([K]\times\mathbb R)^t$. LML's step kernel at an LML history $h$, read on (action, reward), is
+$\sigma_t(h)\otimes\nu=(\pi^\sigma_t\otimes\nu)(s,h)$ for every $s$; so the joint law of the
+history of $t$ rounds and of the next pair, read as pairs, is the law of the history composed with
+$\pi^\sigma_t\otimes\nu$. Induction on $T$: for $T=0$ both laws are the Dirac mass at the empty
+history; the step from $T$ to $T+1$ is this composition and the recursive definition of
+$\kappa^{T+1}$.
+\end{proof}
+
+\begin{lemma}[Pulls of a source-ignoring learner]\label{flem:pulls-ofAlgorithm}
+\lean{Incognita.TransferBandits.onlineCount_eq_sum,
+  Incognita.TransferBandits.measurable_onlineCount,
+  Incognita.TransferBandits.onlineCount_histPairs_hist,
+  Incognita.TransferBandits.integral_onlineCount_gameMeasure_ofAlgorithm}
+\uses{def:instance, def:source-data, def:learner, def:game, flem:online-ofAlgorithm}
+For every size map $N'$, every Markov kernels $\nu,\nu'$, every arm $k$ and every $T$,
+$\E_{\mathbb P^T_{\nu',N',\nu,\pi^\sigma}}[N_k(T)]=\E_{\sigma,\nu}[N_k(T)]$, the right-hand side
+being the expectation of LML's pull count under LML's law of the trajectory.
+\end{lemma}
+
+\begin{proof}
+\uses{def:source-data, def:game, flem:online-ofAlgorithm, lem:mixture}
+By Lemma~\ref{flem:online-ofAlgorithm} the kernel $\kappa^T_{\pi^\sigma,\nu}$ is constant, so the
+law of the game is the product of the law of the source data and of the law $Q$ of the first $T$
+pairs under LML's law of the trajectory; the expectation of $N_k(T)$, a measurable function of the
+history alone, is its expectation under $Q$ (Lemma~\ref{lem:mixture}), and $N_k(T)$ of the first $T$
+pairs is LML's pull count.
+\end{proof}
+
+\begin{lemma}[UCB is consistent on sub-Gaussian bandits]\label{flem:ucb-consistent}
+\lean{Bandits.UCB.log_succ_le_two_mul_log, Bandits.UCB.isConsistent_subgaussian,
+  Bandits.UCB.isConsistent_unit, Incognita.P003.isConsistentOnUnit_of_isConsistent}
+\uses{def:instance, def:consistency}
+Let $\sigma^2\ge0$ and $c>2\sigma^2$. On every bandit whose reward laws are
+$\sigma^2$-sub-Gaussian around their means, the expected regret of LML's UCB with parameter $c$
+at horizon $n$ is $o(n^\alpha)$ for every $\alpha>0$. For $c>1/2$ this holds on $\mathcal P^K$, and
+UCB is then consistent on $\mathcal P^K$ in the sense of Definition~\ref{def:consistency}.
+\end{lemma}
+
+\begin{proof}
+\uses{def:instance, def:consistency}
+LML's regret bound gives an expected regret at most
+$\sum_a(8c\log(n+1)/\Delta_a+\Delta_a(4+2\sigma^2/(c-2\sigma^2)))$; for $n\ge3$,
+$\log(n+1)\le2\log n$ and $1\le\log n$, so the regret is at most a constant times $\log n$, which
+is $o(n^\alpha)$. A law on $[0,1]$ is $1/4$-sub-Gaussian around its mean (Hoeffding's lemma), and
+$2\cdot\frac14<c$. Finally $\Delta_k\,\E[N_k(n)]\le\E[R_n]$ with $\Delta_k>0$ for a suboptimal arm
+$k$ turns the regret bound into the consistency of Definition~\ref{def:consistency}.
+\end{proof}
+
+\begin{lemma}[The learner that follows the source]\label{flem:followSource-pulls}
+\lean{Incognita.P003.ae_onlineKernel_followSource,
+  Incognita.P003.integral_onlineCount_followSource_zero}
+\uses{def:learner, def:source-data, def:game}
+For every $s\in\mathcal S$ and $T$, almost every history under
+$\kappa^T_{\pi^{\mathrm{tr}},\nu}(s)$ pulls at every round the arm that $\pi^{\mathrm{tr}}$ chooses
+from $s$. With the deterministic sizes $\mathbf 0$, for every $\nu,\nu'$ and $T$, the smallest arm
+$a_0$ satisfies $\E_{\mathbb P^T_{\nu',\mathbf 0,\nu,\pi^{\mathrm{tr}}}}[N_{a_0}(T)]=T$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner, def:source-data, def:game}
+The first claim by induction on $T$: the kernels of $\pi^{\mathrm{tr}}$ are Dirac masses at an arm
+that depends on $s$ only. With sizes $\mathbf 0$ the source data are $(\mathbf 0,0)$ almost surely,
+no arm has a source value, and $\pi^{\mathrm{tr}}$ pulls $a_0$.
+\end{proof}
+
+\begin{lemma}[The source data of the look-ahead map]\label{flem:lookahead-data}
+\lean{Incognita.infinitePi_map_zero_one, Incognita.P003.map_sourceMeasure_pair,
+  Incognita.P003.exists_sourceData_lookahead, Incognita.P003.klDiv_sourceLaw_lookahead,
+  Incognita.ae_bernoulli_zero_or_one, Incognita.P003.lintegral_lookahead}
+\uses{def:laws, def:instance, def:source-space, def:source-data}
+Let $\nu',\tilde\nu'\in\mathcal P^K$. Under $P'_{\nu'}$ the pair $(X'_{1,1},X'_{1,2})$ has law
+$\nu'_1\otimes\nu'_1$. The source data of $N^{\mathrm{la}}$ are $\Phi(X'_{1,1},X'_{1,2})$ for a
+measurable map $\Phi\colon\mathbb R^2\to\mathcal S$ (the map of the proof of
+Theorem~\ref{thm:main}~(b), extended to $\mathbb R^2$), and $\Phi$ has a measurable left inverse on
+$\mathbb R\times\{0,1\}$. If $\nu'_1$ and $\tilde\nu'_1$ are concentrated on $\{0,1\}$ (as Bernoulli
+laws are), then
+$\mathrm{KL}(P^D_{\nu',N^{\mathrm{la}}},P^D_{\tilde\nu',N^{\mathrm{la}}})
+=\mathrm{KL}(\nu'_1\otimes\nu'_1,\tilde\nu'_1\otimes\tilde\nu'_1)$. If $\nu'_1=\mathrm{Ber}(p)$, then
+$\E_{\nu'}[N^{\mathrm{la}}_1]=2-p$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:source-space, def:source-data}
+The coordinates of the stack are independent with law $\nu'_1$, and the stack is independent of
+the randomisation. $\Phi(a,b)$ has size $1$ on arm $1$ if $b>1/2$ and $2$ otherwise, $0$ on the
+other arms, and keeps $a$, then $b$, in the box; its left inverse reads $a$, and reads $b$ as $1$
+when the size is $1$. The data processing inequality applied to $\Phi$ and to its left inverse (an
+inverse almost surely under both laws) gives the two inequalities between the divergences. The
+size is $1$ with probability $\nu'_1((1/2,\infty))=p$ and $2$ otherwise.
+\end{proof}
+
+\begin{lemma}[The online phase and the chain rule]\label{flem:online-kl-chain}
+\lean{Incognita.TransferBandits.onlineKernel_apply_congr,
+  Incognita.TransferBandits.onlineKernel_apply_eq_map_trajMeasure,
+  Incognita.TransferBandits.exists_algorithm_section,
+  Incognita.TransferBandits.klDiv_map_histPairs,
+  Incognita.TransferBandits.sum_lintegral_klDiv_action_eq,
+  Incognita.TransferBandits.klDiv_onlineKernel_apply,
+  Incognita.TransferBandits.klDiv_gameMeasure_eq_add}
+\uses{def:instance, def:source-data, def:learner, def:game, flem:online-ofAlgorithm}
+For every transfer learner $\pi$, every $s\in\mathcal S$, every Markov kernels $\nu,\tilde\nu$ and
+every $T$, $\mathrm{KL}(\kappa^T_{\pi,\nu}(s),\kappa^T_{\pi,\tilde\nu}(s))=\sum_k
+\E_{\kappa^T_{\pi,\nu}(s)}[N_k(T)]\,\mathrm{KL}(\nu_k,\tilde\nu_k)$. Consequently, for every size map
+$N'$ and every Markov kernels $\nu',\tilde\nu'$,
+\[
+\mathrm{KL}(\mathbb P,\tilde{\mathbb P})=\mathrm{KL}(P^D_{\nu',N'},P^D_{\tilde\nu',N'})
++\sum_k\E_{\mathbb P}[N_k(T)]\,\mathrm{KL}(\nu_k,\tilde\nu_k).
+\]
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner, def:game, flem:online-ofAlgorithm, lem:mixture}
+The kernel $\kappa^T_{\pi,\nu}(s)$ depends only on the kernels $\pi_t(s,\cdot)$ (induction on $T$),
+which form a bandit algorithm $\pi(s)$ of LML; by Lemma~\ref{flem:online-ofAlgorithm} it is the law
+of the first $T$ pairs under LML's law of the trajectory of $\pi(s)$. Forgetting the trivial
+observations is invertible, so the divergence is that of the LML histories, which LML's divergence
+decomposition computes as $\sum_{t<T}\E[\mathrm{KL}(\nu_{A_t},\tilde\nu_{A_t})]
+=\sum_k\E[N_k(T)]\mathrm{KL}(\nu_k,\tilde\nu_k)$. The second claim is the chain rule
+$\mathrm{KL}(\mu\otimes\kappa,\tilde\mu\otimes\tilde\kappa)=\mathrm{KL}(\mu,\tilde\mu)
++\int\mathrm{KL}(\kappa(s),\tilde\kappa(s))\,\mu(ds)$ and Lemma~\ref{lem:mixture}. This is
+Lemma~\ref{lem:online-kl} and the first display of the proof of Theorem~\ref{thm:main}.
+\end{proof}
+
+\begin{lemma}[An infinite divergence of the source]\label{flem:source-kl-top}
+\lean{Incognita.TransferBandits.klDiv_sourceLaw_eq_top}
+\uses{def:laws, def:source-space, def:size-rule, def:source-data}
+Let $N'$ be a size rule, $\nu',\tilde\nu'$ Markov kernels and $k$ an arm with
+$\E_{\nu'}[N'_k]>0$ and $\mathrm{KL}(\nu'_k,\tilde\nu'_k)=\infty$. Then
+$\mathrm{KL}(P^D_{\nu',N'},P^D_{\tilde\nu',N'})=\infty$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:size-rule, def:source-data, lem:wald}
+The statistic $F(D)=(\mathbf 1\{N'_k>0\},x_{k,1})$ of the source data has, under $P'_{\nu'}$, the
+law $\beta\otimes\kappa$ with $\beta$ the law of $\mathbf 1\{N'_k>0\}$, $\kappa(1)=\nu'_k$ and
+$\kappa(0)=\delta_0$, because the event $\{N'_k>0\}$ is independent of $X'_{k,1}$ (the argument of
+Lemma~\ref{lem:wald}); likewise under $P'_{\tilde\nu'}$ with $\tilde\nu'_k$. By data processing and
+the chain rule, the divergence is at least
+$\beta(\{1\})\,\mathrm{KL}(\nu'_k,\tilde\nu'_k)=\infty$, since $\beta(\{1\})=P'_{\nu'}(N'_k>0)>0$.
+\end{proof}
+
+\begin{lemma}[A prior game reads its stacks through its history]\label{flem:stack-of-history}
+\lean{Incognita.P003.card_filter_castSucc, Incognita.P003.card_filter_last,
+  Incognita.P003.state_fst_eq_card, Incognita.P003.exists_stack_of_history}
+\uses{def:prior-game, flem:prior-state}
+The counts $C(r)$ of a prior game are the counts of its history $H'_r$, and there are measurable
+maps $V_r$ on the histories of $r$ rounds, not depending on the game, with
+$V_r(H'_r)_{k,j}=X'_{k,j}$ for $j<C_k(r)$ and $0$ otherwise (indices from $0$): the $(j+1)$-th
+value observed on arm $k$ is $X'_{k,j}$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:prior-game}
+$V_r(h)_{k,j}$ is the reward of the round of $h$ that is the $(j+1)$-th pull of $k$ (a finite sum
+of indicators of events of the actions, which take finitely many values). Induction on $r$: the
+new round pulls $A'_r$ and observes $X'_{A'_r,C_{A'_r}(r)}$, which is the $(C_{A'_r}(r)+1)$-th pull
+of $A'_r$.
+\end{proof}
+
+\begin{lemma}[Separating the two arms]\label{flem:separating}
+\lean{Incognita.TransferBandits.eq_of_boxRestrict_eq, Incognita.P003.exists_separating}
+\uses{def:size-rule, def:source-space}
+Let $K=2$, $N'$ a size rule and $m\in\mathbb N^2$. There is a Borel set $S_m$ of the data
+$(U',(X'_{k,j})_{(k,j)\in B(m)})$ that contains the data of every point of
+$\{N'_1=m_1,\ N'_2>m_2\}$ and none of the data of the points of $\{N'_1>m_1,\ N'_2=m_2\}$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:size-rule, def:source-space}
+Step 1 of the proof of Proposition~\ref{prop:stopped-games}~(b): the images of the two events under
+the box map are analytic (images of Borel sets of a standard Borel space), and disjoint, since a
+common point would give, by mixing the stacks of the two arms, a point of both events (a size rule
+that equals $n$ at a point equals $n$ at every point with the same data in $B(n)$). Lusin's
+separation theorem gives $S_m$.
+\end{proof}
+
 \section{New decompositions of the paper's proofs}
 
 \begin{proof}[Formal route to Lemma~\ref{lem:prior-game}]
@@ -114,6 +312,65 @@ concludes.
 (a) as in the paper. (b) is Lemma~\ref{flem:stopped-size-rule} for the constant stopping time
 $\tau\equiv T'$ (\texttt{PriorStrategy.isStoppingTime\_const}): the counts are a size rule with total
 at most $T'$, so each count is at most $T'$.
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:witness}]
+\proves{prop:witness}
+\uses{def:consistency, def:learner, def:game, def:instance, flem:pulls-ofAlgorithm, flem:ucb-consistent}
+\emph{The source-ignoring learner.} By Lemma~\ref{flem:pulls-ofAlgorithm} the expected number of
+pulls of a suboptimal arm by $\pi^\sigma$ is $\E_{\sigma,\nu}[N_k(T)]$, whatever $\nu'$ and the
+source strategy; so the condition of Definition~\ref{def:consistency} holds for every pair of
+$\mathcal P^K\times\mathcal P^K$, hence for every $L$ directly (Proposition~\ref{prop:classes} is
+not needed). \emph{UCB} is Lemma~\ref{flem:ucb-consistent}. \emph{$\mathcal C_L\neq\emptyset$}: the
+arms of the frozen statement are any finite type, while LML's UCB is defined on $\{0,\dots,K-1\}$
+only; the witness is the source-ignoring learner of the KL-UCB algorithm of the library
+LMLExplore, which is defined on any finite set of arms and is consistent on $\mathcal P^K$ there
+(\texttt{LMLExplore.Bandits.KLUCB.isConsistent}, read through
+\texttt{Incognita.P003.isConsistentOnUnit\_klucb}). On $\{0,\dots,K-1\}$, UCB is a witness as
+well.
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:exclusion}]
+\proves{prop:exclusion}
+\uses{def:consistency, def:learner, def:source-data, def:drift, def:game, def:instance, def:laws, lem:prior-game, flem:followSource-pulls}
+By Lemma~\ref{flem:followSource-pulls}, the Lean proof can take deterministic sizes $\mathbf 0$ (a size rule by
+Lemma~\ref{lem:prior-game}~(a)) instead of the sizes $\mathbf 1$ of the paper: no arm then has a
+source value, so $\pi^{\mathrm{tr}}$ pulls the smallest arm $a_0$ at every round and
+$\E[N_{a_0}(T)]=T$. On the pair $(\nu,\nu)$ with $\nu_{a_0}=\delta_0$ and $\nu_k=\delta_1$ for
+$k\ne a_0$ (a pair of $\mathcal P_L$ for every $L$, with $a_0$ suboptimal),
+$\E[N_{a_0}(T)]/T=1\not\to0$. Both routes give a pair $(\nu,\nu)$ of $\mathcal P^K$ with
+deterministic sizes, as the statement asks.
+\end{proof}
+
+\begin{proof}[Formal route to Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{def:game, def:size-rule, def:laws, def:source-data, lem:lookahead, flem:lookahead-data, flem:online-kl-chain, prop:source-kl, lem:mixture}
+Part (a) follows the paper: the chain rule and the online term are
+Lemma~\ref{flem:online-kl-chain}, the source term is Proposition~\ref{prop:source-kl} (formal
+route below), and $\E_{\mathbb P}[N'_k]=\E_{\nu'}[N'_k]$ is Lemma~\ref{lem:mixture}.
+The Lean proof of part (b) follows the paper: the map is bounded and not a size rule by
+Lemma~\ref{lem:lookahead}; the online kernels of the two games are the same (same target), so the
+chain rule for the Kullback--Leibler divergence of a composition product with a common kernel
+(Mathlib's \texttt{klDiv\_compProd\_left}) reduces the divergence to that of the source data,
+which is $\mathrm{KL}(\mathrm{Ber}(p)^{\otimes2},\mathrm{Ber}(q)^{\otimes2})=2\,\mathrm{kl}(p,q)$ by
+Lemma~\ref{flem:lookahead-data} and tensorization (Tau Ceti's \texttt{klDiv\_prod\_prod}).
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:source-kl}]
+\proves{prop:source-kl}
+\uses{def:laws, def:source-space, def:size-rule, def:source-data, lem:source-law, lem:wald, flem:source-kl-top}
+The Lean proof does not use Lemma~\ref{lem:kl-neg}. Let $Z$ be the set of arms with
+$\E_{\nu'}[N'_k]=0$, on which $N'_k=0$ almost surely. If some arm outside $Z$ has
+$\mathrm{KL}(\nu'_k,\tilde\nu'_k)=\infty$, both sides are infinite (Lemma~\ref{flem:source-kl-top}).
+Otherwise every arm outside $Z$ has $\nu'_k\ll\tilde\nu'_k$ and an integrable log-likelihood ratio
+$\lambda_k$. Lemma~\ref{lem:source-law}, in the density form
+$P^D_{\nu',N'}=\ell\cdot P^D_{\tilde\nu',N'}$ with
+$\ell(s)=\mathbf 1\{n_k(s)=0,\ k\in Z\}\prod_k\prod_{j\le n_k(s)}\frac{d\nu'_k}{d\tilde\nu'_k}(x_{k,j})$
+(only the boxes of sizes vanishing on $Z$ need absolute continuity), gives
+$\log\ell(D)=\sum_k\sum_{j\le N'_k}\lambda_k(X'_{k,j})$ almost surely under $P'_{\nu'}$; each term is
+integrable with expectation $\E_{\nu'}[N'_k]\,\mathrm{KL}(\nu'_k,\tilde\nu'_k)$ by
+Lemma~\ref{lem:wald} applied to the positive and negative parts of $\lambda_k$, and the divergence of
+two probability measures with $P\ll Q$ and integrable log-likelihood ratio is its integral.
 \end{proof}
 
 \end{document}

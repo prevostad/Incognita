@@ -16,6 +16,8 @@ def:stopped-game].
 
 * `isSizeRule_of_eqOn_box`: a measurable size map such that `N'(ω) = n` implies `N'(ω') = n`
   whenever `ω'` has the randomisation and the values of the box of `n` of `ω` is a size rule.
+* `eq_of_boxRestrict_eq`: conversely, a size rule that equals `n` at `ω` equals `n` at every point
+  with the same randomisation and the same values in the box of `n`.
 * `PriorStrategy.measurable_state`: the state of the prior game after `r` rounds is measurable.
 * `PriorStrategy.sum_state_fst`: after `r` rounds the counts add up to `r`.
 * `PriorStrategy.state_eq_of_eqOn_box`: two source points that agree on the randomisation and on
@@ -62,6 +64,19 @@ lemma isSizeRule_of_eqOn_box {α : Type*} [Finite α] {N : SourceSpace α → α
     exact ⟨h n ω _ rfl (hagree ω), h n _ ω rfl fun a j hj ↦ (hagree ω a j hj).symm⟩
   rw [hE]
   exact hhat (hN (measurableSet_singleton n))
+
+/-- A size rule that equals `n` at `ω` equals `n` at every point with the same randomisation and
+the same values in the box of `n`. -/
+lemma eq_of_boxRestrict_eq {α : Type*} {N : SourceSpace α → α → ℕ} (hN : IsSizeRule N) {n : α → ℕ}
+    {ω ω' : SourceSpace α} (h : N ω = n) (hbox : boxRestrict n ω = boxRestrict n ω') :
+    N ω' = n := by
+  obtain ⟨G, -, hG⟩ := hN.measurableSet_eq n
+  have h1 : ω ∈ boxRestrict n ⁻¹' G := by rw [hG]; exact h
+  have h2 : ω' ∈ boxRestrict n ⁻¹' G := by
+    simp only [Set.mem_preimage] at h1 ⊢
+    rwa [← hbox]
+  rw [hG] at h2
+  exact h2
 
 namespace PriorStrategy
 
