@@ -750,8 +750,10 @@ Lean does not check citations, and models invent plausible references. So:
 
 ## 8. Gardening
 
-The `garden` role revisits what was validated (accepted papers, verified results), oldest
-revisit first, and records each pass in `catalogue/garden.md`:
+The `garden` role revisits the **Lean-verified papers** (level 2 or 3, §9: every frozen statement
+proved) and their results, oldest revisit first, and records each pass in `catalogue/garden.md`.
+Before any paper is entirely Lean-verified, the loop runs no gardening pass (the owner,
+2026-11-17: the quota goes to formalisation first). A pass covers:
 
 - **implications**: a result A is subsumed by B only if B implies A with quantitative content at
   least as good (same constants, same order, hypotheses no stronger); then A gets a proof as a
