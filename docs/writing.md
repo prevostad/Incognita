@@ -307,13 +307,19 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
     on a symbol (for example one subscript and one superscript).
   - **Standard notation first**: the notation of the field (Lattimore and Szepesvári's book, the
     owner's model paper arXiv:2610.21582, the cited papers) rather than a new one for a known object.
+  - **In proofs too.** A proof introduces a local symbol only for a quantity used at least three
+    times in that proof; a term used once or twice is written out, or named in words by an
+    `\underbrace` ("the deviation term") rather than by a new letter; a proof introduces at most
+    about five local symbols, and each is defined in its own sentence (rule B8) where it first
+    serves.
   This does not weaken section 2a: every symbol that remains is defined with `:=` and linked to its
   definition; there are simply fewer of them. *Test*: list the symbols introduced in the main text
   and count the uses of each; flag those used fewer than three times, those used in one proof only,
   and the near-homonyms; then read the main theorem's statement: can it be read with at most two
-  look-ups in the notation table? A few superfluous symbols is P; a main theorem that cannot be read
-  without repeated look-ups, or more than a third of the main text's symbols used fewer than three
-  times, is R.
+  look-ups in the notation table? Then pick three appendix proofs and count their local symbols and
+  the uses of each. A few superfluous symbols is P; a main theorem that cannot be read without
+  repeated look-ups, more than a third of the main text's symbols used fewer than three times, or a
+  proof whose local symbols outnumber its steps, is R.
 
 ## 4. When a presentation defect blocks
 
