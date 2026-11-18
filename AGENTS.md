@@ -44,6 +44,7 @@ example the errata entries to resolve), and the list of context files the script
 | `known-private.md` | the roadmap's private KNOWN entries, when the owner gives them (never quote them) |
 | `ci-log.txt` | the end of the failing CI logs (workflows CI and Papers) |
 | `owner-answers.md` | the owner's answers on the pinned issue "Questions for the owner", after the questions they answer: never ask again what is answered there |
+| `quality-pass.md` | for `prove`, `formalize-statements`, `garden`, `fix-pr` and the rubric `quality-pass`: Tau Ceti's pull request template, its `Quality pass:` block and the checks Q1–Q5 (section 6.8) |
 
 Only the files listed in task.md exist. The working tree is a clone of the repository, at `main` or
 at the pull request's head. `.agents/` is never committed.
@@ -57,7 +58,8 @@ experiments); `ls`, `grep`, `wc`, `mkdir`; local git `add`, `commit`, `rm`, `mv`
 pushes your commits and opens or updates the pull request. Python never downloads anything. The web
 is for reading only: never post, sign up or submit anything.
 
-**Reviewers** (`referee-scope`, `referee-proofs`, `review-statements`, `review-pr`, `review-roadmap`) are read-only:
+**Reviewers** (`referee-scope`, `referee-proofs`, `review-statements`, `review-pr`, `review-roadmap`,
+and the rubrics `rubric-<name>` of Tau Ceti's review, section 6.8) are read-only:
 they change no file of the repository and make no commit (the referees compile the paper, and
 `referee-proofs` may write numerical experiments in `.agents/scratch/`: none of this is
 collected), and their final message is their report. Its first line is the verdict.
@@ -80,7 +82,33 @@ Lean names of the statements added under Statements/, each with its paper label.
 ## Not done
 What remains, your doubts, and `Ask-owner: <question>` lines (one line each) for what only the
 owner can decide.
+## Quality pass
+Only in a pull request that changes a .lean file under Incognita/ or Statements/ (section 6.8):
+Tau Ceti's quality pass, as below.
 ```
+
+The section `## Quality pass` (a **Lean pull request**, section 6.8) is Tau Ceti's quality pass:
+before the end, run the checks Q1–Q5 of `.agents/quality-pass.md` (Tau Ceti's pull request
+template, the comment at its end) over every declaration you add or change, and report them in
+its format, one line per check, starting `changed`, `checked`, `declined` or `n/a`, a dash, and a
+note of one or two sentences:
+
+```
+## Quality pass
+Quality pass:
+- Q1 Mathlib duplicates: checked — looked for … in Mathlib, LML and LMLExplore; none.
+- Q2 Tau Ceti duplicates, on main and in open PRs: checked — looked for … in Incognita/, Statements/, .lake/packages/TauCeti and open-prs.md; none.
+- Q3 Hypotheses: changed — foo: [NeZero n] derived from hn; hn kept (false for n = 1); the frozen statement and its proof Incognita.P001.main: kept (frozen type).
+- Q4 Section variables: checked — no declaration picks up an unused variable.
+- Q5 Proofs of at most 50 lines: declined — main_aux is 70 lines: its two halves share the bound of step 3 (reason).
+```
+
+"Tau Ceti" in Q2 means Incognita here (and Tau Ceti itself, a dependency). The hypotheses of a
+frozen statement, and of its proof (exactly the frozen type), are the paper's: Q3 says "kept
+(frozen type)" for them and applies to every other lemma and theorem. A check you did not run is
+`declined — not run`; a pull request that changes no Lean declaration answers `n/a` throughout. A
+`fix-pr` round on a Lean pull request writes the whole block again, as the pull request will
+stand: the script replaces the section of the description with it.
 
 The script writes the first line of the pull request body (`Role: … Target: … Model: …`); do not
 write it. It copies every `Ask-owner:` line of a summary or a report to the pinned issue "Questions
@@ -141,7 +169,9 @@ and pull requests from forks, then takes the first available of:
    merged only after the scripted commit that approves it (§4);
 2. `fix-pr` on `main` when the CI of `main` is red (then no review and no merge until it is fixed);
 3. repairs, oldest pull request first: `revise` for a paper pull request, `fix-pr` for any other,
-   when its head has a trusted `major` (papers) or `request_changes` (others), a failed build
+   when its head has a trusted `major` (papers) or `request_changes` (others; for a Lean pull
+   request, once every rubric has judged the head, or at once after a rubric's `block`, section
+   6.8), a failed build
    (after one automatic rerun), a conflict the mechanical rebase could not resolve, or it is a draft
    labelled `incomplete`. For a paper, only an answer to a referee's `major` is a revision round;
    the other repairs are fix rounds;
@@ -149,7 +179,8 @@ and pull requests from forks, then takes the first available of:
    needed role: paper pull requests (the owner's too: branches `owner/*`, a new paper or a
    presentation revision, §5.6) get `referee-scope`, then `referee-proofs` once scope accepted
    that head; statements pull requests get `review-statements`; roadmap proposals get
-   `review-roadmap`; all others get `review-pr`;
+   `review-roadmap`; all others get `review-pr`; then a Lean pull request gets Tau Ceti's rubrics,
+   one session each, in order, on the same head (section 6.8);
 5. every 6 agent tasks, one `garden` (once a proof marker exists) or `bibliographer` task,
    alternately (§8);
 6. `prove` for frozen statements still open (not superseded by a correction): first the papers
@@ -452,7 +483,7 @@ the figures and how to run it (criterion W16).
   of [docs/writing.md](docs/writing.md)), `referee-proofs` checks the proofs on the **blueprint
   build**.
 - **Every review can be resumed.** Every reviewer (referees, `review-pr`, `review-statements`,
-  `review-roadmap`) writes its report as it goes in `.agents/report.md` (not in the repository):
+  `review-roadmap`, the rubrics of section 6.8) writes its report as it goes in `.agents/report.md` (not in the repository):
   after each node, section or check, what was checked and what was found. A session stopped before
   its verdict (deadline, weekly cap) gives no verdict: the script posts that file on the pull
   request as a partial report (comment kind `<role>-partial`, no status), and the next session of
@@ -512,9 +543,10 @@ the figures and how to run it (criterion W16).
 ### 5.5 After acceptance
 
 Accepted paper (its accepted open questions become candidate directions, §4.1) →
-`formalize-statements` (statements pull request, reviewed by `review-statements`, merged by the
-loop once `review-statements` approves it, since 2026-11-17; by the owner before) → statements frozen → `prove` (proof pull requests, reviewed by
-`review-pr`) → verified when every frozen statement of the paper is proved → re-verified by
+`formalize-statements` (statements pull request, reviewed by `review-statements` and by Tau Ceti's
+rubrics, section 6.8, merged by the loop once they all approve it, since 2026-11-17; by the owner
+before) → statements frozen → `prove` (proof pull requests, reviewed by `review-pr` and by Tau
+Ceti's rubrics) → verified when every frozen statement of the paper is proved → re-verified by
 gardening (§8). Its certification (§9) follows these steps.
 
 **An accepted `paper.tex` is never edited**, except by a new version (§5.6): after an erratum
@@ -727,6 +759,36 @@ renumbered, edited or deleted: later roles only add their line under them.
 - The machine has 8 GB of RAM: one `lake` command at a time, never in parallel.
 - Never require Mathlib, LML or Tau Ceti directly: they come from LMLExplore, at its pins.
 
+### 6.8 Review of Lean pull requests: Tau Ceti's rubrics
+
+A **Lean pull request** is one of `prove` or `formalize-statements`, or any other one (`garden`,
+`fix-pr`…) that changes a `.lean` file under `Incognita/` or `Statements/`. It is reviewed like a
+pull request of LMLExplore (the owner, 2026-11-17), in addition to its Incognita review:
+
+- **Its Incognita review first**: `review-statements` (statements) or `review-pr` (all others), for
+  the rules of Incognita (paths, frozen types, locks, proof markers, back-translation).
+- **Then the 11 rubrics of Tau Ceti** ([agents/rubrics/](agents/rubrics/README.md), vendored from
+  TauCetiReview, with Incognita's adaptations in `agents/rubrics/_incognita.md`), each judged by
+  an independent session (role `rubric-<name>`), on the same head, in this order: `correctness`,
+  `reuse`, `scope`, `attribution` (these four may `block`), `api-design`, `generality`,
+  `placement`, `naming`, `documentation`, `proof-quality`, `quality-pass`. Each one judges only
+  its angle; its verdict is `approve`, `request_changes` or `block`, and its report a comment with
+  the status `Incognita rubric/<name>` on the head.
+- A `request_changes` (of the Incognita review or of a rubric) does not stop the round: once every
+  rubric has judged the head, one `fix-pr` round answers all the latest reports (contest a wrong
+  finding in the summary, with the argument: the rubric weighs it on the next head). A `block`
+  stops the round at once: a `fix-pr` round answers it (fix the problem within the purpose of the
+  pull request, or contest it, or ask the owner); a block on a second head sends the pull request
+  to the owner (`needs-human`).
+- **Merged** only when CI is green, the Incognita review approves the head, and **every rubric
+  approves the same head**: after a fix commit, every rubric runs again.
+- **Quality pass**: the author reports Tau Ceti's quality pass in the section `## Quality pass` of
+  its summary, which becomes the description (section 1); the rubric `quality-pass` checks it
+  against the diff.
+- The rubrics never override this contract: frozen statements, no theorem lost, proof pull
+  requests that add only lemmas and theorems, the forbidden keywords and the names of section 6.2
+  stay as they are (`agents/rubrics/_incognita.md`).
+
 ## 7. Literature and attribution
 
 Lean does not check citations, and models invent plausible references. So:
@@ -815,7 +877,8 @@ trailers of the loop's merge commits), the gardening log and the human audits. L
 | `review-statements` | reviewer | fidelity of phase 1: back-translation, definitions, witnesses |
 | `prove` | author | phase 2: proofs of frozen statements, one coherent area per pull request; `formalisation.tex`; errata |
 | `review-pr` | reviewer | every other pull request (proofs, garden, literature, exploration, fixes) |
-| `fix-pr` | author | rebases, repairs builds, answers `review-pr` and `review-statements`, repairs `main` |
+| `rubric-<name>` | reviewer | one of Tau Ceti's 11 rubrics, on a Lean pull request (section 6.8) |
+| `fix-pr` | author | rebases, repairs builds, answers `review-pr`, `review-statements` and the rubrics, repairs `main` |
 | `bibliographer` | author | source notes, reference metadata, attribution audits |
 | `garden` | author | revisits validated results: implications, contradictions, duplicates, re-verification, candidate directions |
 | `propose-roadmap` | author | proposes an extension of an approved roadmap or a new roadmap (§4.2) |

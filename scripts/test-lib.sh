@@ -307,6 +307,56 @@ git checkout -q -f "$base"; mkdir -p Incognita/P; printf 'theorem a : True := tr
 ok "a theorem is a proof" 'adds_only_theorems "$base" HEAD'
 printf 'noncomputable def f : Nat := 0\n' >> Incognita/P/A.lean; git add -A; git commit -qm def
 ok "a def is not" '! adds_only_theorems "$base" HEAD'
+# Lean pull requests (Tau Ceti's rubrics review them too; owner, 2026-11-17)
+ok "a garden PR changing Incognita/*.lean is a Lean PR" 'is_lean_pr garden "$base" HEAD'
+ok "prove and formalize-statements always are" 'is_lean_pr prove x y && is_lean_pr formalize-statements x y'
+ok "papers, proposals and the loop's pull requests never are" '! is_lean_pr write-paper "$base" HEAD && ! is_lean_pr revise "$base" HEAD && ! is_lean_pr propose-roadmap "$base" HEAD && ! is_lean_pr loop "$base" HEAD'
+git checkout -q -f "$base"; mkdir -p literature Exploration; echo n > literature/n.md; echo e > Exploration/E.lean; git add -A; git commit -qm lit
+ok "a PR without .lean under Incognita/ or Statements/ is not (Exploration/ does not count)" '! is_lean_pr bibliographer "$base" HEAD && ! is_lean_pr garden "$base" HEAD'
+git checkout -q -f "$base"; mkdir -p Statements/P001; echo s > Statements/P001/a.lean; git add -A; git commit -qm st
+ok "a fix of main adding under Statements/ is" 'is_lean_pr fix-pr "$base" HEAD'
+git checkout -q -f "$base"
+
+# ---- Tau Ceti's rubrics: the list, the state of a head, blocks, the quality pass of a description
+ok "rubric roles are review roles (budget, model, short near the cap)" 'is_rubric_role rubric-api-design && is_review_role rubric-quality-pass && short_role rubric-naming && is_role rubric-correctness && ! is_rubric_role rubric-bogus && ! is_rubric_role review-pr'
+ok "the default list: the 11 rubrics in Tau Ceti's order" '[ "$(rubrics_enabled | tr "\n" " ")" = "$RUBRICS_ALL " ] && [ "$(rubrics_enabled | wc -l | tr -d " ")" = 11 ]'
+ok "INCOGNITA_RUBRICS trims the list (Tau Ceti's order kept, unknown names ignored)" '[ "$(INCOGNITA_RUBRICS="quality-pass, correctness,bogus" rubrics_enabled | tr "\n" " ")" = "correctness quality-pass " ]'
+rsts() {  # verdict of each rubric, in order (- or missing: none): trusted status lines of one head
+  local r v i=0 out=""
+  for r in $RUBRICS_ALL; do
+    i=$(( i + 1 )); v=${!i:--}
+    [ "$v" = - ] || out="$out$(printf '%s\t%s\t%s\t%s' "Incognita rubric/$r" x yes "role=rubric-$r verdict=$v pr=5")"$'\n'
+  done
+  printf '%s' "$out"
+}
+A="approve approve approve approve approve approve approve approve approve approve approve"
+ok "no verdict yet: the first rubric is next" '[ "$(rubrics_state "")" = "next correctness" ]'
+ok "in order: the first rubric without a verdict" '[ "$(rubrics_state "$(rsts approve approve)")" = "next scope" ]'
+ok "a block stops the round" '[ "$(rubrics_state "$(rsts approve block)")" = "block reuse" ]'
+ok "every rubric approves" '[ "$(rubrics_state "$(rsts $A)")" = approve ]'
+ok "one asks for changes" '[ "$(rubrics_state "$(rsts approve request_changes approve approve approve approve approve approve approve approve approve)")" = changes ]'
+ok "a request_changes does not stop the round" '[ "$(rubrics_state "$(rsts approve request_changes)")" = "next scope" ]'
+ok "an untrusted rubric status does not count" '[ "$(rubrics_state "$(rsts $A | sed "s/\tyes\t/\tno\t/")")" = "next correctness" ]'
+ok "a status of another role does not count" '[ "$(rubrics_state "$(rsts $A | sed "s/role=rubric-correctness/role=review-pr/")")" = "next correctness" ]'
+ok "an empty INCOGNITA_RUBRICS: nothing to wait for" '[ "$(INCOGNITA_RUBRICS= rubrics_state "")" = approve ]'
+ok "a trimmed list waits only for its rubrics" '[ "$(INCOGNITA_RUBRICS=reuse rubrics_state "$(rsts - approve)")" = approve ]'
+cat > "$t/rc.json" <<'EOF'
+[{"kind": "rubric-reuse", "sha": "aaaa", "body": "Verdict: block\n\n## Summary\nx"},
+ {"kind": "rubric-scope", "sha": "aaaa", "body": "Verdict: block\nx"},
+ {"kind": "rubric-scope", "sha": "bbbb", "body": "intro\nVerdict: `block`\nx"},
+ {"kind": "rubric-scope-partial", "sha": "cccc", "body": "Verdict: block"},
+ {"kind": "rubric-correctness", "sha": "dddd", "body": "Verdict: request_changes\nblock"},
+ {"kind": "review-pr", "sha": "eeee", "body": "Verdict: block"}]
+EOF
+ok "blocked heads: distinct heads of rubric reports with the verdict block" '[ "$(rubric_blocked_heads < "$t/rc.json")" = 2 ]'
+printf 'Role: `prove`. Target: `P001-x`. Model: `m`.\n\n## Results\nr\n## Quality pass\nQuality pass:\n- Q1 Mathlib duplicates: old\n## Not done\nn\n\nOpened by `scripts/agent.sh` (see agents/README.md).\n' > "$t/body1.md"
+printf 'Role: `prove`. Target: `P001-x`. Model: `m`.\n\n## Results\nr\n\nOpened by `scripts/agent.sh` (see agents/README.md).\n' > "$t/body2.md"
+printf '## Results\nnew\n## Quality pass\nQuality pass:\n- Q1 Mathlib duplicates: checked \\le new\n## Not done\nx\n' > "$t/sum.md"
+replace_section "$t/body1.md" "$t/sum.md" "Quality pass" > "$t/nb1.md"
+ok "the quality pass of a fix round replaces the one of the description" 'head -n 1 "$t/nb1.md" | grep -q "^Role: " && grep -qF "checked \\le new" "$t/nb1.md" && ! grep -q old "$t/nb1.md" && grep -qx r "$t/nb1.md" && grep -qx n "$t/nb1.md" && ! grep -qx new "$t/nb1.md" && [ "$(grep -c "^## Quality pass" "$t/nb1.md")" = 1 ]'
+replace_section "$t/body2.md" "$t/sum.md" "Quality pass" > "$t/nb2.md"
+ok "a description without one gets it before its last line" 'head -n 1 "$t/nb2.md" | grep -q "^Role: " && [ "$(grep -n "^## Quality pass" "$t/nb2.md" | cut -d: -f1)" -lt "$(grep -n "^Opened by" "$t/nb2.md" | cut -d: -f1)" ]'
+ok "a summary without a quality pass changes nothing" '! replace_section "$t/body2.md" "$t/body2.md" "Quality pass" >/dev/null'
 
 # ---- mechanical resolution of root import files
 git checkout -q -f -B side "$base"; printf 'public import Incognita.Side\n' >> Incognita.lean; git commit -qam side
