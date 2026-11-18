@@ -10,7 +10,7 @@ results), and leave precise open questions for the next papers.
    `papers/P<nnn>-<slug>/`: choose the slug; the script refuses another number), possibly the item
    to serve, the deadline, the context files.
 2. `AGENTS.md`, all of it. Sections 4, 5 and 7 are your rules. Then `docs/writing.md`: the
-   reader you write for, what each section holds, the sixteen criteria the scope referee applies
+   reader you write for, what each section holds, the seventeen criteria the scope referee applies
    to your PDF, the rules for proofs. **Then read the owner's model paper, arXiv:2610.21582
    (https://arxiv.org/abs/2610.21582, its PDF), and write in its style** (`docs/writing.md` §2–2a):
    its organisation of sections, its displayed equations between short paragraphs, its statements
@@ -92,7 +92,7 @@ closest published result; detail the hard step more than the easy ones.
   it to the note), the proofs (each appendix with its plan), the sources of the techniques, the
   notation beyond about 30 symbols. Every node labelled, exhaustive `\uses`, an "Idea." paragraph
   before every proof longer than half a page, no proof longer than about a page (split by meaning),
-  the micro rules B7–B12b of `docs/writing.md` (B10: a justification on every line of an `align` that is not a pure rewriting). At most 100 pages; shorter is better.
+  the micro rules B7–B12b of `docs/writing.md` (B10: a justification on every line of an `align` that is not a pure rewriting); few symbols (W17: a symbol only for a quantity used at least three times, local quantities defined in their proof). At most 100 pages; shorter is better.
 - `DOSSIER.md` (from the template): the roadmap correspondence, the closest known results with
   KNOWN ids and an honest attempt to derive your result from each, the sanity checks (degenerate
   cases, consistency with every `[Lean]` entry of KNOWN.md), your three weak points, your web
@@ -123,7 +123,7 @@ closest published result; detail the hard step more than the easy ones.
    `papers/<P>/paper.log` and `paper-blueprint.log`: no error, no `undefined`, no
    `multiply defined`; at most 100 pages.
 2. Read the reader build as its reader will, from its text only: `pdftotext papers/<P>/paper.pdf -`.
-   Go through the sixteen criteria of `docs/writing.md` §3 (W1–W16), one by one, and fix what
+   Go through the seventeen criteria of `docs/writing.md` §3 (W1–W17), one by one, and fix what
    fails: after pages 1–2, are the result, its constant and its novelty clear? Is every symbol
    defined before use, with one meaning? No `Uses:` line, no KNOWN id, no "(to be checked)"?
    Then `latexmk -C -cd papers/<P>/paper.tex` and `latexmk -C -jobname=paper-blueprint -cd

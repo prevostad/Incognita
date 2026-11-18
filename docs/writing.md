@@ -174,7 +174,7 @@ locus when a precise result is used (`\citet[Theorem~3]{HT15}`). Never alpha key
 **Language.** English, plain, "we". No promotional adjectives; "optimal" only for a result paired
 with a lower bound in the same class.
 
-## 3. The sixteen presentation criteria
+## 3. The seventeen presentation criteria
 
 The scope referee applies them to the **reader build** (the PDF's text, `pdftotext paper.pdf -`),
 in addition to the source. Each has a yes/no test. **R** marks a criterion whose failure is
@@ -297,6 +297,23 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
   two published algorithms, with reproducible scripts, the paper's algorithm run with parameters its
   theorems cover, or a paragraph giving one of the valid reasons? A missing section, or a missing comparison, without a valid reason is **R** (major); a
   table where a curve was needed, too few runs or a missing confidence band is P.
+- **W17 (P) Economy of notation** (owner, 2026-11-18). Few symbols, each one earning its place:
+  - **A symbol must serve.** A quantity gets a symbol only if it is used at least three times after
+    its definition; otherwise write it in words or expand the formula where it is used.
+  - **Local quantities stay local.** A quantity used in one proof only is defined inside that proof,
+    not in the setting and not in the notation table.
+  - **No near-homonyms.** Never two symbols for the same object, nor near-identical symbols for
+    different objects ($N_a$, $\tilde N_a$, $\bar N_a$, $N_a'$ side by side); at most two decorations
+    on a symbol (for example one subscript and one superscript).
+  - **Standard notation first**: the notation of the field (Lattimore and Szepesvári's book, the
+    owner's model paper arXiv:2610.21582, the cited papers) rather than a new one for a known object.
+  This does not weaken section 2a: every symbol that remains is defined with `:=` and linked to its
+  definition; there are simply fewer of them. *Test*: list the symbols introduced in the main text
+  and count the uses of each; flag those used fewer than three times, those used in one proof only,
+  and the near-homonyms; then read the main theorem's statement: can it be read with at most two
+  look-ups in the notation table? A few superfluous symbols is P; a main theorem that cannot be read
+  without repeated look-ups, or more than a third of the main text's symbols used fewer than three
+  times, is R.
 
 ## 4. When a presentation defect blocks
 
