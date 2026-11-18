@@ -1,0 +1,422 @@
+% formalisation.tex: blueprint extension of an accepted paper (AGENTS.md, section 6.6, case c).
+% Not refereed: Lean checks every node. paper.tex is never edited.
+% Nodes of paper.tex are referred to by their labels: xr-hyper reads paper.aux, so compile
+% paper.tex first (CI does). New labels start with f (flem:, fprop:, fdef:) and are never reused.
+% Every node has \lean{...} with its Lean name and an exhaustive \uses{...}; never write \leanok.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+\externaldocument{paper}
+\counterwithout{theorem}{section}
+\renewcommand{\thetheorem}{F\arabic{theorem}}
+
+% Notation of the paper, written out.
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\Kinf}{\mathcal K_{\inf}}
+\newcommand{\cP}{\mathcal P}
+
+\title{Formalisation notes for P000-hy-unknown-imposed-grid}
+\author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
+  are this file's; other numbers refer to the paper.}}
+\date{2026-11-17}
+
+\begin{document}
+\maketitle
+
+Rounds are numbered from $0$ (the paper's round $t$ is the Lean round $t-1$); the count $N_c(t)$
+is the number of pulls of $c$ in the rounds $0,\dots,t-1$, so the quantities at the batch ends
+$t_\ell$ do not shift. A policy ``sees the rewards before $r$'' at the round $n$ when it takes the
+same value on two histories of the rounds $<n$ with the same actions and the same rewards at the
+rounds $<r$; a learner batched on a grid sees, at a round of batch $\ell+1$ (the rounds
+$t_\ell\le n<t_{\ell+1}$), the rewards before $t_\ell$. $\Kinf(\nu_a,\mu)$ is the primal formula
+$\inf\{\KL(\nu_a,Q):\ Q\text{ a law on }[0,1],\ \E_Q[X]>\mu\}$, as in the frozen statements.
+
+\section{Extra lemmas}
+
+\subsection{One batch ahead}
+
+\begin{lemma}[masked histories]\label{flem:masked-law}
+\lean{Incognita.BatchedBandits.map_history_maskFeedback_eq, Incognita.BatchedBandits.isAlgEnvSeqUntil_maskFeedback}
+\uses{def:learner}
+Let $r\le M$, and let a learner see, at every round $n<M$, the rewards before $r$. Let two
+environments have the same feedback kernels at the rounds $<r$. Then the history of the rounds
+$<M$ in which the rewards of the rounds $\ge r$ are replaced by a fixed value $y_0$ has the same
+law under the two environments. In particular the actions of the rounds $<M$, and every count
+$N_c(M)$, have the same law.
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner}
+The masked process (observations, actions, and rewards replaced by $y_0$ at the rounds $\ge r$) is
+a run until $M$ of the learner against the environment $e_M$ whose feedback kernel is the one of
+the given environment at the rounds $<r$ and $\delta_{y_0}$ at the rounds $\ge r$: the conditional
+law of the action at a round $n<M$ given the masked history is the policy, since the policy only
+reads the actions and the rewards before $r$, which the mask keeps; at the rounds $<r$ nothing is
+masked; at the rounds $\ge r$ the masked reward is constant. The same holds for the second
+environment with the same $e_M$, and the law of the history of a run until $M$ only depends on
+the learner and on the environment.
+\end{proof}
+
+\begin{lemma}[divergence for the switched environment]\label{flem:switch-kl}
+\lean{Incognita.BatchedBandits.klDiv_map_hist_switch}
+\uses{def:learner}
+Let $e$ be the environment that follows the bandit $\nu'$ at the rounds $<r$ and the bandit $\nu$
+at the rounds $\ge r$, and $r\le M$. The relative entropy between the laws of the histories of the
+rounds $<M$ under $\nu$ and under $e$ equals the relative entropy between the laws of the histories
+of the rounds $<r$ under $\nu$ and under $\nu'$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner}
+Chain rule over the rounds (Lattimore and Szepesv\'ari, \emph{Bandit Algorithms}, Lemma~15.1): the rounds $\ge r$ have the same step kernel
+under $\nu$ and under $e$ and contribute $0$; the rounds $<r$ have the step kernels of $\nu'$.
+\end{proof}
+
+\begin{lemma}[finite horizon, one batch ahead]\label{flem:onebatch-finite}
+\lean{Incognita.BatchedBandits.exp_neg_le_of_seesRewardsUpTo}
+\uses{def:learner}
+Let $r\le M$, $M>0$, let a learner see the rewards before $r$ at every round $n<M$, and let the
+bandits $\nu,\nu'$ differ only at the arm $a$, with $\KL(\nu_a,\nu'_a)<\infty$. Then
+\[
+\tfrac12\exp\big(-\E_\nu[N_a(r)]\,\KL(\nu_a,\nu'_a)\big)
+\ \le\ \frac{2\,\E_\nu[N_a(M)]}{M}+\frac{2\,(M-\E_{\nu'}[N_a(M)])}{M}.
+\]
+\end{lemma}
+
+\begin{proof}
+\uses{flem:masked-law, flem:switch-kl, def:learner}
+Let $e$ be the switched environment of Lemma~\ref{flem:switch-kl}. By
+Lemma~\ref{flem:masked-law} (the environments $e$ and $\nu'$ agree before $r$), the masked history
+of the rounds $<M$ has the same law $\mu'$ under $e$ and under $\nu'$; let $\mu$ be its law under
+$\nu$. By data processing and Lemma~\ref{flem:switch-kl},
+$\KL(\mu,\mu')\le\KL(\nu\text{-history before }r,\ \nu'\text{-history before }r)
+=\E_\nu[N_a(r)]\KL(\nu_a,\nu'_a)$ (divergence decomposition). The Bretagnolle--Huber inequality
+(in Lean, LMLExplore's \texttt{LMLExplore.exp\_neg\_klDiv\_div\_two\_le}) on the event $\{2N_a(M)\ge M\}$ (a function of the masked history) gives
+$\tfrac12e^{-\KL(\mu,\mu')}\le\PP_\nu(2N_a(M)\ge M)+\PP_{\nu'}(2N_a(M)<M)$; Markov's inequality,
+for $N_a(M)$ under $\nu$ and for $M-N_a(M)\ge0$ under $\nu'$, concludes.
+\end{proof}
+
+\begin{lemma}[alternative laws have mean below $1$]\label{flem:mean-lt-one}
+\lean{Incognita.BatchedBandits.integral_id_lt_one_of_klDiv_ne_top}
+\uses{def:model}
+If $Q$ is a law on $[0,1]$ and $\KL(P,Q)<\infty$ for a law $P$ of mean $<1$, then $Q$ has mean
+$<1$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:model}
+A law on $[0,1]$ of mean $1$ is $\delta_1$, and $P\ll\delta_1$ would give $P=\delta_1$.
+\end{proof}
+
+\subsection{HY is batched and does not know the grid ahead}
+
+\begin{lemma}[HY sees the rewards of the previous batches]\label{flem:hy-congr}
+\lean{Incognita.BatchedBandits.HY.next_congr, Incognita.BatchedBandits.isBatched_hyAlg}
+\uses{def:hy}
+At a round of batch $\ell+1$, two histories with the same actions and the same rewards at the
+rounds $<t_\ell$ give the same action of HY$(w_0,\beta,\omega,\vartheta,\gamma)$, for all
+parameters. Hence HY is batched on its grid.
+\end{lemma}
+
+\begin{proof}
+\uses{def:hy}
+Every statistic of Definition~\ref{def:hy} used in batch $\ell+1$ is computed at the cutoffs
+$t_\ell$ and $t_{\ell-1}\le t_\ell$ (counts, pseudo-means, divergences of the pseudo-empirical laws,
+leader, reference, threshold, targets), or is a current count $N_c(t-1)$, which only uses the
+actions. Each is checked to agree on the two histories, in the order of the definition.
+\end{proof}
+
+\begin{lemma}[HY does not know the grid ahead]\label{flem:hy-grid}
+\lean{Incognita.BatchedBandits.HY.next_hy_eq_of_t_eq}
+\uses{def:hy, def:grid}
+With the default parameters $\omega^{\mathrm{dy}},\vartheta,\gamma$, at a round $n$ of batch
+$\ell+1$ of two grids with the same ends $t_0,\dots,t_\ell$, HY takes the same action.
+\end{lemma}
+
+\begin{proof}
+\uses{def:hy, def:grid}
+The grid enters the action of batch $\ell+1$ only through $t_\ell$, $t_{\ell-1}$, $x_\ell$,
+$x_{\ell-1}$, $\mathsf L_\ell$, $\mathsf L_1$ (for $\ell=1$), $U_{\ell-1},U_\ell,U_{\ell+1}$
+($U_{j+1}$ is a function of $\mathsf L_j$), $s_\ell$, $\omega^{\mathrm{dy}}_\ell$, $\vartheta_\ell$ and
+$\gamma_\ell$, all functions of $t_0,\dots,t_\ell$; batch $1$ does not use the grid.
+\end{proof}
+
+\subsection{Assembling the lower bounds}
+
+\begin{lemma}[$\liminf$ of a weighted sum]\label{flem:liminf-sum}
+\lean{Incognita.BatchedBandits.eventually_lt_sum_mul}
+\uses{}
+For a finite set $S$, weights $w_i>0$ and sequences with $\liminf_\ell u_i(\ell)\ge L_i$,
+$\liminf_\ell\sum_{i\in S}w_iu_i(\ell)\ge\sum_{i\in S}w_iL_i$.
+\end{lemma}
+
+\begin{proof}
+\uses{}
+Induction on $S$, splitting the margin in two halves.
+\end{proof}
+
+\begin{lemma}[$\liminf$ of a product]\label{flem:liminf-mul}
+\lean{Incognita.BatchedBandits.eventually_lt_mul_of_tendsto}
+\uses{}
+If $f\ge0$ eventually, $\liminf f\ge A$ and $g\to B>0$, then $\liminf fg\ge AB$.
+\end{lemma}
+
+\begin{proof}
+\uses{}
+For $0\le c<AB$, choose $A'<A$ and $B'<B$ positive with $c<A'B'$.
+\end{proof}
+
+\begin{lemma}[two ratios]\label{flem:log-ratio}
+\lean{Incognita.BatchedBandits.Grid.tendsto_log_t_add_two_div_log_t}
+\uses{def:grid, def:ass-x}
+On a grid with $x_\ell\to x$, $\log t_{\ell+2}/\log t_\ell=x_{\ell+1}x_{\ell+2}\to x^2$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:grid, def:ass-x}
+For $\ell\ge1$ the identity holds by definition of the ratios.
+\end{proof}
+
+\begin{lemma}[Case A of Theorem~\ref{thm:lower}(ii)]\label{flem:caseA}
+\lean{Incognita.BatchedBandits.eventually_lt_div_log_t_of_eventually_lt_div_log_t_add_two}
+\uses{def:grid, def:ass-x}
+On a grid with $x_\ell\to x>0$, a nonnegative sequence with $\liminf_\ell u_\ell/\log t_{\ell+2}\ge A$
+has $\liminf_\ell u_\ell/\log t_\ell\ge x^2A$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:liminf-mul, flem:log-ratio, def:grid, def:ass-x}
+$u_\ell/\log t_\ell=(u_\ell/\log t_{\ell+2})\cdot(\log t_{\ell+2}/\log t_\ell)$.
+\end{proof}
+
+\begin{lemma}[Case B of Theorem~\ref{thm:lower}(ii)]\label{flem:caseB}
+\lean{Incognita.BatchedBandits.frequently_lt_div_log_t_of_not_isBigO}
+\uses{def:grid}
+A nonnegative sequence that is not $O(\log t_\ell)$ has $\limsup_\ell u_\ell/\log t_\ell=\infty$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:grid}
+Otherwise $u_\ell\le c\log t_\ell$ eventually, and $\log t_\ell>0$ for $\ell\ge1$.
+\end{proof}
+
+\begin{lemma}[the regret with the constant $C_1$, on every grid]\label{flem:regret-one}
+\lean{Incognita.BatchedBandits.eventually_lt_regret_div_log_t}
+\uses{def:grid, def:model, def:learner, def:kinf}
+For every grid, every batched learner consistent on $\cP$ and every $\nu\in\cP$,
+$\liminf_\ell\mathfrak R(t_\ell)/\log t_\ell\ge\sum_{c:\Delta_c>0}\Delta_c/\Kinf(\nu_c,\mathbf m^\star)$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:liminf-sum, lem:onebatch, def:grid, def:model, def:learner, def:kinf}
+Lemma~\ref{flem:liminf-sum} with $w_c=\Delta_c$ and, for each sub-optimal arm $c$, the bound
+$\liminf_\ell\E_\nu[N_c(t_\ell)]/\log t_\ell\ge1/\Kinf(\nu_c,\mathbf m^\star)$ on every grid, which
+follows from Lemma~\ref{lem:onebatch} and $\log t_\ell\le\log t_{\ell+1}$ (the argument of the
+formal route to Theorem~\ref{thm:lower}(i) below); the optimal arms have $\Delta_c=0$.
+\end{proof}
+
+\begin{lemma}[the regret when some count is not logarithmic]\label{flem:regret-caseB}
+\lean{Incognita.BatchedBandits.frequently_lt_regret_div_log_t_of_not_isBigO}
+\uses{def:grid, def:learner}
+If a sub-optimal arm $c$ has $\E_\nu[N_c(t_\ell)]\ne O(\log t_\ell)$, then
+$\limsup_\ell\mathfrak R(t_\ell)/\log t_\ell=\infty$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:caseB, def:grid, def:learner}
+$\mathfrak R(t_\ell)\ge\Delta_c\E_\nu[N_c(t_\ell)]$, and Lemma~\ref{flem:caseB}.
+\end{proof}
+
+\subsection{Two batches ahead, without concentration}
+
+The paper proves Lemma~\ref{lem:twobatches} with boundary tilts, a tilted measure on the reward
+stacks and the typical values of the log-likelihood ratios (Lemmas~\ref{lem:tilts}--\ref{lem:typ}).
+The Lean proof of part (ii) uses instead a one-sided change of measure between two alternatives
+$\kappa^\pm$ with $\kappa^-_a\ge(1-s)\kappa^+_a$, and data processing from the environment that
+is $\nu$ before $t_\ell$; no concentration is needed.
+
+\begin{lemma}[one-sided change of measure]\label{flem:com-one-sided}
+\lean{Incognita.BatchedBandits.withDensity_map_hist_le, Incognita.BatchedBandits.setLIntegral_stepKernel_le}
+\uses{def:learner}
+Let two environments $e_1,e_2$ satisfy $w_n(b)\,e_2^{(n)}(\cdot\mid h,b)\le e_1^{(n)}(\cdot\mid h,b)$
+for the feedback kernels of every round $n$, history $h$ and action $b$. Then for every measurable
+set $A$ of histories of the first $n$ rounds,
+$\PP_{e_1}(H_n\in A)\ge\E_{e_2}\big[\mathbf 1_A(H_n)\prod_{i<n}w_i(A_i)\big]$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner}
+Induction on $n$: the law of $H_{n+1}$ is the law of $H_n$ composed with the step kernel of the
+round $n$, which under $e_1$ dominates the step kernel under $e_2$ with the density $w_n(A_n)$
+(same observation kernel and policy).
+\end{proof}
+
+\begin{lemma}[switched environment, bandit on the right]\label{flem:switch-kl-left}
+\lean{Incognita.BatchedBandits.klDiv_map_hist_switch_left, Learning.IsAlgEnvSeq.isAlgEnvSeqUntil_of_feedback_eq}
+\uses{def:learner}
+Let $e$ follow the bandit $\nu$ at the rounds $<r$ and $\nu'$ afterwards, and $r\le M$. The relative
+entropy between the laws of the histories of the first $M$ rounds under $e$ and under $\nu'$ is the
+relative entropy between the laws of the histories of the first $r$ rounds under $\nu$ and
+under $\nu'$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner}
+Chain rule; before $r$ the run against $e$ is a run against $\nu$, so the histories have the same
+laws; after $r$ the step kernels agree.
+\end{proof}
+
+\begin{lemma}[data processing, multiplicative form]\label{flem:dp}
+\lean{Incognita.BatchedBandits.exp_neg_div_le_of_klBer_le}
+\uses{}
+If $\mathrm{kl}(q,p)\le D$ with $q\in(0,1]$, $p\in[0,1]$, then $p\ge e^{-(D+\log2)/q}$.
+\end{lemma}
+
+\begin{proof}
+\uses{}
+$\mathrm{kl}(q,p)\ge q\log(1/p)-\log2$, since the binary entropy is at most $\log2$ and
+$\log(1-p)\le0$.
+\end{proof}
+
+\begin{lemma}[the alternatives]\label{flem:alt-laws}
+\lean{Incognita.BatchedBandits.exists_two_alternatives, Incognita.BatchedBandits.exists_unitLaws_mean_mem_Ioo, Incognita.BatchedBandits.mix_mem_unitLaws, InformationTheory.klDiv_mix_le}
+\uses{def:model, def:kinf}
+Let $\nu\in\cP$, $a$ sub-optimal, $Q$ a law on $[0,1]$ with mean $>\mathbf m^\star$ and
+$\KL(\nu_a,Q)<\infty$, and $s\in(0,1)$. There are $\kappa^+,\kappa^-\in\cP$ equal to $\nu$ outside
+$a$, with $a$ the unique optimal arm of $\kappa^+$, $a$ sub-optimal for $\kappa^-$,
+$\kappa^-_a\ge(1-s)\kappa^+_a$ and $\KL(\nu_a,\kappa^+_a)\le\KL(\nu_a,Q)$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:mean-lt-one, def:model}
+$\kappa^+_a=(1-\theta)\nu_a+\theta Q$ with $\theta$ chosen so that its mean is in
+$(\mathbf m^\star,\mathbf m^\star/(1-s))$; $\KL(\nu_a,\kappa^+_a)\le\theta\KL(\nu_a,Q)$ by
+convexity. $\kappa^-_a=(1-s)\kappa^+_a+s\delta_0$ has mean $<\mathbf m^\star$.
+\end{proof}
+
+\begin{lemma}[finite horizon, two batches ahead]\label{flem:twobatches-finite}
+\lean{Incognita.BatchedBandits.two_batches_finite}
+\uses{def:learner}
+Let $r_0\le r\le M$, $M>0$, let the learner see the rewards before $r_0$ at the rounds $<r$ and the
+rewards before $r$ at the rounds $<M$, let $\nu,\kappa^+,\kappa^-$ agree outside $a$, with
+$\kappa^-_a\ge c\,\kappa^+_a$, $c\in[0,1]$, $\KL(\nu_a,\kappa^+_a)<\infty$, and let
+$q=\PP_\nu(N_a(r)\le L)>0$. Then
+\[
+c^L\exp\Big(-\frac{\E_\nu[N_a(r_0)]\KL(\nu_a,\kappa^+_a)+\log2}{q}\Big)\le
+\frac{2\E_{\kappa^-}[N_a(M)]}{M}+\frac{2(M-\E_{\kappa^+}[N_a(M)])}{M}.
+\]
+\end{lemma}
+
+\begin{proof}
+\uses{flem:masked-law, flem:com-one-sided, flem:switch-kl-left, flem:dp, def:learner}
+Let $e_Q$ follow $\nu$ before $r_0$ and $\kappa^+$ afterwards. By Lemma~\ref{flem:masked-law} (cutoff
+$r_0$, horizon $r$), $\PP_{e_Q}(N_a(r)\le L)=q$; by data processing and
+Lemma~\ref{flem:switch-kl-left}, $\mathrm{kl}(q,\PP_{\kappa^+}(N_a(r)\le L))\le
+\E_\nu[N_a(r_0)]\KL(\nu_a,\kappa^+_a)$, so Lemma~\ref{flem:dp} bounds $\PP_{\kappa^+}(N_a(r)\le L)$
+from below. Let $G=\{2N_a(M)\ge M\}$, an event of the masked history at $r$. By
+Lemma~\ref{flem:masked-law} (cutoff $r$) and Lemma~\ref{flem:com-one-sided} (the environment
+$\kappa^-$ before $r$, $\kappa^+$ afterwards, against $\kappa^+$, with $w_n(b)=c$ for $n<r$,
+$b=a$), $\PP_{\kappa^-}(G)\ge\E_{\kappa^+}[c^{N_a(r)}\mathbf 1_G]$. Hence
+$\PP_{\kappa^-}(G)+\PP_{\kappa^+}(G^c)\ge\E_{\kappa^+}[c^{N_a(r)}]\ge c^L\PP_{\kappa^+}(N_a(r)\le L)$,
+and Markov's inequality concludes.
+\end{proof}
+
+\begin{lemma}[two batches ahead]\label{flem:twobatches}
+\lean{Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_add_two, Incognita.BatchedBandits.two_batches_step, Incognita.BatchedBandits.two_batches_arith, Incognita.BatchedBandits.rhs_le_of_counts_le}
+\uses{def:grid, def:model, def:learner, def:kinf}
+For every grid, every batched learner consistent on $\cP$, $\nu\in\cP$ and $a$ sub-optimal with
+$\E_\nu[N_a(t_{\ell+1})]=O(\log t_{\ell+2})$:
+$\liminf_\ell\E_\nu[N_a(t_\ell)]/\log t_{\ell+2}\ge1/\Kinf(\nu_a,\mathbf m^\star)$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:twobatches-finite, flem:alt-laws, def:kinf, def:model, def:learner, def:grid}
+Let $0\le c<c'<1/\Kinf$, $Q$ from the primal formula with $c'\KL(\nu_a,Q)<1$,
+$\gamma=1-c'\KL(\nu_a,Q)$, $C'\ge1$ with $\E_\nu[N_a(t_{\ell+1})]\le C'\log t_{\ell+2}$ eventually,
+$\lambda=\gamma^2/(16C')$, $s=1-e^{-\lambda}$, and $\kappa^\pm$ from Lemma~\ref{flem:alt-laws}. Apply
+Lemma~\ref{flem:twobatches-finite} with $r_0=t_\ell$, $r=t_{\ell+1}$, $M=t_{\ell+2}$, $c=1-s$ and
+$L=\lceil4\E_\nu[N_a(r)]/\gamma\rceil$, so that $q\ge1-\gamma/4$ by Markov's inequality. Consistency
+under $\kappa^-$ (for $a$) and $\kappa^+$ (for the other arms) at the exponent $p=\gamma/4$ bounds
+the right-hand side by $M^{p-1}$. Taking logarithms, with $L\lambda\le(\gamma/4)\log M+\lambda$,
+gives $\E_\nu[N_a(t_\ell)]\KL(\nu_a,\kappa^+_a)+\log2\ge(1-3\gamma/4)\log M-\lambda$, while
+$c'\KL(\nu_a,\kappa^+_a)\le1-\gamma$; hence $\E_\nu[N_a(t_\ell)]>c'\log M$ once
+$(\gamma/4)\log M>\lambda+\log2+1$.
+\end{proof}
+
+\section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Lemma~\ref{lem:onebatch}]
+\proves{lem:onebatch}
+\uses{flem:onebatch-finite, flem:mean-lt-one, def:kinf, def:model, def:grid, def:learner}
+Lean: \texttt{Incognita.BatchedBandits.eventually\_lt\_integral\_pullCount\_div\_log\_t\_succ}, and
+\texttt{Incognita.P000.one\_batch\_ahead} for the frozen statement. Let
+$0\le c<c'<1/\Kinf(\nu_a,\mathbf m^\star)$ (for $c<0$ there is nothing to prove). By the primal
+formula there is a law $Q$ on $[0,1]$ with mean $>\mathbf m^\star$ and $c'\KL(\nu_a,Q)<1$; it has
+mean $<1$ by Lemma~\ref{flem:mean-lt-one}, so $\nu'=\nu^Q\in\cP$ and every arm $b\ne a$ is
+sub-optimal for $\nu'$. This replaces Steps~1 and~3 of the paper (Lemma~\ref{lem:kinf}(v), the
+shifted level $\mu'$, and data processing for the binary relative entropy) by the strict
+inequality in the primal formula and Bretagnolle--Huber. Let $D=\KL(\nu_a,Q)$, $p=(1-c'D)/2>0$,
+$\delta=1/(8K)$. By consistency under $\nu$ and $\nu'$, eventually
+$\E_\nu[N_a(t_{\ell+1})]\le\delta t_{\ell+1}^p$ and $\E_{\nu'}[N_b(t_{\ell+1})]\le\delta t_{\ell+1}^p$
+for $b\ne a$. Lemma~\ref{flem:onebatch-finite} with $r=t_\ell$, $M=t_{\ell+1}$ (a batched learner
+sees the rewards before $t_\ell$ at the rounds $<t_{\ell+1}$) and
+$M-\E_{\nu'}[N_a(M)]=\sum_{b\ne a}\E_{\nu'}[N_b(M)]$ give $e^{-\E_\nu[N_a(t_\ell)]D}\le M^{p-1}$,
+so $\E_\nu[N_a(t_\ell)]D\ge(1-p)\log t_{\ell+1}$. Since $1-p>c'D\ge0$, this forces $D>0$ and
+$\E_\nu[N_a(t_\ell)]>c'\log t_{\ell+1}>c\log t_{\ell+1}$.
+\end{proof}
+
+\begin{proof}[Formal route to Theorem~\ref{thm:lower}(i)]
+\proves{thm:lower}
+\uses{lem:onebatch, def:grid}
+Lean: \texttt{Incognita.BatchedBandits.eventually\_lt\_integral\_pullCount\_div\_log\_t} and
+\texttt{Incognita.P000.lower\_liminf\_of\_tendsto\_ratio\_one}. As the paper's remark ``every grid'':
+$\log t_\ell\le\log t_{\ell+1}$, so $\E[N_a(t_\ell)]/\log t_\ell\ge\E[N_a(t_\ell)]/\log t_{\ell+1}$ for
+$\ell\ge1$; the hypothesis $x_\ell\to1$ is not used.
+\end{proof}
+
+\begin{proof}[Formal route to Lemma~\ref{lem:twobatches}(ii)]
+\proves{lem:twobatches}
+\uses{flem:twobatches, def:grid}
+Lemma~\ref{flem:twobatches} is part (ii) at the index $\ell+1$. Part (i), the form with tightness
+in probability, and Lemmas~\ref{lem:tilts}, \ref{lem:com} and~\ref{lem:typ} are not formalised:
+the route of Lemma~\ref{flem:twobatches} does not need them.
+\end{proof}
+
+\begin{proof}[Formal route to Theorem~\ref{thm:lower}(ii)--(iii) and Theorem~\ref{thm:main}(a)]
+\proves{thm:lower}
+\uses{flem:twobatches, flem:caseA, flem:caseB, flem:liminf-sum, flem:regret-one,
+  flem:regret-caseB, lem:onebatch, def:grid, def:ass-x, def:model, def:learner, def:kinf}
+Lean: \texttt{Incognita.BatchedBandits.eventually\_lt\_integral\_pullCount\_div\_log\_t\_of\_isBigO},
+\texttt{Incognita.BatchedBandits.eventually\_lt\_regret\_div\_log\_t\_of\_forall}, and the frozen
+statements \texttt{Incognita.P000.lower\_liminf}, \texttt{lower\_limsup},
+\texttt{lower\_regret\_liminf}, \texttt{lower\_regret\_limsup}, for every $x\ge1$. Counts, $\liminf$:
+for $x=1$, Theorem~\ref{thm:lower}(i) on every grid; if $\E[N_a(t_\ell)]=O(\log t_\ell)$, then
+$\E[N_a(t_{\ell+1})]=O(\log t_{\ell+2})$, Lemma~\ref{flem:twobatches} gives
+$\liminf\E[N_a(t_\ell)]/\log t_{\ell+2}\ge1/\Kinf$ and Lemma~\ref{flem:caseA} the factor $x^2$
+(Case A of the paper). Counts, $\limsup$: if the counts are logarithmic, the $\liminf$ claim;
+otherwise Lemma~\ref{flem:caseB} (Case B). Regret, $\liminf$: for $x=1$
+Lemma~\ref{flem:regret-one}; otherwise the bound for the counts of each sub-optimal arm and
+Lemma~\ref{flem:liminf-sum}. Regret, $\limsup$: if every sub-optimal arm has logarithmic counts,
+the $\liminf$ claim; otherwise Lemma~\ref{flem:regret-caseB}.
+\end{proof}
+
+\begin{proof}[Formal route to Theorem~\ref{thm:main}(b), HY is a learner of $\mathcal M_0$]
+\proves{thm:main}
+\uses{flem:hy-congr, flem:hy-grid, def:M0, def:hy, def:grid}
+Lean: \texttt{Incognita.BatchedBandits.infoModel\_zero\_hy} and
+\texttt{Incognita.P000.hy\_infoModel\_zero}. Condition (a) of Definition~\ref{def:M0} is
+Lemma~\ref{flem:hy-congr}; condition (b) with $k=0$ is Lemma~\ref{flem:hy-grid} ($t_0=0$ on every
+grid). The hypotheses $w_0\ge0$, $\beta\ge2$ are not used.
+\end{proof}
+
+\end{document}
