@@ -36,9 +36,9 @@ the Bochner integral `Q[id]`, as in LML's `gap` and LMLExplore's `dInf`, and the
 * `smul_add_smul_mem_unitLaws`: `𝓜` is convex; `smul_add_smul_dirac_one_mem_unitLaws`,
   `integral_id_smul_add_smul_dirac_one`, `mix_mem_unitLaws`: its two-point mixtures in the
   weight conventions used downstream, whose means mix linearly.
-* `bernoulliBandit_mem_unitBandits`: every Bernoulli instance whose means are all below `1` is in
-  `𝒫`; `not_mem_unitBandits_of_integral_eq_one`: an instance with an arm of mean `1` (for example
-  an arm `δ_1`) is not.
+* `bernoulliBandit_mem_unitBandits_of_lt_one`: every Bernoulli instance whose means are all below
+  `1` is in `𝒫`; `not_mem_unitBandits_of_integral_eq_one`: an instance with an arm of mean `1` (for
+  example an arm `δ_1`) is not.
 -/
 
 @[expose] public section
@@ -140,7 +140,7 @@ variable [Countable α] [MeasurableSingletonClass α]
 
 /-- **Witness and known case** [INC-P006, Proposition `prop:witnesses`(a)]: every Bernoulli
 instance whose means are all below `1` is in `𝒫`. -/
-lemma bernoulliBandit_mem_unitBandits [Finite α] (p : α → I) (hp : ∀ a, (p a : ℝ) < 1) :
+lemma bernoulliBandit_mem_unitBandits_of_lt_one [Finite α] (p : α → I) (hp : ∀ a, (p a : ℝ) < 1) :
     LMLExplore.Bandits.bernoulliBandit p ∈ unitBandits α := by
   refine ⟨fun a ↦ by simpa using bernoulliMeasure_mem_unitLaws (p a), ?_⟩
   simp only [LMLExplore.Bandits.integral_id_bernoulliBandit]
@@ -149,6 +149,9 @@ lemma bernoulliBandit_mem_unitBandits [Finite α] (p : α → I) (hp : ∀ a, (p
   · obtain ⟨a, ha⟩ := exists_eq_ciSup_of_finite (f := fun a ↦ (p a : ℝ))
     rw [← ha]
     exact hp a
+
+@[deprecated (since := "2026-11-19")]
+alias bernoulliBandit_mem_unitBandits := bernoulliBandit_mem_unitBandits_of_lt_one
 
 omit [Countable α] [MeasurableSingletonClass α] in
 /-- **Exclusion** [INC-P006, Proposition `prop:witnesses`(a)]: an instance with an arm of mean

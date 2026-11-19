@@ -25,7 +25,7 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | prop:classes | frozen | (a) `Incognita.Statements.P003.isConsistent_anti`; (b) `Incognita.Statements.P003.isConsistent_one` | |
 | prop:witness | frozen | `Incognita.Statements.P003.ofAlgorithm_isConsistent` (first sentence); `Incognita.Statements.P003.ucb_isConsistentOnUnit` (UCB); `Incognita.Statements.P003.exists_isConsistent` ("`𝒞_L ≠ ∅`") | UCB is LML's `Bandits.ucbAlgorithm K c` |
 | prop:exclusion | frozen | `Incognita.Statements.P003.followSource_not_isConsistent` | `π^tr` is `Incognita.TransferBandits.TransferAlgorithm.followSource` |
-| cite:GMS19-Lemma1 | lemma | (added by prove): `Incognita.klDiv_bernoulli_integral_le` | `Incognita/ForLML/InformationTheory/KullbackLeibler/Bernoulli.lean`; from LMLExplore's `klBer_integral_le_klDiv` (data processing to the Bernoulli law of the mean) and Mathlib's `klDiv_map_le` |
+| cite:GMS19-Lemma1 | lemma | (added by prove): `Incognita.klDiv_bernoulliMeasure_integral_le` | `Incognita/ForLML/InformationTheory/KullbackLeibler/Bernoulli.lean`; from LMLExplore's `klBer_integral_le_klDiv` (data processing to the Bernoulli law of the mean) and Mathlib's `klDiv_map_le` |
 | lem:kl-neg | lemma | (added by prove): not used | the Lean proof of prop:source-kl uses instead the integrability of the log-likelihood ratio when `KL(ν'_k, ν₂'_k) < ∞` (Mathlib's `klDiv_ne_top_iff`) and treats `KL = ∞` separately (formalisation.tex, flem:source-kl-top) |
 | lem:source-law | lemma | (added by prove): `Incognita.TransferBandits.sourceLaw_eq_withDensity` | `Incognita/TransferBandits/SourceLaw.lean`, in density form: the law of the source data under `ν'` is its law under `ν₂'` with density `ℓ(s)`, the indicator that the sizes of the arms of `Z` vanish times `∏_k ∏_(j < n_k(s)) (dν'_k/dν₂'_k)(x_(k,j))`; `map_boxRestrict_sourceMeasure`, `pi_pi_eq_withDensity` (from Tau Ceti's `TauCeti.pi_withDensity`), `sourceMeasure_preimage_boxRestrict` (change of measure on the box), `sourceData_eq_of_eq`, `measurable_sourceDensity` |
 | lem:wald | lemma | (added by prove): `Incognita.TransferBandits.lintegral_sum_range_sizeRule` (`φ ≥ 0`), `Incognita.TransferBandits.integral_sum_range_sizeRule` and `integrable_sum_range_sizeRule` (integrable `φ`) | `Incognita/TransferBandits/Wald.lean`, `SourceKL.lean`; `iIndepFun_stacks`, `indep_rest_coord`, `measurable_sizeRule_section_lt`, `lintegral_indicator_lt_mul` (the event `j < N'_k` is independent of `X'_(k,j)`) |
@@ -43,10 +43,10 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | lem:learner-exclusion | proof | `Incognita.P003.learner_exclusion` | `Incognita/P003/Exclusions.lean`; same two points, same source data |
 | prop:drift (a)–(e) | proof | `Incognita.P003.drift_of_twoSided`, `…drift_of_mem_meanBand`, `…drift_meanBand_inclusions`, `…drift_all_pairs`, `…drift_witness_exclusion` | `Incognita/P003/Drift.lean`; means in `[0,1]`: `Incognita.TransferBandits.mean_mem_Icc`, `Incognita.TransferBandits.abs_mean_sub_mean_le_one` (`Incognita/TransferBandits/Means.lean`); counterexamples are constant Dirac kernels |
 | prop:classes (a)–(b) | proof | `Incognita.P003.isConsistent_anti`, `Incognita.P003.isConsistent_one` | `Incognita/P003/Drift.lean`; `meanBand_mono`, `meanBand_eq_of_one_le`, `isConsistent_of_le`, `isConsistent_iff_of_one_le`, all in `Incognita.TransferBandits` (`Incognita/TransferBandits/Means.lean`) |
-| prop:witness | proof | `Incognita.P003.ofAlgorithm_isConsistent`, `Incognita.P003.ucb_isConsistentOnUnit`, `Incognita.P003.exists_isConsistent` | `Incognita/P003/SourceIgnoring.lean` (formalisation.tex, formal route to prop:witness); UCB via `Incognita.isConsistent_ucbAlgorithm_unit` (`Incognita/ForLML/Online/Bandit/Algorithms/Regret/UCB.lean`: LML's regret bound, Hoeffding's lemma, `log (n+1) ≤ 2 log n`) and `Incognita.TransferBandits.Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds`; `𝒞_L ≠ ∅` on any finite arm type via LMLExplore's KL-UCB (`Incognita.TransferBandits.Relations.isConsistentOnUnit_klucb`), since LML's UCB lives on `Fin K` |
+| prop:witness | proof | `Incognita.P003.ofAlgorithm_isConsistent`, `Incognita.P003.ucb_isConsistentOnUnit`, `Incognita.P003.exists_isConsistent` | `Incognita/P003/SourceIgnoring.lean` (formalisation.tex, formal route to prop:witness); UCB via `Incognita.isConsistent_ucbAlgorithm_unit` (`Incognita/ForLML/Online/Bandit/Algorithms/Regret/UCB.lean`: LML's regret bound, Hoeffding's lemma, `log (n+1) ≤ 2 log n`) and `LMLExplore.Bandits.IsConsistent.isConsistentOnUnit`; `𝒞_L ≠ ∅` on any finite arm type via LMLExplore's KL-UCB (`Incognita.TransferBandits.Relations.isConsistentOnUnit_klucb`), since LML's UCB lives on `Fin K` |
 | prop:exclusion | proof | `Incognita.P003.followSource_not_isConsistent` | `Incognita/P003/FollowSource.lean` (formalisation.tex, formal route to prop:exclusion); `ae_onlineKernel_followSource` (`π^tr` pulls `followSourceArm s` at every round), `integral_onlineCount_followSource_zero`; the Lean proof uses the deterministic sizes `0` (fallback arm) instead of the paper's sizes `1` |
 | thm:main (a) | proof | `Incognita.P003.divergence_decomposition` | `Incognita/P003/Divergence.lean`, the paper's proof: `klDiv_gameMeasure_eq_add` (chain rule and lem:online-kl), `klDiv_sourceLaw` (prop:source-kl), `lintegral_sourceCount_gameMeasure` (lem:mixture) |
-| cor:fundamental | proof | `Incognita.P003.fundamental_inequality` | `Incognita/P003/Divergence.lean`: `Incognita.klDiv_bernoulli_integral_le` (cite:GMS19-Lemma1) and thm:main (a) |
+| cor:fundamental | proof | `Incognita.P003.fundamental_inequality` | `Incognita/P003/Divergence.lean`: `Incognita.klDiv_bernoulliMeasure_integral_le` (cite:GMS19-Lemma1) and thm:main (a) |
 | thm:main (b) | proof | `Incognita.P003.lookahead_divergence` | `Incognita/P003/Lookahead.lean` (formalisation.tex, flem:lookahead-data and formal route to thm:main (b)); chain rule `klDiv_compProd_left` (Mathlib), tensorization `TauCeti.klDiv_prod_prod`, `LMLExplore.klBer_eq_zero_iff`, `LMLExplore.klBer_ne_top_iff` |
 
 ## Modelling decisions
@@ -118,7 +118,7 @@ conventions as the BatchedBandits roadmap"). Files: `Incognita/TransferBandits/S
     is def:consistency verbatim: every pair of `𝒫_L`, every source strategy, every suboptimal arm,
     every `c > 0`. `IsConsistentOnUnit σ` is the paper's consistency of a bandit algorithm on
     `𝒫^K` (pull counts, not regret; LMLExplore's `IsConsistent` is regret-based, and
-    `Incognita.P003.isConsistentOnUnit_of_isConsistent` derives the first from the second).
+    `LMLExplore.Bandits.IsConsistent.isConsistentOnUnit` derives the first from the second).
 11. **Prior games.** `PriorStrategy α`: one measurable map
     `(ℕ → I) × (Fin r → α × ℝ) → α` for every round `r : ℕ` (the game over `T'` rounds uses
     `r < T'`; the paper's family `(α_r)_{r ≤ T'}` extends arbitrarily). `state` computes the counts
@@ -212,7 +212,7 @@ reviewer and for `prove`:
   on rewards in `[0,1]`. LML's `Bandits.UCB.regret_le_of_gt_two` bounds the regret of
   `ucbAlgorithm K c` by `O(log n)` for `σ²`-sub-Gaussian rewards and `c > 2σ²`; rewards in `[0,1]`
   are `1/4`-sub-Gaussian, so the threshold is `c > 1/2`, the paper's. The step from regret to pull
-  counts is `Incognita.P003.isConsistentOnUnit_of_isConsistent` (in `Witnesses.lean`).
+  counts is `LMLExplore.Bandits.IsConsistent.isConsistentOnUnit` (in `TransferBandits/Relations.lean`).
 - `lem:lml-history`, which the proofs of thm:main (a), prop:witness and prop:exclusion need, is
   the bridge between `onlineKernel` and LML's `trajMeasure`; it is a `prove` task. Done
   (2026-11-18, prove): `onlineKernel_ofAlgorithm_apply` for source-ignoring learners, and, for a

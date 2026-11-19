@@ -8,7 +8,7 @@ conventions = "As hyAlg; the default parameters depend on the grid only through 
 source = "[INC-P000, Definition def:hy, default parameters]"
 
 [checks]
-witness = ["Incognita.BatchedBandits.hy_exists_next_eq", "Incognita.BatchedBandits.Grid.hyOmega_mem", "Incognita.BatchedBandits.Grid.hyTheta_mem", "Incognita.BatchedBandits.Grid.hyGamma_mem", "Incognita.BatchedBandits.Grid.hyOmega_antitone"]
+witness = ["Incognita.BatchedBandits.hy_exists_next_eq", "Incognita.BatchedBandits.Grid.hyOmega_mem", "Incognita.BatchedBandits.Grid.hyTheta_mem", "Incognita.BatchedBandits.Grid.hyGamma_mem", "Incognita.BatchedBandits.Grid.hyOmega_anti"]
 known_cases = ["Incognita.BatchedBandits.HY.next_of_lt_t_one", "Incognita.BatchedBandits.Grid.hyOmega_hyGamma_of_logEnd_le_one"]
 exclusion = ["Incognita.BatchedBandits.hy_exists_next_eq"]
 non_vacuity = ["Incognita.P000.hy_infoModel_zero_satisfiable", "Incognita.P000.hy_isConsistent_satisfiable", "Incognita.P000.hy_tendsto_count_satisfiable", "Incognita.P000.hy_tendsto_regret_satisfiable"]

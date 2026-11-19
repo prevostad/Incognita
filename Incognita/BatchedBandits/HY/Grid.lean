@@ -136,7 +136,7 @@ lemma card_activated_le {k : ℕ} (S : Finset ℕ)
                 ring
             _ ≤ (1 + u) * g.logEnd m := mul_le_mul_of_nonneg_left hbound (by linarith)
             _ ≤ g.logEnd (m + 1) := (hjump m hmS).le
-            _ ≤ g.logEnd a := g.monotone_logEnd (by omega)
+            _ ≤ g.logEnd a := g.logEnd_monotone (by omega)
   rcases S.eq_empty_or_nonempty with rfl | hSne
   · simp
   obtain ⟨m, hm, -, hbound⟩ := hchain S subset_rfl hSne

@@ -9,6 +9,6 @@ source = "roadmap TransferBandits, Definitions; [INC-P003, def:consistency]"
 
 [checks]
 witness = ["Incognita.TransferBandits.Relations.isConsistentOnUnit_klucb"]
-known_cases = ["Incognita.TransferBandits.Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds"]
+known_cases = ["LMLExplore.Bandits.IsConsistent.isConsistentOnUnit"]
 exclusion = ["Incognita.TransferBandits.not_isConsistentOnUnit_ofSeq_const"]
 non_vacuity = ["Incognita.P003.ofAlgorithm_isConsistent_satisfiable"]

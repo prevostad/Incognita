@@ -40,7 +40,7 @@ the regret) is the same in both numberings.
   geometric grids tend to `1`.
 * The basic API of `t`, `logEnd` and `ratio`: `Grid.t_pos`, `Grid.t_le_t`, `Grid.logEnd_zero`,
   `Grid.logEnd_nonneg`, `Grid.ratio_one`, `Grid.ratio_of_two_le`, `Grid.one_le_ratio`,
-  `Grid.isFiner_refl`, `Grid.IsFiner.trans`, `Grid.monotone_logEnd`,
+  `Grid.isFiner_refl`, `Grid.IsFiner.trans`, `Grid.logEnd_monotone`,
   `Grid.tendsto_logEnd_atTop`, `Grid.exp_logEnd`, `Grid.logEnd_succ_eq`,
   `Grid.tendsto_log_t_add_two_div_log_t` (`L_(ℓ+2) / L_ℓ → x²` when `x_ℓ → x`),
   `Grid.eq_of_forall_one_le_t_eq`, `Grid.logEnd_eq_of_t_eq`, `Grid.ratio_eq_of_t_eq` and
@@ -388,12 +388,14 @@ lemma t_le_t {ℓ ℓ' : ℕ} (h : ℓ ≤ ℓ') : (g.t ℓ : ℝ) ≤ g.t ℓ' 
   exact_mod_cast g.strictMono.monotone h
 
 /-- `L_ℓ = log t_ℓ` is nondecreasing in `ℓ` (`L_0 = log 0 = 0`). -/
-lemma monotone_logEnd : Monotone g.logEnd := by
+lemma logEnd_monotone : Monotone g.logEnd := by
   intro ℓ ℓ' h
   rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
   · rw [logEnd_zero]
     exact g.logEnd_nonneg ℓ'
   · exact Real.log_le_log (g.t_pos hℓ) (g.t_le_t h)
+
+@[deprecated (since := "2026-11-19")] alias monotone_logEnd := logEnd_monotone
 
 /-- `L_ℓ → ∞`. -/
 lemma tendsto_logEnd_atTop : Tendsto g.logEnd atTop atTop :=

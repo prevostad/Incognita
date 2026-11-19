@@ -9,6 +9,6 @@ source = "roadmap BatchedBandits, Definitions; [INC-P006]"
 
 [checks]
 witness = ["Incognita.P006.example_instance"]
-known_cases = ["Incognita.BatchedBandits.bernoulliBandit_mem_unitBandits"]
+known_cases = ["Incognita.BatchedBandits.bernoulliBandit_mem_unitBandits_of_lt_one"]
 exclusion = ["Incognita.BatchedBandits.not_mem_unitBandits_of_integral_eq_one"]
 non_vacuity = ["Incognita.P006.kinf_bounds_of_gap_pos_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_of_isFiner_satisfiable", "Incognita.P006.isConsistentAtBatchEnds_sequential_iff_satisfiable"]

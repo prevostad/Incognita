@@ -18,10 +18,11 @@ arm, law `ν`) and a level `m⋆` with `m < m⋆ < 1`, the moments of [INC-P000,
   almost surely, any large `θ` works (dominated convergence); otherwise the minimiser of
   `θ ↦ Φ_ν(θ, m⋆)` on `[0, θ_max]` is interior, its derivative `E[(Y - m⋆) e^(θ(Y-m⋆))]` vanishes,
   and `Ψ_ν(θ, m⋆) = (1 - m⋆) Φ_ν(θ, m⋆)`.
-* `tilt_shift`: (ii), with `c_θ = (1/2) min(log (1/Φ⋆), log ((1 - m⋆)/Ψ⋆))` and
+* `exp_mul_integral_exp_le_one_and_le_one_sub`: (ii), with
+  `c_θ = (1/2) min(log (1/Φ⋆), log ((1 - m⋆)/Ψ⋆))` and
   `ε_θ = min(c_θ / (6θ), (1 - m⋆)(1 - e^(-c_θ/2)))`, every `ε ∈ (0, ε_θ]` has
   `e^(c_θ) Φ_ν(θ, m⋆ - 3ε) ≤ 1` and `e^(c_θ) Ψ_ν(θ, m⋆ - 3ε) ≤ 1 - (m⋆ + ε)`; `c_θ > 0` and
-  `ε_θ > 0` (`tilt_const_pos`).
+  `ε_θ > 0` (`half_mul_min_log_pos_and_min_pos`).
 -/
 
 @[expose] public section
@@ -287,7 +288,7 @@ lemma exists_tilt (hYm : Measurable Y) (hb : ∀ᵐ ω ∂P, Y ω ∈ Icc (0 : �
 /-- [INC-P000, Lemma `lem:theta`(ii), the constants] If `0 < Φ⋆ < 1` and `0 < Ψ⋆ < 1 - m⋆`, then
 `c_θ = (1/2) min(log (1/Φ⋆), log ((1 - m⋆)/Ψ⋆)) > 0` and, for `θ > 0`,
 `ε_θ = min(c_θ / (6θ), (1 - m⋆)(1 - e^(-c_θ/2))) > 0`. -/
-lemma tilt_const_pos {Φs Ψs ms θ : ℝ} (hΦ0 : 0 < Φs) (hΦ1 : Φs < 1) (hΨ0 : 0 < Ψs)
+lemma half_mul_min_log_pos_and_min_pos {Φs Ψs ms θ : ℝ} (hΦ0 : 0 < Φs) (hΦ1 : Φs < 1) (hΨ0 : 0 < Ψs)
     (hΨ1 : Ψs < 1 - ms) (hθ : 0 < θ) :
     0 < (1 / 2) * min (Real.log (1 / Φs)) (Real.log ((1 - ms) / Ψs)) ∧
       0 < min ((1 / 2) * min (Real.log (1 / Φs)) (Real.log ((1 - ms) / Ψs)) / (6 * θ))
@@ -301,14 +302,17 @@ lemma tilt_const_pos {Φs Ψs ms θ : ℝ} (hΦ0 : 0 < Φs) (hΦ1 : Φs < 1) (h�
   rw [sub_pos, Real.exp_lt_one_iff]
   linarith
 
+@[deprecated (since := "2026-11-19")] alias tilt_const_pos := half_mul_min_log_pos_and_min_pos
+
 omit [IsProbabilityMeasure P] in
 /-- [INC-P000, Lemma `lem:theta`(ii)] For a tilt `θ > 0` with
 `0 < Φ⋆ = E[e^(θ(Y - m⋆))] < 1` and `0 < Ψ⋆ = E[(1 - Y) e^(θ(Y - m⋆))] < 1 - m⋆`, and with
-`c_θ`, `ε_θ` as in `tilt_const_pos`, every `ε ≤ ε_θ` has
+`c_θ`, `ε_θ` as in `half_mul_min_log_pos_and_min_pos`, every `ε ≤ ε_θ` has
 `e^(c_θ) Φ_ν(θ, m⋆ - 3ε) ≤ 1` and `e^(c_θ) Ψ_ν(θ, m⋆ - 3ε) ≤ 1 - (m⋆ + ε)`: shifting the level
 multiplies both moments by `e^(3θε) ≤ e^(c_θ/2)`. Neither `Y ∈ [0, 1]` nor `ε > 0` is used
 (only `ε ≤ ε_θ`). -/
-lemma tilt_shift {ms θ : ℝ} (hθ : 0 < θ) (hΦ0 : 0 < ∫ ω, exp (θ * (Y ω - ms)) ∂P)
+lemma exp_mul_integral_exp_le_one_and_le_one_sub {ms θ : ℝ} (hθ : 0 < θ)
+    (hΦ0 : 0 < ∫ ω, exp (θ * (Y ω - ms)) ∂P)
     (hΦ1 : ∫ ω, exp (θ * (Y ω - ms)) ∂P < 1)
     (hΨ0 : 0 < ∫ ω, (1 - Y ω) * exp (θ * (Y ω - ms)) ∂P)
     (hΨ1 : ∫ ω, (1 - Y ω) * exp (θ * (Y ω - ms)) ∂P < 1 - ms) {ε : ℝ}
@@ -339,7 +343,7 @@ lemma tilt_shift {ms θ : ℝ} (hθ : 0 < θ) (hΦ0 : 0 < ∫ ω, exp (θ * (Y �
     funext ω
     rw [show θ * (Y ω - (ms - 3 * ε)) = 3 * θ * ε + θ * (Y ω - ms) by ring, Real.exp_add]
     ring
-  have hcpos := (tilt_const_pos hΦ0 hΦ1 hΨ0 hΨ1 hθ).1
+  have hcpos := (half_mul_min_log_pos_and_min_pos hΦ0 hΦ1 hΨ0 hΨ1 hθ).1
   -- `Φ⋆ ≤ e^(-2c)` and `Ψ⋆ ≤ (1 - m⋆) e^(-2c)`
   have hΦc : Φs ≤ exp (-(2 * c)) := by
     have hmin := min_le_left (Real.log (1 / Φs)) (Real.log ((1 - ms) / Ψs))
@@ -385,5 +389,7 @@ lemma tilt_shift {ms θ : ℝ} (hθ : 0 < θ) (hΦ0 : 0 < ∫ ω, exp (θ * (Y �
               (Real.log ((1 - ms) / Ψs)) / 2) := by rw [hc]
           rw [this]
           linarith
+
+@[deprecated (since := "2026-11-19")] alias tilt_shift := exp_mul_integral_exp_le_one_and_le_one_sub
 
 end Incognita.BatchedBandits

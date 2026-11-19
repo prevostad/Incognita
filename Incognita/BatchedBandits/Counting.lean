@@ -18,7 +18,7 @@ by `ℕ`, with no grid unless one is needed).
   at the batch ends, `H_j / L_j → x²` for the largest level `H_j = max_{1 ≤ k ≤ j} y_(k-1) L_k`.
 * `Grid.log_t_le_of_growth`: Lemma `lem:growth`; `Grid.logEnd_add_le_pow_mul`: the last claim of
   Lemma `lem:ranksA`, `L_(k+i) ≤ x₊^i L_k`.
-* `chain`: Lemma `lem:chain`.
+* `exists_le_mul_or_forall_le_mul_of_monotone`: Lemma `lem:chain`.
 * `sum_ite_le_sum_Icc_of_monotone`, `sum_ite_sub_le_of_monotone`: Lemma `lem:distinct`(i), (ii),
   for a nondecreasing integer sequence `N_j` (the counts `N_a(t_j)` of a run).
 * `le_sum_mul_ite_exists`: Lemma `lem:sums`(v) (layer cake).
@@ -132,7 +132,7 @@ lemma Grid.tendsto_iSup_ratio_sq_mul_logEnd_div {K : ℕ} (g : Grid K) {x : ℝ}
       g.logEnd j)
       atTop (𝓝 (x ^ 2)) := by
   refine tendsto_iSup_Icc_div_of_tendsto (a := fun k ↦ g.ratio (k - 1) ^ 2 * g.logEnd k)
-    (sq_nonneg x) ?_ g.monotone_logEnd g.tendsto_logEnd_atTop
+    (sq_nonneg x) ?_ g.logEnd_monotone g.tendsto_logEnd_atTop
   have hr : Tendsto (fun k ↦ g.ratio (k - 1) ^ 2) atTop (𝓝 (x ^ 2)) :=
     (hg.comp (tendsto_sub_atTop_nat 1)).pow 2
   refine hr.congr' (eventually_atTop.2 ⟨1, fun k hk ↦ ?_⟩)
@@ -302,8 +302,8 @@ nondecreasing and `S` a finite nonempty set of indices with `0 < D_j ≤ D_max` 
 `w_(j+1) D_j ≥ Y` for `j ∈ S`. Then either some `j ∈ S` has `w_j D_j ≥ (1 - δ') Y`, or
 `w_(j'+1) ≥ (1 - δ')^(-(|S| - 1)) Y / D_max` for every `j' ≥ max S` (written: every `j'` that
 bounds `S`). Induction on `S`, adding a new maximum. -/
-lemma chain {Y δ' Dmax : ℝ} (hY : 0 ≤ Y) (hδ' : δ' < 1) {w D : ℕ → ℝ} (hw : Monotone w)
-    (S : Finset ℕ) (hS : S.Nonempty)
+lemma exists_le_mul_or_forall_le_mul_of_monotone {Y δ' Dmax : ℝ} (hY : 0 ≤ Y) (hδ' : δ' < 1)
+    {w D : ℕ → ℝ} (hw : Monotone w) (S : Finset ℕ) (hS : S.Nonempty)
     (hD : ∀ j ∈ S, 0 < D j ∧ D j ≤ Dmax ∧ Y ≤ w (j + 1) * D j) :
     (∃ j ∈ S, (1 - δ') * Y ≤ w j * D j) ∨
       ∀ j', (∀ j ∈ S, j ≤ j') → ((1 - δ')⁻¹) ^ (S.card - 1) * Y / Dmax ≤ w (j' + 1) := by
@@ -357,6 +357,8 @@ lemma chain {Y δ' Dmax : ℝ} (hY : 0 ≤ Y) (hδ' : δ' < 1) {w D : ℕ → �
             rw [inv_mul_le_iff₀ hδ]
             exact hlt'.le
         _ ≤ w (j' + 1) := hwk1
+
+@[deprecated (since := "2026-11-19")] alias chain := exists_le_mul_or_forall_le_mul_of_monotone
 
 /-! ### Lemma `lem:distinct` -/
 

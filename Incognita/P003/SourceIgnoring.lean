@@ -22,7 +22,7 @@ Proofs of the three frozen statements of [INC-P003, prop:witness].
   `π^σ`); so the condition of def:consistency is the consistency of `σ` on the target `ν`.
 * `ucb_isConsistentOnUnit`: LML's UCB with `c > 1/2` is consistent on `𝒫^K`, from LML's regret
   bound (`Incognita.isConsistent_ucbAlgorithm_unit`) and `Δ_a E[N_a(T)] ≤ E[R_T]`
-  (`Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds`).
+  (`LMLExplore.Bandits.IsConsistent.isConsistentOnUnit`).
 * `exists_isConsistent`: `𝒞_L ≠ ∅`, witnessed by `π^σ` for LMLExplore's KL-UCB [CGMMS13] on the arms
   `α` (any algorithm consistent on `𝒫^K` would do; UCB is defined on `Fin K` only).
 -/
@@ -53,8 +53,7 @@ theorem ofAlgorithm_isConsistent {α : Type*} [Fintype α] [DecidableEq α] [Mea
 hypothesis `2 ≤ K` is not used. -/
 theorem ucb_isConsistentOnUnit (K : ℕ) [NeZero K] (_hK : 2 ≤ K) {c : ℝ} (hc : 1 / 2 < c) :
     IsConsistentOnUnit (Bandits.ucbAlgorithm K c) :=
-  Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds
-    (isConsistent_ucbAlgorithm_unit hc)
+  (isConsistent_ucbAlgorithm_unit hc).isConsistentOnUnit
 
 /-- [INC-P003, prop:witness] For every `L ∈ (0,∞)^K`, some transfer learner belongs to `𝒞_L`: the
 source-ignoring learner of KL-UCB [CGMMS13]. -/

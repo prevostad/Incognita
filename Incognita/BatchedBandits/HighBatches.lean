@@ -15,7 +15,7 @@ batch `j` [INC-P000, Definition `def:water`], and batch `j` is `(g, L)`-high if
 `Λ_j ≥ (1 - g) L_L` (Definition `def:high`). Lemma `lem:lowmass` says that, for every `ℓ > ℓ_W`
 and `v ≥ 0`, the batches `i ∈ [ℓ_W, ℓ)` with `Λ_i < v`, outside a set of at most `K` batches,
 carry at most `K e^v` pulls; `exists_card_le_sum_low_le` proves this from (W2), for every
-sequence of actions. `exists_rank_card_high_le` proves Lemma `lem:levelC` for **every**
+sequence of actions. `exists_rank_le_card_filter_le` proves Lemma `lem:levelC` for **every**
 sequence `Λ` with that property, with a rank that does not depend on `Λ`: on a grid with
 `x_ℓ → 1`, for every `g ∈ (0, 1)` and `m'`, there is `L₀` such that every `L ≥ L₀` has at least
 `m'` batches `j ∈ [2, L)` that are `(g, L)`-high. The proof is the paper's: otherwise the grid
@@ -41,7 +41,7 @@ lemma one_add_pow_le_exp {β₀ : ℝ} (hβ₀ : 0 ≤ β₀) (h : ℕ) : (1 + �
 of Lemma `lem:lowmass` (for every `L > ℓ_W` and `v ≥ 0`, some set `E` of at most `K` batches has
 `∑_{i ∈ [ℓ_W, L), Λ_i < v, i ∉ E} B_i ≤ K e^v`) and every `L ≥ L₀`, at least `m'` batches
 `j ∈ [2, L)` have `Λ_j ≥ (1 - g) L_L`. -/
-lemma exists_rank_card_high_le {K' : ℕ} (gr : Grid K') (hgr : Tendsto gr.ratio atTop (𝓝 1))
+lemma exists_rank_le_card_filter_le {K' : ℕ} (gr : Grid K') (hgr : Tendsto gr.ratio atTop (𝓝 1))
     {g : ℝ} (hg0 : 0 < g) (hg1 : g < 1) (m' K lW : ℕ) (hlW : 1 ≤ lW) :
     ∃ L₀, ∀ Λ : ℕ → ℝ, (∀ L, lW < L → ∀ v : ℝ, 0 ≤ v → ∃ E : Finset ℕ, E.card ≤ K ∧
         ∑ i ∈ (Finset.Ico lW L).filter (fun i ↦ Λ i < v ∧ i ∉ E),
@@ -172,6 +172,9 @@ lemma exists_rank_card_high_le {K' : ℕ} (gr : Grid K') (hgr : Tendsto gr.ratio
   have : 4 * ω' / g < gr.logEnd L := hLL
   rw [div_lt_iff₀ hg0] at this
   linarith
+
+@[deprecated (since := "2026-11-19")]
+alias exists_rank_card_high_le := exists_rank_le_card_filter_le
 
 /-! ### Lemma `lem:lowmass` -/
 

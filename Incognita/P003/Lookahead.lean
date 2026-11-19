@@ -203,8 +203,10 @@ theorem lookahead_divergence {α : Type*} [Fintype α] [DecidableEq α] [Measura
   · -- `KL(P, P₂)`: the online kernels agree, and the divergence of the source data is that of
     -- the first two values of `a₁`
     rw [gameMeasure, gameMeasure, klDiv_compProd_left,
-      klDiv_sourceLaw_lookahead a₁ ν' ν₂' (by rw [h₁]; exact ae_bernoulli_zero_or_one p)
-        (by rw [h₂]; exact ae_bernoulli_zero_or_one q), h₁, h₂, TauCeti.klDiv_prod_prod, two_mul]
+      klDiv_sourceLaw_lookahead a₁ ν' ν₂'
+        (by rw [h₁]; exact ae_bernoulliMeasure_eq_zero_or_eq_one p)
+        (by rw [h₂]; exact ae_bernoulliMeasure_eq_zero_or_eq_one q), h₁, h₂,
+        TauCeti.klDiv_prod_prod, two_mul]
   · -- the right side: only `a₁` has a positive divergence, and `E[N'_(a₁)] = 2 - p`
     rw [Finset.sum_eq_single a₁ (fun b _ hb ↦ by rw [h₃ b hb, klDiv_self, mul_zero])
       (by simp)]

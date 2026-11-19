@@ -47,8 +47,8 @@ are fixed during the batch").
   arrivals of Step (b2); `HY.two_mul_target_sub_le`, `hyAlg_ae_backlog_le_of_le`: Step (b2) for
   HY's targets, so Lemma `lem:service`(b) under the paper's condition
   `s_ℓ log s_ℓ ≥ 2(K - 1) U_(ℓ+1)`.
-* `hyAlg_ae_W2`: (W2) at every round of a batch that is not activated or has a long IMED phase,
-  Lemma `lem:W`(i) along almost every run of HY.
+* `hyAlg_ae_mul_log_pullCount_le_imedIndex`: (W2) at every round of a batch that is not activated or
+  has a long IMED phase, Lemma `lem:W`(i) along almost every run of HY.
 -/
 
 @[expose] public section
@@ -219,7 +219,7 @@ lemma imedIndex_history_mono {n n' r : ℕ} (hrn : r ≤ n) (hnn' : n ≤ n') (w
   · refine EReal.coe_ennreal_le_coe_ennreal_iff.mpr ?_
     gcongr
   · refine EReal.coe_le_coe_iff.mpr (mul_le_mul_of_nonneg_left ?_ hy)
-    exact log_natCast_le_log_natCast hN
+    exact Real.log_natCast_le_log_natCast hN
 
 /-- At a round `n` of an IMED phase (`n` in batch `ℓ + 1`, `ℓ ≥ 1`, and `n + 1 ≤ s_ℓ`), HY pulls
 the IMED arm with `y_ℓ = x_ℓ²` and the statistics at `t_ℓ`. -/
@@ -611,8 +611,8 @@ arms, for a batch `ℓ + 1` (`ℓ ≥ 1`) that is not activated (`t_(ℓ+1) ≤ 
 is long (`s_ℓ - t_ℓ ≥ K t_ℓ`, the third condition defining `ℓ_W`), every arm `c` pulled at a
 round `n` of the batch has `y_ℓ log N_c(t_ℓ) ≤ J_ℓ(c', t_(ℓ+1) + 1)` for every arm `c'`: (W2),
 `log N_c(t_ℓ) ≤ Λ`. At the paced rounds every arm has `N_c(t_ℓ) ≤ t_ℓ` and `Λ ≥ L_ℓ`. -/
-lemma hyAlg_ae_W2 (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : Grid (Fintype.card α))
-    (env : Environment Unit α ℝ) :
+lemma hyAlg_ae_mul_log_pullCount_le_imedIndex (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ)
+    (g : Grid (Fintype.card α)) (env : Environment Unit α ℝ) :
     ∀ᵐ ω ∂(trajMeasure (hyAlg w₀ β ωs θ γ g : Algorithm Unit α ℝ) env), ∀ ℓ, ℓ ≠ 0 →
       (g.t (ℓ + 1) ≤ g.imedEnd θ ℓ ∨ Fintype.card α * g.t ℓ ≤ g.imedEnd θ ℓ - g.t ℓ) →
       ∀ n, g.batchOf n = ℓ + 1 → ∀ c',
@@ -642,7 +642,7 @@ lemma hyAlg_ae_W2 (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : Grid (Fintype.c
   refine EReal.coe_le_coe_iff.mpr (mul_le_mul_of_nonneg_left ?_ (sq_nonneg _))
   -- `log N_c(t_ℓ) ≤ log t_ℓ ≤ log ((s_ℓ - t_ℓ) / K)`
   have hN : Real.log (pullCount IT.action (IT.action n ω) (g.t ℓ) ω) ≤ Real.log (g.t ℓ) :=
-    log_natCast_le_log_natCast (pullCount_le _ _ _)
+    Real.log_natCast_le_log_natCast (pullCount_le _ _ _)
   refine hN.trans (Real.log_le_log (by exact_mod_cast (show 0 < g.t ℓ by omega)) ?_)
   have hKr : (0 : ℝ) < Fintype.card α := by exact_mod_cast hK
   rw [le_div_iff₀ hKr]
@@ -651,5 +651,7 @@ lemma hyAlg_ae_W2 (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : Grid (Fintype.c
     exact_mod_cast this
   push_cast at this
   linarith
+
+@[deprecated (since := "2026-11-19")] alias hyAlg_ae_W2 := hyAlg_ae_mul_log_pullCount_le_imedIndex
 
 end Incognita.BatchedBandits

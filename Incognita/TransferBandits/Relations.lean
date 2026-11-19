@@ -22,18 +22,19 @@ consistency at the batch ends of [INC-P006, Definition `def:consistent`]
 
 * `Relations.mem_unitBandits_iff_forall_mem_unitLaws`: `ν ∈ 𝒫^K` iff every law `ν a` is in the set
   `unitLaws` of BatchedBandits.
-* `Relations.batchedUnitBandits_eq_inter`: `𝒫 = 𝒫^K ∩ {m⋆ < 1}`; the two classes are not the
+* `Relations.batchedBandits_unitBandits_eq_inter`: `𝒫 = 𝒫^K ∩ {m⋆ < 1}`; the two classes are not the
   same object (an instance with an arm `δ_1` is in `𝒫^K` and not in `𝒫`).
 * `Relations.isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential`: a learner is consistent
   on `𝒫^K` in the sense of P003 iff it is consistent at the batch ends of `𝖲_s` on `𝒫^K`, for any
   `s`.
-* `Relations.isConsistentOnUnit_iff_isConsistent`: P003's pull-count consistency on `𝒫^K` is
-  LMLExplore's regret-based consistency on `𝒫^K` (finitely many arms).
-* `Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds`: LMLExplore's
-  regret-based consistency on the bandits with rewards in `[0, 1]` gives P003's pull-count
-  consistency on `𝒫^K`, from the BatchedBandits lemma
-  `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds` (`Δ_a E[N_a(T)] ≤ E[R_T]`); the former
-  copy `Incognita.P003.isConsistentOnUnit_of_isConsistent` is a deprecated alias of it.
+* `Relations.isConsistentOnUnit_iff_bandits_isConsistent`: P003's pull-count consistency on
+  `𝒫^K` is LMLExplore's regret-based consistency on `𝒫^K` (finitely many arms).
+* `LMLExplore.Bandits.IsConsistent.isConsistentOnUnit`: LMLExplore's regret-based consistency on
+  the bandits with rewards in `[0, 1]` gives P003's pull-count consistency on `𝒫^K`, from the
+  BatchedBandits lemma `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds`
+  (`Δ_a E[N_a(T)] ≤ E[R_T]`); the former names
+  `Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds` and
+  `Incognita.P003.isConsistentOnUnit_of_isConsistent` are deprecated aliases of it.
 * `Relations.isConsistentOnUnit_klucb`: LMLExplore's KL-UCB is consistent on `𝒫^K` in the sense
   of P003.
 * `Relations.isConsistentAtBatchEnds_of_isConsistentOnUnit`: a learner consistent on `𝒫^K` in the
@@ -60,7 +61,7 @@ lemma mem_unitBandits_iff_forall_mem_unitLaws {ν : Kernel α ℝ} :
 /-- The class `𝒫` of BatchedBandits [INC-P006, Definition `def:instance`] is the class `𝒫^K` of
 TransferBandits [INC-P003, Definitions `def:laws` and `def:instance`] restricted to the instances
 whose largest mean is below `1`. -/
-lemma batchedUnitBandits_eq_inter :
+lemma batchedBandits_unitBandits_eq_inter :
     Incognita.BatchedBandits.unitBandits α = unitBandits α ∩ {ν | (⨆ a, (ν a)[id]) < 1} := by
   ext ν
   simp only [Incognita.BatchedBandits.unitBandits, Incognita.BatchedBandits.unitLaws, unitBandits,
@@ -71,10 +72,17 @@ lemma batchedUnitBandits_eq_inter :
   · rintro ⟨⟨hM, h⟩, hm⟩
     exact ⟨fun a ↦ ⟨hM.isProbabilityMeasure a, h a⟩, hm⟩
 
+@[deprecated (since := "2026-11-19")]
+alias batchedUnitBandits_eq_inter := batchedBandits_unitBandits_eq_inter
+
 /-- `𝒫 ⊆ 𝒫^K`. -/
-lemma batchedUnitBandits_subset : Incognita.BatchedBandits.unitBandits α ⊆ unitBandits α := by
-  rw [batchedUnitBandits_eq_inter]
+lemma batchedBandits_unitBandits_subset :
+    Incognita.BatchedBandits.unitBandits α ⊆ unitBandits α := by
+  rw [batchedBandits_unitBandits_eq_inter]
   exact Set.inter_subset_left
+
+@[deprecated (since := "2026-11-19")]
+alias batchedUnitBandits_subset := batchedBandits_unitBandits_subset
 
 /-- With finitely many arms, an arm is suboptimal in the sense of P003 (some arm has a larger mean)
 iff its gap is positive, the sense of P006 and of LML. -/
@@ -113,29 +121,35 @@ many arms, P003's consistency on `𝒫^K` (pull counts) is LMLExplore's consiste
 (expected regret). Proved through the sequential grid `𝖲_2` and [INC-P006, Theorem
 `thm:main`(iii)] (`Incognita.BatchedBandits.isConsistentAtBatchEnds_sequential_iff`, which does not
 assume `E ⊆ 𝒫`). -/
-lemma isConsistentOnUnit_iff_isConsistent [Finite α] [MeasurableSingletonClass α]
+lemma isConsistentOnUnit_iff_bandits_isConsistent [Finite α] [MeasurableSingletonClass α]
     {alg : Algorithm Unit α ℝ} :
     IsConsistentOnUnit alg ↔ LMLExplore.Bandits.IsConsistent alg (unitBandits α) :=
   (isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential (K := 0) le_rfl).trans
     (Incognita.BatchedBandits.isConsistentAtBatchEnds_sequential_iff _)
 
+@[deprecated (since := "2026-11-19")]
+alias isConsistentOnUnit_iff_isConsistent := isConsistentOnUnit_iff_bandits_isConsistent
+
 /-- Pull-count consistency on `𝒫^K` [INC-P003, Definition `def:consistency`] follows from
 LMLExplore's regret-based consistency over the bandits with rewards in `[0, 1]`, through the
 BatchedBandits lemma `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds`
 (`Δ_a E[N_a(T)] ≤ E[R_T]`); on `𝖲_2` the batch ends are every horizon `T ≥ 2`. -/
-lemma isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds [Finite α]
+lemma _root_.LMLExplore.Bandits.IsConsistent.isConsistentOnUnit [Finite α]
     [MeasurableSingletonClass α] {alg : Algorithm Unit α ℝ}
     (h : LMLExplore.Bandits.IsConsistent alg {ν : Kernel α ℝ | ∀ a, ∀ᵐ x ∂(ν a), x ∈ Set.Icc 0 1}) :
     IsConsistentOnUnit alg :=
   (isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential (K := 0) le_rfl).mpr
     ((h.isConsistentAtBatchEnds _).mono fun _ hν ↦ hν.2)
 
+@[deprecated (since := "2026-11-19")]
+alias isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds :=
+  LMLExplore.Bandits.IsConsistent.isConsistentOnUnit
+
 /-- LMLExplore's KL-UCB [CGMMS13] is consistent on `𝒫^K` in the sense of pull counts
 [INC-P003, Definition `def:consistency`]. -/
 lemma isConsistentOnUnit_klucb [Fintype α] [Nonempty α] [StandardBorelSpace α]
     [MeasurableSingletonClass α] : IsConsistentOnUnit (LMLExplore.Bandits.klucb (α := α)) :=
-  isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds
-    LMLExplore.Bandits.KLUCB.isConsistent
+  LMLExplore.Bandits.KLUCB.isConsistent.isConsistentOnUnit
 
 /-- A learner consistent on `𝒫^K` in the sense of P003 [INC-P003, Definition `def:consistency`] is
 consistent at the batch ends of every grid on `𝒫` [INC-P006, Definition `def:consistent`]. -/
@@ -144,7 +158,7 @@ lemma isConsistentAtBatchEnds_of_isConsistentOnUnit [Finite α] [MeasurableSingl
     (g : Incognita.BatchedBandits.Grid K) :
     Incognita.BatchedBandits.IsConsistentAtBatchEnds alg g
       (Incognita.BatchedBandits.unitBandits α) :=
-  ((isConsistentOnUnit_iff_isConsistent.mp h).isConsistentAtBatchEnds g).mono
-    batchedUnitBandits_subset
+  ((isConsistentOnUnit_iff_bandits_isConsistent.mp h).isConsistentAtBatchEnds g).mono
+    batchedBandits_unitBandits_subset
 
 end Incognita.TransferBandits.Relations

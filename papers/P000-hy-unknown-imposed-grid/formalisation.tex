@@ -46,7 +46,7 @@ $\inf\{\KL(\nu_a,Q):\ Q\text{ a law on }[0,1],\ \E_Q[X]>\mu\}$, as in the frozen
 \subsection{One batch ahead}
 
 \begin{lemma}[masked histories]\label{flem:masked-law}
-\lean{Incognita.BatchedBandits.map_history_maskFeedback_eq, Incognita.BatchedBandits.isAlgEnvSeqUntil_maskFeedback}
+\lean{Incognita.BatchedBandits.map_history_ite_lt_eq, Learning.IsAlgEnvSeq.isAlgEnvSeqUntil_ite_lt}
 \uses{def:learner}
 Let $r\le M$, and let a learner see, at every round $n<M$, the rewards before $r$. Let two
 environments have the same feedback kernels at the rounds $<r$. Then the history of the rounds
@@ -305,7 +305,7 @@ convexity. $\kappa^-_a=(1-s)\kappa^+_a+s\delta_0$ has mean $<\mathbf m^\star$.
 \end{proof}
 
 \begin{lemma}[finite horizon, two batches ahead]\label{flem:twobatches-finite}
-\lean{Incognita.BatchedBandits.two_batches_finite}
+\lean{Incognita.BatchedBandits.pow_mul_exp_neg_le_integral_pullCount_div_add}
 \uses{def:learner}
 Let $r_0\le r\le M$, $M>0$, let the learner see the rewards before $r_0$ at the rounds $<r$ and the
 rewards before $r$ at the rounds $<M$, let $\nu,\kappa^+,\kappa^-$ agree outside $a$, with
@@ -332,7 +332,7 @@ and Markov's inequality concludes.
 \end{proof}
 
 \begin{lemma}[two batches ahead]\label{flem:twobatches}
-\lean{Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_add_two, Incognita.BatchedBandits.two_batches_step, Incognita.BatchedBandits.two_batches_arith, Incognita.BatchedBandits.rhs_le_of_counts_le}
+\lean{Incognita.BatchedBandits.eventually_lt_integral_pullCount_div_log_t_add_two, Incognita.BatchedBandits.mul_log_t_add_two_lt_integral_pullCount, Incognita.BatchedBandits.mul_lt_of_mul_neg_add_neg_div_le, Incognita.BatchedBandits.two_mul_integral_pullCount_div_add_le_rpow_div}
 \uses{def:grid, def:model, def:learner, def:kinf}
 For every grid, every batched learner consistent on $\cP$, $\nu\in\cP$ and $a$ sub-optimal with
 $\E_\nu[N_a(t_{\ell+1})]=O(\log t_{\ell+2})$:
@@ -393,7 +393,7 @@ index is non-decreasing since $\tilde K_\ell(c)\ge0$, $y_\ell\ge0$ and the count
 \end{proof}
 
 \begin{lemma}[the leader when $x>1$, on a run]\label{flem:leaderA-run}
-\lean{Incognita.BatchedBandits.hyAlg_ae_leaderA, Incognita.BatchedBandits.hyAlg_ae_testLevel_le, Incognita.BatchedBandits.HY.reference_spec, Incognita.BatchedBandits.HY.pseudoMean_le_leader, Incognita.BatchedBandits.HY.ofReal_le_mul_pseudoKinf_zero_add}
+\lean{Incognita.BatchedBandits.hyAlg_ae_integral_leader_eq_iSup, Incognita.BatchedBandits.hyAlg_ae_pseudoMean_reference_le, Incognita.BatchedBandits.HY.reference_spec, Incognita.BatchedBandits.HY.pseudoMean_le_leader, Incognita.BatchedBandits.HY.ofReal_le_mul_pseudoKinf_zero_add}
 \uses{lem:structA, lem:thrA, lem:pseudo, lem:kinf, def:hy, def:model, def:constA, def:ranksA, def:evA}
 Let $\ell\ge3$ be such that (R2) of Definition~\ref{def:ranksA} holds at $\ell-1$ and $\ell$,
 with $\omega_{\ell-2},\omega_{\ell-1}\ge0$; let $\varepsilon>0$, an optimal arm $a^\star$ and
@@ -429,7 +429,7 @@ $[\hat\mu_{\ell-1},1)$.
 \end{proof}
 
 \begin{lemma}[a good batch when $x>1$, on a run]\label{flem:goodA-run}
-\lean{Incognita.BatchedBandits.hyAlg_ae_goodA, Incognita.BatchedBandits.HY.testKinf_le_imedKinf, Incognita.BatchedBandits.HY.target_le_of_rejected, Incognita.BatchedBandits.hyAlg_ae_pullCount_le_max'}
+\lean{Incognita.BatchedBandits.hyAlg_ae_le_mul_testKinf_and_pullCount_le_max, Incognita.BatchedBandits.HY.testKinf_le_imedKinf, Incognita.BatchedBandits.HY.target_le_of_rejected, Incognita.BatchedBandits.hyAlg_ae_pullCount_le_max'}
 \uses{lem:structA, lem:thrA, lem:imedround, lem:pseudo, lem:kinf, def:hy, def:model, def:constA, def:ranksA}
 Let $\ell\ge2$ be such that (R2) holds at $\ell$ and $\ell+1$, with $\omega_{\ell-1},\omega_\ell\ge0$,
 $\gamma_\ell\ge0$; let $a$ be sub-optimal, $\varepsilon,D>0$, $K^+\ge0$, $x_+$ with

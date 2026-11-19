@@ -19,8 +19,8 @@ Witnesses, known cases and exclusions for the definitions of
 
 ## Main statements
 
-* `isSizeRule_constSize` (witness), `isSizeRule_of_randomisation` (known case: sizes drawn from the
-  randomisation alone), `not_isSizeRule_peek` (exclusion: a size that reads a value outside its
+* `isSizeRule_constSize` (witness), `isSizeRule_comp_fst` (known case: sizes drawn from the
+  randomisation alone), `not_isSizeRule_peekSize` (exclusion: a size that reads a value outside its
   box).
 * `sourceData_constSize_zero` (witness), `sourceData_constSize` (known case),
   `sourceData_eq_of_eqOn_box` (exclusion: the source data do not see the values outside the box).
@@ -70,7 +70,7 @@ lemma isSizeRule_constSize (n : α → ℕ) : IsSizeRule (constSize n : SourceSp
 omit [MeasurableSpace α] in
 /-- Known case: sizes chosen from the randomisation alone, `N' = f(U')` with `f` measurable
 (sizes independent of the source values, as deterministic sizes are), form a size rule. -/
-lemma isSizeRule_of_randomisation [Finite α] {f : (ℕ → unitInterval) → α → ℕ}
+lemma isSizeRule_comp_fst [Finite α] {f : (ℕ → unitInterval) → α → ℕ}
     (hf : Measurable f) : IsSizeRule (fun ω : SourceSpace α ↦ f ω.1) where
   measurable := hf.comp measurable_fst
   measurableSet_eq m := by
@@ -78,6 +78,8 @@ lemma isSizeRule_of_randomisation [Finite α] {f : (ℕ → unitInterval) → α
     refine ⟨Prod.fst ⁻¹' {u | f u = m}, measurable_fst hm, ?_⟩
     ext ω
     simp [boxRestrict]
+
+@[deprecated (since := "2026-11-19")] alias isSizeRule_of_randomisation := isSizeRule_comp_fst
 
 omit [MeasurableSpace α] in
 /-- A size map that reads the first value of the stack of `a₁` and keeps none of it, when that
@@ -88,7 +90,7 @@ noncomputable def peekSize [DecidableEq α] (a₁ : α) (ω : SourceSpace α) : 
 omit [MeasurableSpace α] in
 /-- Exclusion: `peekSize a₁` is not a size rule: the event `{N' = 0}` reads the first value of the
 stack of `a₁`, outside the empty box. -/
-lemma not_isSizeRule_peek [DecidableEq α] (a₁ : α) : ¬ IsSizeRule (peekSize a₁) := by
+lemma not_isSizeRule_peekSize [DecidableEq α] (a₁ : α) : ¬ IsSizeRule (peekSize a₁) := by
   intro h
   obtain ⟨t, -, ht⟩ := h.measurableSet_eq 0
   let ω₀ : SourceSpace α := (fun _ ↦ 0, fun _ _ ↦ 0)
@@ -106,6 +108,8 @@ lemma not_isSizeRule_peek [DecidableEq α] (a₁ : α) : ¬ IsSizeRule (peekSize
     exact j.elim0
   rw [← ht] at h₀ h₁
   exact h₁ (by simpa [Set.mem_preimage, hbox] using h₀)
+
+@[deprecated (since := "2026-11-19")] alias not_isSizeRule_peek := not_isSizeRule_peekSize
 
 /-! ### Source data and the law of the game -/
 

@@ -12,7 +12,8 @@ public import Mathlib.Probability.Distributions.Bernoulli
 ## Main statements
 
 * `Incognita.ae_eq_or_eq_bernoulliMeasure`: almost every point of `Ber(x, y, p)` is `x` or `y`.
-* `Incognita.ae_bernoulli_zero_or_one`: almost every point of `Ber(1, 0, p)` is `0` or `1`.
+* `Incognita.ae_bernoulliMeasure_eq_zero_or_eq_one`: almost every point of `Ber(1, 0, p)` is `0` or
+  `1`.
 -/
 
 @[expose] public section
@@ -33,7 +34,10 @@ lemma ae_eq_or_eq_bernoulliMeasure {X : Type*} [MeasurableSpace X] [MeasurableSi
     (by ext z; simp; tauto)
 
 /-- A Bernoulli law on `{0, 1} ⊆ ℝ` is concentrated on `{0, 1}`. -/
-lemma ae_bernoulli_zero_or_one (p : I) : ∀ᵐ x ∂Ber((1 : ℝ), 0, p), x = 0 ∨ x = 1 :=
+lemma ae_bernoulliMeasure_eq_zero_or_eq_one (p : I) : ∀ᵐ x ∂Ber((1 : ℝ), 0, p), x = 0 ∨ x = 1 :=
   (ae_eq_or_eq_bernoulliMeasure (1 : ℝ) 0 p).mono fun _ h ↦ h.symm
+
+@[deprecated (since := "2026-11-19")]
+alias ae_bernoulli_zero_or_one := ae_bernoulliMeasure_eq_zero_or_eq_one
 
 end Incognita

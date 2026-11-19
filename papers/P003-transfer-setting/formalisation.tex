@@ -159,7 +159,7 @@ pairs is LML's pull count.
 \begin{lemma}[UCB is consistent on sub-Gaussian bandits]\label{flem:ucb-consistent}
 \lean{Incognita.log_succ_le_two_mul_log, Incognita.isConsistent_ucbAlgorithm_subgaussian,
   Incognita.isConsistent_ucbAlgorithm_unit,
-  Incognita.TransferBandits.Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds}
+  LMLExplore.Bandits.IsConsistent.isConsistentOnUnit}
 \uses{def:instance, def:consistency}
 Let $\sigma^2\ge0$ and $c>2\sigma^2$. On every bandit whose reward laws are
 $\sigma^2$-sub-Gaussian around their means, the expected regret of LML's UCB with parameter $c$
@@ -197,7 +197,7 @@ no arm has a source value, and $\pi^{\mathrm{tr}}$ pulls $a_0$.
 \begin{lemma}[The source data of the look-ahead map]\label{flem:lookahead-data}
 \lean{Incognita.infinitePi_map_zero_one, Incognita.P003.map_sourceMeasure_pair,
   Incognita.P003.exists_sourceData_lookahead, Incognita.P003.klDiv_sourceLaw_lookahead,
-  Incognita.ae_bernoulli_zero_or_one, Incognita.P003.lintegral_lookahead}
+  Incognita.ae_bernoulliMeasure_eq_zero_or_eq_one, Incognita.P003.lintegral_lookahead}
 \uses{def:laws, def:instance, def:source-space, def:source-data}
 Let $\nu',\tilde\nu'\in\mathcal P^K$. Under $P'_{\nu'}$ the pair $(X'_{1,1},X'_{1,2})$ has law
 $\nu'_1\otimes\nu'_1$. The source data of $N^{\mathrm{la}}$ are $\Phi(X'_{1,1},X'_{1,2})$ for a

@@ -18,8 +18,8 @@ of the lemmas of `Incognita.BatchedBandits.HY.Structure` and
 `Incognita.BatchedBandits.HY.GoodBatch`.
 
 * `eventually_mul_rpow_add_one_le_exp`: a power of `L` is eventually below `exp(b L)`, `b > 0`.
-* `Grid.eventually_imedEnd_R2`: (R2) for every large batch, for every `β` and every number of
-  arms `K'`.
+* `Grid.eventually_two_le_imedEnd_and_le_t_sub_imedEnd`: (R2) for every large batch, for every `β`
+  and every number of arms `K'`.
 * `Grid.eventually_ratio_le`, `Grid.eventually_le_mul_logEnd_rpow`,
   `Grid.eventually_add_mul_logEnd_le_netSize`: (R1) `x_ℓ ≤ x₊`, (T1)–(T2) and (T4) of
   Definition `def:ranksA` for every large `ℓ` (`β > 1`); `Grid.eventually_le_netSize`,
@@ -79,8 +79,8 @@ activated): the conditions (R2) of Definition `def:ranksA` at `ℓ + 1` (with `K
 holds for every `ℓ`, `Grid.hyTheta_mem`). Since `ϑ_ℓ → 0`, `s_ℓ ≤ t_ℓ^(1+ϑ_ℓ) ≤ exp((1 + c) L_ℓ)`
 with `c = (x - 1)/4`, while `t_(ℓ+1) = exp(x_(ℓ+1) L_ℓ) ≥ exp((1 + 2c) L_ℓ)`, and
 `U_(ℓ+1) ≤ L_ℓ^β + 1` is a power of `L_ℓ`. -/
-lemma eventually_imedEnd_R2 {x : ℝ} (hx : 1 < x) (hg : Tendsto g.ratio atTop (𝓝 x)) (β : ℝ)
-    (K' : ℕ) :
+lemma eventually_two_le_imedEnd_and_le_t_sub_imedEnd {x : ℝ} (hx : 1 < x)
+    (hg : Tendsto g.ratio atTop (𝓝 x)) (β : ℝ) (K' : ℕ) :
     ∀ᶠ ℓ in atTop, 2 ≤ g.imedEnd g.hyTheta ℓ ∧
       (2 * (K' - 1 : ℕ) * g.netSize β (ℓ + 1) : ℝ) ≤
         g.imedEnd g.hyTheta ℓ * Real.log (g.imedEnd g.hyTheta ℓ) ∧
@@ -172,6 +172,9 @@ lemma eventually_imedEnd_R2 {x : ℝ} (hx : 1 < x) (hg : Tendsto g.ratio atTop (
       linarith
     have hfinal' : σ + K' * (U + K') ≤ g.t (ℓ + 1) := by exact_mod_cast hfinal
     omega
+
+@[deprecated (since := "2026-11-19")]
+alias eventually_imedEnd_R2 := eventually_two_le_imedEnd_and_le_t_sub_imedEnd
 
 /-- [INC-P000, proof of Lemma `lem:ranksA`, Step 1, (R1)] On a grid with `x_ℓ → x`, every
 `x₊ > x` has `x_ℓ ≤ x₊` for every large `ℓ` (the paper's `x₊ = 2x`). -/
@@ -319,7 +322,7 @@ lemma netSize_le_one_add_rpow {β : ℝ} (hβ : 1 ≤ β) {j ℓ : ℕ} (hjℓ :
     linarith
   have hmono : (1 + g.logEnd i) ^ β ≤ (1 + g.logEnd ℓ) ^ β :=
     Real.rpow_le_rpow (by linarith [hL0 i])
-      (by linarith [g.monotone_logEnd (show i ≤ ℓ by omega)]) (by linarith)
+      (by linarith [g.logEnd_monotone (show i ≤ ℓ by omega)]) (by linarith)
   linarith
 
 /-- [INC-P000, Lemma `lem:sumsA`(a), the sum] For `β ≥ 1`, `η > 0`, `C ≥ 0` and nonnegative
