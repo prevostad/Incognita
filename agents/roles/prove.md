@@ -21,6 +21,9 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
    prove it **end to end** before starting another branch; never add lemmas that no frozen
    statement of this pull request reaches. Prefer the statements that make another one non-vacuous
    (for example the consistency of an algorithm, which witnesses the hypotheses of a lower bound).
+   **Size** (AGENTS.md §6.1): at most about 800 added lines of Lean in the pull request, never
+   more than 1,200. Pick a branch that fits; when you reach the limit, stop at the last lemma that
+   compiles, run the checks and write the summary: the next `prove` session continues from `main`.
 2. **Prove**, in modules under `Incognita/`: paper-specific material in `Incognita/<prefix>/`,
    general lemmas in general form in `Incognita/ForMathlib/`, `Incognita/ForLML/` or
    `Incognita/<Roadmap>/`. The final theorem `Incognita.<prefix>.<name>` has **exactly** the frozen
@@ -64,7 +67,8 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
    naming, documentation, proof quality, this quality pass): it merges only when they all approve.
 
 Partial progress is useful: commit the lemmas you proved, and say in the summary which lemma
-remains and what blocks it.
+remains and what blocks it. A small pull request that merges is worth more than a large one that
+waits: stop at the size limit even with time left.
 
 Summary (AGENTS.md §1): Results (each statement or lemma proved, in mathematics, with its Lean name),
 Frozen statements (None), Sources read, Not done, Quality pass.
