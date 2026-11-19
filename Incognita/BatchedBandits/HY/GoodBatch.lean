@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYStructure
+public import Incognita.BatchedBandits.HY.Structure
 
 /-! # A good batch of HY when `x > 1`
 

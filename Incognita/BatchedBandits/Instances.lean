@@ -28,6 +28,10 @@ the Bochner integral `Q[id]`, as in LML's `gap` and LMLExplore's `dInf`, and the
 
 * `bernoulliMeasure_mem_unitLaws`, `dirac_mem_unitLaws`: Bernoulli laws and Dirac masses at points
   of `[0, 1]` are in `𝓜`; `dirac_two_not_mem_unitLaws`: the Dirac mass at `2` is not.
+* `integrable_id_of_mem_unitLaws`, `integral_id_mem_Icc_of_mem_unitLaws`: a law of `𝓜` has a mean
+  in `[0, 1]`.
+* `smul_add_smul_dirac_one_mem_unitLaws`, `integral_id_smul_add_smul_dirac_one`,
+  `mix_mem_unitLaws`: `𝓜` is closed under two-point mixtures, whose means mix linearly.
 * `bernoulliBandit_mem_unitBandits`: every Bernoulli instance whose means are all below `1` is in
   `𝒫`; `not_mem_unitBandits_of_integral_eq_one`: an instance with an arm of mean `1` (for example
   an arm `δ_1`) is not.
@@ -37,7 +41,7 @@ the Bochner integral `Q[id]`, as in LML's `gap` and LMLExplore's `dInf`, and the
 
 open MeasureTheory ProbabilityTheory
 
-open scoped unitInterval
+open scoped unitInterval NNReal
 
 namespace Incognita.BatchedBandits
 
@@ -81,6 +85,57 @@ lemma dirac_two_not_mem_unitLaws : Measure.dirac (2 : ℝ) ∉ unitLaws := by
   rintro ⟨-, h⟩
   have := (ae_dirac_iff measurableSet_Icc).mp h
   norm_num at this
+
+/-- The identity is integrable for a law on `[0, 1]`. -/
+lemma integrable_id_of_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) : Integrable id P := by
+  have := hP.1
+  refine (integrable_const (1 : ℝ)).mono' aemeasurable_id.aestronglyMeasurable ?_
+  filter_upwards [hP.2] with x hx
+  rw [id, Real.norm_eq_abs, abs_le]
+  exact ⟨by linarith [hx.1], hx.2⟩
+
+/-- The mixture `(1 - u) P + u δ_1` of a law on `[0, 1]` with the Dirac mass at `1` is a law on
+`[0, 1]`, for `u ∈ [0, 1]`. -/
+lemma smul_add_smul_dirac_one_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) {u : ℝ≥0}
+    (hu : u ≤ 1) :
+    (1 - u) • P + u • Measure.dirac (1 : ℝ) ∈ unitLaws := by
+  have := hP.1
+  refine ⟨⟨?_⟩, ?_⟩
+  · rw [add_apply, smul_apply, smul_apply, measure_univ, measure_univ, ENNReal.smul_def,
+      ENNReal.smul_def, smul_eq_mul, smul_eq_mul, mul_one, mul_one, ← ENNReal.coe_add,
+      tsub_add_cancel_of_le hu, ENNReal.coe_one]
+  · rw [ae_add_measure_iff]
+    exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure
+      ((ae_dirac_iff measurableSet_Icc).2 ⟨zero_le_one, le_rfl⟩) _⟩
+
+/-- The mean of the mixture `(1 - u) P + u δ_1` is `(1 - u) m(P) + u`. -/
+lemma integral_id_smul_add_smul_dirac_one {P : Measure ℝ} (hP : P ∈ unitLaws) {u : ℝ≥0}
+    (hu : u ≤ 1) :
+    ((1 - u) • P + u • Measure.dirac (1 : ℝ))[id] = (1 - (u : ℝ)) * P[id] + u := by
+  have hi := integrable_id_of_mem_unitLaws hP
+  rw [integral_add_measure hi.smul_measure_nnreal
+      (integrable_dirac (by simp)).smul_measure_nnreal,
+    integral_smul_nnreal_measure, integral_smul_nnreal_measure, integral_dirac]
+  simp [NNReal.smul_def, NNReal.coe_sub hu]
+
+/-- The mixture `(1 - t) P + t Q` of two laws on `[0, 1]`, `t ∈ [0, 1]`, is a law on `[0, 1]`
+with mean `(1 - t) m(P) + t m(Q)`. -/
+lemma mix_mem_unitLaws {P Q : Measure ℝ} (hP : P ∈ unitLaws) (hQ : Q ∈ unitLaws) {t : ℝ}
+    (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
+    ENNReal.ofReal (1 - t) • P + ENNReal.ofReal t • Q ∈ unitLaws ∧
+      (ENNReal.ofReal (1 - t) • P + ENNReal.ofReal t • Q)[id] = (1 - t) * P[id] + t * Q[id] := by
+  have := hP.1
+  have := hQ.1
+  refine ⟨⟨⟨?_⟩, ?_⟩, ?_⟩
+  · simp only [add_apply, smul_apply, measure_univ, smul_eq_mul, mul_one]
+    rw [← ENNReal.ofReal_add (by linarith) ht0]
+    simp
+  · rw [ae_add_measure_iff]
+    exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure hQ.2 _⟩
+  · rw [integral_add_measure ((integrable_id_of_mem_unitLaws hP).smul_measure ENNReal.ofReal_ne_top)
+      ((integrable_id_of_mem_unitLaws hQ).smul_measure ENNReal.ofReal_ne_top),
+      integral_smul_measure, integral_smul_measure, ENNReal.toReal_ofReal (by linarith),
+      ENNReal.toReal_ofReal ht0, smul_eq_mul, smul_eq_mul]
 
 variable [Countable α] [MeasurableSingletonClass α]
 

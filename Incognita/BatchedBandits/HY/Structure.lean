@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYRun
+public import Incognita.BatchedBandits.HY.Run
 
 /-! # The structure of a batch of HY with a long paced phase
 

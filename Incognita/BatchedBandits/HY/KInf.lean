@@ -6,6 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.BatchedBandits.HY
+public import Incognita.BatchedBandits.LogInequalities
 
 /-! # The divergences of HY: rational and real suprema, Lemmas `lem:kinf` and `lem:pseudo`
 
@@ -25,7 +26,8 @@ rewards of the history are in `[0, 1]` (as on every run, almost surely), the pse
   (ii) is `HY.pseudoKinf_eq_zero_of_le_pseudoMean`; (iii) `HY.pseudoKinf_mono`, monotone in the
   level; (iv) `HY.ofReal_sq_div_eight_le_pseudoKinf`, `𝒦_inf ≥ (μ - q)² / 8` if the mean is
   `≤ q < μ`; (v) `HY.pseudoKinf_le_pseudoKinf_sub_add`, the shift of the level; (vi)
-  `log_le_log_one_sub_mul`, the scaling inequality.
+  `log_le_log_one_sub_mul` (in `Incognita.BatchedBandits.LogInequalities`), the scaling
+  inequality.
 * Lemma `lem:pseudo` (the pseudo-observation against the empirical law, `w₀ = 0`):
   (i) `HY.pseudoKinf_zero_le`, (ii) `HY.mul_pseudoKinf_le`,
   (iii) `HY.pseudoMean_le_pseudoMean_zero`, `HY.pseudoMean_zero_sub_le_pseudoMean`, and the last
@@ -39,17 +41,6 @@ open MeasureTheory Learning Finset Filter
 open scoped ENNReal Topology
 
 namespace Incognita.BatchedBandits
-
-/-- **Scaling** [INC-P000, Lemma `lem:kinf`(vi)]: for `λ ∈ [0, 1/(1-μ))`, `ϖ ∈ (0, 1]` and
-`y ∈ [0, 1]`, `log (1 - ϖ λ (y - μ)) ≥ log ϖ + log (1 - λ (y - μ))`. -/
-lemma log_le_log_one_sub_mul {lam μ ϖ y : ℝ} (hlam : 0 ≤ lam) (hlam1 : lam * (1 - μ) < 1)
-    (hϖ : 0 < ϖ) (hϖ1 : ϖ ≤ 1) (hy1 : y ≤ 1) :
-    Real.log ϖ + Real.log (1 - lam * (y - μ)) ≤ Real.log (1 - ϖ * lam * (y - μ)) := by
-  have hpos : 0 < 1 - lam * (y - μ) := by
-    have : lam * (y - μ) ≤ lam * (1 - μ) := mul_le_mul_of_nonneg_left (by linarith) hlam
-    linarith
-  rw [← Real.log_mul hϖ.ne' hpos.ne']
-  exact Real.log_le_log (mul_pos hϖ hpos) (by nlinarith)
 
 namespace HY
 
@@ -69,11 +60,7 @@ lemma ind_le_one (i : Fin n) : ind h r c i ≤ 1 := by
   unfold ind
   split_ifs <;> norm_num
 
-/-- `1 - λ (y - μ) > 0` for `y ≤ 1` and `λ ∈ [0, 1/(1-μ))`. -/
-lemma one_sub_mul_pos {lam μ y : ℝ} (hlam : 0 ≤ lam) (hlam1 : lam * (1 - μ) < 1) (hy : y ≤ 1) :
-    0 < 1 - lam * (y - μ) := by
-  have : lam * (y - μ) ≤ lam * (1 - μ) := mul_le_mul_of_nonneg_left (by linarith) hlam
-  linarith
+@[deprecated (since := "2026-11-19")] alias one_sub_mul_pos := one_sub_mul_sub_pos
 
 /-- The function `λ ↦ F(λ)` of the dual formula is continuous at every `λ ∈ [0, 1/(1-μ))`, for
 rewards `≤ 1` and `μ ≥ 0`. -/
@@ -84,7 +71,7 @@ lemma continuousAt_pseudoLogMean (w₀ : ℝ) {μ : ℝ} (hμ0 : 0 ≤ μ)
   refine ContinuousAt.div_const (ContinuousAt.add ?_ ?_) _
   · refine tendsto_finsetSum _ fun i _ ↦ ?_
     refine continuousAt_const.mul (ContinuousAt.log (by fun_prop) ?_)
-    exact (one_sub_mul_pos hq0 hq1 (hy i)).ne'
+    exact (one_sub_mul_sub_pos hq0 hq1 (hy i)).ne'
   · refine continuousAt_const.mul (ContinuousAt.log (by fun_prop) ?_)
     have : 0 ≤ q * μ := mul_nonneg hq0 hμ0
     linarith
@@ -162,7 +149,7 @@ lemma pseudoKinf_le_ofReal_log {w₀ μ : ℝ} (hw₀ : 0 ≤ w₀) (hμ : μ < 
       ind h r c i * Real.log (1 / (1 - μ)) := by
     intro i
     refine mul_le_mul_of_nonneg_left (le_trans ?_ hκ) (ind_nonneg i)
-    refine Real.log_le_log (one_sub_mul_pos hq0 hq1 (hy i).2) ?_
+    refine Real.log_le_log (one_sub_mul_sub_pos hq0 hq1 (hy i).2) ?_
     nlinarith [(hy i).1]
   rw [pseudoLogMean, div_le_iff₀ hpos]
   have hsum := Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) ↦ hterm i
@@ -191,7 +178,7 @@ lemma pseudoKinf_mono {w₀ μ μ' : ℝ} (hw₀ : 0 ≤ w₀) (hμ0 : 0 ≤ μ)
   have hkey : ∀ y : ℝ, y ∈ Set.Icc (0 : ℝ) 1 →
       Real.log (1 - q * (y - μ)) ≤ Real.log (1 - q' * (y - μ')) := by
     intro y hy'
-    refine Real.log_le_log (one_sub_mul_pos hq0 hq1 hy'.2) ?_
+    refine Real.log_le_log (one_sub_mul_sub_pos hq0 hq1 hy'.2) ?_
     have e1 : q' * (y - μ') = q' * (y - 1) + q * (1 - μ) := by rw [← hq'1]; ring
     have e2 : q * (y - μ) = q * (y - 1) + q * (1 - μ) := by ring
     have : q' * (y - 1) ≤ q * (y - 1) := mul_le_mul_of_nonpos_right hqq' (by linarith [hy'.2])
@@ -204,15 +191,8 @@ lemma pseudoKinf_mono {w₀ μ μ' : ℝ} (hw₀ : 0 ≤ w₀) (hμ0 : 0 ≤ μ)
     have := hkey 0 ⟨le_rfl, zero_le_one⟩
     simpa using this
 
-/-- `log (1 + u) ≥ u - 2 u²` for `u ≥ -1/2` (the step of the proof of Lemma `lem:kinf`(iv)). -/
-lemma sub_two_mul_sq_le_log_one_add {u : ℝ} (hu : -(1 / 2) ≤ u) :
-    u - 2 * u ^ 2 ≤ Real.log (1 + u) := by
-  have h1 : 0 < 1 + u := by linarith
-  have h := Real.one_sub_inv_le_log_of_pos h1
-  have : u - 2 * u ^ 2 ≤ 1 - (1 + u)⁻¹ := by
-    rw [show 1 - (1 + u)⁻¹ = u / (1 + u) by field_simp; ring, le_div_iff₀ h1]
-    nlinarith [sq_nonneg u]
-  linarith
+@[deprecated (since := "2026-11-19")] alias sub_two_mul_sq_le_log_one_add :=
+  BatchedBandits.sub_two_mul_sq_le_log_one_add
 
 /-- [INC-P000, Lemma `lem:kinf`(iv)] For rewards in `[0, 1]`, `w₀ ≥ 0`, `N_c + w₀ > 0`,
 `μ ∈ [0, 1)` and `m̃_c ≤ q < μ`, `𝒦_inf(ν̃_c, μ) ≥ (μ - q)² / 8`: the dual formula at
@@ -246,7 +226,7 @@ lemma ofReal_sq_div_eight_le_pseudoKinf {w₀ μ q : ℝ} (hw₀ : 0 ≤ w₀) (
     have hsq : (l * (y - μ)) ^ 2 ≤ l ^ 2 := by
       rw [← sq_abs]
       exact pow_le_pow_left₀ (abs_nonneg _) hu 2
-    have := sub_two_mul_sq_le_log_one_add hu'
+    have := BatchedBandits.sub_two_mul_sq_le_log_one_add hu'
     rw [show 1 + -(l * (y - μ)) = 1 - l * (y - μ) by ring, neg_sq] at this
     linarith
   unfold pseudoLogMean
@@ -305,7 +285,7 @@ lemma pseudoKinf_le_pseudoKinf_sub_add {w₀ μ ε : ℝ} (hw₀ : 0 ≤ w₀) (
   have hterm : ∀ y : ℝ, y ∈ Set.Icc (0 : ℝ) 1 →
       Real.log a + Real.log (1 - q * (y - μ)) ≤ Real.log (1 - q' * (y - (μ - ε))) := by
     intro y hy'
-    have hp := one_sub_mul_pos hq0 hq1 hy'.2
+    have hp := one_sub_mul_sub_pos hq0 hq1 hy'.2
     rw [← Real.log_mul ha0.ne' hp.ne']
     refine Real.log_le_log (mul_pos ha0 hp) ?_
     -- `1 - λ' (y - μ + ε) - α (1 - λ (y - μ)) = 1 - α - α λ ε ≥ 0`
@@ -358,7 +338,7 @@ lemma pseudoKinf_zero_le {w₀ μ : ℝ} (hw₀ : 0 ≤ w₀) (hμ : μ < 1) (h�
   have hg0 : S ≤ count h r c * Real.log (1 + q * μ) := by
     rw [count_eq_sum_ind, Finset.sum_mul]
     refine Finset.sum_le_sum fun i _ ↦ mul_le_mul_of_nonneg_left ?_ (ind_nonneg i)
-    refine Real.log_le_log (one_sub_mul_pos hq0 hq1 (hy i).2) ?_
+    refine Real.log_le_log (one_sub_mul_sub_pos hq0 hq1 (hy i).2) ?_
     nlinarith [(hy i).1]
   unfold pseudoLogMean
   rw [← hS, zero_mul, add_zero, add_zero, div_le_div_iff₀ (by linarith) (by linarith)]

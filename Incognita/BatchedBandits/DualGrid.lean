@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYKinf
+public import Incognita.BatchedBandits.LogInequalities
 
 /-! # A grid for the dual formula of `𝒦_inf`
 
@@ -98,7 +98,7 @@ lemma exists_grid_le_sum_log {n : ℕ} (hn : 1 ≤ n) {y : ℕ → ℝ}
     have : ∀ i ∈ range n, Real.log (1 - lam * (y i - r)) ≤ lam * r := by
       intro i hi
       have hyi := hy i (Finset.mem_range.mp hi)
-      have hpos := HY.one_sub_mul_pos hlam0 hlam1 hyi.2
+      have hpos := one_sub_mul_sub_pos hlam0 hlam1 hyi.2
       have := Real.log_le_sub_one_of_pos hpos
       nlinarith [hyi.1]
     calc _ ≤ ∑ _i ∈ range n, lam * r := Finset.sum_le_sum this

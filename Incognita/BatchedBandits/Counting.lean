@@ -123,16 +123,6 @@ lemma tendsto_iSup_Icc_div_of_tendsto {a b : ℕ → ℝ} {c : ℝ} (hc : 0 ≤ 
           rw [← max_div_div_right hbj.le, mul_div_assoc, div_self hbj.ne', mul_one]
       _ < c' := max_lt hCj hc''c'
 
-/-- `L_ℓ = log t_ℓ` is nondecreasing in `ℓ` (`L_0 = log 0 = 0`). -/
-lemma Grid.monotone_logEnd {K : ℕ} (g : Grid K) : Monotone g.logEnd := by
-  intro ℓ ℓ' h
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · simp only [Grid.logEnd, g.t_zero, Nat.cast_zero, Real.log_zero]
-    rcases Nat.eq_zero_or_pos ℓ' with rfl | hℓ'
-    · simp [g.t_zero]
-    · exact (g.logEnd_pos hℓ').le
-  · exact Real.log_le_log (g.t_pos hℓ) (g.t_le_t h)
-
 /-- [INC-P000, Lemma `lem:H`, at the batch ends] On a grid with `x_ℓ → x ≥ 1`, the largest level
 `H_j = max_{1 ≤ k ≤ j} y_(k-1) L_k` (`y_k = x_k²`) satisfies `H_j / L_j → x²`. -/
 lemma Grid.tendsto_iSup_ratio_sq_mul_logEnd_div {K : ℕ} (g : Grid K) {x : ℝ}
@@ -140,11 +130,9 @@ lemma Grid.tendsto_iSup_ratio_sq_mul_logEnd_div {K : ℕ} (g : Grid K) {x : ℝ}
     Tendsto (fun j ↦ (⨆ k : Finset.Icc 1 j, g.ratio ((k : ℕ) - 1) ^ 2 * g.logEnd k) /
       g.logEnd j)
       atTop (𝓝 (x ^ 2)) := by
-  have hL : Tendsto g.logEnd atTop atTop :=
-    Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop.comp g.strictMono.tendsto_atTop)
   refine tendsto_iSup_Icc_div_of_tendsto (a := fun k ↦ g.ratio (k - 1) ^ 2 * g.logEnd k)
     (sq_nonneg x) ?_ g.monotone_logEnd
-    (eventually_atTop.2 ⟨1, fun k hk ↦ g.logEnd_pos hk⟩) hL
+    (eventually_atTop.2 ⟨1, fun k hk ↦ g.logEnd_pos hk⟩) g.tendsto_logEnd_atTop
   have hr : Tendsto (fun k ↦ g.ratio (k - 1) ^ 2) atTop (𝓝 (x ^ 2)) :=
     (hg.comp (tendsto_sub_atTop_nat 1)).pow 2
   refine hr.congr' (eventually_atTop.2 ⟨1, fun k hk ↦ ?_⟩)
@@ -152,12 +140,6 @@ lemma Grid.tendsto_iSup_ratio_sq_mul_logEnd_div {K : ℕ} (g : Grid K) {x : ℝ}
   rw [mul_div_assoc, div_self (g.logEnd_pos hk).ne', mul_one]
 
 /-! ### Lemma `lem:growth` -/
-
-/-- `L_(j+1) = x_(j+1) L_j` for `j ≥ 1`. -/
-lemma Grid.logEnd_succ_eq {K : ℕ} (g : Grid K) {j : ℕ} (hj : 1 ≤ j) :
-    g.logEnd (j + 1) = g.ratio (j + 1) * g.logEnd j := by
-  simp only [Grid.ratio, show ¬ (j + 1 ≤ 1) by omega, ite_false, Nat.add_sub_cancel]
-  rw [div_mul_cancel₀ _ (g.logEnd_pos hj).ne']
 
 /-- [INC-P000, Lemma `lem:ranksA`, last claim] If `x_j ≤ x₊` for every `j > k`, `k ≥ 1` and
 `x₊ ≥ 0`, then `L_(k+i) ≤ x₊^i L_k` for every `i ≥ 0`. -/

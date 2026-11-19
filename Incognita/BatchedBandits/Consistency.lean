@@ -6,6 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.BatchedBandits.Batched
+public import Incognita.BatchedBandits.Instances
 public import LMLExplore.Bandits.LaiRobbins
 
 /-! # Consistency at the batch ends
@@ -29,6 +30,8 @@ The classical (sequential) consistency [LS, Definition 16.1] is LMLExplore's
   ends on a class containing an instance where `c` is suboptimal.
 * `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds`: a (sequentially) consistent learner is
   consistent at the batch ends of every grid.
+* `ae_feedback_mem_Icc`: on an instance of `𝒫`, the rewards of almost every run of every learner
+  are in `[0, 1]`.
 -/
 
 @[expose] public section
@@ -146,5 +149,27 @@ lemma _root_.LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds [Finite α]
     gcongr
     rw [le_div_iff₀ hc, mul_comm]
     exact hsum
+
+omit [DecidableEq α] [MeasurableSingletonClass α] in
+/-- For an instance of `𝒫` (rewards in `[0, 1]`), the rewards of almost every run of every learner
+are in `[0, 1]`: the reward of round `n` has the conditional law `ν_(A_n)`. -/
+lemma ae_feedback_mem_Icc {alg : Algorithm Unit α ℝ} {ν : ProbabilityTheory.Kernel α ℝ}
+    [ProbabilityTheory.IsMarkovKernel ν] (hν : ν ∈ unitBandits α) :
+    ∀ᵐ ω ∂(trajMeasure alg (Environment.bandit ν)), ∀ n,
+      IT.feedback n ω ∈ Set.Icc (0 : ℝ) 1 := by
+  rw [MeasureTheory.ae_all_iff]
+  intro n
+  have hlaw := ((IT.isAlgEnvSeq_trajMeasure alg (Environment.bandit ν)).hasCondDistrib_feedback
+    n).hasLaw_comp
+  have hmem : ∀ᵐ y ∂((Environment.bandit ν).feedback n ∘ₘ
+      (trajMeasure alg (Environment.bandit ν)).map
+        (fun ω ↦ ((history IT.obs IT.action IT.feedback n ω, IT.obs n ω), IT.action n ω))),
+      y ∈ Set.Icc (0 : ℝ) 1 := by
+    refine MeasureTheory.Measure.ae_comp_of_ae_ae measurableSet_Icc
+      (MeasureTheory.ae_of_all _ fun x ↦ ?_)
+    rw [feedback_bandit, ProbabilityTheory.Kernel.prodMkLeft_apply]
+    exact (hν.1 x.2).2
+  rw [← hlaw.map_eq] at hmem
+  exact MeasureTheory.ae_of_ae_map hlaw.aemeasurable hmem
 
 end Incognita.BatchedBandits

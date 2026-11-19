@@ -13,15 +13,16 @@ Complements to LML's `LeanMachineLearning.ForMathlib.Probability.HasCondDistrib`
 
 ## Main statements
 
-* `ProbabilityTheory.hasCondDistrib_const_dirac`: a constant random variable `c` has the
-  conditional law `δ_c` given any measurable random variable.
+* `Incognita.hasCondDistrib_const_dirac`: a constant random variable `c` has the
+  conditional law `δ_c` given any measurable random variable (formerly in LML's namespace
+  `ProbabilityTheory`, where the old name is a deprecated alias).
 -/
 
 @[expose] public section
 
-open MeasureTheory
+open MeasureTheory ProbabilityTheory
 
-namespace ProbabilityTheory
+namespace Incognita
 
 /-- A constant random variable has the conditional law `δ_c` given any measurable `X`. -/
 lemma hasCondDistrib_const_dirac {Ω β γ : Type*} {mΩ : MeasurableSpace Ω} [MeasurableSpace β]
@@ -31,5 +32,12 @@ lemma hasCondDistrib_const_dirac {Ω β γ : Type*} {mΩ : MeasurableSpace Ω} [
   map_eq := by
     rw [Measure.compProd_const, Measure.prod_dirac, Measure.map_map measurable_prodMk_right hX]
     rfl
+
+end Incognita
+
+namespace ProbabilityTheory
+
+@[deprecated (since := "2026-11-19")]
+alias hasCondDistrib_const_dirac := Incognita.hasCondDistrib_const_dirac
 
 end ProbabilityTheory

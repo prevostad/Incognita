@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.TransferBandits.Checks
+public import Incognita.TransferBandits.Setting
 public import Mathlib.Probability.Independence.InfinitePi
 public import Mathlib.Probability.Independence.Integration
 

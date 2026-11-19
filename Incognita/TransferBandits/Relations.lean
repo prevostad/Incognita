@@ -27,10 +27,13 @@ consistency at the batch ends of [INC-P006, Definition `def:consistent`]
   `s`.
 * `Relations.isConsistentOnUnit_iff_isConsistent`: P003's pull-count consistency on `𝒫^K` is
   LMLExplore's regret-based consistency on `𝒫^K` (finitely many arms).
-* `Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds`: the lemma
-  `Incognita.P003.isConsistentOnUnit_of_isConsistent`, proved again from the BatchedBandits lemma
-  `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds` (the same computation
-  `Δ_a E[N_a(T)] ≤ E[R_T]`).
+* `Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds`: LMLExplore's
+  regret-based consistency on the bandits with rewards in `[0, 1]` gives P003's pull-count
+  consistency on `𝒫^K`, from the BatchedBandits lemma
+  `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds` (`Δ_a E[N_a(T)] ≤ E[R_T]`); the former
+  copy `Incognita.P003.isConsistentOnUnit_of_isConsistent` is a deprecated alias of it.
+* `Relations.isConsistentOnUnit_klucb`: LMLExplore's KL-UCB is consistent on `𝒫^K` in the sense
+  of P003.
 * `Relations.isConsistentAtBatchEnds_of_isConsistentOnUnit`: a learner consistent on `𝒫^K` in the
   sense of P003 is consistent at the batch ends of every grid on `𝒫`.
 -/
@@ -107,15 +110,23 @@ lemma isConsistentOnUnit_iff_isConsistent [Finite α] [MeasurableSingletonClass 
   (isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential (K := 0) le_rfl).trans
     (Incognita.BatchedBandits.isConsistentAtBatchEnds_sequential_iff _)
 
-/-- **Duplicate**: `Incognita.P003.isConsistentOnUnit_of_isConsistent` (same type), proved from the
-BatchedBandits lemma `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds`: both bound
-`Δ_a E[N_a(T)]` by `E[R_T]`; on `𝖲_2` the batch ends are every horizon `T ≥ 2`. -/
+/-- Pull-count consistency on `𝒫^K` [INC-P003, Definition `def:consistency`] follows from
+LMLExplore's regret-based consistency over the bandits with rewards in `[0, 1]`, through the
+BatchedBandits lemma `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds`
+(`Δ_a E[N_a(T)] ≤ E[R_T]`); on `𝖲_2` the batch ends are every horizon `T ≥ 2`. -/
 lemma isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds [Finite α]
     [MeasurableSingletonClass α] {alg : Algorithm Unit α ℝ}
     (h : LMLExplore.Bandits.IsConsistent alg {ν : Kernel α ℝ | ∀ a, ∀ᵐ x ∂(ν a), x ∈ Set.Icc 0 1}) :
     IsConsistentOnUnit alg :=
   (isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential (K := 0) le_rfl).mpr
     ((h.isConsistentAtBatchEnds _).mono fun _ hν ↦ hν.2)
+
+/-- LMLExplore's KL-UCB [CGMMS13] is consistent on `𝒫^K` in the sense of pull counts
+[INC-P003, Definition `def:consistency`]. -/
+lemma isConsistentOnUnit_klucb [Fintype α] [Nonempty α] [StandardBorelSpace α]
+    [MeasurableSingletonClass α] : IsConsistentOnUnit (LMLExplore.Bandits.klucb (α := α)) :=
+  isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds
+    LMLExplore.Bandits.KLUCB.isConsistent
 
 /-- A learner consistent on `𝒫^K` in the sense of P003 [INC-P003, Definition `def:consistency`] is
 consistent at the batch ends of every grid on `𝒫` [INC-P006, Definition `def:consistent`]. -/

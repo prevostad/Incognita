@@ -68,14 +68,6 @@ lemma InfoModel.mono {k k' : ℕ∞} (hkk' : k ≤ k') {π : Grid K → Algorith
   ⟨h.isBatched, fun g g' ℓ n hg hg' ht ↦ h.policy_eq g g' ℓ n hg hg' fun j hj hjk ↦
     ht j hj (hjk.trans (by gcongr))⟩
 
-/-- Two grids with the same ends `t j` for every `j ≥ 1` are equal (both have `t 0 = 0`). -/
-lemma Grid.eq_of_forall_one_le_t_eq {g g' : Grid K} (h : ∀ j, 1 ≤ j → g.t j = g'.t j) :
-    g = g' := by
-  refine Grid.ext (funext fun j ↦ ?_)
-  rcases Nat.eq_zero_or_pos j with rfl | hj
-  · rw [g.t_zero, g'.t_zero]
-  · exact h j hj
-
 /-- `𝓜_⊤` is the set of families of batched learners: condition (b) of `InfoModel ⊤` only compares
 a grid with itself. -/
 lemma infoModel_top_iff {π : Grid K → Algorithm Unit 𝓐 𝓨} :
@@ -115,16 +107,6 @@ end InfoModel
 section Grids
 
 variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] {K : ℕ}
-
-/-- If `g` is finer than `g'`, the end of the batch before the batch of a round `n` in `g'` is at
-most the end of the batch before the batch of `n` in `g`: the batches of `g` start later. -/
-lemma Grid.t_batchOf_sub_one_le_of_isFiner {g g' : Grid K} (hgg' : g.IsFiner g') (n : ℕ) :
-    g'.t (g'.batchOf n - 1) ≤ g.t (g.batchOf n - 1) := by
-  obtain ⟨m, hm⟩ := hgg' (Set.mem_range_self (g'.batchOf n - 1))
-  rw [← hm]
-  have hlt : g.t m < g.t (g.batchOf n) :=
-    (hm ▸ g'.t_batchOf_sub_one_le n).trans_lt (g.lt_t_batchOf n)
-  exact g.strictMono.monotone (by have := g.strictMono.lt_iff_lt.mp hlt; omega)
 
 /-- Refining a grid preserves batching [INC-P006, Theorem `thm:main`(ii)]: a learner batched on
 `g'` is batched on every grid `g` finer than `g'`. -/

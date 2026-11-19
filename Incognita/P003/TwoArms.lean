@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.TransferBandits.LMLHistory
+public import Incognita.TransferBandits.Checks
 public import Incognita.TransferBandits.SizeRules
 public import Mathlib.MeasureTheory.Constructions.Polish.Basic
 
@@ -38,80 +38,14 @@ namespace Incognita.P003
 
 section Helpers
 
+@[deprecated (since := "2026-11-19")]
+alias card_filter_castSucc := TransferBandits.card_filter_castSucc
+
+@[deprecated (since := "2026-11-19")] alias card_filter_last := TransferBandits.card_filter_last
+
+@[deprecated (since := "2026-11-19")] alias state_fst_eq_card := PriorStrategy.state_fst_eq_card
+
 variable {α : Type*} [MeasurableSpace α] [DecidableEq α]
-
-omit [MeasurableSpace α] in
-/-- Removing the last round of a history does not change the counts before an earlier round. -/
-lemma card_filter_castSucc {r : ℕ} (h : Fin r → α × ℝ) (y : α × ℝ) (a : α) (i : Fin r) :
-    (Finset.univ.filter fun i' : Fin (r + 1) ↦
-        i' < i.castSucc ∧ (Fin.snoc (α := fun _ ↦ α × ℝ) h y i').1 = a).card =
-      (Finset.univ.filter fun i' : Fin r ↦ i' < i ∧ (h i').1 = a).card := by
-  rw [← Finset.card_map (Fin.castSuccEmb : Fin r ↪ Fin (r + 1))
-    (s := Finset.univ.filter fun i' : Fin r ↦ i' < i ∧ (h i').1 = a)]
-  refine congrArg Finset.card ?_
-  ext i'
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map,
-    Fin.castSuccEmb_apply]
-  refine Fin.lastCases ?_ (fun k ↦ ?_) i'
-  · constructor
-    · rintro ⟨h1, -⟩
-      exact absurd h1 (not_lt.mpr (Fin.castSucc_lt_last i).le)
-    · rintro ⟨k, -, hk⟩
-      exact absurd hk (Fin.castSucc_ne_last k)
-  · simp only [Fin.snoc_castSucc,
-      Fin.castSucc_lt_castSucc_iff]
-    constructor
-    · rintro h1
-      exact ⟨k, h1, rfl⟩
-    · rintro ⟨k', hk', hkk'⟩
-      rw [← Fin.castSucc_inj.mp hkk']
-      exact hk'
-
-omit [MeasurableSpace α] in
-/-- The count of `a` before the last round of a history is the count of `a` in the history
-without it. -/
-lemma card_filter_last {r : ℕ} (h : Fin r → α × ℝ) (y : α × ℝ) (a : α) :
-    (Finset.univ.filter fun i' : Fin (r + 1) ↦
-        i' < Fin.last r ∧ (Fin.snoc (α := fun _ ↦ α × ℝ) h y i').1 = a).card =
-      (Finset.univ.filter fun i' : Fin r ↦ (h i').1 = a).card := by
-  rw [← Finset.card_map (Fin.castSuccEmb : Fin r ↪ Fin (r + 1))
-    (s := Finset.univ.filter fun i' : Fin r ↦ (h i').1 = a)]
-  refine congrArg Finset.card ?_
-  ext i'
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map,
-    Fin.castSuccEmb_apply]
-  refine Fin.lastCases ?_ (fun k ↦ ?_) i'
-  · simp only [lt_self_iff_false, false_and, false_iff, not_exists, not_and]
-    exact fun k _ hk ↦ Fin.castSucc_ne_last k hk
-  · simp only [Fin.snoc_castSucc,
-      Fin.castSucc_lt_last, true_and]
-    constructor
-    · rintro h1
-      exact ⟨k, h1, rfl⟩
-    · rintro ⟨k', hk', hkk'⟩
-      rw [← Fin.castSucc_inj.mp hkk']
-      exact hk'
-
-/-- The counts of a prior game are the counts of its history. -/
-lemma state_fst_eq_card (g : PriorStrategy α) (ω : SourceSpace α) :
-    ∀ r a, (g.state ω r).1 a = (Finset.univ.filter fun i ↦ ((g.state ω r).2 i).1 = a).card
-  | 0, a => by simp [PriorStrategy.state]
-  | r + 1, a => by
-    have ih := state_fst_eq_card g ω r a
-    have hst : g.state ω (r + 1) = (Function.update (g.state ω r).1
-        (g.act r (ω.1, (g.state ω r).2)) ((g.state ω r).1 (g.act r (ω.1, (g.state ω r).2)) + 1),
-        Fin.snoc (α := fun _ ↦ α × ℝ) (g.state ω r).2 (g.act r (ω.1, (g.state ω r).2),
-          ω.2 (g.act r (ω.1, (g.state ω r).2))
-            ((g.state ω r).1 (g.act r (ω.1, (g.state ω r).2))))) := by
-      simp only [PriorStrategy.state, MeasurableEquiv.finSuccProd_symm_apply]
-    rw [hst, Finset.card_filter, Fin.sum_univ_castSucc]
-    simp only [Fin.snoc_castSucc, Fin.snoc_last]
-    rw [← Finset.card_filter, ← ih]
-    by_cases ha : g.act r (ω.1, (g.state ω r).2) = a
-    · rw [← ha, Function.update_self]
-      simp
-    · rw [Function.update_of_ne (Ne.symm ha)]
-      simp [ha]
 
 variable [Finite α] [MeasurableSingletonClass α]
 
@@ -133,7 +67,7 @@ lemma exists_stack_of_history :
   | zero => intro a j; simp [PriorStrategy.state]
   | succ r ih =>
     intro a j
-    have hcount := state_fst_eq_card g ω r a
+    have hcount := g.state_fst_eq_card ω r a
     have hst : g.state ω (r + 1) = (Function.update (g.state ω r).1
         (g.act r (ω.1, (g.state ω r).2)) ((g.state ω r).1 (g.act r (ω.1, (g.state ω r).2)) + 1),
         Fin.snoc (α := fun _ ↦ α × ℝ) (g.state ω r).2 (g.act r (ω.1, (g.state ω r).2),
@@ -143,7 +77,8 @@ lemma exists_stack_of_history :
     rw [hst]
     beta_reduce
     rw [Fin.sum_univ_castSucc]
-    simp only [card_filter_castSucc, card_filter_last, Fin.snoc_castSucc, Fin.snoc_last]
+    simp only [TransferBandits.card_filter_castSucc, TransferBandits.card_filter_last,
+      Fin.snoc_castSucc, Fin.snoc_last]
     have ih' := ih a j
     simp only at ih'
     rw [ih', ← hcount]
@@ -274,7 +209,7 @@ theorem two_arms_sizeRule_eq_stoppedCounts {α : Type*} [Fintype α] [DecidableE
     change V r (g.state ω r).2 a i = ω.2 a i
     rw [hV g ω r a i, ite_eq_left i.2]
   have hcnt : ∀ ω r, (fun a ↦ (Finset.univ.filter fun i ↦ ((g.state ω r).2 i).1 = a).card) =
-      (g.state ω r).1 := fun ω r ↦ funext fun a ↦ (state_fst_eq_card g ω r a).symm
+      (g.state ω r).1 := fun ω r ↦ funext fun a ↦ (g.state_fst_eq_card ω r a).symm
   have hmemT : ∀ ω r, ((ω.1, (g.state ω r).2) ∈ T r ↔
       boxRestrict (g.state ω r).1 ω ∈ S (g.state ω r).1) := by
     intro ω r

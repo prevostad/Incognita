@@ -219,18 +219,6 @@ namespace Grid
 variable {g g' : Grid K} {ℓ : ℕ}
 
 omit [Fintype α] in
-/-- Two grids with the same ends `t 0, …, t ℓ` have the same `logEnd j` for `j ≤ ℓ`. -/
-lemma logEnd_eq_of_t_eq (ht : ∀ j ≤ ℓ, g.t j = g'.t j) {j : ℕ} (hj : j ≤ ℓ) :
-    g.logEnd j = g'.logEnd j := by
-  simp [logEnd, ht j hj]
-
-omit [Fintype α] in
-/-- Two grids with the same ends `t 0, …, t ℓ` have the same ratio `x_j` for `j ≤ ℓ`. -/
-lemma ratio_eq_of_t_eq (ht : ∀ j ≤ ℓ, g.t j = g'.t j) {j : ℕ} (hj : j ≤ ℓ) :
-    g.ratio j = g'.ratio j := by
-  simp only [ratio, logEnd_eq_of_t_eq ht hj, logEnd_eq_of_t_eq ht ((Nat.sub_le j 1).trans hj)]
-
-omit [Fintype α] in
 /-- Two grids with the same ends `t 0, …, t ℓ` have the same `netSize β j` (`U_j`) for
 `j ≤ ℓ + 1`. -/
 lemma netSize_eq_of_t_eq (ht : ∀ j ≤ ℓ, g.t j = g'.t j) (β : ℝ) {j : ℕ} (hj : j ≤ ℓ + 1) :

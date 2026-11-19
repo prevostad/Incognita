@@ -54,7 +54,7 @@ lemma integral_exp_mul_log_le_one {X : Ω → ℝ} (hXm : Measurable X)
   have hpt : ∀ᵐ ω ∂P, exp ((1 + 2 * η) * Real.log (1 - lam * (X ω - r))) ≤
       exp (2 * η * (lam * r)) * (1 - lam * (X ω - r)) := by
     filter_upwards [hb] with ω hω
-    have hy := HY.one_sub_mul_pos hlam0 hlam1 hω.2
+    have hy := one_sub_mul_sub_pos hlam0 hlam1 hω.2
     rw [add_mul, one_mul, Real.exp_add, Real.exp_log hy, mul_comm]
     refine mul_le_mul_of_nonneg_right ?_ hy.le
     refine Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left ?_ (by linarith))
@@ -114,7 +114,7 @@ lemma measureReal_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ i, Measurabl
     refine mul_le_mul_of_nonneg_left ?_ (by linarith)
     calc ∑ i ∈ range n, X i ω ≤ ∑ _i ∈ range n, lam * r := by
           refine Finset.sum_le_sum fun i _ ↦ ?_
-          have hy := HY.one_sub_mul_pos hlam0 hlam1 (hω i).2
+          have hy := one_sub_mul_sub_pos hlam0 hlam1 (hω i).2
           have := Real.log_le_sub_one_of_pos hy
           simp only [hX]
           nlinarith [(hω i).1]
@@ -248,7 +248,7 @@ lemma integral_exp_mul_log_add_le_one {X : Ω → ℝ} (hXm : Measurable X)
       exp (2 * η * κ) * ((1 - lam * (1 - r)) * exp (θ * (X ω - q)) +
         lam * ((1 - X ω) * exp (θ * (X ω - q)))) := by
     filter_upwards [hb] with ω hω
-    have hy := HY.one_sub_mul_pos hlam0 hlam1 hω.2
+    have hy := one_sub_mul_sub_pos hlam0 hlam1 hω.2
     have hyκ : Real.log (1 - lam * (X ω - r)) ≤ κ := by
       rw [hκ]
       refine Real.log_le_log hy ?_
@@ -353,7 +353,7 @@ lemma measure_exists_le_sum_log_le_and_le_sum (hind : iIndepFun Y P)
             have h1 : (if i < n then s * Real.log (1 - lam * (Y i ω - r)) else 0) ≤
                 s * (lam * r) := by
               split_ifs
-              · have hy := HY.one_sub_mul_pos hlam0 hlam1 (hω i).2
+              · have hy := one_sub_mul_sub_pos hlam0 hlam1 (hω i).2
                 have := Real.log_le_sub_one_of_pos hy
                 refine mul_le_mul_of_nonneg_left ?_ hs0.le
                 nlinarith [(hω i).1]

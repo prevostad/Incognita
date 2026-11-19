@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYKinf
+public import Incognita.BatchedBandits.HY.KInf
 
 /-! # IMED rounds of HY
 

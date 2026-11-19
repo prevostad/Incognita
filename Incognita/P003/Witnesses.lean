@@ -6,6 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.TransferBandits.Checks
+public import Incognita.TransferBandits.Relations
 public import LMLExplore.Bandits.AsymptoticOptimality
 
 /-! # Joint satisfiability of the hypotheses of the frozen statements of P003
@@ -15,7 +16,8 @@ For each frozen statement `Incognita.Statements.P003.<name>`, the lemma
 once. The instances use the arms `Bool` (two arms) or `Fin 3` (three arms),
 Dirac and Bernoulli laws, constant size rules, and constant learners. The hypothesis "`σ` is
 consistent on `𝒫^K`" of `ofAlgorithm_isConsistent` is satisfied by LMLExplore's KL-UCB
-(`isConsistentOnUnit_klucb`, proved here from `LMLExplore.Bandits.KLUCB.isConsistent`).
+(`Incognita.TransferBandits.Relations.isConsistentOnUnit_klucb`, from
+`LMLExplore.Bandits.KLUCB.isConsistent`).
 -/
 
 @[expose] public section
@@ -175,46 +177,16 @@ lemma followSource_not_isConsistent_satisfiable :
     2 ≤ Fintype.card Bool ∧ Nonempty Bool :=
   ⟨by simp, ⟨true⟩⟩
 
-/-- Pull-count consistency on `𝒫^K` follows from LMLExplore's regret-based consistency over the
-bandits with rewards in `[0, 1]`: `Δ_a E[N_a(T)] ≤ E[R_T]`. -/
-lemma isConsistentOnUnit_of_isConsistent {α : Type*} [Finite α] [DecidableEq α]
-    [MeasurableSpace α] [MeasurableSingletonClass α] {alg : Algorithm Unit α ℝ}
-    (h : LMLExplore.Bandits.IsConsistent alg {ν : Kernel α ℝ | ∀ a, ∀ᵐ x ∂(ν a), x ∈ Set.Icc 0 1}) :
-    IsConsistentOnUnit alg := by
-  have := Fintype.ofFinite α
-  intro ν _ hν a ⟨b, hab⟩ c hc
-  have hreg := (LMLExplore.Bandits.isConsistent_def alg _).mp h ν hν c hc
-  set P := trajMeasure alg (Environment.bandit ν)
-  have hgap : 0 < Bandits.gap ν a := by
-    have : (ν b)[id] ≤ ⨆ i, (ν i)[id] :=
-      le_ciSup (f := fun i ↦ (ν i)[id]) (Set.finite_range _).bddAbove b
-    rw [Bandits.gap]
-    linarith
-  have hA : ∀ n, Measurable (IT.action (𝓞 := Unit) (𝓐 := α) (𝓨 := ℝ) n) := IT.measurable_action
-  have hle : ∀ T : ℕ, (∫ ω, (pullCount IT.action a T ω : ℝ) ∂P) ≤
-      (∫ ω, Bandits.regret ν IT.action T ω ∂P) / Bandits.gap ν a := by
-    intro T
-    rw [le_div_iff₀ hgap, Bandits.integral_regret_eq_sum_gap_mul_integral_pullCount hA, mul_comm]
-    exact Finset.single_le_sum
-      (f := fun i ↦ Bandits.gap ν i * ∫ ω, (pullCount IT.action i T ω : ℝ) ∂P)
-      (fun i _ ↦ mul_nonneg Bandits.gap_nonneg (integral_nonneg fun _ ↦ by positivity))
-      (Finset.mem_univ a)
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds
-    (by simpa using hreg.div_const (Bandits.gap ν a)) (fun T ↦ ?_) (fun T ↦ ?_)
-  · exact div_nonneg (integral_nonneg fun _ ↦ by positivity) (by positivity)
-  · simp only
-    rw [div_right_comm]
-    exact div_le_div_of_nonneg_right (hle T) (by positivity)
+@[deprecated (since := "2026-11-19")]
+alias isConsistentOnUnit_of_isConsistent :=
+  Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds
 
-/-- LMLExplore's KL-UCB is consistent on `𝒫^K` in the sense of pull counts. -/
-lemma isConsistentOnUnit_klucb {α : Type*} [Fintype α] [Nonempty α] [DecidableEq α]
-    [MeasurableSpace α] [StandardBorelSpace α] [MeasurableSingletonClass α] :
-    IsConsistentOnUnit (LMLExplore.Bandits.klucb (α := α)) :=
-  isConsistentOnUnit_of_isConsistent LMLExplore.Bandits.KLUCB.isConsistent
+@[deprecated (since := "2026-11-19")]
+alias isConsistentOnUnit_klucb := Relations.isConsistentOnUnit_klucb
 
 /-- Hypotheses of `ofAlgorithm_isConsistent` (prop:witness, first claim). -/
 lemma ofAlgorithm_isConsistent_satisfiable :
     ∃ alg : Algorithm Unit Bool ℝ, 2 ≤ Fintype.card Bool ∧ IsConsistentOnUnit alg :=
-  ⟨LMLExplore.Bandits.klucb, by simp, isConsistentOnUnit_klucb⟩
+  ⟨LMLExplore.Bandits.klucb, by simp, Relations.isConsistentOnUnit_klucb⟩
 
 end Incognita.P003

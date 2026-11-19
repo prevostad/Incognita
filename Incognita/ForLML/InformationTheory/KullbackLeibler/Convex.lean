@@ -13,17 +13,20 @@ Complements to LML's `LeanMachineLearning.ForMathlib.InformationTheory.KullbackL
 
 ## Main statements
 
-* `InformationTheory.klDiv_mix_le_mul`: `KL(μ, (1 - t) μ + t ν) ≤ t KL(μ, ν)` for `t ∈ [0, 1]`.
-* `InformationTheory.klDiv_mix_le`: `KL(μ, (1 - t) μ + t ν) ≤ KL(μ, ν)` for `t ∈ [0, 1]`.
+* `Incognita.klDiv_mix_le_mul`: `KL(μ, (1 - t) μ + t ν) ≤ t KL(μ, ν)` for `t ∈ [0, 1]`.
+* `Incognita.klDiv_mix_le`: `KL(μ, (1 - t) μ + t ν) ≤ KL(μ, ν)` for `t ∈ [0, 1]`.
+
+Both were first written in Mathlib's namespace `InformationTheory`; the old names are deprecated
+aliases.
 -/
 
 @[expose] public section
 
-open MeasureTheory
+open MeasureTheory InformationTheory
 
 open scoped ENNReal NNReal
 
-namespace InformationTheory
+namespace Incognita
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ ν : Measure Ω}
 
@@ -45,5 +48,13 @@ lemma klDiv_mix_le [IsFiniteMeasure μ] [IsFiniteMeasure ν] {t : ℝ} (ht0 : 0 
     klDiv μ (ENNReal.ofReal (1 - t) • μ + ENNReal.ofReal t • ν) ≤ klDiv μ ν :=
   (klDiv_mix_le_mul ht0 ht1).trans <| mul_le_of_le_one_left zero_le <|
     ENNReal.ofReal_le_one.mpr ht1
+
+end Incognita
+
+namespace InformationTheory
+
+@[deprecated (since := "2026-11-19")] alias klDiv_mix_le_mul := Incognita.klDiv_mix_le_mul
+
+@[deprecated (since := "2026-11-19")] alias klDiv_mix_le := Incognita.klDiv_mix_le
 
 end InformationTheory

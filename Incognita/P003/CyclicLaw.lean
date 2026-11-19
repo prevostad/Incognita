@@ -22,10 +22,12 @@ probability `0` under a well-chosen Dirac instance. The probabilities sum to `1`
 
 ## Main statements
 
-* `map_sourceMeasure_eval`: `X'_{k,j}` has law `ν'_k` under `P'_{ν'}`.
-* `state_fst_mono`, `state_one_fst_act`: the counts of a prior game do not decrease, and after
-  one round the count of the first arm is `1`.
 * `cyclicSize_not_stoppedCounts`: the frozen statement.
+
+It uses `TransferBandits.map_eval_sourceMeasure` (`X'_{k,j}` has law `ν'_k` under `P'_{ν'}`),
+`TransferBandits.map_fst_sourceMeasure`, and `PriorStrategy.state_fst_mono`,
+`PriorStrategy.state_one_fst_act` (the counts of a prior game do not decrease, and after one round
+the count of the first arm is `1`), whose former copies here are deprecated aliases.
 -/
 
 @[expose] public section
@@ -38,39 +40,14 @@ namespace Incognita.P003
 
 section Helpers
 
-variable {α : Type*} [MeasurableSpace α]
+@[deprecated (since := "2026-11-19")] alias map_sourceMeasure_eval := map_eval_sourceMeasure
 
-/-- Under `P'_{ν'}`, the value `X'_{k,j}` (0-based) has law `ν'_k`. -/
-lemma map_sourceMeasure_eval (ν' : Kernel α ℝ) [IsMarkovKernel ν'] (k : α) (j : ℕ) :
-    (sourceMeasure ν').map (fun ω : SourceSpace α ↦ ω.2 k j) = ν' k := by
-  have h : (fun ω : SourceSpace α ↦ ω.2 k j) =
-      (fun w : ℕ → ℝ ↦ w j) ∘ (fun z : α → ℕ → ℝ ↦ z k) ∘ Prod.snd := rfl
-  rw [h, ← Measure.map_map (by fun_prop) (by fun_prop),
-    ← Measure.map_map (by fun_prop) measurable_snd, sourceMeasure, Measure.map_snd_prod,
-    measure_univ, one_smul, Measure.infinitePi_map_eval, Measure.infinitePi_map_eval]
+@[deprecated (since := "2026-11-19")]
+alias map_fst_sourceMeasure := TransferBandits.map_fst_sourceMeasure
 
-/-- Under `P'_{ν'}`, the randomisation has the uniform law `volume^{⊗ℕ}`, whatever `ν'`. -/
-lemma map_fst_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
-    (sourceMeasure ν').map Prod.fst = Measure.infinitePi fun _ : ℕ ↦ (volume : Measure I) := by
-  rw [sourceMeasure, Measure.map_fst_prod, measure_univ, one_smul]
+@[deprecated (since := "2026-11-19")] alias state_fst_mono := PriorStrategy.state_fst_mono
 
-variable [DecidableEq α]
-
-/-- The counts of a prior game do not decrease. -/
-lemma state_fst_mono (g : PriorStrategy α)
-    (ω : SourceSpace α) {r r' : ℕ} (h : r ≤ r') (a : α) :
-    (g.state ω r).1 a ≤ (g.state ω r').1 a := by
-  induction r', h using Nat.le_induction with
-  | base => exact le_rfl
-  | succ r' _ ih => exact ih.trans (PriorStrategy.state_fst_le_succ g ω r' a)
-
-/-- After one round, the arm pulled first has count `1`. -/
-lemma state_one_fst_act (g : PriorStrategy α) (ω : SourceSpace α) :
-    (g.state ω 1).1 (g.act 0 (ω.1, fun i ↦ i.elim0)) = 1 := by
-  simp only [PriorStrategy.state]
-  rw [Function.update_self]
-  rfl
-
+@[deprecated (since := "2026-11-19")] alias state_one_fst_act := PriorStrategy.state_one_fst_act
 
 end Helpers
 
@@ -100,7 +77,7 @@ theorem cyclicSize_not_stoppedCounts {α : Type*} [Fintype α] [DecidableEq α] 
     rw [ae_all_iff]
     intro k
     refine ae_of_ae_map (p := fun x : ℝ ↦ x = c b k) (by fun_prop) ?_
-    rw [map_sourceMeasure_eval]
+    rw [map_eval_sourceMeasure]
     change ∀ᵐ y ∂(Measure.dirac (c b k)), y = c b k
     rw [ae_dirac_eq]
     exact Filter.eventually_pure.mpr rfl
@@ -122,7 +99,7 @@ theorem cyclicSize_not_stoppedCounts {α : Type*} [Fintype α] [DecidableEq α] 
   -- Probabilities of events of the randomisation do not depend on the instance.
   have hV : ∀ (ν' : Kernel α ℝ) [IsMarkovKernel ν'] (S : Set (ℕ → I)), MeasurableSet S →
       sourceMeasure ν' (Prod.fst ⁻¹' S) = V S := fun ν' _ S hS ↦ by
-    rw [← Measure.map_apply measurable_fst hS, map_fst_sourceMeasure]
+    rw [← Measure.map_apply measurable_fst hS, TransferBandits.map_fst_sourceMeasure]
   -- Transport of an event of the stopped counts to the cyclic map.
   have htrans : ∀ ν' ∈ unitBandits α, ∀ B : Set (α → ℕ), MeasurableSet B →
       sourceMeasure ν' (g.stoppedCounts τ ⁻¹' B) = sourceMeasure ν' (cyclicSize a₁ a₂ a₃ ⁻¹' B) :=
@@ -167,8 +144,8 @@ theorem cyclicSize_not_stoppedCounts {α : Type*} [Fintype α] [DecidableEq α] 
       rw [hτ0] at this
       exact hω.1 this
     simp only [Set.mem_preimage, Set.mem_ofPred_eq, PriorStrategy.stoppedCounts]
-    rw [← hω.2, ← state_one_fst_act g ω]
-    exact state_fst_mono g ω hτ1 _
+    rw [← hω.2, ← g.state_one_fst_act ω]
+    exact g.state_fst_mono ω hτ1 _
   have hzero : ∀ k b, (∀ ω : SourceSpace α, (∀ i, ω.2 i 0 = c b i) →
       cyclicSize a₁ a₂ a₃ ω k = 0) → V (G k) = 0 := fun k b hb ↦ by
     have : IsMarkovKernel (νb b) := (hνb b).1

@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.TransferBandits.Checks
+public import Incognita.TransferBandits.Setting
 
 /-! # The online law of a source-ignoring learner as an LML history
 

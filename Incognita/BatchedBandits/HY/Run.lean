@@ -5,10 +5,10 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYImed
+public import Incognita.BatchedBandits.HY.Imed
 public import Incognita.BatchedBandits.WaterLevel
 public import Incognita.BatchedBandits.Queue
-public import Incognita.BatchedBandits.Instances
+public import Incognita.BatchedBandits.Consistency
 public import LeanMachineLearning.SequentialLearning.StationaryEnv
 public import LeanMachineLearning.SequentialLearning.IonescuTulceaSpace
 public import LeanMachineLearning.SequentialLearning.Deterministic
@@ -47,7 +47,6 @@ are fixed during the batch").
   arrivals of Step (b2); `HY.two_mul_target_sub_le`, `hyAlg_ae_backlog_le_of_le`: Step (b2) for
   HY's targets, so Lemma `lem:service`(b) under the paper's condition
   `s_ℓ log s_ℓ ≥ 2(K - 1) U_(ℓ+1)`.
-* `ae_feedback_mem_Icc`: on an instance of `𝒫`, the rewards of almost every run are in `[0, 1]`.
 * `hyAlg_ae_pullCount_le_max`: Lemma `lem:imedround` (its consequence) along almost every run of
   HY on an instance of `𝒫`.
 * `hyAlg_ae_W2`: (W2) at every round of a batch that is not activated or has a long IMED phase,
@@ -600,28 +599,6 @@ lemma hyAlg_ae_log_le_imedIndex' (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : 
     hyAlg_ae_one_le_pullCount w₀ β ωs θ γ g env] with ω h1 h2
   intro ℓ hℓ hrs c'
   exact h1 ℓ hℓ (h2 ℓ (Nat.one_le_iff_ne_zero.mpr hℓ)) hrs c'
-
-omit [Fintype α] [DecidableEq α] [Nonempty α] [MeasurableSingletonClass α] in
-/-- For an instance of `𝒫` (rewards in `[0, 1]`), the rewards of almost every run of every learner
-are in `[0, 1]`: the reward of round `n` has the conditional law `ν_(A_n)`. -/
-lemma ae_feedback_mem_Icc {alg : Algorithm Unit α ℝ} {ν : ProbabilityTheory.Kernel α ℝ}
-    [ProbabilityTheory.IsMarkovKernel ν] (hν : ν ∈ unitBandits α) :
-    ∀ᵐ ω ∂(trajMeasure alg (Environment.bandit ν)), ∀ n,
-      IT.feedback n ω ∈ Set.Icc (0 : ℝ) 1 := by
-  rw [MeasureTheory.ae_all_iff]
-  intro n
-  have hlaw := ((IT.isAlgEnvSeq_trajMeasure alg (Environment.bandit ν)).hasCondDistrib_feedback
-    n).hasLaw_comp
-  have hmem : ∀ᵐ y ∂((Environment.bandit ν).feedback n ∘ₘ
-      (trajMeasure alg (Environment.bandit ν)).map
-        (fun ω ↦ ((history IT.obs IT.action IT.feedback n ω, IT.obs n ω), IT.action n ω))),
-      y ∈ Set.Icc (0 : ℝ) 1 := by
-    refine MeasureTheory.Measure.ae_comp_of_ae_ae measurableSet_Icc
-      (MeasureTheory.ae_of_all _ fun x ↦ ?_)
-    rw [feedback_bandit, ProbabilityTheory.Kernel.prodMkLeft_apply]
-    exact (hν.1 x.2).2
-  rw [← hlaw.map_eq] at hmem
-  exact MeasureTheory.ae_of_ae_map hlaw.aemeasurable hmem
 
 /-- [INC-P000, Lemma `lem:imedround`, consequence, along a run] Along almost every run of HY
 (`w₀ ≥ 0`, on a grid for `K` arms) on an instance of `𝒫`, for a batch `ℓ + 1` (`ℓ ≥ 1`) and an arm

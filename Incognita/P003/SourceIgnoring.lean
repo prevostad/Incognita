@@ -5,9 +5,9 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.ForLML.Bandit.UCB
-public import Incognita.P003.Witnesses
+public import Incognita.ForLML.Online.Bandit.Algorithms.Regret.UCB
 public import Incognita.TransferBandits.LMLHistory
+public import Incognita.TransferBandits.Relations
 
 /-! # P003, prop:witness: source-ignoring learners of consistent algorithms are in `𝒞_L`
 
@@ -21,8 +21,8 @@ Proofs of the three frozen statements of [INC-P003, prop:witness].
   (`integral_onlineCount_gameMeasure_ofAlgorithm`, which is lem:lml-history and lem:mixture for
   `π^σ`); so the condition of def:consistency is the consistency of `σ` on the target `ν`.
 * `ucb_isConsistentOnUnit`: LML's UCB with `c > 1/2` is consistent on `𝒫^K`, from LML's regret
-  bound (`Bandits.UCB.isConsistent_unit`) and `Δ_a E[N_a(T)] ≤ E[R_T]`
-  (`isConsistentOnUnit_of_isConsistent`).
+  bound (`Incognita.isConsistent_ucbAlgorithm_unit`) and `Δ_a E[N_a(T)] ≤ E[R_T]`
+  (`Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds`).
 * `exists_isConsistent`: `𝒞_L ≠ ∅`, witnessed by `π^σ` for LMLExplore's KL-UCB [CGMMS13] on the arms
   `α` (any algorithm consistent on `𝒫^K` would do; UCB is defined on `Fin K` only).
 -/
@@ -53,7 +53,8 @@ theorem ofAlgorithm_isConsistent {α : Type*} [Fintype α] [DecidableEq α] [Mea
 hypothesis `2 ≤ K` is not used. -/
 theorem ucb_isConsistentOnUnit (K : ℕ) [NeZero K] (_hK : 2 ≤ K) {c : ℝ} (hc : 1 / 2 < c) :
     IsConsistentOnUnit (Bandits.ucbAlgorithm K c) :=
-  isConsistentOnUnit_of_isConsistent (Bandits.UCB.isConsistent_unit hc)
+  Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds
+    (isConsistent_ucbAlgorithm_unit hc)
 
 /-- [INC-P003, prop:witness] For every `L ∈ (0,∞)^K`, some transfer learner belongs to `𝒞_L`: the
 source-ignoring learner of KL-UCB [CGMMS13]. -/
@@ -63,6 +64,6 @@ theorem exists_isConsistent {α : Type*} [Fintype α] [MeasurableSpace α]
   classical
   have : Nonempty α := Fintype.card_pos_iff.mp (by omega)
   exact ⟨TransferAlgorithm.ofAlgorithm LMLExplore.Bandits.klucb,
-    (ofAlgorithm_isConsistent hK isConsistentOnUnit_klucb).2 L hL⟩
+    (ofAlgorithm_isConsistent hK Relations.isConsistentOnUnit_klucb).2 L hL⟩
 
 end Incognita.P003
