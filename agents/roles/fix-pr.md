@@ -54,5 +54,7 @@ disputed), and Quality pass for a Lean pull request.
 
 ## Do not
 
-Change the pull request's purpose; weaken a statement or a theorem to make something compile; delete
+Change the pull request's purpose; make it grow beyond what the reports ask (AGENTS.md §6.1: a Lean
+pull request stays under about 800 added lines of Lean; when a report asks for more, say so in the
+summary instead); weaken a statement or a theorem to make something compile; delete
 a theorem; use `sorry` outside `Exploration/`; touch human-owned paths.

@@ -41,7 +41,13 @@ right. You are the Incognita review, run first: Tau Ceti's 11 rubrics judge the 
    `.lock` per statement; docstrings citing the paper and the label; no forbidden keyword
    (AGENTS.md §6.3); `blueprint.md` complete; `catalogue/definitions/` entries; `paper.tex`
    unchanged.
-6. **Corrections** (`SC<n>` or `E<k>`): the new statement fixes the recorded problem, the old files
+6. **Split work** (AGENTS.md §6.1, small pull requests): a pull request may carry only the
+   definitions with their checks and `catalogue/definitions/` entries, the frozen statements
+   following in the next one (its summary says so in `Not done`). Then judge the definitions; do
+   not ask for statements, locks or a complete `blueprint.md`. Above 1,200 added lines of Lean,
+   ask for a split (`request_changes`) unless the summary explains why the work cannot be cut
+   (pull requests opened before 2026-11-20 are exempt: they were written before the limit).
+7. **Corrections** (`SC<n>` or `E<k>`): the new statement fixes the recorded problem, the old files
    and locks are untouched, the resolution line is added.
 
 ## Verdict and report

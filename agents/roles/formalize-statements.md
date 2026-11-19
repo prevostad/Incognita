@@ -23,6 +23,15 @@ than speed.
 `definitions` paper, its basic properties stated as theorems). Lemmas are not frozen: `prove` handles
 them.
 
+## Size
+
+At most about 800 added lines of Lean, never more than 1,200 (AGENTS.md §6.1). When the
+definitions, their checks (witness, known case, exclusion) and the frozen statements do not fit,
+split the work across pull requests, each one coherent, in this order: first the definitions with
+their checks and `catalogue/definitions/` entries (no frozen statement yet), then the frozen
+statements and `blueprint.md`. Say in `Not done` what the next pull request will contain: the loop
+runs `formalize-statements` again on the paper once this one is merged.
+
 ## Steps
 
 1. **Model first.** Decide the Lean shape of every object the frozen statements use. Search the

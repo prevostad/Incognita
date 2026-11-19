@@ -611,6 +611,15 @@ derive the paper's statement as a one-line specialisation. `theorem` only for fr
 big classical results, `lemma` for everything else. Drop hypotheses a proof does not use and say so
 in the docstring.
 
+**Small pull requests** (owner, 2026-11-19, as in LMLExplore, where a pull request is one result of
+the roadmap, a few hundred lines): a Lean pull request adds **at most about 800 lines of Lean**
+(`.lean` files under `Incognita/` and `Statements/`; `blueprint.md` and `formalisation.tex` do not
+count), **never more than 1,200**. Every rubric reads the whole diff and every fix round makes
+them all read it again: a pull request of 5,000 lines costs far more than six of 800, and waits
+longer before it merges. When the work grows past the limit, stop at the last point that compiles,
+finish the checks and the summary (`Not done` says what remains): the next session continues from
+`main` once this pull request is merged.
+
 ### 6.2 Names and files
 
 | What | Where | Lean name |
@@ -786,7 +795,9 @@ pull request of LMLExplore (the owner, 2026-11-17), in addition to its Incognita
   pull request, or contest it, or ask the owner); a block on a second head sends the pull request
   to the owner (`needs-human`).
 - **Merged** only when CI is green, the Incognita review approves the head, and **every rubric
-  approves the same head**: after a fix commit, every rubric runs again.
+  approves the same head**: after a fix commit the rubrics run again, in proportion to the change
+  (code changed: all of them; comments only: `documentation`, `attribution`, `quality-pass`;
+  [agents/rubrics/README.md](agents/rubrics/README.md)).
 - **Quality pass**: the author reports Tau Ceti's quality pass in the section `## Quality pass` of
   its summary, which becomes the description (section 1); the rubric `quality-pass` checks it
   against the diff.
