@@ -28,20 +28,36 @@ first `N_c(t)` rewards of its stack (`HY.pseudoMean_zero_history_eq`), which is
 * `HY.pseudoMean_zero_history_eq`: the empirical mean of `c` at the cutoff `t` of a run is
   `(∑_(i < N) rewardByCount A R c (i + 1)) / N`, `N = N_c(t)`; `sum_comp_rewardByCount_eq` and
   `HY.pseudoLogMean_zero_history_eq`: the same for a function of the rewards, and for the function
-  of the dual formula of `𝒦_inf(ν̂_c(t), μ)`.
-* `measure_exists_wellSampled_abs_sub_gt_le`: Lemma `lem:probasA`(a) for the trace of `𝒜`.
+  of the dual formula of `𝒦_inf(ν̂_c(t), μ)`; `sum_log_rewardByCount_le_of_pseudoKinf_lt`: a low
+  empirical divergence at a count `N ≥ 1` bounds the dual sums of the first `N` rewards of the
+  stack (the step shared by the traces of the event `ℒ` and of the class `𝒪`).
+* `measure_exists_wellSampled_abs_sub_gt_le`: Lemma `lem:probasA`(a) for the trace of `𝒜`, the
+  case `T = {t}`, `u = U / 2` of `measure_exists_mem_le_pullCount_abs_sub_gt_le`
+  ([INC-P000, Lemma `lem:controlC`(a)], the trace of `𝒟_j`): some arm `c` and some cutoff `s` of a
+  set `T` with `N_c(s) ≥ u` and `|m̂_c(s) - m_c| > ε`, with probability at most
+  `K · 2 e^(-2ε² u) / (1 - e^(-2ε²))`.
 * `measure_le_pullCount_pseudoKinf_lt_le`, `measure_le_pullCount_lt_pseudoKinf_le`:
   Lemma `lem:probasA`(c) for the traces of the events `ℒ` and `𝒰` (low and high empirical
   divergence of `a`), through Lemmas `lem:lowerdev` and `lem:upperdev`.
 * `measure_lt_mul_pseudoKinf_le`: Lemma `lem:probasA`(b), first bound, for the trace of the
   event `𝒱` (an optimal arm not well sampled, rejected against a sub-optimal level), through
-  Lemma `lem:single` (with the gain of Lemma `lem:constA`(b) as the hypothesis `2 η r ≤ m - r`).
+  Lemma `lem:single` (with the gain of Lemma `lem:constA`(b) as the hypothesis `2 η r ≤ m - r`);
+  it is the case `T = {s}` of `measure_exists_mem_lt_mul_pseudoKinf_le`
+  ([INC-P000, Lemma `lem:controlC`(b)], the trace of `𝒱⋆_j`: some cutoff `s ∈ T` with `N(s) < U`
+  and `N(s) 𝒦_inf(ν̂(s), r) ≥ z`).
 * `measure_lt_mul_pseudoKinf_and_le_le`: Lemma `lem:probasA`(b), second bound, for the trace of
   the event `Π` and one sub-optimal arm, through Lemma `lem:pair` (with the moment conditions of
-  Lemma `lem:constA`(c) as hypotheses).
+  Lemma `lem:constA`(c) as hypotheses); it is the case `T = {s}` of
+  `measure_exists_mem_lt_mul_pseudoKinf_and_le_le` ([INC-P000, Lemma `lem:controlC`(c)], the
+  trace of `𝒱_(a,j)`: `N_a(t) < U`, `m̂_a(t) ≥ q` and some cutoff `s ∈ T`, `s ≤ t`, with
+  `N_a(s) 𝒦_inf(ν̂_a(s), r) ≥ z`).
+* `deviation_rate_pos`: the rate `ρ'` of Lemmas `lem:lowerdev` and `lem:upperdev` is positive.
 * `exists_tilt_moment_le`: Lemma `lem:constA`(c), the moment conditions, for the law of one
   sub-optimal arm (from Lemma `lem:theta`); `iSup_integral_add_lt_one_and_integral_add_lt_sub`:
   Lemma `lem:constA`(a).
+* `exists_tilt_moment_le_forall`: [INC-P000, Lemma `lem:constA`(c), Definition `def:constA`] the
+  tilts of all the sub-optimal arms with one constant `c_θ > 0` and one accuracy `ε_θ > 0` (the
+  minima over the arms of `exists_tilt_moment_le`).
 -/
 
 @[expose] public section
@@ -160,7 +176,7 @@ private lemma measure_eq_prod_univ {Ω β : Type*} [MeasurableSpace Ω] [Measura
 
 /-- The rate `ρ' = ε'² / (2 (κ(μ) - log (1 - e^(-ε'/4)))²)` of Lemmas `lem:lowerdev` and
 `lem:upperdev` is positive for `μ ∈ [0, 1)` and `ε' > 0`, since `κ(μ) ≥ 0 > log (1 - e^(-ε'/4))`. -/
-private lemma deviation_rate_pos {μ ε' : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1) (hε' : 0 < ε') :
+lemma deviation_rate_pos {μ ε' : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1) (hε' : 0 < ε') :
     0 < ε' ^ 2 / (2 * (Real.log (1 / (1 - μ)) - Real.log (1 - Real.exp (-(ε' / 4)))) ^ 2) := by
   have hden : 0 < Real.log (1 / (1 - μ)) - Real.log (1 - Real.exp (-(ε' / 4))) := by
     have h1μ : 0 < 1 - μ := by linarith
@@ -206,6 +222,47 @@ private lemma measure_iUnion_le_geometric {Ω : Type*} [MeasurableSpace Ω] {P :
 
 variable [Fintype α] [MeasurableSingletonClass α]
 
+/-- [INC-P000, Lemma `lem:controlC`(a), for the trace of `𝒟_j` on the run] For every learner on an
+instance `ν` of `𝒫`, every set `T` of cutoffs, `u > 0` and `ε > 0`, the probability that some arm
+`c` and some cutoff `s ∈ T` have `N_c(s) ≥ u` and `|m̂_c(s) - m_c| > ε` is at most
+`K · 2 e^(-2ε² u) / (1 - e^(-2ε²))`: on the product with the reward stacks, such an arm has
+`|(∑_(i < n) X_(c,i)) / n - m_c| > ε` for some `n ≥ u`, the paper's event `𝒟_j` (with
+`u = u_j`, `2ε² u_j = (1 + η₀) L_j`), and Lemma `lem:hoeffding`(b) bounds it for each arm. -/
+lemma measure_exists_mem_le_pullCount_abs_sub_gt_le {alg : Algorithm Unit α ℝ}
+    {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) (T : Set ℕ) {u : ℝ}
+    (hu : 0 < u) {ε : ℝ} (hε : 0 < ε) :
+    trajMeasure alg (Environment.bandit ν) {ω | ∃ c, ∃ s ∈ T, u ≤ pullCount IT.action c s ω ∧
+      ε < |HY.pseudoMean 0 (history IT.obs IT.action IT.feedback s ω) s c - ∫ y, id y ∂(ν c)|} ≤
+    Fintype.card α * ENNReal.ofReal (2 * Real.exp (-(2 * ε ^ 2 * u)) /
+      (1 - Real.exp (-(2 * ε ^ 2)))) := by
+  set P := trajMeasure alg (Environment.bandit ν) with hP
+  have hseq := IT.isAlgEnvSeq_trajMeasure alg (Environment.bandit ν)
+  set E := {ω | ∃ c, ∃ s ∈ T, u ≤ pullCount IT.action c s ω ∧
+    ε < |HY.pseudoMean 0 (history IT.obs IT.action IT.feedback s ω) s c - ∫ y, id y ∂(ν c)|}
+  set Z : α → ℕ → (ℕ → Round Unit α ℝ) × (ℕ → α → ℝ) → ℝ :=
+    fun c i ω' ↦ rewardByCount IT.action IT.feedback c (i + 1) ω' with hZ
+  set F : α → Set ((ℕ → Round Unit α ℝ) × (ℕ → α → ℝ)) := fun c ↦
+    {ω' | ∃ n : ℕ, u ≤ n ∧ ε < |(∑ i ∈ range n, Z c i ω') / n - ∫ y, id y ∂(ν c)|} with hF
+  have hsub : E ×ˢ (Set.univ : Set (ℕ → α → ℝ)) ⊆ ⋃ c, F c := by
+    rintro ⟨ω, z⟩ ⟨⟨c, s, -, hcu, hcε⟩, -⟩
+    refine Set.mem_iUnion.mpr ⟨c, pullCount IT.action c s ω, hcu, ?_⟩
+    have := HY.pseudoMean_zero_history_eq (O := IT.obs) (A := IT.action) (R := IT.feedback) s c
+      (ω, z)
+    simp only at this
+    rw [this] at hcε
+    exact hcε
+  rw [measure_eq_prod_univ P (streamMeasure ν) E]
+  refine (measure_mono hsub).trans ((measure_iUnion_fintype_le _ _).trans ?_)
+  refine (Finset.sum_le_sum fun c _ ↦ ?_).trans
+    (by rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ])
+  have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq c i
+  refine measure_exists_ge_abs_div_sub_gt_le (Z := Z c)
+    (iIndepFun_rewardByCount_add_one_action hseq c) (fun i ↦ (hlaw i).aemeasurable)
+    (fun i ↦ ?_) (fun i ↦ ?_) hε hu
+  · exact ((hlaw i).ae_iff (p := fun y : ℝ ↦ y ∈ Set.Icc (0 : ℝ) 1)
+      (measurable_mem.mpr measurableSet_Icc)).mpr (hν.1 c).2
+  · simpa using (hlaw i).integral_eq
+
 /-- [INC-P000, Lemma `lem:probasA`(a), for the trace of `𝒜` on the run] For every learner on an
 instance `ν` of `𝒫`, every cutoff `t`, every `U ≥ 1` and `ε > 0`, the probability that some arm `c`
 with `2 N_c(t) ≥ U` has `|m̂_c(t) - m_c| > ε` is at most `K · 2 e^(-ε² U) / (1 - e^(-2ε²))`:
@@ -218,45 +275,45 @@ lemma measure_exists_wellSampled_abs_sub_gt_le {alg : Algorithm Unit α ℝ} {ν
       ε < |HY.pseudoMean 0 (history IT.obs IT.action IT.feedback t ω) t c - ∫ y, id y ∂(ν c)|} ≤
     Fintype.card α * ENNReal.ofReal (2 * Real.exp (-(ε ^ 2 * U)) /
       (1 - Real.exp (-(2 * ε ^ 2)))) := by
-  set P := trajMeasure alg (Environment.bandit ν) with hP
-  have hseq := IT.isAlgEnvSeq_trajMeasure alg (Environment.bandit ν)
-  set E := {ω | ∃ c, U ≤ 2 * pullCount IT.action c t ω ∧
-    ε < |HY.pseudoMean 0 (history IT.obs IT.action IT.feedback t ω) t c - ∫ y, id y ∂(ν c)|}
-  -- the stacks of the arms and the events of Lemma `lem:hoeffding`(b)
-  set Z : α → ℕ → (ℕ → Round Unit α ℝ) × (ℕ → α → ℝ) → ℝ :=
-    fun c i ω' ↦ rewardByCount IT.action IT.feedback c (i + 1) ω' with hZ
-  set F : α → Set ((ℕ → Round Unit α ℝ) × (ℕ → α → ℝ)) := fun c ↦
-    {ω' | ∃ n : ℕ, (U / 2 : ℝ) ≤ n ∧
-      ε < |(∑ i ∈ range n, Z c i ω') / n - ∫ y, id y ∂(ν c)|} with hF
-  have hsub : E ×ˢ (Set.univ : Set (ℕ → α → ℝ)) ⊆ ⋃ c, F c := by
-    rintro ⟨ω, z⟩ ⟨⟨c, hcU, hcε⟩, -⟩
-    refine Set.mem_iUnion.mpr ⟨c, pullCount IT.action c t ω, ?_, ?_⟩
-    · have : (U : ℝ) ≤ 2 * pullCount IT.action c t ω := by exact_mod_cast hcU
-      linarith
-    · have := HY.pseudoMean_zero_history_eq (O := IT.obs) (A := IT.action) (R := IT.feedback) t c
-        (ω, z)
-      simp only at this
-      rw [this] at hcε
-      exact hcε
-  rw [measure_eq_prod_univ P (streamMeasure ν) E]
-  refine (measure_mono hsub).trans ((measure_iUnion_fintype_le _ _).trans ?_)
-  refine (Finset.sum_le_sum fun c _ ↦ ?_).trans
-    (by rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ])
-  have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq c i
   have hU2 : (0 : ℝ) < U / 2 := by
     have : (1 : ℝ) ≤ U := by exact_mod_cast hU
     linarith
-  rw [show ε ^ 2 * (U : ℝ) = 2 * ε ^ 2 * (U / 2) by ring]
-  refine measure_exists_ge_abs_div_sub_gt_le (Z := Z c)
-    (iIndepFun_rewardByCount_add_one_action hseq c) (fun i ↦ (hlaw i).aemeasurable)
-    (fun i ↦ ?_) (fun i ↦ ?_) hε hU2
-  · -- the rewards are in `[0, 1]`
-    have h := (hlaw i).ae_iff (p := fun y : ℝ ↦ y ∈ Set.Icc (0 : ℝ) 1)
-      (measurable_mem.mpr measurableSet_Icc)
-    exact h.mpr (hν.1 c).2
-  · -- the mean of each reward is `m_c`
-    have h := (hlaw i).integral_eq
-    simpa using h
+  refine (measure_mono ?_).trans
+    ((measure_exists_mem_le_pullCount_abs_sub_gt_le hν {t} hU2 hε).trans_eq ?_)
+  · rintro ω ⟨c, hcU, hcε⟩
+    refine ⟨c, t, Set.mem_singleton t, ?_, hcε⟩
+    have : (U : ℝ) ≤ 2 * pullCount IT.action c t ω := by exact_mod_cast hcU
+    linarith
+  · rw [show 2 * ε ^ 2 * ((U : ℝ) / 2) = ε ^ 2 * U by ring]
+
+omit [Fintype α] [MeasurableSingletonClass α] [MeasurableSpace α] in
+/-- [INC-P000, Lemma `lem:stacks`, the trace of a low empirical divergence] On a run with rewards
+in `[0, 1]`, if `N = N_a(s)` and `𝒦_inf(ν̂_a(s), μ) < B` (`w₀ = 0`, `μ ∈ [0, 1)`), then every
+`λ ≥ 0` with `λ(1 - μ) < 1` has `∑_(i < N) log (1 - λ (X_(a,i) - μ)) ≤ N B` on the stack of `a`:
+the dual formula at `λ` is at most `𝒦_inf(ν̂_a(s), μ)`. -/
+lemma sum_log_rewardByCount_le_of_pseudoKinf_lt {μ B l : ℝ} {s : ℕ} {a : α}
+    {ω : ℕ → Round Unit α ℝ} (x : ℕ → α → ℝ) (hμ0 : 0 ≤ μ) (hμ : μ < 1)
+    (hfb : ∀ n, IT.feedback n ω ∈ Set.Icc (0 : ℝ) 1)
+    (hlt : HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a μ < ENNReal.ofReal B)
+    (hl0 : 0 ≤ l) (hl1 : l * (1 - μ) < 1) :
+    ∑ i ∈ range (pullCount IT.action a s ω),
+        Real.log (1 - l * (rewardByCount IT.action IT.feedback a (i + 1) (ω, x) - μ)) ≤
+      pullCount IT.action a s ω * B := by
+  rcases Nat.eq_zero_or_pos (pullCount IT.action a s ω) with h0 | hs1
+  · simp [h0]
+  have hfbh : ∀ i, (history IT.obs IT.action IT.feedback s ω i).feedback ≤ 1 :=
+    fun i ↦ (hfb i).2
+  have h1 := HY.ofReal_pseudoLogMean_le_pseudoKinf (w₀ := 0) (r := s) (c := a) hμ hμ0 hfbh hl0 hl1
+  have h2 : HY.pseudoLogMean 0 (history IT.obs IT.action IT.feedback s ω) s a l μ < B := by
+    by_contra hge
+    exact (lt_irrefl _) ((ENNReal.ofReal_le_ofReal (not_lt.mp hge)).trans_lt (h1.trans_lt hlt))
+  have h3 := HY.pseudoLogMean_zero_history_eq (O := IT.obs) (A := IT.action) (R := IT.feedback)
+    s a l μ (ω, x)
+  simp only at h3
+  rw [h3] at h2
+  have hNpos : (0 : ℝ) < pullCount IT.action a s ω := by exact_mod_cast hs1
+  rw [div_lt_iff₀ hNpos] at h2
+  linarith
 
 omit [Fintype α] in
 /-- [INC-P000, Lemma `lem:probasA`(c), the event `ℒ`, for its trace on the run] For every learner
@@ -301,20 +358,7 @@ lemma measure_le_pullCount_pseudoKinf_lt_le [Countable α] {alg : Algorithm Unit
     have hNN₀ : N₀ ≤ N := Nat.ceil_le.mpr huN
     refine Set.mem_iUnion.mpr ⟨N - N₀, fun l hl0 hl1 ↦ ?_⟩
     rw [show N₀ + (N - N₀) = N by omega]
-    have hfbh : ∀ i, (history IT.obs IT.action IT.feedback t ω i).feedback ≤ 1 :=
-      fun i ↦ (hfb i).2
-    have h1 := HY.ofReal_pseudoLogMean_le_pseudoKinf (w₀ := 0) (r := t) (c := a) hμ hμ0 hfbh hl0
-      hl1
-    have h2 : HY.pseudoLogMean 0 (history IT.obs IT.action IT.feedback t ω) t a l μ < B := by
-      by_contra hge
-      exact (lt_irrefl _) ((ENNReal.ofReal_le_ofReal (not_lt.mp hge)).trans_lt (h1.trans_lt hlt))
-    have h3 := HY.pseudoLogMean_zero_history_eq (O := IT.obs) (A := IT.action) (R := IT.feedback)
-      t a l μ (ω, z)
-    simp only at h3
-    rw [h3, ← hN] at h2
-    have hNpos : (0 : ℝ) < N := by exact_mod_cast (show 0 < N by omega)
-    rw [div_lt_iff₀ hNpos] at h2
-    linarith
+    exact sum_log_rewardByCount_le_of_pseudoKinf_lt z hμ0 hμ hfb hlt hl0 hl1
   have hE : P E ≤ (P.prod (streamMeasure ν)) ((E ∩ G) ×ˢ Set.univ) := by
     rw [← measure_eq_prod_univ P (streamMeasure ν)]
     exact measure_mono_ae (hG.mono fun ω hω hωE ↦ ⟨hωE, hω⟩)
@@ -398,18 +442,18 @@ lemma measure_le_pullCount_lt_pseudoKinf_le [Countable α] {alg : Algorithm Unit
     (fun i ↦ (hlaw i).map_eq) (hν.1 a).2 hμ0 hμ hε' hK (n := N₀ + k) (by omega)
 
 omit [Fintype α] in
-/-- [INC-P000, Lemma `lem:probasA`(b), the event `𝒱`, for its trace on the run] For every learner
-on an instance `ν` of `𝒫`, cutoffs `s ≤ t`, an arm `a'` of mean `m`, a level `r ∈ [0, 1)`, a gain
-`η ≥ 0` with `2 η r ≤ m - r` (the paper's `r = m₂ + ε`, `a' = a⋆`), `z > 0` and `U`: the
-probability that `2 N_(a')(t) < U` and `N_(a')(s) 𝒦_inf(ν̂_(a')(s), r) ≥ z` is at most
-`C_η U³ e^(-(1+2η) z)`, `C_η = (4 + 2 κ(r)) e^(2(1+2η))`. On the stacks, the run's event is in
-the union over `1 ≤ n < U` of the events of Lemma `lem:single` at the level `z - 1`
-(Lemma `lem:grid`), each of probability at most `C_η n² e^(-(1+2η) z)`. -/
-lemma measure_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ} {ν : Kernel α ℝ}
-    [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) {s t : ℕ} (hst : s ≤ t) (a' : α) {r η z : ℝ}
-    (hr0 : 0 ≤ r) (hr : r < 1) (hη : 0 ≤ η) (hηr : 2 * η * r ≤ (∫ y, id y ∂(ν a')) - r)
-    (hz : 0 < z) (U : ℕ) :
-    trajMeasure alg (Environment.bandit ν) {ω | 2 * pullCount IT.action a' t ω < U ∧
+/-- [INC-P000, Lemma `lem:controlC`(b), for the trace of `𝒱⋆_j` on the run] For every learner on an
+instance `ν` of `𝒫`, every set `T` of cutoffs, an arm `a'`, a level `r ∈ [0, 1)` and a gain
+`η ≥ 0` with `2 η r ≤ m_(a') - r`, `z > 0` and `U`: the probability that some cutoff `s ∈ T` has
+`N_(a')(s) < U` and `N_(a')(s) 𝒦_inf(ν̂_(a')(s), r) ≥ z` is at most `C_η U³ e^(-(1+2η) z)`,
+`C_η = (4 + 2κ(r)) e^(2(1+2η))`: on the stacks, the trace is in the union over `1 ≤ n < U` of the
+events of Lemma `lem:single` (the paper's `𝒱⋆_j`, with `a' = a⋆`, `r = m₂ + ε`, `η = η₀`,
+`U = u_j`, `z = (1 - 4δ) L_j`). -/
+lemma measure_exists_mem_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ}
+    {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) (T : Set ℕ) (a' : α)
+    {r η z : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) (hη : 0 ≤ η)
+    (hηr : 2 * η * r ≤ (∫ y, id y ∂(ν a')) - r) (hz : 0 < z) (U : ℕ) :
+    trajMeasure alg (Environment.bandit ν) {ω | ∃ s ∈ T, pullCount IT.action a' s ω < U ∧
       ENNReal.ofReal z ≤ (pullCount IT.action a' s ω : ℝ≥0∞) *
         HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a' r} ≤
     ENNReal.ofReal ((4 + 2 * Real.log (1 / (1 - r))) * Real.exp (2 * (1 + 2 * η)) * U ^ 3 *
@@ -417,7 +461,7 @@ lemma measure_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ} 
   set P := trajMeasure alg (Environment.bandit ν) with hP
   have hseq := IT.isAlgEnvSeq_trajMeasure alg (Environment.bandit ν)
   set C := (4 + 2 * Real.log (1 / (1 - r))) * Real.exp (2 * (1 + 2 * η)) with hC
-  set E := {ω | 2 * pullCount IT.action a' t ω < U ∧
+  set E := {ω | ∃ s ∈ T, pullCount IT.action a' s ω < U ∧
     ENNReal.ofReal z ≤ (pullCount IT.action a' s ω : ℝ≥0∞) *
       HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a' r}
   set Z : ℕ → (ℕ → Round Unit α ℝ) × (ℕ → α → ℝ) → ℝ :=
@@ -426,15 +470,12 @@ lemma measure_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ} 
     {ω' | ∃ lam, 0 ≤ lam ∧ lam * (1 - r) < 1 ∧
       z - 1 ≤ ∑ i ∈ range n, Real.log (1 - lam * (Z i ω' - r))} with hH
   have hsub : E ×ˢ (Set.univ : Set (ℕ → α → ℝ)) ⊆ ⋃ n ∈ Finset.Ico 1 U, H n := by
-    rintro ⟨ω, x⟩ ⟨⟨hU, hzK⟩, -⟩
+    rintro ⟨ω, x⟩ ⟨⟨s, -, hU, hzK⟩, -⟩
     -- the evidence at `s`: `N_(a')(s) ≥ 1`, and a `λ` of the dual formula above `z - 1`
     obtain ⟨hn1, hev⟩ := exists_le_sum_log_of_le_mul_pseudoKinf (O := IT.obs) (A := IT.action)
       (R := IT.feedback) hr hz (ω, x) hzK
     simp only at hn1 hev
-    set n := pullCount IT.action a' s ω with hn
-    have hns : n ≤ pullCount IT.action a' t ω := pullCount_mono _ hst _
-    have hnU : n < U := lt_of_le_of_lt (hns.trans (Nat.le_mul_of_pos_left _ two_pos)) hU
-    exact Set.mem_iUnion₂.mpr ⟨n, Finset.mem_Ico.mpr ⟨hn1, hnU⟩, hev⟩
+    exact Set.mem_iUnion₂.mpr ⟨_, Finset.mem_Ico.mpr ⟨hn1, hU⟩, hev⟩
   rw [measure_eq_prod_univ P (streamMeasure ν) E]
   refine (measure_mono hsub).trans ((measure_biUnion_finset_le _ _).trans ?_)
   have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq a' i
@@ -469,33 +510,58 @@ lemma measure_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ} 
     _ = C * U ^ 3 * Real.exp (-(1 + 2 * η) * z) := by ring
 
 omit [Fintype α] in
-/-- [INC-P000, Lemma `lem:probasA`(b), the event `Π`, for its trace on the run, one arm] For every
-learner on an instance `ν` of `𝒫`, cutoffs `s ≤ t`, an arm `c`, a level `r ∈ [0, 1)`, a mean level
-`q`, a tilt `θ ≥ 0` and a gain `η ≥ 0` with the moment conditions of Lemma `lem:pair` for `ν_c`
-(`e^(2ηκ(r)) E_(ν_c)[e^(θ(Y - q))] ≤ 1` and `e^(2ηκ(r)) E_(ν_c)[(1 - Y) e^(θ(Y - q))] ≤ 1 - r`;
-the paper's `r = m⋆ + ε`, `q = m⋆ - 3ε`, from Lemmas `lem:theta` and `lem:constA`(c)), `z > 0`
-and `U`: the probability that `2 N_c(t) < U`, `N_c(s) 𝒦_inf(ν̂_c(s), r) ≥ z` and
-`m̂_c(t) ≥ q` is at most `C_η U⁴ e^(-(1+2η) z)`, `C_η = (4 + 2 κ(r)) e^(2(1+2η))`: the union over
-`1 ≤ n ≤ n' < U` of the events of Lemma `lem:pair`. -/
-lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit α ℝ}
-    {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) {s t : ℕ} (hst : s ≤ t) (c : α)
+/-- [INC-P000, Lemma `lem:probasA`(b), the event `𝒱`, for its trace on the run] For every learner
+on an instance `ν` of `𝒫`, cutoffs `s ≤ t`, an arm `a'` of mean `m`, a level `r ∈ [0, 1)`, a gain
+`η ≥ 0` with `2 η r ≤ m - r` (the paper's `r = m₂ + ε`, `a' = a⋆`), `z > 0` and `U`: the
+probability that `2 N_(a')(t) < U` and `N_(a')(s) 𝒦_inf(ν̂_(a')(s), r) ≥ z` is at most
+`C_η U³ e^(-(1+2η) z)`, `C_η = (4 + 2 κ(r)) e^(2(1+2η))`. On the stacks, the run's event is in
+the union over `1 ≤ n < U` of the events of Lemma `lem:single` at the level `z - 1`
+(Lemma `lem:grid`), each of probability at most `C_η n² e^(-(1+2η) z)`. -/
+lemma measure_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ} {ν : Kernel α ℝ}
+    [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) {s t : ℕ} (hst : s ≤ t) (a' : α) {r η z : ℝ}
+    (hr0 : 0 ≤ r) (hr : r < 1) (hη : 0 ≤ η) (hηr : 2 * η * r ≤ (∫ y, id y ∂(ν a')) - r)
+    (hz : 0 < z) (U : ℕ) :
+    trajMeasure alg (Environment.bandit ν) {ω | 2 * pullCount IT.action a' t ω < U ∧
+      ENNReal.ofReal z ≤ (pullCount IT.action a' s ω : ℝ≥0∞) *
+        HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a' r} ≤
+    ENNReal.ofReal ((4 + 2 * Real.log (1 / (1 - r))) * Real.exp (2 * (1 + 2 * η)) * U ^ 3 *
+      Real.exp (-(1 + 2 * η) * z)) := by
+  refine (measure_mono ?_).trans
+    (measure_exists_mem_lt_mul_pseudoKinf_le hν {s} a' hr0 hr hη hηr hz U)
+  rintro ω ⟨hU, hzK⟩
+  exact ⟨s, Set.mem_singleton s, lt_of_le_of_lt ((pullCount_mono _ hst _).trans
+    (Nat.le_mul_of_pos_left _ two_pos)) hU, hzK⟩
+
+omit [Fintype α] in
+/-- [INC-P000, Lemma `lem:controlC`(c), for the trace of `𝒱_(a,j)` on the run] For every learner on
+an instance `ν` of `𝒫`, every set `T` of cutoffs, a cutoff `t`, an arm `c`, a level `r ∈ [0, 1)`, a
+mean level `q`, a tilt `θ ≥ 0` and a gain `η ≥ 0` with the moment conditions of Lemma `lem:pair`
+for `ν_c` (`e^(2ηκ(r)) E_(ν_c)[e^(θ(Y - q))] ≤ 1` and
+`e^(2ηκ(r)) E_(ν_c)[(1 - Y) e^(θ(Y - q))] ≤ 1 - r`; the paper's `r = m⋆ + ε`, `q = m⋆ - 3ε`,
+`θ = θ_c`, `η = η₀`, Lemma `lem:constC`(c)), `z > 0` and `U`: the probability that `N_c(t) < U`,
+`m̂_c(t) ≥ q` and some cutoff `s ∈ T`, `s ≤ t`, has `N_c(s) 𝒦_inf(ν̂_c(s), r) ≥ z` is at most
+`C_η U⁴ e^(-(1+2η) z)`, `C_η = (4 + 2κ(r)) e^(2(1+2η))`: the union over `1 ≤ n ≤ n' < U` of the
+events of Lemma `lem:pair` (with `n = N_c(s)`, `n' = N_c(t)`; the paper's `U = u_j`,
+`z = (1 - 4δ) L_j`, `t = t_(j-1)`). -/
+lemma measure_exists_mem_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit α ℝ}
+    {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) (T : Set ℕ) (t : ℕ) (c : α)
     {r q θ η z : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) (hθ : 0 ≤ θ) (hη : 0 ≤ η)
     (hΦ : Real.exp (2 * η * Real.log (1 / (1 - r))) * ∫ y, Real.exp (θ * (y - q)) ∂(ν c) ≤ 1)
     (hΨ : Real.exp (2 * η * Real.log (1 / (1 - r))) *
       ∫ y, (1 - y) * Real.exp (θ * (y - q)) ∂(ν c) ≤ 1 - r)
     (hz : 0 < z) (U : ℕ) :
-    trajMeasure alg (Environment.bandit ν) {ω | 2 * pullCount IT.action c t ω < U ∧
-      ENNReal.ofReal z ≤ (pullCount IT.action c s ω : ℝ≥0∞) *
-        HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r ∧
+    trajMeasure alg (Environment.bandit ν) {ω | pullCount IT.action c t ω < U ∧
+      (∃ s ∈ T, s ≤ t ∧ ENNReal.ofReal z ≤ (pullCount IT.action c s ω : ℝ≥0∞) *
+        HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r) ∧
       q ≤ HY.pseudoMean 0 (history IT.obs IT.action IT.feedback t ω) t c} ≤
     ENNReal.ofReal ((4 + 2 * Real.log (1 / (1 - r))) * Real.exp (2 * (1 + 2 * η)) * U ^ 4 *
       Real.exp (-(1 + 2 * η) * z)) := by
   set P := trajMeasure alg (Environment.bandit ν) with hP
   have hseq := IT.isAlgEnvSeq_trajMeasure alg (Environment.bandit ν)
   set C := (4 + 2 * Real.log (1 / (1 - r))) * Real.exp (2 * (1 + 2 * η)) with hC
-  set E := {ω | 2 * pullCount IT.action c t ω < U ∧
-    ENNReal.ofReal z ≤ (pullCount IT.action c s ω : ℝ≥0∞) *
-      HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r ∧
+  set E := {ω | pullCount IT.action c t ω < U ∧
+    (∃ s ∈ T, s ≤ t ∧ ENNReal.ofReal z ≤ (pullCount IT.action c s ω : ℝ≥0∞) *
+      HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r) ∧
     q ≤ HY.pseudoMean 0 (history IT.obs IT.action IT.feedback t ω) t c}
   set Z : ℕ → (ℕ → Round Unit α ℝ) × (ℕ → α → ℝ) → ℝ :=
     fun i ω' ↦ rewardByCount IT.action IT.feedback c (i + 1) ω' with hZ
@@ -505,15 +571,15 @@ lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit �
       p.2 * q ≤ ∑ i ∈ range p.2, Z i ω'} with hH
   set S := (Finset.Ico 1 U ×ˢ Finset.Ico 1 U).filter fun p : ℕ × ℕ ↦ p.1 ≤ p.2 with hS
   have hsub : E ×ˢ (Set.univ : Set (ℕ → α → ℝ)) ⊆ ⋃ p ∈ S, H p := by
-    rintro ⟨ω, x⟩ ⟨⟨hU, hzK, hq⟩, -⟩
-    -- the evidence at `s`, as in `measure_lt_mul_pseudoKinf_le`
+    rintro ⟨ω, x⟩ ⟨⟨hU, ⟨s, -, hst, hzK⟩, hq⟩, -⟩
+    -- the evidence at `s`, as in `measure_exists_mem_lt_mul_pseudoKinf_le`
     obtain ⟨hn1, hev⟩ := exists_le_sum_log_of_le_mul_pseudoKinf (O := IT.obs) (A := IT.action)
       (R := IT.feedback) hr hz (ω, x) hzK
     simp only at hn1 hev
     set n := pullCount IT.action c s ω with hn
     set n' := pullCount IT.action c t ω with hn'
     have hns : n ≤ n' := pullCount_mono _ hst _
-    have hn'U : n' < U := lt_of_le_of_lt (Nat.le_mul_of_pos_left _ two_pos) hU
+    have hn'U : n' < U := hU
     refine Set.mem_iUnion₂.mpr ⟨(n, n'), ?_, hev, ?_⟩
     · simp only [hS, Finset.mem_filter, Finset.mem_product, Finset.mem_Ico]
       omega
@@ -586,6 +652,34 @@ lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit �
       ≤ (U : ℝ) ^ 2 * (C * (U : ℝ) ^ 2 * Real.exp (-(1 + 2 * η) * z)) :=
         mul_le_mul_of_nonneg_right hcard this
     _ = C * U ^ 4 * Real.exp (-(1 + 2 * η) * z) := by ring
+
+omit [Fintype α] in
+/-- [INC-P000, Lemma `lem:probasA`(b), the event `Π`, for its trace on the run, one arm] For every
+learner on an instance `ν` of `𝒫`, cutoffs `s ≤ t`, an arm `c`, a level `r ∈ [0, 1)`, a mean level
+`q`, a tilt `θ ≥ 0` and a gain `η ≥ 0` with the moment conditions of Lemma `lem:pair` for `ν_c`
+(`e^(2ηκ(r)) E_(ν_c)[e^(θ(Y - q))] ≤ 1` and `e^(2ηκ(r)) E_(ν_c)[(1 - Y) e^(θ(Y - q))] ≤ 1 - r`;
+the paper's `r = m⋆ + ε`, `q = m⋆ - 3ε`, from Lemmas `lem:theta` and `lem:constA`(c)), `z > 0`
+and `U`: the probability that `2 N_c(t) < U`, `N_c(s) 𝒦_inf(ν̂_c(s), r) ≥ z` and
+`m̂_c(t) ≥ q` is at most `C_η U⁴ e^(-(1+2η) z)`, `C_η = (4 + 2 κ(r)) e^(2(1+2η))`: the union over
+`1 ≤ n ≤ n' < U` of the events of Lemma `lem:pair`. -/
+lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit α ℝ}
+    {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) {s t : ℕ} (hst : s ≤ t) (c : α)
+    {r q θ η z : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) (hθ : 0 ≤ θ) (hη : 0 ≤ η)
+    (hΦ : Real.exp (2 * η * Real.log (1 / (1 - r))) * ∫ y, Real.exp (θ * (y - q)) ∂(ν c) ≤ 1)
+    (hΨ : Real.exp (2 * η * Real.log (1 / (1 - r))) *
+      ∫ y, (1 - y) * Real.exp (θ * (y - q)) ∂(ν c) ≤ 1 - r)
+    (hz : 0 < z) (U : ℕ) :
+    trajMeasure alg (Environment.bandit ν) {ω | 2 * pullCount IT.action c t ω < U ∧
+      ENNReal.ofReal z ≤ (pullCount IT.action c s ω : ℝ≥0∞) *
+        HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r ∧
+      q ≤ HY.pseudoMean 0 (history IT.obs IT.action IT.feedback t ω) t c} ≤
+    ENNReal.ofReal ((4 + 2 * Real.log (1 / (1 - r))) * Real.exp (2 * (1 + 2 * η)) * U ^ 4 *
+      Real.exp (-(1 + 2 * η) * z)) := by
+  refine (measure_mono ?_).trans
+    (measure_exists_mem_lt_mul_pseudoKinf_and_le_le hν {s} t c hr0 hr hθ hη hΦ hΨ hz U)
+  rintro ω ⟨hU, hzK, hq⟩
+  exact ⟨lt_of_le_of_lt (Nat.le_mul_of_pos_left _ two_pos) hU, ⟨s, Set.mem_singleton s, hst, hzK⟩,
+    hq⟩
 
 omit [DecidableEq α] [MeasurableSingletonClass α] [Fintype α] in
 /-- [INC-P000, Lemma `lem:constA`(a)] For an instance of means `m_c` with largest mean
@@ -673,5 +767,48 @@ lemma exists_tilt_moment_le {Q : Measure ℝ} (hQ : Q ∈ unitLaws) {ms : ℝ}
     exact mul_le_mul_of_nonneg_right hexp (integral_nonneg fun y ↦ (Real.exp_pos _).le)
   · refine le_trans ?_ (hsh.2.trans (by linarith))
     exact mul_le_mul_of_nonneg_right hexp (integral_nonneg_of_ae (hnn _))
+
+omit [DecidableEq α] [MeasurableSingletonClass α] [Fintype α] in
+/-- [INC-P000, Definition `def:constA` and Lemma `lem:constA`(c), uniformly over the arms] For an
+instance `ν` of `𝒫` on a finite set of arms, there are tilts `θ_c > 0` of the sub-optimal arms, a
+constant `c_θ > 0` and an accuracy `ε_θ > 0` such that every sub-optimal `c`, every `ε ≤ ε_θ`,
+every level `r ≤ m⋆ + ε` and every gain `η ≥ 0` with `2ηκ(r) ≤ c_θ` satisfy the moment conditions
+of Lemma `lem:pair` for `ν_c` at the mean level `m⋆ - 3ε` (the paper's `min_c c_(θ,c)` and
+`min_c ε_(θ,c)`). -/
+lemma exists_tilt_moment_le_forall [Finite α] [Nonempty α] {ν : Kernel α ℝ}
+    (hν : ν ∈ unitBandits α) :
+    ∃ θ : α → ℝ, ∃ cθ εθ : ℝ, 0 < cθ ∧ 0 < εθ ∧ ∀ c,
+      (∫ y, id y ∂(ν c)) < (⨆ b, ∫ y, id y ∂(ν b)) → 0 < θ c ∧
+      ∀ ε, ε ≤ εθ → ∀ r η : ℝ, r ≤ (⨆ b, ∫ y, id y ∂(ν b)) + ε → 0 ≤ η →
+        2 * η * Real.log (1 / (1 - r)) ≤ cθ →
+        Real.exp (2 * η * Real.log (1 / (1 - r))) *
+            ∫ y, Real.exp (θ c * (y - ((⨆ b, ∫ y, id y ∂(ν b)) - 3 * ε))) ∂(ν c) ≤ 1 ∧
+          Real.exp (2 * η * Real.log (1 / (1 - r))) *
+            ∫ y, (1 - y) * Real.exp (θ c * (y - ((⨆ b, ∫ y, id y ∂(ν b)) - 3 * ε))) ∂(ν c) ≤
+              1 - r := by
+  classical
+  have := Fintype.ofFinite α
+  set ms := ⨆ b, ∫ y, id y ∂(ν b) with hms
+  have hex : ∀ c, ∃ θ c₀ ε₀ : ℝ, 0 < θ ∧ 0 < c₀ ∧ 0 < ε₀ ∧
+      ((∫ y, id y ∂(ν c)) < ms → ∀ ε, ε ≤ ε₀ → ∀ r η : ℝ, r ≤ ms + ε → 0 ≤ η →
+        2 * η * Real.log (1 / (1 - r)) ≤ c₀ →
+        Real.exp (2 * η * Real.log (1 / (1 - r))) *
+            ∫ y, Real.exp (θ * (y - (ms - 3 * ε))) ∂(ν c) ≤ 1 ∧
+          Real.exp (2 * η * Real.log (1 / (1 - r))) *
+            ∫ y, (1 - y) * Real.exp (θ * (y - (ms - 3 * ε))) ∂(ν c) ≤ 1 - r) := by
+    intro c
+    by_cases hc : (∫ y, id y ∂(ν c)) < ms
+    · obtain ⟨θ, c₀, ε₀, hθ, hc₀, hε₀, h⟩ := exists_tilt_moment_le (hν.1 c) hc hν.2
+      exact ⟨θ, c₀, ε₀, hθ, hc₀, hε₀, fun _ ↦ h⟩
+    · exact ⟨1, 1, 1, one_pos, one_pos, one_pos, fun h ↦ absurd h hc⟩
+  choose θ c₀ ε₀ hθ hc₀ hε₀ h using hex
+  set cθ := Finset.univ.inf' Finset.univ_nonempty c₀ with hcθ
+  set εθ := Finset.univ.inf' Finset.univ_nonempty ε₀ with hεθ
+  have hcθ0 : 0 < cθ := (Finset.lt_inf'_iff _).mpr fun c _ ↦ hc₀ c
+  have hεθ0 : 0 < εθ := (Finset.lt_inf'_iff _).mpr fun c _ ↦ hε₀ c
+  refine ⟨θ, cθ, εθ, hcθ0, hεθ0, fun c hc ↦ ⟨hθ c, fun ε hε r η hr hη hηc ↦ ?_⟩⟩
+  have h1 : εθ ≤ ε₀ c := Finset.inf'_le _ (Finset.mem_univ c)
+  have h2 : cθ ≤ c₀ c := Finset.inf'_le _ (Finset.mem_univ c)
+  exact h c hc ε (hε.trans h1) r η hr hη (hηc.trans h2)
 
 end Incognita.BatchedBandits

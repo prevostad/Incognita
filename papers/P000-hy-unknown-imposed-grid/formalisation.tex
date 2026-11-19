@@ -478,8 +478,450 @@ Cases~2 and~3 and the induction of the paper's proof of Lemma~\ref{lem:decompA},
 of the nets in place of their running maximum.
 \end{proof}
 
+\begin{lemma}[good high batches when $x=1$, on a run]\label{flem:goodhigh-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_le_log_pullCount_leader, Incognita.BatchedBandits.hyAlg_ae_card_le_card_filter_le_pullCount_leader_add, Incognita.BatchedBandits.card_filter_lt_le_card}
+\uses{def:hy, def:high, def:water, def:model, def:learner, def:grid}
+Call a batch $i\ge2$ \emph{high at the level $v$ for the arm $c$} if
+$J_{i-1}(c,t_i+1)\ge y_{i-1}v$ (by (W1), a $(\delta,j)$-high batch is high at the level
+$(1-\delta)\mathsf L_j$ for every arm). Along almost every run of HY ($w_0\ge0$) on $\nu\in\cP$, let
+$S$ be a finite set of batches $i\ge2$, each high at the level $v$ for its leader $\hat c_{i-1}$,
+and $u\le e^v$. Then $N_{\hat c_{i-1}}(t_i)\ge u$ for every $i\in S$, and at most $K$ batches
+$i\in S$ have $N_{\hat c_{i-1}}(t_{i-1})<u$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:imedround, def:hy, def:high, def:water}
+Steps~1--2 of the paper's proof of Lemma~\ref{lem:goodhigh}. The leader has $\tilde K_{i-1}(\hat c_{i-1})=0$
+(Step~1 of the proof of Lemma~\ref{lem:imedround}), so its index is $y_{i-1}\log N_{\hat c_{i-1}}(t_i)$,
+and $y_{i-1}\ge1$; then the injectivity of Step~2.
+\end{proof}
+
+\begin{lemma}[few observations when $x=1$, on a run]\label{flem:fewC-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_exists_mem_pullCount_lt_and_le_mul_pseudoKinf, Incognita.BatchedBandits.hyAlg_ae_exists_mem_pullCount_lt_and_le_mul_pseudoKinf_of_pseudoMean_leader_lt, Incognita.BatchedBandits.hyAlg_ae_pullCount_lt_and_exists_mem_le_mul_pseudoKinf_of_le_pseudoMean, Incognita.BatchedBandits.ofReal_sub_log_le_div, Incognita.BatchedBandits.HY.sub_two_mul_le_pseudoMean, Incognita.BatchedBandits.HY.pseudoMean_le_add_of_abs_sub_le, Incognita.BatchedBandits.HY.sub_two_mul_le_pseudoMean_leader}
+\uses{def:hy, def:high, def:evC, def:model, def:kinf, def:stacks, def:grid}
+Along almost every run of HY ($w_0\ge0$) on $\nu\in\cP$:
+(common step) let $c$ be an arm, $S$ a nonempty set of batches $i\in[2,J]$, high at the level $v$
+for $c$, with $\tilde{\mathbf m}^\star_{i-1}\le r'<1$, and let $N_c(t_J)<u$, $Y=v-\log u>0$, $\delta<1$,
+$u\le(1-\delta)^{-(|S|-1)}Y/\kappa(r')$. Then some $i\in S$ has $n=N_c(t_{i-1})\in[1,u)$ and
+$n\Kinf(\hat\nu_c(t_{i-1}),r')\ge(1-\delta)Y-w_0\kappa(r')$.
+(First inclusion) Let $a^\star$ be optimal, $\mathbf m_c\le\mathbf m_2$ for the sub-optimal $c$, $\varepsilon\ge0$,
+$\mathbf m_2+\varepsilon<\mathbf m^\star-2\varepsilon$, $\mathbf m^\star+\varepsilon<1$, $w_0\le\varepsilon u$; let $S$ be as above for
+$c=a^\star$, with $N_{\hat c_{i-1}}(t_{i-1})\ge u$ for $i\in S$, and the size condition at $r'=\mathbf m_2+\varepsilon$.
+If every arm with $N_c(t_k)\ge u$, $k\le J$, has $|\hat{\mathbf m}_c(t_k)-\mathbf m_c|\le\varepsilon$ (the trace of
+$\mathcal D_j^c$) and $\tilde{\mathbf m}^\star_J<\mathbf m^\star-2\varepsilon$ (the class $\mathcal U_j$), the conclusion of the common
+step holds for $c=a^\star$, $r'=\mathbf m_2+\varepsilon$ (the trace of $\mathcal V^\star_j$).
+(Second inclusion) With $\mathbf m_a+\varepsilon<\mathbf m^\star-3\varepsilon$, the same $S$ for $c=a$ and the size condition at
+$r'=\mathbf m^\star+\varepsilon$, the trace of $\mathcal D_j^c$ and $\hat{\mathbf m}_a(t_J)\ge\mathbf m^\star-3\varepsilon$ give $N_a(t_J)<u$ and the
+conclusion of the common step for $c=a$, $r'=\mathbf m^\star+\varepsilon$ (the trace of $\mathcal V_{a,j}$).
+\end{lemma}
+
+\begin{proof}
+\uses{flem:goodhigh-run, lem:highC, lem:chain, lem:pseudo, lem:kinf, def:hy, def:evC, def:model, def:stacks}
+The paper's proof of Lemma~\ref{lem:fewC}, with $J=j-1$, $S=S_{\rm go}$; on a run,
+$\hat\nu_c(t_k)$ is $\hat\nu_{c,N_c(t_k)}$ of the stack of $c$, so the paper's events contain their
+traces. The arithmetic $(1-\delta)(v-\log u)-w_0\kappa\ge(1-4\delta)\mathsf L_j$ for
+$v=(1-\delta)\mathsf L_j$, $u=u_j$ is Lemma~\ref{lem:constC}(a), and the size condition is
+Lemma~\ref{lem:goodhigh} with Lemma~\ref{lem:constC}(a).
+\end{proof}
+
+\begin{lemma}[an optimal arm in $W$ when $x=1$, on a run]\label{flem:optW-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_integral_reference_eq_iSup, Incognita.BatchedBandits.hyAlg_ae_exists_integral_eq_iSup_and_le_two_mul_pullCount}
+\uses{def:hy, def:high, def:evC, def:model, def:kinf, def:stacks, def:grid}
+Along almost every run of HY ($w_0\ge0$) on $\nu\in\cP$, with $a^\star$, $\mathbf m_2$, $\varepsilon$ as in the first
+inclusion of Lemma~\ref{flem:fewC-run}, $U\ge1$, $2w_0\le\varepsilon U$, $2u\le U\le2e^v$, a set $S$ of at
+least two batches $i\in[2,J]$, high at the level $v$ for every arm, with
+$N_{\hat c_{i-1}}(t_{i-1})\ge u$, and $u\le(1-\delta)^{-(|S|-2)}(v-\log u)/\kappa(\mathbf m_2+\varepsilon)$: if the traces
+of $\mathcal D_j^c$ and $(\mathcal V^\star_j)^c$ up to $t_J$ hold, then some optimal arm has $N(t_J)\ge U/2$, the
+reference $r_J$ (net size $U$) is optimal, $\mathbf m^\star-2\varepsilon\le\hat\mu_J\le\mathbf m^\star+\varepsilon$, and every sub-optimal
+$c$ with $N_c(t_J)\ge U/2$ has $\tilde{\mathbf m}_c(t_J)<\mathbf m^\star-2\varepsilon$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:goodhigh-run, flem:fewC-run, lem:pseudo, def:hy, def:evC, def:model}
+The paper's proof of Lemma~\ref{lem:optW}: Step~1 by Lemma~\ref{flem:goodhigh-run}, Step~3 by the
+common step of Lemma~\ref{flem:fewC-run} on $S$ without its largest batch, Step~4 by the
+definition of the reference.
+\end{proof}
+
+\begin{lemma}[pulls of $a$ when $x=1$, on a run]\label{flem:pullsC-run}
+\lean{Incognita.BatchedBandits.HY.pseudoMean_lt_and_ne_leader_and_pseudoKinf_le_testKinf, Incognita.BatchedBandits.hyAlg_ae_pullCount_le_card_add_div, Incognita.BatchedBandits.hyAlg_ae_pullCount_le_max_of_le_imedKinf, Incognita.BatchedBandits.pullCount_le_max_of_forall_add_one, Incognita.BatchedBandits.hyAlg_ae_pullCount_add_one_le}
+\uses{def:hy, def:hy-vocab, def:model, def:kinf, def:grid}
+(i) For one history with rewards in $[0,1]$, $N_a\ge1$, $0\le\mu\le\hat\mu<1$ and
+$D=\Kinf(\hat\nu_a,\mu)>0$: $\hat{\mathbf m}_a<\mu$, $a$ is not the leader and $\tilde K(a)\ge\hat K(a)\ge D$.
+Along almost every run of HY ($w_0\ge0$) on $\nu\in\cP$, for $\ell\ge1$ and $a\ne\hat c_\ell$:
+(ii) if $\omega_\ell\ge0$, $\hat K_\ell(a)\ge D>0$, the batch $\ell+1$ is not activated or $a$ is
+rejected at $t_\ell$, and $a$ is pulled in the batch, then
+$N_a(t_{\ell+1})\le K+(1+\omega_\ell)y_\ell\mathsf L_{\ell+1}/D$;
+(iii) if $\vartheta_\ell\ge0$ and $\tilde K_\ell(a)\ge D>0$, then
+$N_a(t_{\ell+1})\le\max(N_a(t_\ell),1+y_\ell\log s_\ell/D,K-1+U_{\ell+1})$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:imedround, lem:service, lem:kinf, lem:pseudo, def:hy, def:hy-vocab}
+The paper's proof of Lemma~\ref{lem:pullsC}. Every pull of $a$ at a round $k$ of the batch has
+$N_a(k)+1\le g(k)$ for a nondecreasing $g$: at an IMED round $g(k)=1+y_\ell\log(k+1)/D$
+(Lemma~\ref{lem:imedround}), at a paced round the target (the paced rule), at most
+$K+(1+\omega_\ell)y_\ell\log(k+1)/D$ for a rejected arm and $K-1+U_{\ell+1}$ in general; then
+$N_a(t_{\ell+1})\le\max(N_a(t_\ell),g(t_{\ell+1}-1))$, and $N_a(t_{\ell+1})\le g(t_{\ell+1}-1)$ if $a$ is
+pulled (the last pull). With $D\ge\varepsilon^2/8$, $\log s_\ell\le2\mathsf L_\ell$ and $y_\ell\le\bar y$, (iii)
+gives the paper's $N_a(t_{\ell+1})-N_a(t_\ell)\le c_\ell$.
+\end{proof}
+
+\begin{lemma}[logarithmic count when $x=1$, on a run]\label{flem:logcountC-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_le_mul_pullCount_of_le_imedIndex_leader, Incognita.BatchedBandits.hyAlg_ae_le_mul_pullCount_of_le_imedIndex}
+\uses{def:hy, def:high, def:evC, def:model, def:kinf, def:grid}
+Along almost every run of HY ($w_0\ge0$) on $\nu\in\cP$, let $\varepsilon\ge0$ with $\mathbf m^\star+\varepsilon<1$ and let
+$i\in[2,J]$ be a batch high at the level $v$ for an arm $c$, whose leader has
+$N_{\hat c_{i-1}}(t_{i-1})\ge u$, such that every arm with $N_{c'}(t_{i-1})\ge u$ has
+$\hat{\mathbf m}_{c'}(t_{i-1})\le\mathbf m_{c'}+\varepsilon$. Then $v\le(\kappa(\mathbf m^\star+\varepsilon)+1)N_c(t_J)$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:kinf, lem:pseudo, def:hy, def:high}
+The paper's proof of Lemma~\ref{lem:logcountC}: $\tilde{\mathbf m}^\star_{i-1}\le\hat{\mathbf m}_{\hat c_{i-1}}(t_{i-1})\le
+\mathbf m^\star+\varepsilon$, so $\tilde K_{i-1}(c)\le\kappa(\mathbf m^\star+\varepsilon)$; the index at the end of the batch is at
+most $\kappa N_c(t_i)+y_{i-1}\log N_c(t_i)$, $\log N\le N$, and $N_c(t_i)\le N_c(t_J)$.
+\end{proof}
+
+\begin{lemma}[the bad events when $x=1$, on a run]\label{flem:controlC-run}
+\lean{Incognita.BatchedBandits.measure_exists_mem_le_pullCount_abs_sub_gt_le, Incognita.BatchedBandits.measure_exists_mem_lt_mul_pseudoKinf_le, Incognita.BatchedBandits.measure_exists_mem_lt_mul_pseudoKinf_and_le_le, Incognita.BatchedBandits.lintegral_sum_ite_pseudoKinf_lt_le, Incognita.BatchedBandits.sum_Icc_mul_exp_neg_le, Incognita.BatchedBandits.sum_log_rewardByCount_le_of_pseudoKinf_lt}
+\uses{def:evC, def:stacks, def:model, def:kinf, def:learner}
+For every learner on $\nu\in\cP$ and every set $T$ of cutoffs:
+(a) for $u,\varepsilon>0$, the probability that some arm $c$ and some $s\in T$ have $N_c(s)\ge u$ and
+$|\hat{\mathbf m}_c(s)-\mathbf m_c|>\varepsilon$ is at most $K\cdot2e^{-2\varepsilon^2u}/(1-e^{-2\varepsilon^2})$;
+(b) for an arm $a'$, $r\in[0,1)$, $\eta\ge0$ with $2\eta r\le\mathbf m_{a'}-r$, $z>0$ and $U$, the probability that
+some $s\in T$ has $N_{a'}(s)<U$ and $N_{a'}(s)\Kinf(\hat\nu_{a'}(s),r)\ge z$ is at most
+$C_\eta U^3e^{-(1+2\eta)z}$, $C_\eta=(4+2\kappa(r))e^{2(1+2\eta)}$;
+(c) for an arm $c$, a cutoff $t$, $r\in[0,1)$, $q$, $\theta,\eta\ge0$ with the moment conditions of
+Lemma~\ref{lem:pair} for $\nu_c$, $z>0$ and $U$, the probability that $N_c(t)<U$,
+$\hat{\mathbf m}_c(t)\ge q$ and some $s\in T$, $s\le t$, has $N_c(s)\Kinf(\hat\nu_c(s),r)\ge z$ is at most
+$C_\eta U^4e^{-(1+2\eta)z}$;
+(d) for a grid, an arm $a$ with $N_a(t_1)\ge1$ almost surely, $\mu\in[0,1)$, $\varepsilon'>0$,
+$\lambda\in[0,\frac1{1-\mu})$ and $A=\E_{\nu_a}[\log(1-\lambda(Y-\mu))]$,
+$\E\big[\sum_{2\le j\le L}N_a(t_{j-1})\mathbf 1(\Kinf(\hat\nu_a(t_{j-1}),\mu)<A-3\varepsilon'/4,\ N_a(t_{j-1})<N_a(t_j))\big]
+\le1/\rho'^2$ for every $L$, with $\rho'$ of Lemma~\ref{lem:lowerdev}.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:hoeffding, lem:single, lem:pair, lem:lowerdev, lem:distinct, lem:stacks, def:evC, def:stacks}
+On the product with the reward stacks, $\hat\nu_c(s)$ is $\hat\nu_{c,N_c(s)}$ (Lemma~\ref{lem:stacks}), so each
+event is contained in the paper's event $\mathcal D_j$, $\mathcal V^\star_j$ or $\mathcal V_{a,j}$ on the stacks; then the
+paper's proof of Lemma~\ref{lem:controlC}(a)--(c). For (d), the batches in which the count of $a$
+increases start at distinct counts $n\in[1,t_L]$ (Lemma~\ref{lem:distinct}(i)); at the count $n$ the
+event is in the event of Lemma~\ref{lem:lowerdev}, of probability at most $e^{-\rho'n}$, and
+$\sum_{n\ge1}ne^{-\rho'n}\le1/\rho'^2$.
+\end{proof}
+
+\begin{lemma}[the consistency test when $x=1$, for one history]\label{flem:amb-hist}
+\lean{Incognita.BatchedBandits.HY.ofReal_mul_threshold_le_count_mul_testKinf, Incognita.BatchedBandits.HY.testKinf_le_old, Incognita.BatchedBandits.HY.le_testKinf_new, Incognita.BatchedBandits.HY.ofReal_threshold_le_of_mem, Incognita.BatchedBandits.HY.threshold_le, Incognita.BatchedBandits.HY.threshold_nonneg}
+\uses{def:hy, def:amb, def:kinf, def:model}
+For a history of HY with rewards in $[0,1]$, cutoffs $r=t_\ell$, $r'=t_{\ell-1}$, net sizes $U=U_\ell$,
+$U'=U_{\ell-1}$ and an arm $a$ with $N=N_a(t_\ell)$, let $y'=y_{\ell-1}\in(0,\bar y]$, $\gamma\in(0,\frac12]$,
+$\mathsf L_\ell\ge0$, $\varepsilon>0$, $\Delta\ge0$. If $\hat K_\ell(a)\ge\varepsilon^2/8$, $a\ne\hat c_{\ell-1}$,
+$\bar y\mathsf L_\ell\le(U/2)(\varepsilon^2/8)$, $2\bar y\log N\le\gamma(\varepsilon^2/8)N$,
+$\hat K_{\ell-1}(a)\le\Delta(1+3\gamma/32)$ and $\hat K_\ell(a)\ge\Delta(1-\gamma/16)$, then $a$ is rejected at $t_\ell$:
+$\hat K_\ell(a)>0$ and $N\hat K_\ell(a)\ge(1-\gamma)y'\hat\Lambda_\ell$. Moreover, with $m=\mathbf m^\star$, $\zeta>0$:
+$\hat K_\ell(a)\ge\Delta-2\zeta'$ when $m-2\zeta\le\hat\mu_\ell<1$, $2\zeta\le m<1$,
+$\Kinf(\hat\nu_a(t_\ell),m)\ge\Delta-\zeta'$ and $2\zeta/(1-m)\le\zeta'$; and $\hat K_{\ell-1}(a)\le\Delta+3\zeta'$ when
+$\hat\mu_{\ell-1}\le m+\zeta<1$, $w_0\kappa(m+\zeta)\le\zeta'N_a(t_{\ell-1})$, $\Kinf(\hat\nu_a(t_{\ell-1}),m)\le\Delta+\zeta'$
+and $\zeta/(1-m-\zeta)\le\zeta'$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:kinf, lem:pseudo, def:hy, def:amb}
+Steps~3--4 of the paper's proof of Lemma~\ref{lem:amb}: a well-sampled $a$ has
+$N\hat K_\ell(a)\ge(U/2)\varepsilon^2/8\ge\bar y\mathsf L_\ell\ge y'\hat\Lambda_\ell$; otherwise $a\in Q_\ell$, so
+$\hat\Lambda_\ell\le N\hat K_{\ell-1}(a)/y'+\log N$ (definition of $\hat\Lambda_\ell$ as a minimum), and the two cases
+$\log N>\frac\gamma2\hat\Lambda_\ell$, $\log N\le\frac\gamma2\hat\Lambda_\ell$ conclude, with
+$(1-\frac\gamma2)(1+\frac{3\gamma}{32})\le1-\frac\gamma{16}$. With $\zeta'=\gamma\Delta/32$ the two bounds of the
+second part are the hypotheses of the first (Lemma~\ref{lem:kinf}(iii), (v) and
+Lemma~\ref{lem:pseudo}(i)--(ii)).
+\end{proof}
+
+\begin{lemma}[the consistency test when $x=1$, on a run]\label{flem:amb-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_ofReal_mul_threshold_le_count_mul_testKinf, Incognita.BatchedBandits.exists_le_pullCount_of_card_mul_le, Incognita.BatchedBandits.mul_log_le_mul_of_le}
+\uses{def:hy, def:amb, def:kinf, def:model, def:grid}
+Along almost every run of HY ($w_0\ge0$) on $\nu\in\cP$, let $\ell\ge2$, $a$ sub-optimal, $\varepsilon,\zeta>0$,
+$\gamma=\gamma_\ell\in(0,\frac12]$, $\Delta\ge0$, $\zeta'=2\zeta/(1-\mathbf m^\star)=\gamma\Delta/32$, $\bar y\ge y_{\ell-1}$ and
+$n_\ell\ge e$, with the conditions (b)--(d) of Definition~\ref{def:amb} (at the count $n_\ell$),
+$t_{\ell-1}\ge KU_{\ell-1}$ and $U_{\ell-1}\le U_\ell$. Assume: some optimal arm has $N(t_\ell)\ge U_\ell/2$;
+$\hat\mu_\ell\ge\mathbf m^\star-2\varepsilon$; $\hat{\mathbf m}_a(t_\ell)<\mathbf m^\star-3\varepsilon$; $N_a(t_\ell),N_a(t_{\ell-1})\ge n_\ell$;
+$a\ne\hat c_{\ell-1}$; the traces of $\mathsf{Acc}_\ell$ (at $t_{\ell-1}$, $t_\ell$, for the arms with $N\ge U_{\ell-1}/2$) and
+of $\mathsf{KC}_\ell$ (at $N_a(t_{\ell-1})$, $N_a(t_\ell)$). Then $a\ne\hat c_\ell$, $\hat K_\ell(a)\ge\varepsilon^2/8$, and $a$ is
+rejected at $t_\ell$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:amb-hist, flem:pullsC-run, lem:kinf, lem:pseudo, def:hy, def:amb}
+Steps~1--4 of the paper's proof of Lemma~\ref{lem:amb}. The test levels: $\hat\mu_\ell\le\mathbf m^\star+\zeta$ and
+$\hat\mu_\ell\ge\tilde{\mathbf m}_{a'}(t_\ell)\ge\mathbf m^\star-2\zeta$ for the well-sampled optimal $a'$; some arm is well
+sampled at $t_{\ell-1}$ since $\sum_cN_c(t_{\ell-1})=t_{\ell-1}\ge KU_{\ell-1}$, so $\hat\mu_{\ell-1}\le\mathbf m^\star+\zeta$. Then
+$\Kinf(\hat\nu_a(t_\ell),\mathbf m^\star-2\varepsilon)\ge\varepsilon^2/8$ (Lemma~\ref{lem:kinf}(iv)), Lemma~\ref{flem:pullsC-run}(i), the
+condition (c) at $N_a(t_\ell)\ge n_\ell$ ($u\mapsto\log u/u$ is non-increasing on $[e,\infty)$), and
+Lemma~\ref{flem:amb-hist}.
+\end{proof}
+
+\begin{lemma}[many good high batches when $x=1$, on a run]\label{flem:levelC-run}
+\lean{Incognita.BatchedBandits.hyAlg_ae_le_card_filter_le_imedIndex, Incognita.BatchedBandits.hyAlg_ae_le_card_filter_le_imedIndex_and_le_pullCount_leader, Incognita.BatchedBandits.exists_action_eq_of_pullCount_lt}
+\uses{def:hy, def:water, def:high, def:grid, def:ass-x, def:model}
+On a grid with $x_\ell\to1$, let $g\in(0,1)$, $m'$, and a rank $\ell_W\ge2$ from which every batch is
+not activated or has $s_\ell-t_\ell\ge Kt_\ell$. There is a rank $L_0$, independent of the run, such
+that along almost every run of HY every $L\ge L_0$ has at least $m'$ batches $j\in[2,L)$ high at the
+level $(1-g)\mathsf L_L$ for every arm. For HY with $w_0\ge0$ on $\nu\in\cP$ and every $M$, there is such
+a rank after which, for every $u\le e^{(1-g)\mathsf L_L}$, at least $M+2$ of these batches have a leader
+with $N_{\hat c_{j-1}}(t_{j-1})\ge u$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:W, lem:lowmass, lem:levelC, flem:goodhigh-run, def:water, def:high}
+Take the water level $\Lambda_j=\min(\min_cJ_{j-1}(c,t_j+1),\,y_{j-1}\log t_{j-1})/y_{j-1}$, finite and
+non-negative. An arm pulled in batch $j$ is pulled at some round of it, so (W2) at that round
+(Lemma~\ref{lem:W}(i)) and $N_c(t_{j-1})\le t_{j-1}$ give $\log N_c(t_{j-1})\le\Lambda_j$; then
+Lemma~\ref{lem:lowmass} and the abstract Lemma~\ref{lem:levelC}, whose rank does not depend on
+$\Lambda$. A batch with $\Lambda_j\ge(1-g)\mathsf L_L$ is high for every arm. The second claim is
+Lemma~\ref{flem:goodhigh-run} with $m'=M+K+2$.
+\end{proof}
+
+\begin{lemma}[the decomposition when $x=1$, abstract form]\label{flem:decompC-abstract}
+\lean{Incognita.BatchedBandits.le_add_sum_of_classes, Incognita.BatchedBandits.sum_Ioc_sub_pred, Incognita.BatchedBandits.le_add_div_add_mul_of_le_add_div, Incognita.BatchedBandits.le_mul_of_le_add_div_sq}
+\uses{}
+Let $(N_j)$ be a nondecreasing sequence of integers, $1\le j_0\le L$, and let every $j\in(j_0,L]$
+be bad, good, other or ambiguous, with $n_j=N_j-N_{j-1}\le B_j$ if bad, $N_j\le M$ if good and
+$n_j>0$, $N_j\le CN_{j-1}$ and $Q(N_{j-1})$ if other and $n_j>0$, and $n_j\le c_j$ if ambiguous
+($B,c,M,C\ge0$). Then
+\[
+N_L\le N_{j_0}+M+\sum_{j_0<j\le L}B_j\mathbf 1(\text{bad}_j)
++C\sum_{2\le j\le L}N_{j-1}\mathbf 1(Q(N_{j-1}),\,n_j>0)+\sum_{j_0<j\le L}c_j\mathbf 1(\text{amb}_j).
+\]
+The bounds of the two classes: $N\le K+(1+\omega)y\mathsf L_j/D$ with $D\ge D'$, $(1+\omega)y\le1+\varepsilon$, $\mathsf L_j\le\mathsf L_L$ and
+$(1+\varepsilon)/D'\le1/\Delta+C_1\varepsilon$ gives $N\le K+\mathsf L_L/\Delta+C_1\varepsilon\mathsf L_L$; $N\le K+16\bar y\mathsf L_j/\varepsilon^2$ with
+$(1-\delta)\mathsf L_j\le(\kappa+1)N'$, $N'\ge1$, gives $N\le C_\varepsilon N'$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:distinct}
+Steps~1--4 of the paper's proof of Lemma~\ref{lem:decompC}: telescoping, one bound per class, and
+Lemma~\ref{lem:distinct}(ii) for the good increments.
+\end{proof}
+
+\begin{lemma}[shifting the level of $\Kinf$, primal form]\label{flem:kinf-shift}
+\lean{Incognita.BatchedBandits.dInf_unitLaws_le_add, Incognita.BatchedBandits.dInf_unitLaws_sub_le_of_le, Incognita.BatchedBandits.dInf_mono, Incognita.BatchedBandits.dInf_unitLaws_ne_top, Incognita.klDiv_smul_add_smul_le_add, Incognita.klDiv_le_add_ofReal_neg_log_of_smul_le}
+\uses{def:kinf}
+For probability measures $P,Q,Q'$ and $c>0$ with $cQ\le Q'$, $\KL(P,Q')\le\KL(P,Q)-\log c$; in particular, for
+$\rho$ a probability measure and $u\in[0,1)$, $\KL(P,(1-u)Q+u\rho)\le\KL(P,Q)-\log(1-u)$. Hence, for a law $P$ on
+$[0,1]$, $\varepsilon>0$ and $\mu<1$ (the paper's $\varepsilon\le\mu$ is not needed: $\Kinf$ is defined, and $0$, below the
+mean of $P$),
+$\Kinf(P,\mu)\le\Kinf(P,\mu-\varepsilon)+\varepsilon/(1-\mu)$ (Lemma~\ref{lem:kinf}(v) for every law, with the primal
+formula of the frozen statements), and $\Kinf(P,\cdot)$ is non-decreasing. Moreover $\Kinf(P,\mu)<\infty$ for every $\mu<1$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:kinf, lem:kinf}
+Finiteness: if $\mu$ is below the mean $p$ of $P$, $P$ is a competitor and $\Kinf(P,\mu)=0$; otherwise the competitors
+$(1-u)P+u\delta_1$ bound it by $\log\frac{1-p}{1-\mu}\le\kappa(\mu)$, as in Lemma~\ref{lem:kinf}(i). The mixture dominates $(1-u)Q$, so $dQ/d((1-u)Q+u\rho)\le1/(1-u)$ and, by the chain rule,
+$\log\frac{dP}{d((1-u)Q+u\rho)}\le\log\frac{dP}{dQ}-\log(1-u)$ $P$-almost everywhere. For the shift, a competitor
+$Q$ at the level $\mu-\varepsilon$ gives the competitor $(1-v)Q+v\delta_1$ at the level $\mu$,
+$v=\varepsilon/(1-\mu+\varepsilon)$, and $-\log(1-v)=\log(1+\frac{\varepsilon}{1-\mu})\le\frac{\varepsilon}{1-\mu}$.
+\end{proof}
+
+\begin{lemma}[the final constant when $x=1$]\label{flem:constC-b}
+\lean{Incognita.BatchedBandits.dInf_sub_shift_bounds_of_gap_pos, Incognita.BatchedBandits.div_two_le_and_one_add_div_le}
+\uses{def:constC, def:model, def:kinf}
+For $\nu\in\cP$ and $a$ sub-optimal, with $\Delta=\Kinf(\nu_a,\mathbf m^\star)$, $c^\star=\frac{2-\mathbf m^\star}{1-\mathbf m^\star}$ and
+$D'_\varepsilon=\Kinf(\nu_a,\mathbf m^\star-2\varepsilon)-\varepsilon$: $\Delta\ge2(\mathbf m^\star-\mathbf m_a)^2>0$, and every
+$\varepsilon\in(0,1]$ with $\varepsilon\le\Delta/(4c^\star)$ has
+$D'_\varepsilon\ge\Delta-2c^\star\varepsilon\ge\Delta/2\ge\varepsilon^2/8$ and
+$(1+\varepsilon)/D'_\varepsilon\le1/\Delta+(2/\Delta+4c^\star/\Delta^2)\varepsilon$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:kinf-shift, def:constC, def:kinf}
+The paper's proof of Lemma~\ref{lem:constC}(b), with Lemma~\ref{flem:kinf-shift} at $\mu=\mathbf m^\star$ and the shift
+$2\varepsilon$; the lower bound on $\Delta$ is the Pinsker bound $\mathrm{kl}(p,\mu)\ge2(\mu-p)^2$.
+\end{proof}
+
+\begin{lemma}[the estimates of $\Kinf(\nu_a,\mathbf m^\star)$ when $x>1$]\label{flem:constA-d}
+\lean{Incognita.BatchedBandits.dInf_shift_bounds_of_gap_pos}
+\uses{def:constA, def:model, def:kinf}
+For $\nu\in\cP$, $a$ sub-optimal, $\Delta=\Kinf(\nu_a,\mathbf m^\star)$, $c^\star=\frac{2-\mathbf m^\star}{1-\mathbf m^\star}$, a margin
+$\omega\in(0,1]$ and $\varepsilon>0$ with $2\varepsilon\le1-\mathbf m^\star$ and $\varepsilon\le\omega\Delta/(16c^\star)$:
+$D_\varepsilon\ge\Delta-2c^\star\varepsilon\ge\frac78\Delta$, $1/D_\varepsilon\le1/\Delta+3c^\star\varepsilon/\Delta^2$,
+$K^+_\varepsilon\le\Delta+2c^\star\varepsilon$ and $(1+\omega)D_\varepsilon\ge K^+_\varepsilon$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:kinf-shift, def:constA, def:kinf}
+The paper's proof of Lemma~\ref{lem:constA}(d), with Lemma~\ref{flem:kinf-shift} at $\mathbf m^\star$ (shift $2\varepsilon$) and at
+$\mathbf m^\star+\varepsilon$ (shift $\varepsilon$).
+\end{proof}
+
+\begin{lemma}[what ``$\ell$ large'' guarantees when $x=1$]\label{flem:constC-a}
+\lean{Incognita.BatchedBandits.mul_div_two_mul_sq_bounds, Incognita.BatchedBandits.log_le_sqrt, Incognita.BatchedBandits.div_six_mul_bounds, Incognita.BatchedBandits.le_inv_pow_max_ceil_log_div_log}
+\uses{def:constC}
+Let $\delta\in(0,\frac12]$, $\eta>0$, $\varepsilon\in(0,1)$, $\kappa>0$, $w_0\ge0$, an integer $M$ with
+$(1-\delta)^{-M}\ge(1+2\eta)\kappa/(2\varepsilon^2)$, $1+\eta\le(1+2\eta)(1-2\delta)$, and $y$ with $y\ge4/\delta^2$,
+$y\ge\frac2\delta\log\frac{1+\eta}{2\varepsilon^2}$, $y\ge w_0\kappa/\delta$, $y\ge2w_0$. With $u=(1+\eta)y/(2\varepsilon^2)$:
+$1\le u\le e^{(1-\delta)y}$, $(1-\delta)y-\log u\ge(1-2\delta)y>0$, $(1-\delta)^{-M}(1-2\delta)y/\kappa\ge u$,
+$w_0\kappa\le\delta y$ and $w_0\le\varepsilon u$. For $\eta>0$ and $\delta=\eta/(6(1+2\eta))$: $0<\delta<\frac1{12}$,
+$(1-\delta)(1-2\delta)\ge1-3\delta$ and $(1+2\eta)(1-4\delta)\ge1+\eta$; and
+$M=\max(1,\lceil\log X/\log\frac1{1-\delta}\rceil)$ has $(1-\delta)^{-M}\ge X$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:constC}
+The paper's proof of Lemma~\ref{lem:constC}(a), (c) (exponent) and (d): $\log y\le\sqrt y\le\frac\delta2y$ for
+$y\ge4/\delta^2$, so $\log u\le\delta y$.
+\end{proof}
+
+\begin{lemma}[the series of the consistency test]\label{flem:amb-series}
+\lean{Incognita.BatchedBandits.Grid.exists_sum_activated_le, Incognita.BatchedBandits.eventually_rpow_mul_exp_neg_le}
+\uses{def:hy, def:grid, def:hy-vocab}
+For $c,a>0$ and real $A,b$, eventually $y^Ae^{-cy^a/(\log y)^b}\le y^{-2}$. With the default $\vartheta$, if
+$f\ge0$ is bounded on $[1,\infty)$ and eventually at most $Cy^{-2}$, then the sums
+$\sum_{\ell\in S}f(\mathsf L_\ell)$ over the finite sets $S$ of activated batches with $t_\ell\ge e^e$ are bounded
+uniformly in $S$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:sparse, def:hy, def:grid}
+$(\log y)^{b+1}=o(y^a)$. For the sums, Lemma~\ref{lem:sparse} bounds them by $\sum_k(k+1)M_k$ with $M_k$ a bound
+of $f$ on $[2^k,2^{k+1})$: a constant on the first blocks and $C4^{-k}$ afterwards, and
+$(k+1)4^{-k}\le2^{-k}$. This is Step~7 of the paper's proof of Lemma~\ref{lem:amb}, for every function
+of the shape of its $f$.
+\end{proof}
+
+\begin{lemma}[the bounds $p_A$ and $\bar p_K$ of the consistency test]\label{flem:amb-bounds}
+\lean{Incognita.BatchedBandits.mul_exp_neg_div_one_sub_exp_neg_le, Incognita.BatchedBandits.one_add_ceil_mul_exp_neg_div_le, Incognita.BatchedBandits.min_div_two_le_one_sub_exp_neg, Incognita.BatchedBandits.min_div_mul_le_one_sub_exp_neg, Incognita.BatchedBandits.sub_log_le_mul_log, Incognita.BatchedBandits.one_add_ceil_le_mul_sq, Incognita.BatchedBandits.measure_exists_mem_le_pullCount_abs_sub_gt_le_mul_exp_neg_rpow, Incognita.BatchedBandits.measure_exists_mem_le_pullCount_pseudoKinf_lt_or_lt_le_mul_exp_neg, Incognita.BatchedBandits.Grid.eventually_measure_exists_mem_le_pullCount_abs_sub_gt_le, Incognita.BatchedBandits.Grid.eventually_measure_exists_mem_le_pullCount_pseudoKinf_lt_or_lt_le, Incognita.BatchedBandits.mul_exp_neg_le_mul_exp_neg_of_le}
+\uses{flem:controlC-run, flem:probasA-primal, flem:ranksC, def:amb, def:kinf, def:model, def:learner, def:grid, def:hy}
+(i) For $K\ge0$, $c_\zeta>0$, $y>0$, $\zeta=c_\zeta y^{-1/4}$ and $U\ge(y/4)^\beta$:
+$K\cdot2e^{-2\zeta^2(U/2)}/(1-e^{-2\zeta^2})\le p_A(y):=2K(1+\frac{\sqrt y}{2c_\zeta^2})\exp(-c_\zeta^24^{-\beta}y^{\beta-1/2})$.
+(ii) For $\Delta>0$, $\mu\in[0,1)$, $y\ge16$, $c_2>0$, $u\ge c_2y$, $\zeta'=\frac\Delta{32}y^{-1/4}$,
+$R'=\kappa(\mu)-\log(1-e^{-\zeta'/4})$, $\rho'=\zeta'^2/(2R'^2)$ and $n^{\mathrm g}=\lceil8/(\zeta'(1-e^{-\zeta'/4})(1-\mu))\rceil+1$:
+$(1+n^{\mathrm g})e^{-\rho'u}/(1-e^{-\rho'})\le\bar p_K(y):=C_2(1+\frac1{c_1})\,y\log^2y\,\exp(-\frac{c_1c_2\sqrt y}{\log^2y})$, with
+$a_0=\min(\frac\Delta{128},1)$, $A_1=\frac14+\frac{\kappa(\mu)+\log(2/a_0)}{\log16}$, $c_1=\frac{\Delta^2}{2048A_1^2}$, $C_2=3+\frac{512}{\Delta a_0(1-\mu)}$.
+(iii) Hence, for every learner on $\nu\in\cP$: the trace of $\mathsf{Acc}_\ell^c$ at a set $T$ of cutoffs (some arm $c$ and
+$s\in T$ with $N_c(s)\ge U/2$ and $|\hat{\mathbf m}_c(s)-\mathbf m_c|>\zeta$) has probability at most $p_A(y)$; and
+the trace of $\mathsf{KC}_\ell^c$ at a finite set $T$ (at the threshold $u$ and the accuracy $\zeta'$) has
+probability at most $|T|\,\bar p_K(y)$.
+(iv) For $P_0,P_1\ge0$ and $q>0$, $\pi(y)=(P_0+P_1(1+(P_2y)^4))e^{-qy}$ is nonincreasing on $[4/q,\infty)$ (condition (f) of
+Definition~\ref{def:amb}, with $q=1+\eta$).
+\end{lemma}
+
+\begin{proof}
+\uses{flem:controlC-run, flem:probasA-primal, flem:ranksC, def:amb}
+Steps~5 and~6 of the paper's proof of Lemma~\ref{lem:amb}: $\frac1{1-e^{-v}}\le1+\frac1v$; $1-e^{-v}\ge\frac{\min(v,1)}2$, so
+$1-e^{-\zeta'/4}\ge\frac{a_0}2y^{-1/4}$; then $R'\le A_1\log y$, $\rho'\ge c_1y^{-1/2}/\log^2y$, $1+n^{\mathrm g}\le C_2\sqrt y$ and
+$\rho'u\ge c_1c_2\sqrt y/\log^2y$. (iii) is (i) and (ii) applied to the bounds of Lemmas~\ref{flem:controlC-run}(a) at
+$u=U/2$ and~\ref{flem:probasA-primal}. With $y=\mathsf L_\ell$, $U=U_{\ell-1}$, $u=n_\ell$, $\mu=\mathbf m^\star$, $\Delta=\Kinf(\nu_a,\mathbf m^\star)$ and
+$T=\{t_{\ell-1},t_\ell\}$ these are the paper's bounds on $\PP(\mathsf{Acc}_\ell^c)$ and $\PP(\mathsf{KC}_\ell^c)$, the latter with a
+factor $2$. Along a grid with $x_\ell\to1$ and the default $\gamma$, Lemma~\ref{flem:ranksC} gives, for every large $\ell$,
+$\gamma_\ell=\mathsf L_\ell^{-1/4}$ and $U_{\ell-1}\ge(\mathsf L_\ell/4)^\beta$: so (iii) holds at $y=\mathsf L_\ell$, $\zeta=c_\zeta\gamma_\ell$ and
+$\zeta'=\gamma_\ell\Delta/32$, for every count threshold $u_\ell\ge c_2\mathsf L_\ell$. (iv) For $4/q\le y\le y'$ and $t=y'/y$,
+the prefactor grows at most by $t^4$, and $4\log t\le4(t-1)\le qy(t-1)=q(y'-y)$.
+\end{proof}
+
+\begin{lemma}[the series of the consistency test, for the paper's $f$]\label{flem:amb-series-f}
+\lean{Incognita.BatchedBandits.Grid.exists_sum_activated_rpow_add_mul_exp_neg_le, Incognita.BatchedBandits.rpow_add_mul_sum_exp_neg_le, Incognita.BatchedBandits.exists_rpow_mul_exp_neg_le}
+\uses{flem:amb-series, flem:amb-bounds, def:hy, def:grid, def:amb}
+With the default $\vartheta$, let $\beta>\frac12$, $k_0,k_1,P_0,P_1,K,D\ge0$, $q,c,c_3>0$, and
+$f(y)=\mathfrak c(y)\big(2\pi(y)+p_A(y)+\bar p_K(y)\big)$ for $y\ge16$, $f(y)=0$ below, where $\mathfrak c(y)=y^\beta+k_0+k_1y$,
+$\pi(y)=(P_0+P_1(1+(P_2y)^4))e^{-qy}$, $p_A(y)=2K(1+\frac{\sqrt y}{2c^2})\exp(-c^24^{-\beta}y^{\beta-1/2})$ and
+$\bar p_K(y)=Dy\log^2y\exp(-c_3\sqrt y/\log^2y)$. Then the sums $\sum_{\ell\in S}f(\mathsf L_\ell)$ over the finite sets $S$ of
+activated batches with $t_\ell\ge e^e$ are bounded uniformly in $S$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:amb-series}
+For $y\ge1$ and $m=\max(\beta,1)$, $f(y)$ is at most a combination with nonnegative coefficients of
+$y^{m+4}e^{-qy}$, $y^{m+1}\exp(-c^24^{-\beta}y^{\beta-1/2})$ and $y^{m+2}\exp(-c_3\sqrt y/\log^2y)$ ($\sqrt y\le y$, $\log^2y\le y$).
+Each is bounded on $[1,\infty)$ (the exponential is at most $1$) and at most $y^{-2}$ beyond some $y_0$ (Lemma~\ref{flem:amb-series}), so
+Lemma~\ref{flem:amb-series} applies to $f$. With $k_0=1+K$, $k_1=16\bar y/\varepsilon^2$, $P_0=2K/(1-e^{-2\varepsilon^2})$,
+$P_1=2C_\eta$, $P_2=(1+\eta)/(2\varepsilon^2)$, $q=1+\eta$, $c=c_\zeta$, $D=2C_2(1+1/c_1)$ and $c_3=c_1c_2$, this is Step~7 of the
+paper's proof of Lemma~\ref{lem:amb}: once $c_\ell\,\PP(E^{\mathrm{amb}}_\ell(\varepsilon))\le f(\mathsf L_\ell)$, $C_4(\varepsilon)<\infty$.
+\end{proof}
+
+\begin{lemma}[the primal and dual formulas of $\Kinf$]\label{flem:primal}
+\lean{Incognita.BatchedBandits.dInf_unitLaws_eq_iSup_dual, Incognita.BatchedBandits.exists_dInf_sub_lt_dual, Incognita.BatchedBandits.ofReal_dual_le_dInf, Incognita.BatchedBandits.exists_isMaxOn_dual, Incognita.BatchedBandits.dual_variation, Incognita.BatchedBandits.exists_unitLaws_integral_id_eq_klDiv_le, Incognita.BatchedBandits.sub_two_mul_sq_le_log_one_add, Incognita.BatchedBandits.integrable_of_abs_le_of_mem_unitLaws, Incognita.BatchedBandits.one_sub_mul_sub_bounds, Incognita.BatchedBandits.abs_log_one_sub_mul_sub_le, Incognita.BatchedBandits.integrable_log_one_sub_mul_sub, Incognita.BatchedBandits.integrable_sub_div_one_sub_mul_sub, Incognita.ae_llr_le_neg_log_of_withDensity_le}
+\uses{def:kinf}
+Let $P$ be a law on $[0,1]$, $\mu\in[0,1)$, $\varphi(\lambda)=\E_P[\log(1-\lambda(X-\mu))]$ and
+$D_\lambda=\E_P[(X-\mu)/(1-\lambda(X-\mu))]$ for $\lambda\in[0,\frac1{1-\mu})$. Then:
+(i) for $|h|\le c_0/2$, $c_0=1-\lambda(1-\mu)$, $-hD_\lambda-2(h/c_0)^2\le\varphi(\lambda+h)-\varphi(\lambda)\le-hD_\lambda$;
+(ii) if $D_\lambda\le0$, the law $Q=g_\lambda P+(-\lambda D_\lambda)\delta_1$, $g_\lambda(x)=1/(1-\lambda(x-\mu))$, is a law on
+$[0,1]$ with mean $\mu+D_\lambda(1-\lambda(1-\mu))$ and $\KL(P,Q)\le\varphi(\lambda)$;
+(iii) every $\varepsilon>0$ has some $\lambda\in[0,\frac1{1-\mu})$ with $\varphi(\lambda)>\Kinf(P,\mu)-\varepsilon$;
+(iv) $\varphi(\lambda)\le\Kinf(P,\mu)$ for every $\lambda\ge0$ with $\lambda(1-\mu)<1$ (every level $\mu$);
+(v) hence $\Kinf(P,\mu)=\sup_{\lambda\in[0,\frac1{1-\mu})}\varphi(\lambda)$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:kinf-shift, def:kinf}
+(i) $1-(\lambda+h)(x-\mu)=(1-\lambda(x-\mu))(1+u)$ with $u=-h(x-\mu)g_\lambda(x)$, $|u|\le1/2$, and
+$u-2u^2\le\log(1+u)\le u$. (ii) The law $Q$ is the minimiser of the proof of [HT10, Theorem~8] (the tilt of $P$
+by $g_\lambda$, with an atom at $1$): $\E_P[g_\lambda]=1+\lambda D_\lambda$, so $Q$ is a probability; $dP/dQ\le1/g_\lambda$. (iii) If
+$\mathbf m(P)>\mu$, $\Kinf=0=\varphi(0)$. Otherwise take $b$ with $1-b(1-\mu)=s$ small and a maximiser $\lambda$ of the
+continuous $\varphi$ on $[0,b]$: by (i), $D_\lambda\le0$, and $D_\lambda=0$ if $\lambda<b$; with $D_\lambda\ge-\mu$, the mean of $Q$
+of (ii) is at least $\mu-s$, and the mixture $(1-v)Q+v\delta_1$, $v=2s/(1-\mu)$, has mean $>\mu$ and
+$\KL\le\varphi(\lambda)-\log(1-v)\le\varphi(\lambda)+2v$ (Lemma~\ref{flem:kinf-shift}). This follows the construction
+of the proof of [HT10, Theorem~8], with the first-order conditions taken from (i); it is the direction of
+Lemma~\ref{lem:primal} that the upper bound needs: an $\varepsilon$-optimal $\lambda$ of the dual formula, against the
+primal formula of the frozen statements. (iv) The variational formula
+$\KL(P,Q)\ge\E_P[f]-\E_Q[e^f-1]$ with $f=\log(1-\lambda(x-\mu))$ on $[0,1]$, for which
+$\E_Q[e^f-1]=-\lambda(\mathbf m(Q)-\mu)\le0$ when $\mathbf m(Q)>\mu$. (v) From (iii), (iv) and
+$\Kinf(P,\mu)<\infty$ (Lemma~\ref{flem:kinf-shift}).
+\end{proof}
+
+\begin{lemma}[the deviations of the empirical $\Kinf$ at the primal levels]\label{flem:probasA-primal}
+\lean{Incognita.BatchedBandits.measure_le_pullCount_pseudoKinf_lt_dInf_sub_le, Incognita.BatchedBandits.measure_le_pullCount_dInf_add_lt_pseudoKinf_le, Incognita.BatchedBandits.measure_exists_mem_le_pullCount_pseudoKinf_lt_or_lt_le}
+\uses{def:evA, def:amb, def:stacks, def:model, def:kinf, def:learner}
+For every learner on $\nu\in\cP$, a cutoff $t$, an arm $a$, $\mu\in[0,1)$, $\varepsilon'>0$ and $u>0$: the probability that
+$N_a(t)\ge u$ and $\Kinf(\hat\nu_a(t),\mu)<\Kinf(\nu_a,\mu)-\varepsilon'$ is at most $e^{-\rho'u}/(1-e^{-\rho'})$, and
+the probability that $N_a(t)\ge u$ and $\Kinf(\hat\nu_a(t),\mu)>\Kinf(\nu_a,\mu)+\varepsilon'$ is at most
+$n_ge^{-\rho'u}/(1-e^{-\rho'})$, with the constants of Lemmas~\ref{lem:lowerdev} and~\ref{lem:upperdev}. For a finite set $T$ of
+cutoffs, the trace of $\mathsf{KC}^c$ (some $s\in T$ with $N_a(s)\ge u$ and $|\Kinf(\hat\nu_a(s),\mu)-\Kinf(\nu_a,\mu)|>\varepsilon'$) has
+probability at most $|T|$ times the sum of the two bounds.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:primal, flem:kinf-shift, lem:lowerdev, lem:upperdev, lem:probasA}
+The bounds of Lemma~\ref{lem:probasA}(c) for its traces hold at a dual level $A$ of one $\lambda$ and at any upper
+bound $K^+$ of the dual formula; Lemma~\ref{flem:primal} gives an $\varepsilon'/4$-optimal $\lambda$ with
+$A-3\varepsilon'/4>\Kinf(\nu_a,\mu)-\varepsilon'$, and the bound $K^+=\Kinf(\nu_a,\mu)$, a real
+number since $\Kinf(\nu_a,\mu)<\infty$ for $\mu<1$ (Lemma~\ref{flem:kinf-shift}).
+\end{proof}
+
+\begin{lemma}[the tilts of the sub-optimal arms]\label{flem:tilts-all}
+\lean{Incognita.BatchedBandits.exists_tilt_moment_le_forall}
+\uses{def:constA, def:model}
+For $\nu\in\cP$ there are tilts $\theta_c>0$ of the sub-optimal arms, $c_\theta>0$ and $\varepsilon_\theta>0$ such that every
+sub-optimal $c$, $\varepsilon\le\varepsilon_\theta$, $r\le\mathbf m^\star+\varepsilon$ and $\eta\ge0$ with $2\eta\kappa(r)\le c_\theta$ satisfy the
+moment conditions of Lemma~\ref{lem:pair} for $\nu_c$ at the level $\mathbf m^\star-3\varepsilon$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:theta, lem:constA, def:constA}
+Lemma~\ref{lem:theta} for each sub-optimal arm (Lemma~\ref{lem:constA}(c)), and the minima over the finitely
+many arms of Definition~\ref{def:constA}.
+\end{proof}
+
+\begin{lemma}[the conditions of the rank $\ell_4$]\label{flem:ranksC}
+\lean{Incognita.BatchedBandits.Grid.eventually_netSize_bounds, Incognita.BatchedBandits.Grid.eventually_mul_t_le_imedEnd_sub, Incognita.BatchedBandits.Grid.eventually_mul_logEnd_le_netSize, Incognita.BatchedBandits.Grid.eventually_log_le_hyGamma_mul, Incognita.BatchedBandits.Grid.eventually_le_hyGamma_mul_logEnd, Incognita.BatchedBandits.Grid.eventually_le_hyGamma_mul_netSize, Incognita.BatchedBandits.Grid.eventually_logEnd_le_four_mul, Incognita.BatchedBandits.Grid.eventually_div_four_rpow_le_netSize, Incognita.BatchedBandits.Grid.eventually_hyGamma_eq, Incognita.BatchedBandits.Grid.netSize_succ_le, Incognita.BatchedBandits.Grid.logEnd_monotone}
+\uses{def:amb, def:water, def:grid, def:hy, def:ass-x}
+On a grid with $x_\ell\to1$, for $\beta>1$, the default $\gamma$ and constants $c,c'>0$, $C,C',K'$, $\delta<1$, every
+large $\ell$ has: $\gamma_\ell=\mathsf L_\ell^{-1/4}$; $C\mathsf L_\ell\le U_\ell$; $C\log(c\mathsf L_\ell)\le\gamma_\ell c'c\mathsf L_\ell$ and
+$e\le c\mathsf L_\ell$; $C\le\gamma_\ell c\mathsf L_\ell$ and $C\le\gamma_\ell cU_\ell$; $\mathsf L_\ell\le4\mathsf L_{\ell-2}$, hence $U_{\ell-1}\ge(\mathsf L_\ell/4)^\beta$; and
+$U_{\ell-1}\le2e^{(1-\delta)\mathsf L_\ell}$, $C\mathsf L_\ell\le U_{\ell-1}$, $C'\le U_{\ell-1}$, $K'U_{\ell-1}\le t_{\ell-1}$. These are the
+conditions (a)--(e) of Definition~\ref{def:amb} (with $n_\ell=c\mathsf L_\ell$). With the default $\vartheta$, every large $\ell$
+also has $s_\ell-t_\ell\ge Kt_\ell$ (the third condition defining $\ell_W$ in Definition~\ref{def:water}).
+\end{lemma}
+
+\begin{proof}
+\uses{def:amb, def:grid, def:hy}
+$U_\ell=\lceil\mathsf L_{\ell-1}^\beta\rceil$ is a power of $\mathsf L$, $t_\ell=e^{\mathsf L_\ell}$, $\log=o(\mathsf L^{3/4})$, and
+$\mathsf L_\ell=x_\ell x_{\ell-1}\mathsf L_{\ell-2}$ with $x\le2$ eventually; $t_\ell^{\vartheta_\ell}=e^{\mathsf L_\ell/\log\mathsf L_\ell}\to\infty$.
+\end{proof}
+
 \begin{lemma}[the upper bound gives Theorem~\ref{thm:upper}]\label{flem:upper-assembly}
-\lean{Incognita.BatchedBandits.isBigO_log_t_of_eventually_div_lt, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_isBigO, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_upper, Incognita.BatchedBandits.tendsto_div_log_t_of_upper, Incognita.BatchedBandits.tendsto_regret_div_log_t_of_tendsto, Incognita.BatchedBandits.hy_isConsistent_of_upper, Incognita.BatchedBandits.hy_tendsto_count_of_upper, Incognita.BatchedBandits.hy_tendsto_regret_of_upper}
+\lean{Incognita.BatchedBandits.isBigO_log_t_of_eventually_div_lt, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_isBigO, Incognita.BatchedBandits.isConsistentAtBatchEnds_of_upper, Incognita.BatchedBandits.tendsto_div_log_t_of_upper, Incognita.BatchedBandits.tendsto_regret_div_log_t_of_tendsto, Incognita.BatchedBandits.hy_isConsistent_of_upper, Incognita.BatchedBandits.hy_tendsto_count_of_upper, Incognita.BatchedBandits.hy_tendsto_regret_of_upper, Incognita.BatchedBandits.eventually_div_lt_of_forall_le_add}
 \uses{thm:lower, def:ass-x, def:model, def:learner, def:grid, def:kinf, def:hy}
 Let the grid be convergent with limit $x\ge1$ and let a batched learner satisfy
 $\limsup_\ell\E_\nu[N_c(t_\ell)]/\log t_\ell\le x^2/\Kinf(\nu_c,\mathbf m^\star)$ for every $\nu\in\cP$
@@ -487,7 +929,8 @@ and every sub-optimal arm $c$. Then it is consistent on $\cP$, and for every $\n
 sub-optimal arm $a$, $\E_\nu[N_a(t_\ell)]/\log t_\ell\to x^2/\Kinf(\nu_a,\mathbf m^\star)$ and
 $\mathfrak R(t_\ell)/\log t_\ell\to C_x$. In particular, for HY (which is batched on every grid,
 Lemma~\ref{flem:hy-congr}), this $\limsup$ bound gives the three claims of
-Theorem~\ref{thm:upper}.
+Theorem~\ref{thm:upper}. A sequence with $u_\ell\le A\mathsf L_\ell+C\varepsilon\mathsf L_\ell+R(\varepsilon)$ eventually, for every
+$\varepsilon\in(0,\varepsilon_0]$ (the form of Proposition~\ref{prop:fixedC}), has $\limsup_\ell u_\ell/\mathsf L_\ell\le A$.
 \end{lemma}
 
 \begin{proof}

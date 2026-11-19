@@ -27,6 +27,8 @@ lower bound.
 * `tendsto_regret_div_log_t_of_tendsto`: the limits of the counts give the limit of the regret.
 * `hy_isConsistent_of_upper`, `hy_tendsto_count_of_upper`, `hy_tendsto_regret_of_upper`: the three
   frozen statements of Theorem `thm:upper` for HY, from the `limsup` bound for HY.
+* `eventually_div_lt_of_forall_le_add`: the passage from the bounds at a fixed accuracy
+  (`E[N_a(t_L)] ≤ A L_L + C ε L_L + R(ε)`, Proposition `prop:fixedC`) to the `limsup` bound.
 -/
 
 @[expose] public section
@@ -133,6 +135,36 @@ lemma tendsto_regret_div_log_t_of_tendsto [Fintype α] (g : Grid K)
     simp [this]
   rw [h0, add_zero]
   exact Finset.sum_congr rfl fun c _ ↦ by ring
+
+/-- [INC-P000, proof of Theorem `thm:upper`, from Proposition `prop:fixedC`] Let `L_ℓ → ∞` and a
+sequence `u` with, for every accuracy `ε ∈ (0, ε₀]`, a constant `R(ε)` such that eventually
+`u_ℓ ≤ A L_ℓ + C ε L_ℓ + R(ε)` (`C ≥ 0`). Then `limsup u_ℓ / L_ℓ ≤ A`, in the form
+`∀ c > A, ∀ᶠ ℓ, u_ℓ / L_ℓ < c`: take `ε` with `C ε < (c - A)/2`, and `R(ε)/L_ℓ → 0`. -/
+lemma eventually_div_lt_of_forall_le_add {L u : ℕ → ℝ} (hL : Tendsto L atTop atTop) {A C ε₀ : ℝ}
+    (hC : 0 ≤ C) (hε₀ : 0 < ε₀)
+    (h : ∀ ε, 0 < ε → ε ≤ ε₀ → ∃ R : ℝ, ∀ᶠ ℓ in atTop, u ℓ ≤ A * L ℓ + C * ε * L ℓ + R) :
+    ∀ c > A, ∀ᶠ ℓ in atTop, u ℓ / L ℓ < c := by
+  intro c hc
+  set ε := min ε₀ ((c - A) / (4 * (C + 1))) with hε
+  have hε0 : 0 < ε := lt_min hε₀ (div_pos (by linarith) (by positivity))
+  have hCε : C * ε < (c - A) / 2 := by
+    have h1 : ε ≤ (c - A) / (4 * (C + 1)) := min_le_right _ _
+    have h2 : C * ε ≤ C * ((c - A) / (4 * (C + 1))) := mul_le_mul_of_nonneg_left h1 hC
+    have h3 : C * ((c - A) / (4 * (C + 1))) < (c - A) / 2 := by
+      rw [mul_div_assoc', div_lt_div_iff₀ (by positivity) (by norm_num)]
+      nlinarith
+    linarith
+  obtain ⟨R, hR⟩ := h ε hε0 (min_le_left _ _)
+  have hR' : ∀ᶠ ℓ in atTop, |R| / ((c - A) / 4) < L ℓ := hL.eventually_gt_atTop _
+  filter_upwards [hR, hR', hL.eventually_gt_atTop 0] with ℓ hℓ hℓR hℓ0
+  rw [div_lt_iff₀ hℓ0]
+  have hcA : 0 < (c - A) / 4 := by linarith
+  have hRL : |R| < (c - A) / 4 * L ℓ := by
+    rw [div_lt_iff₀ hcA] at hℓR
+    linarith
+  have hRle : R ≤ |R| := le_abs_self R
+  have hCL : C * ε * L ℓ ≤ (c - A) / 2 * L ℓ := mul_le_mul_of_nonneg_right hCε.le hℓ0.le
+  nlinarith
 
 /-! ### The three statements of Theorem `thm:upper` for HY, from the `limsup` bound -/
 

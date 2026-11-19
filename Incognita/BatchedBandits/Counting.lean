@@ -24,6 +24,9 @@ by `ℕ`, with no grid unless one is needed).
 * `le_sum_mul_ite_exists`: Lemma `lem:sums`(v) (layer cake).
 * `sum_ceil_sub_mul_le`: Lemma `lem:sums`(iv) (counting), with the finite sum
   `∑_{n < ⌈λ_j⌉} g(n^(1/β))` in place of the series.
+* `le_add_sum_of_classes` (with `sum_Ioc_sub_pred`, telescoping): Lemma `lem:decompC`, Steps 1–4,
+  in abstract form; `le_add_div_add_mul_of_le_add_div` and `le_mul_of_le_add_div_sq`: the bounds
+  of its good class (Step 3) and of its class `𝒪` (Step 4).
 -/
 
 @[expose] public section
@@ -519,5 +522,159 @@ lemma sum_ceil_sub_mul_le {lam : ℕ → ℝ} {i₀ j : ℕ} (hij : i₀ ≤ j) 
       refine Finset.sum_Ico_consecutive _ (Nat.zero_le _) ?_
       exact Nat.ceil_le_ceil (hl ⟨by omega, by omega⟩ ⟨by omega, hmj⟩ (by omega))
   exact htile j hij le_rfl
+
+/-- Telescoping over `(j₀, L]` in an additive commutative group:
+`∑_(j₀ < j ≤ L) (f_j - f_(j-1)) = f_L - f_(j₀)`. -/
+lemma sum_Ioc_sub_pred {M : Type*} [AddCommGroup M] {f : ℕ → M} {j₀ L : ℕ} (h : j₀ ≤ L) :
+    ∑ j ∈ Finset.Ioc j₀ L, (f j - f (j - 1)) = f L - f j₀ := by
+  induction L, h using Nat.le_induction with
+  | base => simp
+  | succ L hL ih =>
+    rw [Finset.sum_Ioc_succ_top hL, ih, Nat.add_sub_cancel]
+    abel
+
+/-- [INC-P000, proof of Lemma `lem:decompC`, Steps 1–4, abstract form] Let `(N_j)` be a
+nondecreasing sequence of integers (the counts `N_a(t_j)`), `1 ≤ j₀ ≤ L`, and let every batch
+`j ∈ (j₀, L]` be in one of four classes, with increments `n_j = N_j - N_(j-1)`:
+* *bad* (the deviations `𝒟_j ∪ 𝒱⋆_j ∪ 𝒱_(a,j)`): `n_j ≤ B_j`;
+* *good* (`𝒢_j` with `a` rejected, Lemma `lem:pullsC`(ii)): if `a` is pulled, `N_j ≤ M`;
+* *other* (`𝒪_j` with `a` rejected, Lemmas `lem:pullsC`(ii), `lem:logcountC`): if `a` is pulled,
+  `N_j ≤ C N_(j-1)` and `Q(N_(j-1))` (the empirical divergence of `a` at `N_(j-1)` is low);
+* *ambiguous* (`a` ambiguous in an activated batch, Lemma `lem:pullsC`(iii)): `n_j ≤ c_j`.
+Then, for `M, C ≥ 0`, `B, c ≥ 0`,
+`N_L ≤ N_(j₀) + M + ∑_(j₀ < j ≤ L) B_j 1(bad_j) + C ∑_(2 ≤ j ≤ L) N_(j-1) 1(Q(N_(j-1)), n_j > 0)
+  + ∑_(j₀ < j ≤ L) c_j 1(amb_j)`:
+the good increments sum to at most `M` (Lemma `lem:distinct`(ii)), and the last sum of the other
+class is the one of Lemma `lem:controlC`(d) (`lintegral_sum_ite_pseudoKinf_lt_le`), at most
+`∑_n n 1(Q(n))` by Lemma `lem:distinct`(i). -/
+lemma le_add_sum_of_classes {N : ℕ → ℕ} (hN : Monotone N) {j₀ L : ℕ} (hj₀ : 1 ≤ j₀)
+    (hjL : j₀ ≤ L) (bad G O A Q : ℕ → Prop) [DecidablePred bad] [DecidablePred A]
+    [DecidablePred Q] {B c : ℕ → ℝ} {M C : ℝ} (hB0 : ∀ j, 0 ≤ B j)
+    (hc0 : ∀ j, 0 ≤ c j) (hM0 : 0 ≤ M) (hC0 : 0 ≤ C)
+    (hcover : ∀ j, j₀ < j → j ≤ L → bad j ∨ G j ∨ O j ∨ A j)
+    (hbad : ∀ j, j₀ < j → j ≤ L → bad j → (N j : ℝ) - N (j - 1) ≤ B j)
+    (hG : ∀ j, j₀ < j → j ≤ L → G j → N (j - 1) < N j → (N j : ℝ) ≤ M)
+    (hO : ∀ j, j₀ < j → j ≤ L → O j → N (j - 1) < N j → (N j : ℝ) ≤ C * N (j - 1) ∧ Q (N (j - 1)))
+    (hA : ∀ j, j₀ < j → j ≤ L → A j → (N j : ℝ) - N (j - 1) ≤ c j) :
+    (N L : ℝ) ≤ N j₀ + M + ∑ j ∈ Finset.Ioc j₀ L, (if bad j then B j else 0) +
+      C * ∑ j ∈ Finset.Ico 2 (L + 1),
+        (if Q (N (j - 1)) ∧ N (j - 1) < N j then (N (j - 1) : ℝ) else 0) +
+      ∑ j ∈ Finset.Ioc j₀ L, (if A j then c j else 0) := by
+  classical
+  set PG : ℕ → Prop := fun j ↦ j₀ < j ∧ ¬ bad j ∧ G j with hPG
+  set Ot : ℕ → ℝ := fun j ↦
+    if Q (N (j - 1)) ∧ N (j - 1) < N j then (N (j - 1) : ℝ) else 0 with hOt
+  have hOt0 : ∀ j, 0 ≤ Ot j := fun j ↦ by simp only [hOt]; split_ifs <;> positivity
+  have hmono : ∀ j, (N (j - 1) : ℝ) ≤ N j := fun j ↦ by exact_mod_cast hN (Nat.sub_le j 1)
+  -- the bound of one increment
+  have hterm : ∀ j ∈ Finset.Ioc j₀ L, (N j : ℝ) - N (j - 1) ≤
+      (if bad j then B j else 0) + (if PG j then ((N j - N (j - 1) : ℕ) : ℝ) else 0) +
+        C * Ot j + (if A j then c j else 0) := by
+    intro j hj
+    obtain ⟨hj1, hj2⟩ := Finset.mem_Ioc.mp hj
+    have hsub : ((N j - N (j - 1) : ℕ) : ℝ) = (N j : ℝ) - N (j - 1) :=
+      Nat.cast_sub (hN (Nat.sub_le j 1))
+    have hA0 : 0 ≤ (if A j then c j else 0) := by split_ifs <;> simp [hc0]
+    have hB0' : 0 ≤ (if bad j then B j else 0) := by split_ifs <;> simp [hB0]
+    have hPG0 : 0 ≤ (if PG j then ((N j - N (j - 1) : ℕ) : ℝ) else 0) := by
+      split_ifs <;> positivity
+    have hCO : 0 ≤ C * Ot j := mul_nonneg hC0 (hOt0 j)
+    by_cases hb : bad j
+    · rw [ite_eq_left hb]
+      linarith [hbad j hj1 hj2 hb]
+    by_cases hg : G j
+    · rw [ite_eq_left (show PG j from ⟨hj1, hb, hg⟩), hsub]
+      linarith
+    rcases (hcover j hj1 hj2).resolve_left hb |>.resolve_left hg with ho | ha
+    · by_cases hpull : N (j - 1) < N j
+      · obtain ⟨hle, hq⟩ := hO j hj1 hj2 ho hpull
+        have : Ot j = N (j - 1) := by simp only [hOt]; rw [ite_eq_left ⟨hq, hpull⟩]
+        rw [this]
+        have : (0 : ℝ) ≤ N (j - 1) := Nat.cast_nonneg _
+        linarith
+      · have : (N j : ℝ) = N (j - 1) := by
+          exact_mod_cast le_antisymm (not_lt.mp hpull) (hN (Nat.sub_le j 1))
+        linarith
+    · rw [ite_eq_left ha]
+      linarith [hA j hj1 hj2 ha]
+  -- sum over the batches
+  have htel := sum_Ioc_sub_pred (f := fun j ↦ (N j : ℝ)) hjL
+  have hsum := Finset.sum_le_sum hterm
+  rw [htel, Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_add_distrib] at hsum
+  -- the good increments: Lemma `lem:distinct`(ii)
+  have hgood : ∑ j ∈ Finset.Ioc j₀ L, (if PG j then ((N j - N (j - 1) : ℕ) : ℝ) else 0) ≤ M := by
+    have hsub : ∑ j ∈ Finset.Ioc j₀ L, (if PG j then ((N j - N (j - 1) : ℕ) : ℝ) else 0) =
+        ((∑ j ∈ Finset.Ico 2 (L + 1), (if PG j then N j - N (j - 1) else 0) : ℕ) : ℝ) := by
+      rw [Nat.cast_sum]
+      have hss : Finset.Ioc j₀ L ⊆ Finset.Ico 2 (L + 1) := fun j hj ↦
+        Finset.mem_Ico.mpr ⟨by have := (Finset.mem_Ioc.mp hj).1; omega,
+          by have := (Finset.mem_Ioc.mp hj).2; omega⟩
+      have h1 := Finset.sum_subset hss (f := fun j ↦
+        ((if PG j then N j - N (j - 1) else 0 : ℕ) : ℝ)) (fun j hj hjn ↦ by
+          have : ¬ PG j := fun hP ↦ hjn (Finset.mem_Ioc.mpr ⟨hP.1, by
+            have := (Finset.mem_Ico.mp hj).2; omega⟩)
+          simp only [this, ite_false, Nat.cast_zero])
+      rw [← h1]
+      refine Finset.sum_congr rfl fun j _ ↦ ?_
+      split_ifs <;> simp
+    rw [hsub]
+    have hle := sum_ite_sub_le_of_monotone hN PG (M := ⌊M⌋₊) L (fun j hj hP hpull ↦ by
+      obtain ⟨hj1, hb, hg⟩ := hP
+      exact Nat.le_floor (hG j hj1 (by have := (Finset.mem_Ico.mp hj).2; omega) hg hpull))
+    exact (Nat.cast_le.mpr hle).trans (Nat.floor_le hM0)
+  -- the other class: the sum over `(j₀, L]` is at most the sum over `[2, L]`
+  have hother : ∑ j ∈ Finset.Ioc j₀ L, C * Ot j ≤ C * ∑ j ∈ Finset.Ico 2 (L + 1), Ot j := by
+    rw [← Finset.mul_sum]
+    refine mul_le_mul_of_nonneg_left (Finset.sum_le_sum_of_subset_of_nonneg (fun j hj ↦ ?_)
+      fun j _ _ ↦ hOt0 j) hC0
+    exact Finset.mem_Ico.mpr ⟨by have := (Finset.mem_Ioc.mp hj).1; omega,
+      by have := (Finset.mem_Ioc.mp hj).2; omega⟩
+  simp only [hOt] at hother hsum ⊢
+  linarith
+
+/-- [INC-P000, proof of Lemma `lem:decompC`, Step 3, the main term] If `N ≤ K + (1 + ω) y L_j / D`
+(Lemma `lem:pullsC`(ii)) with `D ≥ D' > 0`, `(1 + ω) y ≤ 1 + ε`, `0 ≤ L_j ≤ L_L` and
+`(1 + ε)/D' ≤ 1/Δ + C₁ε` (Lemma `lem:constC`(b), `dInf_sub_shift_bounds_of_gap_pos`), then `N ≤ K +
+L_L/Δ + C₁ ε L_L`. -/
+lemma le_add_div_add_mul_of_le_add_div {N K ω y Lj LL D D' ε Δ C₁ : ℝ} (hN : N ≤ K +
+    (1 + ω) * y * Lj / D)
+    (hD' : 0 < D') (hDD : D' ≤ D) (hωy0 : 0 ≤ (1 + ω) * y) (hωy : (1 + ω) * y ≤ 1 + ε)
+    (hLj : 0 ≤ Lj) (hLL : Lj ≤ LL) (hC : (1 + ε) / D' ≤ 1 / Δ + C₁ * ε) :
+    N ≤ K + LL / Δ + C₁ * ε * LL := by
+  have hD : 0 < D := hD'.trans_le hDD
+  have hLL0 : 0 ≤ LL := hLj.trans hLL
+  have h1 : (1 + ω) * y * Lj / D ≤ (1 + ε) * LL / D' := by
+    rw [div_le_div_iff₀ hD hD']
+    have h2 : (1 + ω) * y * Lj ≤ (1 + ε) * LL := by
+      calc (1 + ω) * y * Lj ≤ (1 + ε) * Lj := mul_le_mul_of_nonneg_right hωy hLj
+        _ ≤ (1 + ε) * LL := mul_le_mul_of_nonneg_left hLL (by nlinarith)
+    have h3 : 0 ≤ (1 + ε) * LL := le_trans (mul_nonneg hωy0 hLj) h2
+    calc (1 + ω) * y * Lj * D' ≤ (1 + ε) * LL * D' := mul_le_mul_of_nonneg_right h2 hD'.le
+      _ ≤ (1 + ε) * LL * D := mul_le_mul_of_nonneg_left hDD h3
+  have h4 : (1 + ε) * LL / D' = (1 + ε) / D' * LL := by ring
+  have h5 : (1 + ε) / D' * LL ≤ (1 / Δ + C₁ * ε) * LL := mul_le_mul_of_nonneg_right hC hLL0
+  have h6 : (1 / Δ + C₁ * ε) * LL = LL / Δ + C₁ * ε * LL := by ring
+  linarith
+
+/-- [INC-P000, proof of Lemma `lem:decompC`, Step 4, the class `𝒪`] If `N ≤ K + 16 ȳ L_j / ε²`
+(Lemma `lem:pullsC`(ii) with `D ≥ ε²/8`, `1 + ω ≤ 2`, `y ≤ ȳ`), `N' ≥ 1` and
+`(1 - δ) L_j ≤ (κ + 1) N'` (Lemma `lem:logcountC`, `N' = N_a(t_(j-1))`), with `K, ȳ ≥ 0`,
+`κ ≥ 0`, `δ < 1` and `ε > 0`, then `N ≤ C_ε N'`, `C_ε = K + 16 ȳ (κ + 1)/((1 - δ) ε²)`. -/
+lemma le_mul_of_le_add_div_sq {N K yb Lj ε N' δ κ : ℝ} (hN : N ≤ K + 16 * yb * Lj / ε ^ 2)
+    (hK : 0 ≤ K) (hyb : 0 ≤ yb) (hε : 0 < ε) (hN' : 1 ≤ N') (hδ : δ < 1) (hκ : 0 ≤ κ)
+    (hlog : (1 - δ) * Lj ≤ (κ + 1) * N') :
+    N ≤ (K + 16 * yb * (κ + 1) / ((1 - δ) * ε ^ 2)) * N' := by
+  have h1δ : 0 < 1 - δ := by linarith
+  have hLj : Lj ≤ (κ + 1) * N' / (1 - δ) := by rw [le_div_iff₀ h1δ]; linarith
+  have h1 : 16 * yb * Lj / ε ^ 2 ≤ 16 * yb * (κ + 1) / ((1 - δ) * ε ^ 2) * N' := by
+    have h2 : 16 * yb * (κ + 1) / ((1 - δ) * ε ^ 2) * N' = 16 * yb * ((κ + 1) * N' / (1 - δ)) /
+        ε ^ 2 := by
+      field_simp
+    rw [h2]
+    gcongr
+  have h3 : K ≤ K * N' := le_mul_of_one_le_right hK hN'
+  calc N ≤ K + 16 * yb * Lj / ε ^ 2 := hN
+    _ ≤ K * N' + 16 * yb * (κ + 1) / ((1 - δ) * ε ^ 2) * N' := add_le_add h3 h1
+    _ = (K + 16 * yb * (κ + 1) / ((1 - δ) * ε ^ 2)) * N' := by ring
 
 end Incognita.BatchedBandits
