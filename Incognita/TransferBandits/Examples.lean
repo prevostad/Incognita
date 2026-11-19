@@ -6,6 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.TransferBandits.Consistency
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Group.Arithmetic
 
 /-! # Examples of size maps and transfer learners
 
@@ -63,12 +64,11 @@ noncomputable def sourceMean (s : Source α) (k : α) : ℝ :=
   (∑ j ∈ Finset.range (s.1 k), s.2 k j) / s.1 k
 
 omit [MeasurableSpace α] in
-lemma measurable_sourceMean [Finite α] (k : α) : Measurable fun s : Source α ↦ sourceMean s k := by
-  unfold sourceMean
-  refine measurable_from_prod_countable_right fun n ↦ ?_
-  simp only
-  exact (Finset.measurable_sum _ fun j _ ↦ (measurable_pi_apply j).comp
-    (measurable_pi_apply k)).div_const _
+/-- The source empirical mean of an arm is measurable (LML's `measurable_sum_range`). -/
+lemma measurable_sourceMean (k : α) : Measurable fun s : Source α ↦ sourceMean s k := by
+  have hn : Measurable fun s : Source α ↦ s.1 k := (measurable_pi_apply k).comp measurable_fst
+  exact (measurable_sum_range (fun j ↦ (measurable_pi_apply j).comp
+    ((measurable_pi_apply k).comp measurable_snd)) hn).div (measurable_from_nat.comp hn)
 
 section FollowSource
 

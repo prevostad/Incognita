@@ -204,14 +204,14 @@ lemma sum_Ico_pullCount_sub_le {K' : ℕ} (gr : Grid K') (c : β) {a b : ℕ} (h
 
 /-- [INC-P000, Lemma `lem:lowmass`, abstract form] Let `ℓ_W ≥ 1`, `ℓ`, and water levels `Λ_i`
 such that (W2) holds in the batches `i ∈ [ℓ_W, ℓ)`: every arm `c` pulled in batch `i` has
-`log N_c(t_(i-1)) ≤ Λ_i`. Then for every `v ≥ 0` there is a set `E` of at most `K` batches with
+`log N_c(t_(i-1)) ≤ Λ_i`. Then for every real `v` there is a set `E` of at most `K` batches with
 `∑_{i ∈ [ℓ_W, ℓ), Λ_i < v, i ∉ E} B_i ≤ K e^v`: `E` holds the last such batch `e(c)` in which
 each arm is pulled, and an arm is pulled in the others at most `N_c(t_(e(c)-1)) < e^v` times. -/
 lemma exists_card_le_sum_low_le {K' : ℕ} (gr : Grid K') {Λ : ℕ → ℝ} {lW ℓ : ℕ}
     (hlW : 1 ≤ lW)
     (hW2 : ∀ i, lW ≤ i → i < ℓ → ∀ c, pullCount A c (gr.t (i - 1)) ω <
       pullCount A c (gr.t i) ω → Real.log (pullCount A c (gr.t (i - 1)) ω) ≤ Λ i)
-    {v : ℝ} (_hv : 0 ≤ v) :
+    {v : ℝ} :
     ∃ E : Finset ℕ, E.card ≤ Fintype.card β ∧
       ∑ i ∈ (Finset.Ico lW ℓ).filter (fun i ↦ Λ i < v ∧ i ∉ E),
         ((gr.t i : ℝ) - gr.t (i - 1)) ≤ Fintype.card β * Real.exp v := by

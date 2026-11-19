@@ -9,6 +9,7 @@ public import Incognita.TransferBandits.Examples
 public import Incognita.TransferBandits.PriorGame
 public import LMLExplore.Bandits.Instances
 public import LMLExplore.SequentialLearning.Algorithms.OfSeq
+public import LeanMachineLearning.SequentialLearning.Algorithms.RandomSampling.Basic
 
 /-! # Checks of the definitions of the TransferBandits setting
 
@@ -32,7 +33,10 @@ Witnesses, known cases and exclusions for the definitions of
   `twoSidedDriftBound_self`, `twoSidedDriftBound_const_dirac_iff`,
   `not_twoSidedDriftBound_dirac_one_zero`; `mem_meanBand_self`, `mem_meanBand_const_dirac_iff`,
   `not_mem_meanBand_dirac_one_zero` (witness, known case, exclusion of each condition).
-* `TransferAlgorithm.constArm_policy` (`TransferAlgorithm.ofAlgorithm_policy` is in `Setting`).
+* `TransferAlgorithm.constArm_policy` (`TransferAlgorithm.ofAlgorithm_policy` is in `Setting`);
+  `TransferAlgorithm.constArm_eq_ofAlgorithm`: `constArm a` is `π^σ` for LML's constant algorithm.
+* `ae_onlineKernel_of_policy_eq_dirac`: a learner whose policy is the Dirac mass at `f s` (`s` the
+  source data) pulls `f s` at every round, almost surely.
 * `ae_onlineKernel_constArm`, `integral_onlineCount_constArm`: the learner `constArm a` pulls `a`
   at every round, so `E[N_a(T)] = T`.
 * `not_isConsistent_constArm` (exclusion for `IsConsistent`: `constArm a` is in no `𝒞_L`, `L ≥ 0`),
@@ -235,34 +239,48 @@ lemma driftBound_const_dirac_iff {L : α → ℝ} {x y : ℝ} :
 lemma TransferAlgorithm.constArm_policy (a : α) (n : ℕ) (x : Source α × (Fin n → α × ℝ)) :
     (TransferAlgorithm.constArm a).policy n x = Measure.dirac a := rfl
 
+/-- The learner `constArm a` is the source-ignoring learner `π^σ` of LML's constant algorithm
+`σ = Algorithm.const δ_a`. -/
+lemma TransferAlgorithm.constArm_eq_ofAlgorithm (a : α) :
+    TransferAlgorithm.constArm a =
+      TransferAlgorithm.ofAlgorithm (Learning.Algorithm.const (Measure.dirac a)) := rfl
+
 /-! ### The consistency class -/
 
-/-- Under the learner `constArm a`, almost every online history pulls `a` at every round. -/
-lemma ae_onlineKernel_constArm [MeasurableSingletonClass α] (a : α) (ν : Kernel α ℝ) :
-    ∀ (T : ℕ) (s : Source α),
-      ∀ᵐ h ∂(onlineKernel (TransferAlgorithm.constArm a) ν T s), ∀ i, (h i).1 = a
+/-- Under a learner whose policy is the Dirac mass at an arm `f s` that depends only on the source
+data `s`, almost every online history pulls `f s` at every round. -/
+lemma ae_onlineKernel_of_policy_eq_dirac [MeasurableSingletonClass α] {π : TransferAlgorithm α}
+    (f : Source α → α)
+    (hπ : ∀ n (x : Source α × (Fin n → α × ℝ)), π.policy n x = Measure.dirac (f x.1))
+    (ν : Kernel α ℝ) :
+    ∀ (T : ℕ) (s : Source α), ∀ᵐ h ∂(onlineKernel π ν T s), ∀ i, (h i).1 = f s
   | 0, _ => ae_of_all _ fun _ i ↦ i.elim0
   | T + 1, s => by
-    have hmeas : MeasurableSet {h : Fin (T + 1) → α × ℝ | ∀ i, (h i).1 = a} := by
+    have hmeas : MeasurableSet {h : Fin (T + 1) → α × ℝ | ∀ i, (h i).1 = f s} := by
       simp only [Set.ofPred_forall]
       exact MeasurableSet.iInter fun i ↦
         (by fun_prop : Measurable fun h : Fin (T + 1) → α × ℝ ↦ (h i).1)
-          (measurableSet_singleton a)
+          (measurableSet_singleton _)
     rw [onlineKernel, Kernel.map_apply _ (MeasurableEquiv.measurable _),
       (MeasurableEquiv.measurableEmbedding _).ae_map_iff]
     refine Kernel.ae_compProd_of_ae_ae ((MeasurableEquiv.measurable _) hmeas) ?_
-    filter_upwards [ae_onlineKernel_constArm a ν T s] with h hh
-    have hstep : ∀ᵐ x ∂(stepKernel (TransferAlgorithm.constArm a) ν T (s, h)), x.1 = a := by
+    filter_upwards [ae_onlineKernel_of_policy_eq_dirac f hπ ν T s] with h hh
+    have hstep : ∀ᵐ x ∂(stepKernel π ν T (s, h)), x.1 = f s := by
       rw [stepKernel]
-      refine Kernel.ae_compProd_of_ae_ae (measurable_fst (measurableSet_singleton a)) ?_
-      change ∀ᵐ b ∂(Measure.dirac a), _
-      rw [ae_dirac_eq]
+      refine Kernel.ae_compProd_of_ae_ae (measurable_fst (measurableSet_singleton _)) ?_
+      rw [hπ, ae_dirac_eq]
       exact Filter.eventually_pure.mpr (ae_of_all _ fun _ ↦ rfl)
     filter_upwards [hstep] with x hx i
     rw [MeasurableEquiv.finSuccProd_symm_apply]
     refine Fin.lastCases ?_ (fun j ↦ ?_) i
     · simpa using hx
     · simpa using hh j
+
+/-- Under the learner `constArm a`, almost every online history pulls `a` at every round. -/
+lemma ae_onlineKernel_constArm [MeasurableSingletonClass α] (a : α) (ν : Kernel α ℝ) :
+    ∀ (T : ℕ) (s : Source α),
+      ∀ᵐ h ∂(onlineKernel (TransferAlgorithm.constArm a) ν T s), ∀ i, (h i).1 = a :=
+  ae_onlineKernel_of_policy_eq_dirac (fun _ ↦ a) (fun _ _ ↦ rfl) ν
 
 /-- Under the learner `constArm a`, the expected number of pulls of `a` over `T` rounds is `T`,
 whatever the source phase. -/

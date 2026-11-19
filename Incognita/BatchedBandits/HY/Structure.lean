@@ -39,6 +39,8 @@ are `ϑ_ℓ ≥ 0`, `ω_ℓ ≥ 0`, `s_ℓ ≥ 2`, `s_ℓ log s_ℓ ≥ 2(K - 1)
   last claim, and (i)–(iii)), with the paper's events on the stacks replaced by their traces on
   the run (each paper event implies its trace).
 * `hyAlg_ae_countsA`: Lemma `lem:countsA` along almost every run.
+* `hyAlg_ae_pullCount_le_max'`, `hyAlg_ae_pullCount_le_max`: Lemma `lem:imedround` (its
+  consequence) along almost every run of HY on an instance of `𝒫`.
 * `hyAlg_ae_logcountC`: Lemma `lem:logcountC` (the case `x = 1`) along almost every run, for one
   batch whose IMED indices at its end are at least `y v`.
 
@@ -663,6 +665,27 @@ lemma hyAlg_ae_pullCount_le_max' (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ
     rw [Nat.cast_sub (by omega), Nat.cast_one, sub_add_cancel]
   rw [hcast] at h
   exact h
+
+/-- [INC-P000, Lemma `lem:imedround`, consequence, along a run] Along almost every run of HY
+(`w₀ ≥ 0`, on a grid for `K` arms) on an instance of `𝒫`, for a batch `ℓ + 1` (`ℓ ≥ 1`) and an arm
+`c` other than the leader `ĉ_ℓ` with IMED divergence `K̃_ℓ(c) ≥ D > 0` (both frozen at `t_ℓ`),
+every round `t'` of the batch in its IMED phase (`t_ℓ ≤ t' ≤ s_ℓ`, `t' ≤ t_(ℓ+1)`) has
+`N_c(t') ≤ max(N_c(t_ℓ), 1 + y_ℓ log t' / D)`: `hyAlg_ae_pullCount_le_max'`, since `D > 0`
+forces `K̃_ℓ(c) < ∞`. -/
+lemma hyAlg_ae_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → ℝ)
+    (g : Grid (Fintype.card α)) {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) :
+    ∀ᵐ ω ∂(trajMeasure (hyAlg w₀ β ωs θ γ g : Algorithm Unit α ℝ) (Environment.bandit ν)),
+      ∀ ℓ, ℓ ≠ 0 → ∀ c, c ≠ HY.leader w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ) →
+      ∀ D : ℝ, 0 < D →
+      D ≤ (HY.imedKinf w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ) c).toReal →
+      ∀ t', g.t ℓ ≤ t' → t' ≤ g.imedEnd θ ℓ → t' ≤ g.t (ℓ + 1) →
+        (pullCount IT.action c t' ω : ℝ) ≤
+          max (pullCount IT.action c (g.t ℓ) ω : ℝ) (1 + g.ratio ℓ ^ 2 * Real.log t' / D) := by
+  filter_upwards [hyAlg_ae_pullCount_le_max' w₀ β hw₀ ωs θ γ g hν] with ω h
+  intro ℓ hℓ c hc D hD hDK
+  refine h ℓ hℓ c hc D hD ((ENNReal.ofReal_le_iff_le_toReal fun htop ↦ ?_).2 hDK)
+  rw [htop, ENNReal.toReal_top] at hDK
+  linarith
 
 /-- [INC-P000, Lemma `lem:logcountC`, along a run] Along almost every run of HY (`w₀ ≥ 0`, on a grid
 for `K` arms) on an instance of `𝒫`, for a batch `ℓ + 1` (`ℓ ≥ 1`) whose IMED level is

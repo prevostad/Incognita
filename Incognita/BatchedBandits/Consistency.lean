@@ -28,6 +28,9 @@ The classical (sequential) consistency [LS, Definition 16.1] is LMLExplore's
   instances where `c` is optimal [INC-P006, Proposition `prop:witnesses`(e)].
 * `not_isConsistentAtBatchEnds_const`: on every grid, `Const_c` is not consistent at the batch
   ends on a class containing an instance where `c` is suboptimal.
+* `gap_mul_integral_pullCount_le_integral_regret`: `Δ_a E[N_a(T)] ≤ E[R_T]`;
+  `tendsto_integral_pullCount_div_rpow_of_isConsistent`: a consistent learner has
+  `E[N_a(T)] = o(T^p)` for every suboptimal arm `a` and every `p > 0`.
 * `LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds`: a (sequentially) consistent learner is
   consistent at the batch ends of every grid.
 * `ae_feedback_mem_Icc`: on an instance of `𝒫`, the rewards of almost every run of every learner
@@ -122,33 +125,47 @@ lemma not_isConsistentAtBatchEnds_const {E : Set (Kernel α ℝ)} {ν : Kernel �
       _ = g.t ℓ := rpow_one _
   exact absurd (ge_of_tendsto hlim hge) (by norm_num)
 
-/-- **Known case**: a (sequentially) consistent learner [LS, Definition 16.1] is consistent at the
-batch ends of every grid. -/
-lemma _root_.LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds [Finite α]
-    {alg : Algorithm Unit α ℝ} {E : Set (Kernel α ℝ)} (h : LMLExplore.Bandits.IsConsistent alg E)
-    (g : Grid K) : IsConsistentAtBatchEnds alg g E := by
-  intro ν hν _ c hc p hp
+/-- The expected regret bounds each expected pull count: `Δ_a E[N_a(T)] ≤ E[R_T]`, since
+`E[R_T] = ∑_c Δ_c E[N_c(T)]` (LML's `integral_regret_eq_sum_gap_mul_integral_pullCount`) is a sum
+of nonnegative terms. -/
+lemma gap_mul_integral_pullCount_le_integral_regret [Finite α] (alg : Algorithm Unit α ℝ)
+    (ν : Kernel α ℝ) [IsMarkovKernel ν] (a : α) (T : ℕ) :
+    gap ν a * ∫ ω, (pullCount IT.action a T ω : ℝ) ∂(trajMeasure alg (Environment.bandit ν)) ≤
+      ∫ ω, regret ν IT.action T ω ∂(trajMeasure alg (Environment.bandit ν)) := by
   have := Fintype.ofFinite α
-  have hreg := (((LMLExplore.Bandits.isConsistent_def _ _).mp h ν hν p hp).comp
-    g.strictMono.tendsto_atTop).div_const (gap ν c)
+  rw [integral_regret_eq_sum_gap_mul_integral_pullCount (fun n ↦ IT.measurable_action n)]
+  exact Finset.single_le_sum (f := fun c ↦ gap ν c * ∫ ω, (pullCount IT.action c T ω : ℝ)
+      ∂(trajMeasure alg (Environment.bandit ν)))
+    (fun c _ ↦ mul_nonneg gap_nonneg (integral_nonneg fun ω ↦ Nat.cast_nonneg _))
+    (Finset.mem_univ a)
+
+/-- A learner consistent on `E` [LS, Definition 16.1] (expected regret `o(T^p)` for every
+`p > 0`) has `E[N_a(T)] = o(T^p)` for every arm `a` with a positive gap, on every instance of
+`E`: `Δ_a E[N_a(T)] ≤ E[R_T]` (`gap_mul_integral_pullCount_le_integral_regret`). -/
+lemma tendsto_integral_pullCount_div_rpow_of_isConsistent [Finite α] {alg : Algorithm Unit α ℝ}
+    {E : Set (Kernel α ℝ)} (h : LMLExplore.Bandits.IsConsistent alg E) {ν : Kernel α ℝ}
+    [IsMarkovKernel ν] (hν : ν ∈ E) {a : α} (ha : 0 < gap ν a) {p : ℝ} (hp : 0 < p) :
+    Tendsto (fun T : ℕ ↦ (∫ ω, (pullCount IT.action a T ω : ℝ)
+      ∂(trajMeasure alg (Environment.bandit ν))) / (T : ℝ) ^ p) atTop (𝓝 0) := by
+  have := Fintype.ofFinite α
+  have hreg := ((LMLExplore.Bandits.isConsistent_def _ _).mp h ν hν p hp).div_const (gap ν a)
   rw [zero_div] at hreg
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hreg (fun ℓ ↦ ?_)
-    (fun ℓ ↦ ?_)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hreg (fun T ↦ ?_)
+    (fun T ↦ ?_)
   · exact div_nonneg (integral_nonneg fun ω ↦ Nat.cast_nonneg _)
       (rpow_nonneg (Nat.cast_nonneg _) _)
-  · simp only [Function.comp_apply]
-    have hsum : gap ν c * ∫ ω, (pullCount IT.action c (g.t ℓ) ω : ℝ)
-        ∂(trajMeasure alg (Environment.bandit ν)) ≤
-        ∫ ω, regret ν IT.action (g.t ℓ) ω ∂(trajMeasure alg (Environment.bandit ν)) := by
-      rw [integral_regret_eq_sum_gap_mul_integral_pullCount (fun n ↦ IT.measurable_action n)]
-      exact Finset.single_le_sum (f := fun a ↦ gap ν a * ∫ ω, (pullCount IT.action a (g.t ℓ) ω : ℝ)
-        ∂(trajMeasure alg (Environment.bandit ν)))
-        (fun a _ ↦ mul_nonneg gap_nonneg (integral_nonneg fun ω ↦ Nat.cast_nonneg _))
-        (Finset.mem_univ c)
-    rw [div_right_comm]
+  · rw [div_right_comm]
     gcongr
-    rw [le_div_iff₀ hc, mul_comm]
-    exact hsum
+    rw [le_div_iff₀ ha, mul_comm]
+    exact gap_mul_integral_pullCount_le_integral_regret alg ν a T
+
+/-- **Known case**: a (sequentially) consistent learner [LS, Definition 16.1] is consistent at the
+batch ends of every grid (`tendsto_integral_pullCount_div_rpow_of_isConsistent` along the batch
+ends). -/
+lemma _root_.LMLExplore.Bandits.IsConsistent.isConsistentAtBatchEnds [Finite α]
+    {alg : Algorithm Unit α ℝ} {E : Set (Kernel α ℝ)} (h : LMLExplore.Bandits.IsConsistent alg E)
+    (g : Grid K) : IsConsistentAtBatchEnds alg g E := fun _ hν _ _ hc _ hp ↦
+  (tendsto_integral_pullCount_div_rpow_of_isConsistent h hν hc hp).comp g.strictMono.tendsto_atTop
 
 omit [DecidableEq α] [MeasurableSingletonClass α] in
 /-- For an instance of `𝒫` (rewards in `[0, 1]`), the rewards of almost every run of every learner
