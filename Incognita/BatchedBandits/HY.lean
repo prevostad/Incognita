@@ -140,6 +140,14 @@ noncomputable def ind (h : Hist Unit α ℝ n) (r : ℕ) (c : α) (i : Fin n) : 
 noncomputable def count (h : Hist Unit α ℝ n) (r : ℕ) (c : α) : ℕ :=
   ∑ i : Fin n, if (i : ℕ) < r ∧ (h i).action = c then 1 else 0
 
+omit [Fintype α] in
+/-- The count is the sum of the indicators. -/
+lemma count_eq_sum_ind {h : Hist Unit α ℝ n} {r : ℕ} {c : α} :
+    (count h r c : ℝ) = ∑ i, ind h r c i := by
+  simp only [count, ind]
+  push_cast
+  rfl
+
 /-- The pseudo-mean `m̃_c = N_c m̂_c / (N_c + w₀)`: the sum of the rewards of `c` in the rounds
 `< r`, divided by `N_c + w₀` [INC-P000, Definition `def:hy`, (1)]. -/
 noncomputable def pseudoMean (w₀ : ℝ) (h : Hist Unit α ℝ n) (r : ℕ) (c : α) : ℝ :=
@@ -471,10 +479,7 @@ lemma pseudoKinf_eq_zero_of_le_pseudoMean {w₀ : ℝ} (hw₀ : 0 ≤ w₀) {h :
   rw [ENNReal.ofReal_eq_zero.mpr]
   rw [pseudoLogMean, div_nonpos_iff]
   refine Or.inr ⟨?_, hpos.le⟩
-  have hcount : (count h r c : ℝ) = ∑ i, ind h r c i := by
-    simp only [count, ind]
-    push_cast
-    rfl
+  have hcount : (count h r c : ℝ) = ∑ i, ind h r c i := count_eq_sum_ind
   have hterm : ∀ i, ind h r c i * Real.log (1 - q * ((h i).feedback - μ)) ≤
       ind h r c i * (-(q * ((h i).feedback - μ))) := by
     intro i
@@ -547,7 +552,7 @@ lemma HY.next_of_lt_t_one (w₀ β : ℝ) (ω θ γ : ℕ → ℝ) (g : Grid K) 
     (h : Hist Unit α ℝ n) :
     HY.next w₀ β ω θ γ g n h =
       (Fintype.equivFin α).symm ⟨n % Fintype.card α, Nat.mod_lt _ Fintype.card_pos⟩ := by
-  have hb : g.batchOf n = 0 + 1 := g.batchOf_eq_iff.mpr ⟨by rw [g.t_zero]; exact Nat.zero_le n, hn⟩
+  have hb : g.batchOf n = 0 + 1 := g.batchOf_eq_iff.mpr ⟨by simp, hn⟩
   rw [HY.next, ite_eq_left (by rw [hb])]
 
 omit [MeasurableSpace α] [MeasurableSingletonClass α] in
@@ -609,6 +614,7 @@ lemma hyGamma_mem (ℓ : ℕ) : g.hyGamma ℓ ∈ Set.Ioc (0 : ℝ) (1 / 2) :=
     min_le_left _ _⟩
 
 /-- **Known case**: `U_1 = 1` [INC-P000, Definition `def:hy`]. -/
+@[simp]
 lemma netSize_one (β : ℝ) : g.netSize β 1 = 1 := by simp [netSize]
 
 /-- **Known case**: `U_{ℓ+1} = ⌈L_ℓ ^ β⌉` for `ℓ ≥ 1` [INC-P000, Definition `def:hy`]. -/

@@ -141,7 +141,7 @@ lemma isBatched_iff {alg : Algorithm Unit 𝓐 𝓨} {g : Grid K} :
 rewards. -/
 lemma IsBatched.seesRewardsUpTo_zero {alg : Algorithm Unit 𝓐 𝓨} {g : Grid K}
     (h : IsBatched alg g) {n : ℕ} (hn : n < g.t 1) : SeesRewardsUpTo alg n 0 := by
-  have := isBatched_iff.mp h 0 n (by rw [g.t_zero]; exact Nat.zero_le n) hn
+  have := isBatched_iff.mp h 0 n (by simp) hn
   rwa [g.t_zero] at this
 
 /-- **Witness** [INC-P006, Proposition `prop:witnesses`(d)]: the family that plays the same learner
@@ -289,6 +289,7 @@ noncomputable def parityAlg (k : ℕ) (c₁ c₂ : 𝓐) (g : Grid K) : Algorith
   Algorithm.deterministic (fun n _ ↦ if Even (g.t (g.batchOf n + k)) then c₁ else c₂)
     (fun _ ↦ measurable_const)
 
+@[simp]
 lemma parityAlg_policy (k : ℕ) (c₁ c₂ : 𝓐) (g : Grid K) (n : ℕ) :
     (parityAlg k c₁ c₂ g : Algorithm Unit 𝓐 𝓨).policy n =
       Kernel.const _ (Measure.dirac (if Even (g.t (g.batchOf n + k)) then c₁ else c₂)) := by
@@ -330,9 +331,9 @@ lemma not_infoModel_parityAlg [MeasurableSingletonClass 𝓐] (k : ℕ) {c₁ c�
   have h2s : 2 ≤ s := le_max_left 2 K
   set g := Grid.sequential (K := K) s hs
   set g' := shiftedGrid (K := K) s k hs
-  have hb : g.batchOf 0 = 0 + 1 := g.batchOf_eq_iff.mpr ⟨by rw [g.t_zero], by
+  have hb : g.batchOf 0 = 0 + 1 := g.batchOf_eq_iff.mpr ⟨by simp, by
     rw [Grid.sequential_t le_rfl]; omega⟩
-  have hb' : g'.batchOf 0 = 0 + 1 := g'.batchOf_eq_iff.mpr ⟨by rw [g'.t_zero], by
+  have hb' : g'.batchOf 0 = 0 + 1 := g'.batchOf_eq_iff.mpr ⟨by simp, by
     change 0 < (if 0 + 1 = 0 then 0 else if 0 + 1 ≤ k then s + (0 + 1) - 1 else s + (0 + 1))
     split_ifs <;> first | contradiction | omega⟩
   have ht : ∀ j : ℕ, 1 ≤ j → (j : ℕ∞) ≤ 0 + (k : ℕ∞) → g.t j = g'.t j := by

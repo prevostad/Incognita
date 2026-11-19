@@ -128,11 +128,7 @@ lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → �
   obtain ⟨hθ1, hω1, hσ1, hσU1, hlong1⟩ := hR (ℓ + 1) (by omega) le_rfl
   have hωy0 : 0 ≤ (1 + ωs ℓ) * g.ratio ℓ ^ 2 := by positivity
   have hωy1 : 0 ≤ (1 + ωs (ℓ + 1)) * g.ratio (ℓ + 1) ^ 2 := by positivity
-  have hratio : ∀ j, 1 ≤ g.ratio j := fun j ↦ by
-    rcases Nat.lt_or_ge j 2 with h | h
-    · unfold Grid.ratio
-      rw [ite_eq_left (by omega)]
-    · exact (g.one_lt_ratio h).le
+  have hratio : ∀ j, 1 ≤ g.ratio j := g.one_le_ratio
   have hLpos : 0 < g.logEnd ℓ := g.logEnd_pos (by omega)
   have hL1pos : 0 < g.logEnd (ℓ + 1) := g.logEnd_pos (by omega)
   -- the threshold of the test at `t_(ℓ+1)` is deterministic (Lemma `lem:thrA`)
@@ -161,9 +157,7 @@ lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → �
       have hW' : (g.netSize β (ℓ + 1) : ℝ) ≤ 2 * N₁ := by exact_mod_cast hW
       have hLb : g.logEnd ℓ ^ β = g.logEnd ℓ * g.logEnd ℓ ^ (β - 1) := by
         rw [Real.rpow_sub_one hLpos.ne', mul_div_cancel₀ _ hLpos.ne']
-      have hL1 : g.logEnd (ℓ + 1) = g.ratio (ℓ + 1) * g.logEnd ℓ := by
-        unfold Grid.ratio
-        rw [ite_eq_right (by omega), Nat.add_sub_cancel, div_mul_cancel₀ _ hLpos.ne']
+      have hL1 : g.logEnd (ℓ + 1) = g.ratio (ℓ + 1) * g.logEnd ℓ := g.logEnd_succ_eq (by omega)
       have hx3 : g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) ≤ xp ^ 3 := by
         have h0 : 0 ≤ g.ratio ℓ := (zero_le_one.trans (hratio ℓ))
         have h1 : 0 ≤ g.ratio (ℓ + 1) := (zero_le_one.trans (hratio (ℓ + 1)))
@@ -336,11 +330,7 @@ lemma hyAlg_ae_net_le (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → 
     have : 0 < Fintype.card α * (U + Fintype.card α) := Nat.mul_pos (by omega) (by omega)
     omega
   have htℓ : 2 ≤ g.t ℓ := g.two_le_t (by omega)
-  have hratio : 1 ≤ g.ratio ℓ := by
-    rcases Nat.lt_or_ge ℓ 2 with h | h
-    · unfold Grid.ratio
-      rw [ite_eq_left (by omega)]
-    · exact (g.one_lt_ratio h).le
+  have hratio : 1 ≤ g.ratio ℓ := g.one_le_ratio ℓ
   -- the IMED rounds: `N_a(u) ≤ max(N_a(t_ℓ), U)` for `u ≤ s_ℓ`
   have himed : ∀ u, g.t ℓ ≤ u → u ≤ g.imedEnd θ ℓ → u ≤ g.t (ℓ + 1) →
       pullCount IT.action a u ω ≤ max (pullCount IT.action a (g.t ℓ) ω) U := by

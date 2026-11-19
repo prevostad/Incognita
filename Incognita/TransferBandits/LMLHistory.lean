@@ -16,6 +16,8 @@ against the bandit `ν`, in particular of LML's `trajMeasure σ (Environment.ban
 
 ## Main statements
 
+* `pairsHist_histPairs`, `histPairs_pairsHist`: the two round trips between LML histories and
+  sequences of pairs (action, reward).
 * `onlineKernel_ofAlgorithm_apply`: `κ^T_{π^σ,ν}(s)` is the law of `histPairs (history O A Y T)`
   for every algorithm-environment sequence `(O, A, Y)` of `σ` and `Environment.bandit ν`.
 * `onlineKernel_ofAlgorithm`: the kernel is constant, equal to the law of the first `T` pairs
@@ -40,7 +42,14 @@ variable {α : Type*} [MeasurableSpace α]
 omit [MeasurableSpace α] in
 /-- Forgetting the trivial observations of an LML history and putting them back is the
 identity. -/
+@[simp]
 lemma pairsHist_histPairs {n : ℕ} (h : Hist Unit α ℝ n) : pairsHist (histPairs h) = h := rfl
+
+omit [MeasurableSpace α] in
+/-- Reading a sequence of pairs (action, reward) as an LML history and forgetting the trivial
+observations again is the identity. -/
+@[simp]
+lemma histPairs_pairsHist {n : ℕ} (h : Fin n → α × ℝ) : histPairs (pairsHist h) = h := rfl
 
 /-- Forgetting the observations of an LML history is measurable. -/
 @[fun_prop]

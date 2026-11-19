@@ -46,12 +46,6 @@ namespace HY
 
 variable {α : Type*} [DecidableEq α] {n : ℕ} {h : Hist Unit α ℝ n} {r : ℕ} {c : α}
 
-/-- The count is the sum of the indicators. -/
-lemma count_eq_sum_ind : (count h r c : ℝ) = ∑ i, ind h r c i := by
-  simp only [count, ind]
-  push_cast
-  rfl
-
 lemma ind_nonneg (i : Fin n) : 0 ≤ ind h r c i := by
   unfold ind
   split_ifs <;> norm_num

@@ -127,6 +127,7 @@ lemma map_fst_gameMeasure_zero {N : SourceSpace α → α → ℕ} (ν' ν : Ker
 omit [MeasurableSpace α] in
 /-- Known case: for deterministic sizes `n`, the source data are `n` and the first `n_k` values of
 each stack. -/
+@[simp]
 lemma sourceData_constSize (n : α → ℕ) (ω : SourceSpace α) :
     sourceData (constSize n) ω = (n, fun a j ↦ if j < n a then ω.2 a j else 0) := rfl
 
@@ -230,6 +231,7 @@ lemma driftBound_const_dirac_iff {L : α → ℝ} {x y : ℝ} :
 /-! ### Learners -/
 
 /-- Witness: the learner that pulls a fixed arm. -/
+@[simp]
 lemma TransferAlgorithm.constArm_policy (a : α) (n : ℕ) (x : Source α × (Fin n → α × ℝ)) :
     (TransferAlgorithm.constArm a).policy n x = Measure.dirac a := rfl
 
@@ -354,6 +356,7 @@ def constArm (a : α) : PriorStrategy α where
   measurable_act _ := measurable_const
 
 /-- Known case: a game of `0` rounds has zero counts. -/
+@[simp]
 lemma counts_zero (g : PriorStrategy α) (ω : SourceSpace α) : g.counts 0 ω = 0 := rfl
 
 /-- Known case: the strategy that always pulls `a` has counts `T'` on `a` and `0` elsewhere. -/

@@ -116,9 +116,7 @@ lemma exists_separating {N : SourceSpace α → α → ℕ} (hN : IsSizeRule N) 
   have hBm : MeasurableSet B :=
     (measurableSet_lt measurable_const (hNa a₁)).inter
       (measurableSet_eq_fun (hNa a₂) measurable_const)
-  have hbox : Measurable (boxRestrict (α := α) m) := by
-    unfold boxRestrict
-    fun_prop
+  have hbox : Measurable (boxRestrict (α := α) m) := measurable_boxRestrict m
   have hdisj : Disjoint (boxRestrict m '' A) (boxRestrict m '' B) := by
     refine Set.disjoint_left.mpr ?_
     rintro y ⟨ω, hω, rfl⟩ ⟨ω', hω', hy⟩

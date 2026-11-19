@@ -96,7 +96,7 @@ lemma sourceMeasure_preimage_boxRestrict [Fintype α] (ν' ν₂' : Kernel α �
     sourceMeasure ν' (boxRestrict n ⁻¹' F) =
       ∫⁻ ω in boxRestrict n ⁻¹' F, ∏ a, ∏ i : Fin (n a), (ν' a).rnDeriv (ν₂' a) (ω.2 a i)
         ∂(sourceMeasure ν₂') := by
-  have hbox : Measurable (boxRestrict (α := α) n) := by unfold boxRestrict; fun_prop
+  have hbox : Measurable (boxRestrict (α := α) n) := measurable_boxRestrict n
   have hG : Measurable fun y : (a : α) → Fin (n a) → ℝ ↦
       ∏ a, ∏ i, (ν' a).rnDeriv (ν₂' a) (y a i) :=
     Finset.measurable_prod _ fun a _ ↦ Finset.measurable_prod _ fun i _ ↦
@@ -140,9 +140,7 @@ lemma sourceLaw_eq_withDensity [Fintype α] {N : SourceSpace α → α → ℕ} 
         ∏ a, ∏ j ∈ Finset.range (s.1 a), (ν' a).rnDeriv (ν₂' a) (s.2 a j) else 0) := by
   have hℓ := measurable_sourceDensity ν' ν₂' Z
   have hD := measurable_sourceData hN.measurable
-  have hbox : ∀ n : α → ℕ, Measurable (boxRestrict (α := α) n) := fun n ↦ by
-    unfold boxRestrict
-    fun_prop
+  have hbox : ∀ n : α → ℕ, Measurable (boxRestrict (α := α) n) := measurable_boxRestrict
   ext A hA
   rw [withDensity_apply _ hA, sourceLaw, sourceLaw, Measure.map_apply hD hA,
     setLIntegral_map hA hℓ hD]

@@ -4,7 +4,7 @@ roadmap = "TransferBandits"
 paper = "P003-transfer-setting"
 label = "def:learner"
 meaning = "A transfer learner: for each round n, a Markov kernel from the source data and the online history of n rounds to the arms, that is, a bandit algorithm whose initial state is the source data."
-conventions = "Rounds from 0 (policy n is the paper's pi_{n+1}); online histories are Fin n -> alpha x R; LML algorithms embed by TransferAlgorithm.ofAlgorithm."
+conventions = "Rounds from 0 (policy n is the paper's pi_{n+1}); online histories are Fin n -> alpha x R; LML algorithms embed by TransferAlgorithm.ofAlgorithm. Source pads the values outside the box with 0, so a policy is also defined, freely, on source data that no sourceData N produces; these values do not change the game (gameMeasure_congr), but two learners that agree on the paper's source space are different terms. A future Source v2 would be the Sigma type (n : alpha -> N) x (forall a, Fin (n a) -> R), under new names."
 source = "roadmap TransferBandits, Definitions; [INC-P003, def:learner]"
 
 [checks]

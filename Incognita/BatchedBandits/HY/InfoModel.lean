@@ -269,7 +269,7 @@ lemma infoModel_zero_hy (w₀ β : ℝ) :
   have ht' : ∀ j ≤ ℓ, g.t j = g'.t j := by
     intro j hj
     rcases Nat.eq_zero_or_pos j with rfl | hj0
-    · rw [g.t_zero, g'.t_zero]
+    · simp
     · exact ht j hj0 (by simpa using hj)
   have hnext := HY.next_hy_eq_of_t_eq (α := α) w₀ β hb hb' ht'
   ext x : 1

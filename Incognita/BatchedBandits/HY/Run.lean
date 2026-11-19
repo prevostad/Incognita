@@ -619,12 +619,7 @@ lemma hyAlg_ae_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ 
     hyAlg_ae_one_le_pullCount w₀ β ωs θ γ g (Environment.bandit ν)] with ω hω hfb hN1
   intro ℓ hℓ c hc D hD hDK t' ht'1 ht'2 ht'3
   have hℓ1 : 1 ≤ ℓ := Nat.one_le_iff_ne_zero.mpr hℓ
-  have hy1 : 1 ≤ g.ratio ℓ ^ 2 := by
-    rcases Nat.lt_or_ge ℓ 2 with h | h
-    · rw [show ℓ = 1 by omega, g.ratio_one]
-      norm_num
-    · have := g.one_lt_ratio h
-      nlinarith
+  have hy1 : 1 ≤ g.ratio ℓ ^ 2 := one_le_pow₀ (g.one_le_ratio _)
   have hy0 : 0 < g.ratio ℓ ^ 2 := by linarith
   have htℓ : 2 ≤ g.t ℓ := g.two_le_t hℓ1
   have hg : Monotone fun k : ℕ ↦ g.ratio ℓ ^ 2 * Real.log ((k : ℝ) + 1) := by

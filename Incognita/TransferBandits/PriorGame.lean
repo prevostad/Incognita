@@ -29,6 +29,11 @@ its own observations, its counts are still a size rule (prop:stopped-games (a)).
 
 The strategy is given at every round `r : ℕ`; the game over `T'` rounds uses the rounds `r < T'`
 only, so this is the paper's family `(α_r)_{r = 1, …, T'}` extended arbitrarily.
+
+## Main statements
+
+* `PriorStrategy.ext`; `PriorStrategy.state_zero`, `PriorStrategy.state_succ`: the recursion
+  defining the state of the game.
 -/
 
 @[expose] public section
@@ -89,6 +94,32 @@ structure IsStoppingTime (g : PriorStrategy α) (T' : ℕ) (τ : SourceSpace α 
 /-- The stopped counts `N'_k = C_k(τ)` [INC-P003, def:stopped-game]. -/
 def stoppedCounts (g : PriorStrategy α) (τ : SourceSpace α → ℕ) (ω : SourceSpace α) : α → ℕ :=
   (state g ω (τ ω)).1
+
+/-! ### Basic API -/
+
+omit [DecidableEq α] in
+/-- Two strategies of a prior game with the same choices are equal. -/
+@[ext]
+lemma ext {g g' : PriorStrategy α} (h : ∀ r, g.act r = g'.act r) : g = g' := by
+  obtain ⟨act, _⟩ := g
+  obtain ⟨act', _⟩ := g'
+  obtain rfl : act = act' := funext h
+  rfl
+
+/-- Before the first round, the counts are zero and the history is empty. -/
+@[simp]
+lemma state_zero (g : PriorStrategy α) (ω : SourceSpace α) :
+    g.state ω 0 = (0, fun i ↦ i.elim0) := rfl
+
+/-- One round of the prior game: the arm `A'_r = act r (U', history)` is chosen, its count is
+incremented, and the pair `(A'_r, X'_{A'_r, C_{A'_r}(r)})` is appended to the history. -/
+lemma state_succ (g : PriorStrategy α) (ω : SourceSpace α) (r : ℕ) :
+    g.state ω (r + 1) =
+      let st := g.state ω r
+      let a := g.act r (ω.1, st.2)
+      (Function.update st.1 a (st.1 a + 1),
+        (MeasurableEquiv.finSuccProd (α × ℝ) r).symm (st.2, (a, ω.2 a (st.1 a)))) :=
+  rfl
 
 end PriorStrategy
 

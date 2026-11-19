@@ -205,7 +205,7 @@ theorem lookahead_divergence {α : Type*} [Fintype α] [DecidableEq α] [Measura
       ∫⁻ ω, (lookahead a₁ ω a₁ : ℝ≥0∞) ∂(sourceMeasure ν') := by
     rw [← lintegral_map hcount measurable_fst]
     change ∫⁻ s, _ ∂((gameMeasure ν' (lookahead a₁) ν π T).fst) = _
-    rw [gameMeasure, Measure.fst_compProd, sourceLaw,
+    rw [fst_gameMeasure, sourceLaw,
       lintegral_map hcount (measurable_sourceData hmeas)]
     rfl
   refine ⟨hmeas, hbdd, hnot, ?_, ?_, ?_⟩

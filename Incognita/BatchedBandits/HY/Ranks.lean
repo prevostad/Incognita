@@ -303,9 +303,7 @@ lemma eventually_threshold_ge {x : ℝ} (hx : 0 < x) (hg : Tendsto g.ratio atTop
 /-- `U_j ≤ (1 + L_ℓ)^β` for `j ≤ ℓ + 1` and `β ≥ 1`: `U_j ≤ L_(j-1)^β + 1 ≤ (1 + L_(j-1))^β`. -/
 lemma netSize_le_one_add_rpow {β : ℝ} (hβ : 1 ≤ β) {j ℓ : ℕ} (hjℓ : j ≤ ℓ + 1) :
     (g.netSize β j : ℝ) ≤ (1 + g.logEnd ℓ) ^ β := by
-  have hL0 : ∀ i, 0 ≤ g.logEnd i := fun i ↦ by
-    unfold logEnd
-    exact Real.log_natCast_nonneg _
+  have hL0 : ∀ i, 0 ≤ g.logEnd i := g.logEnd_nonneg
   have h1 : (1 : ℝ) ≤ (1 + g.logEnd ℓ) ^ β :=
     Real.one_le_rpow (by linarith [hL0 ℓ]) (by linarith)
   rcases Nat.lt_or_ge j 2 with hj | hj
@@ -350,7 +348,7 @@ lemma sum_netSize_mul_le {β η C : ℝ} (hβ : 1 ≤ β) (hη : 0 < η) (hC : 0
     have hk1 : 1 ≤ k := hk₀.trans (Finset.mem_Ico.mp hk).1
     set M := 1 + g.logEnd (k + 1) with hM
     have hM1 : 1 ≤ M := by
-      have : 0 ≤ g.logEnd (k + 1) := by unfold logEnd; exact Real.log_natCast_nonneg _
+      have : 0 ≤ g.logEnd (k + 1) := g.logEnd_nonneg _
       linarith
     have hM0 : 0 < M := by linarith
     have hU2 := g.netSize_le_one_add_rpow hβ (j := k + 2) (ℓ := k + 1) le_rfl
@@ -438,7 +436,7 @@ lemma sum_batch_mul_le {β η C c xp ε S : ℝ} (hβ : 1 ≤ β) (hη : 0 < η)
     have htpos : (0 : ℝ) < g.t (i + 1) := g.t_pos (by omega)
     -- the events `𝒜^c`
     have hA : ((g.t (i + 1) : ℝ) - g.t i) * a i ≤ c * Real.exp S * f1 (i + 1) := by
-      have hL2 : 0 ≤ g.logEnd (i - 2) := by unfold logEnd; exact Real.log_natCast_nonneg _
+      have hL2 : 0 ≤ g.logEnd (i - 2) := g.logEnd_nonneg _
       have hexp : Real.exp (-(ε ^ 2 * g.logEnd (i - 2) ^ β)) ≤
           Real.exp S * (g.t (i + 1) : ℝ) ^ (-(1 + 1 : ℝ)) := by
         rw [Real.rpow_def_of_pos htpos, ← Real.exp_add, Real.exp_le_exp]
@@ -458,7 +456,7 @@ lemma sum_batch_mul_le {β η C c xp ε S : ℝ} (hβ : 1 ≤ β) (hη : 0 < η)
     have hV : ((g.t (i + 1) : ℝ) - g.t i) * v i ≤ C * f2 (i + 1) := by
       set M := 1 + g.logEnd (i + 1) with hM
       have hM0 : 0 < M := by
-        have : 0 ≤ g.logEnd (i + 1) := by unfold logEnd; exact Real.log_natCast_nonneg _
+        have : 0 ≤ g.logEnd (i + 1) := g.logEnd_nonneg _
         linarith
       have hU0 := g.netSize_le_one_add_rpow hβ (j := i) (ℓ := i + 1) (by omega)
       have hU4 : (g.netSize β i : ℝ) ^ 4 ≤ M ^ (4 * β) := by
