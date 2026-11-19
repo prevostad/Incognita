@@ -20,18 +20,22 @@ the bound used here is LML's.
 
 ## Main statements
 
-* `Bandits.UCB.isConsistent_subgaussian`: consistency over the σ²-sub-Gaussian bandits.
-* `Bandits.UCB.isConsistent_unit`: consistency over the bandits with rewards in `[0, 1]`, for
-  `c > 1/2` (Hoeffding's lemma: such rewards are `1/4`-sub-Gaussian).
+* `Incognita.isConsistent_ucbAlgorithm_subgaussian`: consistency over the σ²-sub-Gaussian bandits.
+* `Incognita.isConsistent_ucbAlgorithm_unit`: consistency over the bandits with rewards in
+  `[0, 1]`, for `c > 1/2` (Hoeffding's lemma: such rewards are `1/4`-sub-Gaussian).
+
+The file mirrors LML's `LeanMachineLearning/Online/Bandit/Algorithms/Regret/UCB.lean`. Its
+declarations were first written in LML's namespace `Bandits.UCB`; the old names are deprecated
+aliases.
 -/
 
 @[expose] public section
 
-open MeasureTheory ProbabilityTheory Filter Real Finset Learning
+open MeasureTheory ProbabilityTheory Filter Real Finset Learning Bandits Bandits.UCB
 
 open scoped NNReal
 
-namespace Bandits.UCB
+namespace Incognita
 
 variable {K : ℕ} [NeZero K] {c : ℝ}
 
@@ -50,7 +54,7 @@ lemma log_succ_le_two_mul_log {n : ℕ} (hn : 3 ≤ n) :
 /-- **UCB is consistent on sub-Gaussian bandits.** For `c > 2 σ²`, LML's UCB algorithm
 `ucbAlgorithm K c` has expected regret `o(n ^ p)` for every `p > 0` on every bandit whose rewards
 are σ²-sub-Gaussian. -/
-lemma isConsistent_subgaussian (σ2 : ℝ≥0) (hc : 2 * σ2 < c) :
+lemma isConsistent_ucbAlgorithm_subgaussian (σ2 : ℝ≥0) (hc : 2 * σ2 < c) :
     LMLExplore.Bandits.IsConsistent (ucbAlgorithm K c)
       {ν : Kernel (Fin K) ℝ | ∀ a, HasSubgaussianMGF (fun x ↦ x - (ν a)[id]) σ2 (ν a)} := by
   refine LMLExplore.Bandits.isConsistent_of_eventually_le_mul_log fun ν hν _ ↦ ?_
@@ -74,7 +78,7 @@ lemma isConsistent_subgaussian (σ2 : ℝ≥0) (hc : 2 * σ2 < c) :
 
 /-- **UCB is consistent on bandits with rewards in `[0, 1]`** for `c > 1/2`: such rewards are
 `1/4`-sub-Gaussian (Hoeffding's lemma), and `2 · 1/4 < c`. -/
-lemma isConsistent_unit (hc : 1 / 2 < c) :
+lemma isConsistent_ucbAlgorithm_unit (hc : 1 / 2 < c) :
     LMLExplore.Bandits.IsConsistent (ucbAlgorithm K c)
       {ν : Kernel (Fin K) ℝ | ∀ a, ∀ᵐ x ∂(ν a), x ∈ Set.Icc 0 1} := by
   have hσ : (2 * ((‖(1 : ℝ) - 0‖₊ / 2) ^ 2 : ℝ≥0) : ℝ) < c := by
@@ -84,8 +88,21 @@ lemma isConsistent_unit (hc : 1 / 2 < c) :
     linarith
   rw [LMLExplore.Bandits.isConsistent_def]
   intro ν hν _
-  refine (LMLExplore.Bandits.isConsistent_def _ _).mp (isConsistent_subgaussian _ hσ) ν
+  refine (LMLExplore.Bandits.isConsistent_def _ _).mp (isConsistent_ucbAlgorithm_subgaussian _ hσ) ν
     (fun a ↦ ?_)
   exact hasSubgaussianMGF_of_mem_Icc (X := id) aemeasurable_id (hν a)
+
+end Incognita
+
+namespace Bandits.UCB
+
+@[deprecated (since := "2026-11-19")]
+alias log_succ_le_two_mul_log := Incognita.log_succ_le_two_mul_log
+
+@[deprecated (since := "2026-11-19")]
+alias isConsistent_subgaussian := Incognita.isConsistent_ucbAlgorithm_subgaussian
+
+@[deprecated (since := "2026-11-19")]
+alias isConsistent_unit := Incognita.isConsistent_ucbAlgorithm_unit
 
 end Bandits.UCB

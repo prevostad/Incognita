@@ -385,25 +385,6 @@ end Counts
 
 section Laws
 
-/-- The mixture `(1 - t) P + t Q` of two laws on `[0, 1]`, `t ∈ [0, 1]`, is a law on `[0, 1]`
-with mean `(1 - t) m(P) + t m(Q)`. -/
-lemma mix_mem_unitLaws {P Q : Measure ℝ} (hP : P ∈ unitLaws) (hQ : Q ∈ unitLaws) {t : ℝ}
-    (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
-    ENNReal.ofReal (1 - t) • P + ENNReal.ofReal t • Q ∈ unitLaws ∧
-      (ENNReal.ofReal (1 - t) • P + ENNReal.ofReal t • Q)[id] = (1 - t) * P[id] + t * Q[id] := by
-  have := hP.1
-  have := hQ.1
-  refine ⟨⟨⟨?_⟩, ?_⟩, ?_⟩
-  · simp only [add_apply, smul_apply, measure_univ, smul_eq_mul, mul_one]
-    rw [← ENNReal.ofReal_add (by linarith) ht0]
-    simp
-  · rw [ae_add_measure_iff]
-    exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure hQ.2 _⟩
-  · rw [integral_add_measure ((integrable_id_of_mem_unitLaws hP).smul_measure ENNReal.ofReal_ne_top)
-      ((integrable_id_of_mem_unitLaws hQ).smul_measure ENNReal.ofReal_ne_top),
-      integral_smul_measure, integral_smul_measure, ENNReal.toReal_ofReal (by linarith),
-      ENNReal.toReal_ofReal ht0, smul_eq_mul, smul_eq_mul]
-
 /-- **A law just above the level.** Let `P` have mean `m_P < m`, and let `Q` be a law on `[0, 1]`
 with mean `> m`. For every `δ > 0` there is a law `ρ` on `[0, 1]` with
 `m < m(ρ) < min(m + δ, m(Q))` and `KL(P, ρ) ≤ KL(P, Q)`: a mixture of `P` and `Q`. -/

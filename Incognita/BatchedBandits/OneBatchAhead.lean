@@ -8,7 +8,6 @@ module
 public import Incognita.BatchedBandits.MaskedHistory
 public import Incognita.BatchedBandits.Consistency
 public import Incognita.BatchedBandits.Instances
-public import Incognita.BatchedBandits.KInf
 
 /-! # One batch ahead: the lower bound `liminf E[N_a(t_ℓ)] / log t_(ℓ+1) ≥ 1 / 𝒦_inf`
 

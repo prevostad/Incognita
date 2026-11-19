@@ -157,8 +157,9 @@ pairs is LML's pull count.
 \end{proof}
 
 \begin{lemma}[UCB is consistent on sub-Gaussian bandits]\label{flem:ucb-consistent}
-\lean{Bandits.UCB.log_succ_le_two_mul_log, Bandits.UCB.isConsistent_subgaussian,
-  Bandits.UCB.isConsistent_unit, Incognita.P003.isConsistentOnUnit_of_isConsistent}
+\lean{Incognita.log_succ_le_two_mul_log, Incognita.isConsistent_ucbAlgorithm_subgaussian,
+  Incognita.isConsistent_ucbAlgorithm_unit,
+  Incognita.TransferBandits.Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds}
 \uses{def:instance, def:consistency}
 Let $\sigma^2\ge0$ and $c>2\sigma^2$. On every bandit whose reward laws are
 $\sigma^2$-sub-Gaussian around their means, the expected regret of LML's UCB with parameter $c$

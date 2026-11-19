@@ -5,9 +5,9 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYRun
+public import Incognita.BatchedBandits.HY.Run
 public import Incognita.ForMathlib.Probability.Moments.Hoeffding
-public import Incognita.BatchedBandits.KinfDeviations
+public import Incognita.BatchedBandits.KInf.Deviations
 public import Incognita.BatchedBandits.Deviations
 public import Incognita.BatchedBandits.Tilt
 public import LeanMachineLearning.Online.Bandit.RewardByCountMeasure

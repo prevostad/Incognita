@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYGrid
+public import Incognita.BatchedBandits.HY.Grid
 public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 
 /-! # The long paced phases of HY when `x > 1`
@@ -14,7 +14,8 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 exponents `ϑ_ℓ`, the conditions (R2) of Definition `def:ranksA` hold for every large batch: the
 batch is activated with a long paced phase, `t_(ℓ+1) - s_ℓ ≥ K (U_(ℓ+1) + K)`, and the condition
 `s_ℓ log s_ℓ ≥ 2 (K - 1) U_(ℓ+1)` of the queue lemma holds. These are the structural hypotheses
-of the lemmas of `Incognita.BatchedBandits.HYStructure` and `Incognita.BatchedBandits.HYGoodBatch`.
+of the lemmas of `Incognita.BatchedBandits.HY.Structure` and
+`Incognita.BatchedBandits.HY.GoodBatch`.
 
 * `eventually_mul_rpow_add_one_le_exp`: a power of `L` is eventually below `exp(b L)`, `b > 0`.
 * `Grid.eventually_imedEnd_R2`: (R2) for every large batch, for every `β` and every number of
@@ -69,15 +70,6 @@ lemma eventually_mul_rpow_add_one_le_exp (C β : ℝ) {b : ℝ} (hb : 0 < b) :
 namespace Grid
 
 variable {K : ℕ} (g : Grid K)
-
-/-- `L_ℓ → ∞`. -/
-lemma tendsto_logEnd_atTop : Tendsto g.logEnd atTop atTop :=
-  Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop.comp g.strictMono.tendsto_atTop)
-
-/-- `t_ℓ = exp(L_ℓ)` for `ℓ ≥ 1`. -/
-lemma exp_logEnd {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : Real.exp (g.logEnd ℓ) = g.t ℓ := by
-  unfold logEnd
-  exact Real.exp_log (g.t_pos hℓ)
 
 /-- [INC-P000, proof of Lemma `lem:ranksA`, Step 2] On a grid with `x_ℓ → x > 1`, with the default
 activation exponents `ϑ_ℓ`, for every real `β` (the paper's `β ≥ 2` is not used) and every `K'`,

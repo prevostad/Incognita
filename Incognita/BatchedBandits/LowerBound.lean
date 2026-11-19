@@ -5,14 +5,14 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.LowerBoundAssembly
+public import Incognita.BatchedBandits.LowerBound.Assembly
 public import Incognita.BatchedBandits.TwoBatchesAhead
 
 /-! # The lower bounds `x² / 𝒦_inf` on a convergent grid
 
 The lower bounds of [INC-P000, Theorem `thm:lower`(ii)–(iii)] on a grid with `x_ℓ → x > 0`, from
 the lower bound two batches ahead (`eventually_lt_integral_pullCount_div_log_t_add_two`) and the
-assembly lemmas of `Incognita.BatchedBandits.LowerBoundAssembly`.
+assembly lemmas of `Incognita.BatchedBandits.LowerBound.Assembly`.
 
 ## Main statements
 

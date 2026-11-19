@@ -5,7 +5,6 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HY
 public import Incognita.P006.Witnesses
 public import LMLExplore.Bandits.AsymptoticOptimality
 

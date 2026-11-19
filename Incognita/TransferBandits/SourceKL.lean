@@ -105,15 +105,6 @@ lemma integral_sum_range_sizeRule [Finite α] {N : SourceSpace α → α → ℕ
   congr 1
   exact integral_congr_ae (ae_of_all _ fun x ↦ (hsplit x).symm)
 
-/-- Under `P'_{ν'}`, the value `X'_{k,j}` has law `ν'_k`. -/
-lemma map_eval_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] (k : α) (j : ℕ) :
-    (sourceMeasure ν').map (fun ω : SourceSpace α ↦ ω.2 k j) = ν' k := by
-  have h : (fun ω : SourceSpace α ↦ ω.2 k j) =
-      (fun w : ℕ → ℝ ↦ w j) ∘ (fun z : α → ℕ → ℝ ↦ z k) ∘ Prod.snd := rfl
-  rw [h, ← Measure.map_map (by fun_prop) (by fun_prop),
-    ← Measure.map_map (by fun_prop) measurable_snd, sourceMeasure, Measure.map_snd_prod,
-    measure_univ, one_smul, Measure.infinitePi_map_eval, Measure.infinitePi_map_eval]
-
 /-- **Divergence of the source data**, finite case [INC-P003, prop:source-kl]: for a size rule
 with `E_{ν'}[N'_k] < ∞` for every arm, and `KL(ν'_k, ν₂'_k) < ∞` for the arms with
 `E_{ν'}[N'_k] > 0`, `KL(P^D_{ν',N'}, P^D_{ν₂',N'}) = ∑_k E_{ν'}[N'_k] KL(ν'_k, ν₂'_k)`. -/

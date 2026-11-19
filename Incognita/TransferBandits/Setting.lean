@@ -49,6 +49,13 @@ a stopping point of the `K`-parameter filtration `(𝒢_n)_{n ∈ ℕ^K}` [MV81,
   source-ignoring learner of an LML bandit algorithm.
 * `onlineKernel π ν T`: the kernel `κ^T_{π,ν}`; `gameMeasure ν' N' ν π T`: the law of the game
   `P^D_{ν',N'} ⊗ κ^T_{π,ν}` (def:game); `sourceCount`, `onlineCount`: `N'_k` and `N_k(T)` on it.
+
+## Main statements
+
+* Instances: `isProbabilityMeasure_sourceMeasure`, `isProbabilityMeasure_sourceLaw`,
+  `isMarkovKernel_stepKernel`, `isMarkovKernel_onlineKernel`, `isProbabilityMeasure_gameMeasure`.
+* `map_eval_sourceMeasure`, `map_fst_sourceMeasure`: under `P'_{ν'}`, `X'_{k,j}` has law `ν'_k` and
+  the randomisation is uniform; `measurable_sourceData`; `TransferAlgorithm.ofAlgorithm_policy`.
 -/
 
 @[expose] public section
@@ -172,5 +179,68 @@ def sourceCount (a : α) (s : Source α) : ℕ := s.1 a
 /-- The number `N_a(T)` of pulls of arm `a` in an online history of `T` rounds. -/
 noncomputable def onlineCount {T : ℕ} (a : α) (h : Fin T → α × ℝ) : ℕ :=
   by classical exact (Finset.univ.filter fun i ↦ (h i).1 = a).card
+
+/-! ### Instances and basic API -/
+
+instance isProbabilityMeasure_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
+    IsProbabilityMeasure (sourceMeasure ν') := by
+  unfold sourceMeasure
+  infer_instance
+
+/-- Under `P'_{ν'}`, the value `X'_{k,j}` has law `ν'_k`. -/
+lemma map_eval_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] (k : α) (j : ℕ) :
+    (sourceMeasure ν').map (fun ω : SourceSpace α ↦ ω.2 k j) = ν' k := by
+  have h : (fun ω : SourceSpace α ↦ ω.2 k j) =
+      (fun w : ℕ → ℝ ↦ w j) ∘ (fun z : α → ℕ → ℝ ↦ z k) ∘ Prod.snd := rfl
+  rw [h, ← Measure.map_map (by fun_prop) (by fun_prop),
+    ← Measure.map_map (by fun_prop) measurable_snd, sourceMeasure, Measure.map_snd_prod,
+    measure_univ, one_smul, Measure.infinitePi_map_eval, Measure.infinitePi_map_eval]
+
+/-- Under `P'_{ν'}`, the randomisation has the uniform law `volume^{⊗ℕ}`, whatever `ν'`. -/
+lemma map_fst_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
+    (sourceMeasure ν').map Prod.fst = Measure.infinitePi fun _ : ℕ ↦ (volume : Measure I) := by
+  rw [sourceMeasure, Measure.map_fst_prod, measure_univ, one_smul]
+
+omit [MeasurableSpace α] in
+lemma measurable_sourceData {N : SourceSpace α → α → ℕ} (hN : Measurable N) :
+    Measurable (sourceData N) := by
+  refine hN.prodMk (measurable_pi_iff.mpr fun a ↦ measurable_pi_iff.mpr fun j ↦ ?_)
+  refine Measurable.ite ?_ ((measurable_pi_apply j).comp ((measurable_pi_apply a).comp
+    measurable_snd)) measurable_const
+  exact measurableSet_lt measurable_const ((measurable_pi_apply a).comp hN)
+
+instance isProbabilityMeasure_sourceLaw (ν' : Kernel α ℝ) [IsMarkovKernel ν']
+    (N : SourceSpace α → α → ℕ) : IsProbabilityMeasure (sourceLaw ν' N) := by
+  unfold sourceLaw
+  infer_instance
+
+/-- Known case: the source-ignoring learner of an LML algorithm plays, at every round, the policy
+of that algorithm on the online history. -/
+lemma TransferAlgorithm.ofAlgorithm_policy (alg : Learning.Algorithm Unit α ℝ) (n : ℕ)
+    (s : Source α) (h : Fin n → α × ℝ) :
+    (TransferAlgorithm.ofAlgorithm alg).policy n (s, h) = alg.policy n (pairsHist h, ()) := rfl
+
+instance isMarkovKernel_stepKernel (π : TransferAlgorithm α) (ν : Kernel α ℝ) [IsMarkovKernel ν]
+    (n : ℕ) : IsMarkovKernel (stepKernel π ν n) := by
+  unfold stepKernel
+  infer_instance
+
+instance isMarkovKernel_onlineKernel (π : TransferAlgorithm α) (ν : Kernel α ℝ)
+    [IsMarkovKernel ν] : ∀ T, IsMarkovKernel (onlineKernel π ν T)
+  | 0 => by
+    unfold onlineKernel
+    infer_instance
+  | T + 1 => by
+    have := isMarkovKernel_onlineKernel π ν T
+    unfold onlineKernel
+    exact Kernel.IsMarkovKernel.map _ (MeasurableEquiv.measurable _)
+
+/-- Witness: for instances that are Markov kernels, the law of the game is a probability
+measure. -/
+instance isProbabilityMeasure_gameMeasure (N : SourceSpace α → α → ℕ) (ν' ν : Kernel α ℝ)
+    [IsMarkovKernel ν'] [IsMarkovKernel ν] (π : TransferAlgorithm α) (T : ℕ) :
+    IsProbabilityMeasure (gameMeasure ν' N ν π T) := by
+  unfold gameMeasure
+  infer_instance
 
 end Incognita.TransferBandits

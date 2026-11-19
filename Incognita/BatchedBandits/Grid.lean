@@ -38,6 +38,11 @@ the regret) is the same in both numberings.
 * `Grid.ratio_doublyExp`: the ratios of the doubly exponential grid are all `2`;
   `Grid.tendsto_ratio_sequential`, `Grid.tendsto_ratio_geometric`: those of the sequential and
   geometric grids tend to `1`.
+* The basic API of `t`, `logEnd` and `ratio`: `Grid.t_pos`, `Grid.t_le_t`, `Grid.monotone_logEnd`,
+  `Grid.tendsto_logEnd_atTop`, `Grid.exp_logEnd`, `Grid.logEnd_succ_eq`,
+  `Grid.tendsto_log_t_add_two_div_log_t` (`L_(ℓ+2) / L_ℓ → x²` when `x_ℓ → x`),
+  `Grid.eq_of_forall_one_le_t_eq`, `Grid.logEnd_eq_of_t_eq`, `Grid.ratio_eq_of_t_eq` and
+  `Grid.t_batchOf_sub_one_le_of_isFiner`.
 -/
 
 @[expose] public section
@@ -339,6 +344,93 @@ lemma ratio_doublyExp {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
   field_simp
   push_cast
   ring
+
+/-! ### Batch ends, `L_ℓ` and `x_ℓ` -/
+
+section API
+
+open Filter Topology
+
+/-- The batch ends after the first are positive. -/
+lemma t_pos {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : (0 : ℝ) < g.t ℓ := by
+  have := g.two_le_t hℓ
+  exact_mod_cast (show 0 < g.t ℓ by omega)
+
+/-- The batch ends are nondecreasing, as reals. -/
+lemma t_le_t {ℓ ℓ' : ℕ} (h : ℓ ≤ ℓ') : (g.t ℓ : ℝ) ≤ g.t ℓ' := by
+  exact_mod_cast g.strictMono.monotone h
+
+/-- `L_ℓ = log t_ℓ` is nondecreasing in `ℓ` (`L_0 = log 0 = 0`). -/
+lemma monotone_logEnd : Monotone g.logEnd := by
+  intro ℓ ℓ' h
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+  · simp only [Grid.logEnd, g.t_zero, Nat.cast_zero, Real.log_zero]
+    rcases Nat.eq_zero_or_pos ℓ' with rfl | hℓ'
+    · simp [g.t_zero]
+    · exact (g.logEnd_pos hℓ').le
+  · exact Real.log_le_log (g.t_pos hℓ) (g.t_le_t h)
+
+/-- `L_ℓ → ∞`. -/
+lemma tendsto_logEnd_atTop : Tendsto g.logEnd atTop atTop :=
+  Real.tendsto_log_atTop.comp (tendsto_natCast_atTop_atTop.comp g.strictMono.tendsto_atTop)
+
+/-- `t_ℓ = exp(L_ℓ)` for `ℓ ≥ 1`. -/
+lemma exp_logEnd {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : Real.exp (g.logEnd ℓ) = g.t ℓ := by
+  unfold logEnd
+  exact Real.exp_log (g.t_pos hℓ)
+
+/-- `L_(j+1) = x_(j+1) L_j` for `j ≥ 1`. -/
+lemma logEnd_succ_eq {j : ℕ} (hj : 1 ≤ j) :
+    g.logEnd (j + 1) = g.ratio (j + 1) * g.logEnd j := by
+  simp only [Grid.ratio, show ¬ (j + 1 ≤ 1) by omega, ite_false, Nat.add_sub_cancel]
+  rw [div_mul_cancel₀ _ (g.logEnd_pos hj).ne']
+
+/-- On a grid with `x_ℓ → x`, `log t_(ℓ+2) / log t_ℓ = x_(ℓ+1) x_(ℓ+2) → x²`. -/
+lemma tendsto_log_t_add_two_div_log_t {x : ℝ} (hg : Tendsto g.ratio atTop (𝓝 x)) :
+    Tendsto (fun ℓ ↦ Real.log (g.t (ℓ + 2)) / Real.log (g.t ℓ)) atTop (𝓝 (x ^ 2)) := by
+  have h2 : Tendsto (fun ℓ ↦ g.ratio (ℓ + 2) * g.ratio (ℓ + 1)) atTop (𝓝 (x * x)) :=
+    (hg.comp (tendsto_add_atTop_nat 2)).mul (hg.comp (tendsto_add_atTop_nat 1))
+  rw [sq]
+  refine h2.congr' ?_
+  filter_upwards [eventually_ge_atTop 1] with ℓ hℓ
+  have hpos1 := g.logEnd_pos (ℓ := ℓ + 1) (by omega)
+  have hpos0 := g.logEnd_pos hℓ
+  simp only [Grid.ratio, show ¬ (ℓ + 2 ≤ 1) by omega, show ¬ (ℓ + 1 ≤ 1) by omega,
+    ↓reduceIte, show ℓ + 2 - 1 = ℓ + 1 by omega, Nat.add_sub_cancel]
+  unfold Grid.logEnd at hpos0 hpos1 ⊢
+  field_simp
+
+/-- Two grids with the same ends `t j` for every `j ≥ 1` are equal (both have `t 0 = 0`). -/
+lemma eq_of_forall_one_le_t_eq {g g' : Grid K} (h : ∀ j, 1 ≤ j → g.t j = g'.t j) :
+    g = g' := by
+  refine Grid.ext (funext fun j ↦ ?_)
+  rcases Nat.eq_zero_or_pos j with rfl | hj
+  · rw [g.t_zero, g'.t_zero]
+  · exact h j hj
+
+/-- Two grids with the same ends `t 0, …, t ℓ` have the same `logEnd j` for `j ≤ ℓ`. -/
+lemma logEnd_eq_of_t_eq {g g' : Grid K} {ℓ : ℕ} (ht : ∀ j ≤ ℓ, g.t j = g'.t j) {j : ℕ}
+    (hj : j ≤ ℓ) :
+    g.logEnd j = g'.logEnd j := by
+  simp [logEnd, ht j hj]
+
+/-- Two grids with the same ends `t 0, …, t ℓ` have the same ratio `x_j` for `j ≤ ℓ`. -/
+lemma ratio_eq_of_t_eq {g g' : Grid K} {ℓ : ℕ} (ht : ∀ j ≤ ℓ, g.t j = g'.t j) {j : ℕ}
+    (hj : j ≤ ℓ) :
+    g.ratio j = g'.ratio j := by
+  simp only [ratio, logEnd_eq_of_t_eq ht hj, logEnd_eq_of_t_eq ht ((Nat.sub_le j 1).trans hj)]
+
+/-- If `g` is finer than `g'`, the end of the batch before the batch of a round `n` in `g'` is at
+most the end of the batch before the batch of `n` in `g`: the batches of `g` start later. -/
+lemma t_batchOf_sub_one_le_of_isFiner {g g' : Grid K} (hgg' : g.IsFiner g') (n : ℕ) :
+    g'.t (g'.batchOf n - 1) ≤ g.t (g.batchOf n - 1) := by
+  obtain ⟨m, hm⟩ := hgg' (Set.mem_range_self (g'.batchOf n - 1))
+  rw [← hm]
+  have hlt : g.t m < g.t (g.batchOf n) :=
+    (hm ▸ g'.t_batchOf_sub_one_le n).trans_lt (g.lt_t_batchOf n)
+  exact g.strictMono.monotone (by have := g.strictMono.lt_iff_lt.mp hlt; omega)
+
+end API
 
 end Grid
 

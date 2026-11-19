@@ -138,13 +138,6 @@ namespace Grid
 
 variable (g : Grid K)
 
-lemma t_pos {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : (0 : ℝ) < g.t ℓ := by
-  have := g.two_le_t hℓ
-  exact_mod_cast (show 0 < g.t ℓ by omega)
-
-lemma t_le_t {ℓ ℓ' : ℕ} (h : ℓ ≤ ℓ') : (g.t ℓ : ℝ) ≤ g.t ℓ' := by
-  exact_mod_cast g.strictMono.monotone h
-
 /-- The telescoping form of Lemma `lem:sums`(i):
 `∑_{2 ≤ ℓ < L + 2} B_ℓ t_ℓ^(-(1+θ)) ≤ (t_1^(-θ) - t_(L+1)^(-θ)) / θ`. -/
 lemma sum_Ico_mul_rpow_le_sub {θ : ℝ} (hθ : 0 < θ) (L : ℕ) :

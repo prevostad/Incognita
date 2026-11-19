@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.DualGrid
+public import Incognita.BatchedBandits.LogInequalities
 public import Incognita.ForMathlib.Probability.Moments.Hoeffding
 
 /-! # Deviations of the empirical `𝒦_inf`
@@ -46,7 +46,7 @@ lemma log_one_sub_mul_mem {lam μ y : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1) (hla
   constructor
   · refine Real.log_le_log (by linarith) ?_
     nlinarith [hy.2]
-  · refine Real.log_le_log (HY.one_sub_mul_pos hlam0 hlam1 hy.2) ?_
+  · refine Real.log_le_log (one_sub_mul_sub_pos hlam0 hlam1 hy.2) ?_
     rw [le_div_iff₀ h1μ]
     nlinarith [hy.1, mul_nonneg (mul_nonneg hlam0 hy.1) h1μ.le,
       mul_le_mul_of_nonneg_left hlam1.le hμ0]
@@ -332,7 +332,7 @@ lemma measure_exists_add_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ k, Me
         Real.log (1 - net j * (Y k ω - μ)) := fun k _ ↦ by
       have hyk := hω k
       have hpos' : 0 < 1 - l' * (Y k ω - μ) :=
-        HY.one_sub_mul_pos hl'0 (by nlinarith) hyk.2
+        one_sub_mul_sub_pos hl'0 (by nlinarith) hyk.2
       have hbig : 1 - ϖ ≤ 1 - net j * (Y k ω - μ) := by
         have := hnetb j
         nlinarith [hnet0 j, hyk.2]

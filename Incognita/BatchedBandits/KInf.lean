@@ -41,14 +41,6 @@ lemma dInf_anti {M M' : Set (Measure ℝ)} (h : M ⊆ M') (P : Measure ℝ) (m :
     dInf M' P m ≤ dInf M P m :=
   le_dInf_iff.2 fun _ hQ hm ↦ dInf_le (h hQ) hm
 
-/-- The identity is integrable for a law on `[0, 1]`. -/
-lemma integrable_id_of_mem_unitLaws (hP : P ∈ unitLaws) : Integrable id P := by
-  have := hP.1
-  refine (integrable_const (1 : ℝ)).mono' aemeasurable_id.aestronglyMeasurable ?_
-  filter_upwards [hP.2] with x hx
-  rw [id, Real.norm_eq_abs, abs_le]
-  exact ⟨by linarith [hx.1], hx.2⟩
-
 /-- [INC-P006, Proposition `prop:kinf`(i)] `𝒦_inf(P, μ) = ∞` for `μ ≥ 1`: no law on `[0, 1]` has a
 mean above `1`. No hypothesis on `P`. -/
 lemma dInf_unitLaws_eq_top_of_one_le (P : Measure ℝ) (hμ : 1 ≤ μ) : dInf unitLaws P μ = ∞ :=
@@ -72,28 +64,6 @@ lemma klBer_le_dInf_unitLaws (hP : P ∈ unitLaws) (hpμ : P[id] ≤ μ) :
   have := hQ.1
   exact (monotoneOn_klBer _ hpμ (hpμ.trans hm.le) hm.le).trans
     (klBer_integral_le_klDiv hP.2 hQ.2)
-
-/-- The mixture `(1 - u) P + u δ_1` of a law on `[0, 1]` with the Dirac mass at `1` is a law on
-`[0, 1]`, for `u ∈ [0, 1]`. -/
-lemma smul_add_smul_dirac_one_mem_unitLaws (hP : P ∈ unitLaws) {u : ℝ≥0} (hu : u ≤ 1) :
-    (1 - u) • P + u • Measure.dirac (1 : ℝ) ∈ unitLaws := by
-  have := hP.1
-  refine ⟨⟨?_⟩, ?_⟩
-  · rw [add_apply, smul_apply, smul_apply, measure_univ, measure_univ, ENNReal.smul_def,
-      ENNReal.smul_def, smul_eq_mul, smul_eq_mul, mul_one, mul_one, ← ENNReal.coe_add,
-      tsub_add_cancel_of_le hu, ENNReal.coe_one]
-  · rw [ae_add_measure_iff]
-    exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure
-      ((ae_dirac_iff measurableSet_Icc).2 ⟨zero_le_one, le_rfl⟩) _⟩
-
-/-- The mean of the mixture `(1 - u) P + u δ_1` is `(1 - u) m(P) + u`. -/
-lemma integral_id_smul_add_smul_dirac_one (hP : P ∈ unitLaws) {u : ℝ≥0} (hu : u ≤ 1) :
-    ((1 - u) • P + u • Measure.dirac (1 : ℝ))[id] = (1 - (u : ℝ)) * P[id] + u := by
-  have hi := integrable_id_of_mem_unitLaws hP
-  rw [integral_add_measure hi.smul_measure_nnreal
-      (integrable_dirac (by simp)).smul_measure_nnreal,
-    integral_smul_nnreal_measure, integral_smul_nnreal_measure, integral_dirac]
-  simp [NNReal.smul_def, NNReal.coe_sub hu]
 
 /-- [INC-P006, Proposition `prop:kinf`(iii), upper bound] For `p = m(P) ≤ μ < 1`,
 `𝒦_inf(P, μ) ≤ log ((1 - p) / (1 - μ))`. -/

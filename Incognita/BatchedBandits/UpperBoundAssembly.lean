@@ -6,7 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.BatchedBandits.LowerBound
-public import Incognita.BatchedBandits.HYInfoModel
+public import Incognita.BatchedBandits.HY.InfoModel
 
 /-! # Assembling the upper bound of P000
 

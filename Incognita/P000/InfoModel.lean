@@ -5,7 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
-public import Incognita.BatchedBandits.HYInfoModel
+public import Incognita.BatchedBandits.HY.InfoModel
 
 /-! # P000: HY is a learner of the information model `𝓜_0`
 

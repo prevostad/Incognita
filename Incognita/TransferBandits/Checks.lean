@@ -18,22 +18,21 @@ Witnesses, known cases and exclusions for the definitions of
 
 ## Main statements
 
-* `isProbabilityMeasure_sourceMeasure`: `P'_{ν'}` is a probability measure.
 * `isSizeRule_constSize` (witness), `isSizeRule_of_randomisation` (known case: sizes drawn from the
   randomisation alone), `not_isSizeRule_peek` (exclusion: a size that reads a value outside its
   box).
 * `sourceData_constSize_zero` (witness), `sourceData_constSize` (known case),
-  `sourceData_eq_of_eqOn_box` (exclusion: the source data do not see the values outside the box);
-  `measurable_sourceData`.
-* `isMarkovKernel_onlineKernel`, `isProbabilityMeasure_gameMeasure` (witness),
-  `map_fst_gameMeasure_zero` (known case: at horizon `0` the game is the source phase).
+  `sourceData_eq_of_eqOn_box` (exclusion: the source data do not see the values outside the box).
+* `map_fst_gameMeasure_zero` (known case: at horizon `0` the game is the source phase); the
+  instances `isProbabilityMeasure_sourceMeasure`, `isMarkovKernel_onlineKernel`,
+  `isProbabilityMeasure_gameMeasure` (witness) are in `Incognita.TransferBandits.Setting`.
 * `const_dirac_mem_unitBandits`, `bernoulliBandit_mem_unitBandits` (witness, known case),
   `const_dirac_two_not_mem_unitBandits` (exclusion).
 * `driftBound_self`, `driftBound_const_dirac_iff`, `not_driftBound_dirac_one_zero`;
   `twoSidedDriftBound_self`, `twoSidedDriftBound_const_dirac_iff`,
   `not_twoSidedDriftBound_dirac_one_zero`; `mem_meanBand_self`, `mem_meanBand_const_dirac_iff`,
   `not_mem_meanBand_dirac_one_zero` (witness, known case, exclusion of each condition).
-* `TransferAlgorithm.constArm_policy`, `TransferAlgorithm.ofAlgorithm_policy`.
+* `TransferAlgorithm.constArm_policy` (`TransferAlgorithm.ofAlgorithm_policy` is in `Setting`).
 * `ae_onlineKernel_constArm`, `integral_onlineCount_constArm`: the learner `constArm a` pulls `a`
   at every round, so `E[N_a(T)] = T`.
 * `not_isConsistent_constArm` (exclusion for `IsConsistent`: `constArm a` is in no `𝒞_L`, `L ≥ 0`),
@@ -52,13 +51,6 @@ open scoped ENNReal
 namespace Incognita.TransferBandits
 
 variable {α : Type*} [MeasurableSpace α]
-
-/-! ### The source space -/
-
-instance isProbabilityMeasure_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
-    IsProbabilityMeasure (sourceMeasure ν') := by
-  unfold sourceMeasure
-  infer_instance
 
 /-! ### Size rules -/
 
@@ -120,42 +112,6 @@ lemma sourceData_constSize_zero (ω : SourceSpace α) :
   simp only [sourceData, constSize, Prod.mk.injEq, true_and]
   funext a j
   simp
-
-omit [MeasurableSpace α] in
-lemma measurable_sourceData {N : SourceSpace α → α → ℕ} (hN : Measurable N) :
-    Measurable (sourceData N) := by
-  refine hN.prodMk (measurable_pi_iff.mpr fun a ↦ measurable_pi_iff.mpr fun j ↦ ?_)
-  refine Measurable.ite ?_ ((measurable_pi_apply j).comp ((measurable_pi_apply a).comp
-    measurable_snd)) measurable_const
-  exact measurableSet_lt measurable_const ((measurable_pi_apply a).comp hN)
-
-instance isProbabilityMeasure_sourceLaw (ν' : Kernel α ℝ) [IsMarkovKernel ν']
-    (N : SourceSpace α → α → ℕ) : IsProbabilityMeasure (sourceLaw ν' N) := by
-  unfold sourceLaw
-  infer_instance
-
-instance isMarkovKernel_stepKernel (π : TransferAlgorithm α) (ν : Kernel α ℝ) [IsMarkovKernel ν]
-    (n : ℕ) : IsMarkovKernel (stepKernel π ν n) := by
-  unfold stepKernel
-  infer_instance
-
-instance isMarkovKernel_onlineKernel (π : TransferAlgorithm α) (ν : Kernel α ℝ)
-    [IsMarkovKernel ν] : ∀ T, IsMarkovKernel (onlineKernel π ν T)
-  | 0 => by
-    unfold onlineKernel
-    infer_instance
-  | T + 1 => by
-    have := isMarkovKernel_onlineKernel π ν T
-    unfold onlineKernel
-    exact Kernel.IsMarkovKernel.map _ (MeasurableEquiv.measurable _)
-
-/-- Witness: for instances that are Markov kernels, the law of the game is a probability
-measure. -/
-instance isProbabilityMeasure_gameMeasure (N : SourceSpace α → α → ℕ) (ν' ν : Kernel α ℝ)
-    [IsMarkovKernel ν'] [IsMarkovKernel ν] (π : TransferAlgorithm α) (T : ℕ) :
-    IsProbabilityMeasure (gameMeasure ν' N ν π T) := by
-  unfold gameMeasure
-  infer_instance
 
 /-- Known case: at horizon `0`, the law of the game is the law of the source data (with the empty
 history). -/
@@ -272,12 +228,6 @@ lemma driftBound_const_dirac_iff {L : α → ℝ} {x y : ℝ} :
   simp [DriftBound]
 
 /-! ### Learners -/
-
-/-- Known case: the source-ignoring learner of an LML algorithm plays, at every round, the policy
-of that algorithm on the online history. -/
-lemma TransferAlgorithm.ofAlgorithm_policy (alg : Learning.Algorithm Unit α ℝ) (n : ℕ)
-    (s : Source α) (h : Fin n → α × ℝ) :
-    (TransferAlgorithm.ofAlgorithm alg).policy n (s, h) = alg.policy n (pairsHist h, ()) := rfl
 
 /-- Witness: the learner that pulls a fixed arm. -/
 lemma TransferAlgorithm.constArm_policy (a : α) (n : ℕ) (x : Source α × (Fin n → α × ℝ)) :

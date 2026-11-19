@@ -5,6 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
+public import Incognita.TransferBandits.Consistency
 public import Incognita.TransferBandits.SourceKL
 public import Incognita.ForLML.InformationTheory.KullbackLeibler.Bernoulli
 

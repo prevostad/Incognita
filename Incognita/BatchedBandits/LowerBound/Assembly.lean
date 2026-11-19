@@ -16,11 +16,10 @@ The deterministic steps of the proof of [INC-P000, Theorem `thm:lower`] (Subsect
 * `eventually_lt_sum_mul`: the `liminf` of a finite sum `∑ w_i u_i` with positive weights is at
   least `∑ w_i liminf u_i` (the regret, Theorem `thm:lower`(iii)).
 * `eventually_lt_mul_of_tendsto`: `liminf (f g) ≥ (liminf f) B` when `g → B > 0` and `f ≥ 0`.
-* `Grid.tendsto_log_t_add_two_div_log_t`: `log t_(ℓ+2) / log t_ℓ = x_(ℓ+1) x_(ℓ+2) → x²` on a grid
-  with `x_ℓ → x`.
 * `eventually_lt_div_log_t_of_eventually_lt_div_log_t_add_two`: Case A of the proof of
   Theorem `thm:lower`(ii): a lower bound `liminf u_ℓ / log t_(ℓ+2) ≥ A` (the output of Lemma
-  `lem:twobatches`(ii) at the index `ℓ + 1`) gives `liminf u_ℓ / log t_ℓ ≥ x² A`.
+  `lem:twobatches`(ii) at the index `ℓ + 1`) gives `liminf u_ℓ / log t_ℓ ≥ x² A`, through
+  `Grid.tendsto_log_t_add_two_div_log_t` (in `Incognita.BatchedBandits.Grid`).
 * `frequently_lt_div_log_t_of_not_isBigO`: Case B: a nonnegative sequence that is not
   `O(log t_ℓ)` has `limsup u_ℓ / log t_ℓ = ∞`.
 * `eventually_lt_regret_div_log_t`: the regret lower bound with the constant `C_1` on every grid,
@@ -89,22 +88,6 @@ lemma eventually_lt_mul_of_tendsto {f g : ℕ → ℝ} {A B : ℝ} (hB : 0 < B)
   exact hcAB.trans (mul_lt_mul'' h1 h2 hA'0.le hB'0.le)
 
 variable {K : ℕ}
-
-/-- On a grid with `x_ℓ → x`, `log t_(ℓ+2) / log t_ℓ = x_(ℓ+1) x_(ℓ+2) → x²`. -/
-lemma Grid.tendsto_log_t_add_two_div_log_t (g : Grid K) {x : ℝ}
-    (hg : Tendsto g.ratio atTop (𝓝 x)) :
-    Tendsto (fun ℓ ↦ Real.log (g.t (ℓ + 2)) / Real.log (g.t ℓ)) atTop (𝓝 (x ^ 2)) := by
-  have h2 : Tendsto (fun ℓ ↦ g.ratio (ℓ + 2) * g.ratio (ℓ + 1)) atTop (𝓝 (x * x)) :=
-    (hg.comp (tendsto_add_atTop_nat 2)).mul (hg.comp (tendsto_add_atTop_nat 1))
-  rw [sq]
-  refine h2.congr' ?_
-  filter_upwards [eventually_ge_atTop 1] with ℓ hℓ
-  have hpos1 := g.logEnd_pos (ℓ := ℓ + 1) (by omega)
-  have hpos0 := g.logEnd_pos hℓ
-  simp only [Grid.ratio, show ¬ (ℓ + 2 ≤ 1) by omega, show ¬ (ℓ + 1 ≤ 1) by omega,
-    ↓reduceIte, show ℓ + 2 - 1 = ℓ + 1 by omega, Nat.add_sub_cancel]
-  unfold Grid.logEnd at hpos0 hpos1 ⊢
-  field_simp
 
 /-- **Case A of the proof of [INC-P000, Theorem `thm:lower`(ii)].** On a grid with `x_ℓ → x > 0`,
 a nonnegative sequence with `liminf_ℓ u_ℓ / log t_(ℓ+2) ≥ A` has
