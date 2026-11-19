@@ -144,6 +144,15 @@ lemma IsBatched.seesRewardsUpTo_zero {alg : Algorithm Unit 𝓐 𝓨} {g : Grid 
   have := isBatched_iff.mp h 0 n (by simp) hn
   rwa [g.t_zero] at this
 
+/-- During the rounds `n < t (j + 1)`, a batched learner sees at most the rewards of the rounds
+`< t j` (the case `j = 0` is `IsBatched.seesRewardsUpTo_zero`). -/
+lemma IsBatched.seesRewardsUpTo_of_lt {alg : Algorithm Unit 𝓐 𝓨} {g : Grid K}
+    (h : IsBatched alg g) {n j : ℕ} (hn : n < g.t (j + 1)) : SeesRewardsUpTo alg n (g.t j) := by
+  refine (h n).mono (g.strictMono.monotone ?_)
+  have h1 := g.t_batchOf_sub_one_le n
+  have h2 : g.batchOf n - 1 < j + 1 := g.strictMono.lt_iff_lt.mp (h1.trans_lt hn)
+  omega
+
 /-- **Witness** [INC-P006, Proposition `prop:witnesses`(d)]: the family that plays the same learner
 `Const` on every grid is in every information model, in particular in `𝓜_0`. -/
 lemma infoModel_const (μ : Measure 𝓐) [IsProbabilityMeasure μ] (k : ℕ∞) :
@@ -312,13 +321,30 @@ def shiftedGrid (s k : ℕ) (hs : max 2 K ≤ s) : Grid K where
   t_zero := rfl
   strictMono := strictMono_nat_of_lt_succ fun j ↦ by
     have : 2 ≤ s := (le_max_left 2 K).trans hs
+    -- the field `t` of the structure literal, at `j` and `j + 1`
     change (if j = 0 then 0 else if j ≤ k then s + j - 1 else s + j) <
       (if j + 1 = 0 then 0 else if j + 1 ≤ k then s + (j + 1) - 1 else s + (j + 1))
     split_ifs <;> first | contradiction | omega
   le_t_one := by
     have : 2 ≤ s := (le_max_left 2 K).trans hs
+    -- the field `t` of the structure literal, at `1`
     change max 2 K ≤ (if 1 = 0 then 0 else if 1 ≤ k then s + 1 - 1 else s + 1)
     split_ifs <;> first | contradiction | omega
+
+/-- The batch ends of `shiftedGrid s k`. -/
+lemma shiftedGrid_t (s k : ℕ) (hs : max 2 K ≤ s) (j : ℕ) :
+    (shiftedGrid s k hs).t j = if j = 0 then 0 else if j ≤ k then s + j - 1 else s + j := rfl
+
+/-- The batch ends of `shiftedGrid s k` up to `k` are those of `𝖲_s`: `t j = s + j - 1` for
+`1 ≤ j ≤ k`. -/
+lemma shiftedGrid_t_of_le {s k : ℕ} (hs : max 2 K ≤ s) {j : ℕ} (hj : 1 ≤ j) (hjk : j ≤ k) :
+    (shiftedGrid s k hs).t j = s + j - 1 := by
+  simp [shiftedGrid, show j ≠ 0 by omega, hjk]
+
+/-- The batch ends of `shiftedGrid s k` after `k` are shifted by one: `t j = s + j` for `j > k`. -/
+lemma shiftedGrid_t_of_lt {s k : ℕ} (hs : max 2 K ≤ s) {j : ℕ} (hkj : k < j) :
+    (shiftedGrid s k hs).t j = s + j := by
+  simp [shiftedGrid, show j ≠ 0 by omega, show ¬ j ≤ k by omega]
 
 /-- **Exclusion** [INC-P006, Proposition `prop:witnesses`(d)]: `Par^{(k)} ∉ 𝓜_k`. At the round `0`
 the grids `𝖲_s` and `shiftedGrid s k` (with `s = max 2 K`) agree on `t 1, …, t k`, but their ends
@@ -334,24 +360,18 @@ lemma not_infoModel_parityAlg [MeasurableSingletonClass 𝓐] (k : ℕ) {c₁ c�
   have hb : g.batchOf 0 = 0 + 1 := g.batchOf_eq_iff.mpr ⟨by simp, by
     rw [Grid.sequential_t le_rfl]; omega⟩
   have hb' : g'.batchOf 0 = 0 + 1 := g'.batchOf_eq_iff.mpr ⟨by simp, by
-    change 0 < (if 0 + 1 = 0 then 0 else if 0 + 1 ≤ k then s + (0 + 1) - 1 else s + (0 + 1))
+    rw [shiftedGrid_t]
     split_ifs <;> first | contradiction | omega⟩
   have ht : ∀ j : ℕ, 1 ≤ j → (j : ℕ∞) ≤ 0 + (k : ℕ∞) → g.t j = g'.t j := by
     intro j hj hjk
     have hjk' : j ≤ k := by exact_mod_cast (zero_add (k : ℕ∞)) ▸ hjk
-    rw [Grid.sequential_t hj]
-    change s + j - 1 = (if j = 0 then 0 else if j ≤ k then s + j - 1 else s + j)
-    rw [ite_eq_right (by omega), ite_eq_left hjk']
+    rw [Grid.sequential_t hj, shiftedGrid_t_of_le hs hj hjk']
   have hpol := h.policy_eq g g' 0 0 hb hb' ht
   rw [parityAlg_policy, parityAlg_policy, hb, hb'] at hpol
   have hd := congrArg (fun κ ↦ κ (default, ())) hpol
   simp only [Kernel.const_apply] at hd
   have hgt : g.t (0 + 1 + k) = s + k := by rw [Grid.sequential_t (by omega)]; omega
-  have hgt' : g'.t (0 + 1 + k) = s + k + 1 := by
-    change (if 0 + 1 + k = 0 then 0 else if 0 + 1 + k ≤ k then s + (0 + 1 + k) - 1
-      else s + (0 + 1 + k)) = s + k + 1
-    rw [ite_eq_right (by omega), ite_eq_right (by omega)]
-    omega
+  have hgt' : g'.t (0 + 1 + k) = s + k + 1 := by rw [shiftedGrid_t_of_lt hs (by omega)]; omega
   rw [hgt, hgt'] at hd
   rcases Nat.even_or_odd (s + k) with he | ho
   · have hne : ¬ Even (s + k + 1) := by rw [Nat.not_even_iff_odd]; exact he.add_one

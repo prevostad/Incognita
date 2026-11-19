@@ -272,12 +272,7 @@ lemma eventually_lt_integral_pullCount_div_log_t_succ {K : ℕ} (g : Grid K)
   have hMpos : (0 : ℝ) < M := by exact_mod_cast (show 0 < M by omega)
   have hM1 : (1 : ℝ) < M := by exact_mod_cast (show 1 < M by omega)
   -- During the rounds `< t (ℓ + 1)`, the learner sees the rewards of the rounds `< t ℓ` only.
-  have halg : ∀ n < M, SeesRewardsUpTo alg n r := by
-    intro n hn
-    refine (hb n).mono (g.strictMono.monotone ?_)
-    have h1 := g.t_batchOf_sub_one_le n
-    have h2 : g.batchOf n - 1 < ℓ + 1 := g.strictMono.lt_iff_lt.mp (h1.trans_lt hn)
-    omega
+  have halg : ∀ n < M, SeesRewardsUpTo alg n r := fun n hn ↦ hb.seesRewardsUpTo_of_lt (j := ℓ) hn
   have hDne' : klDiv (ν a) (ν' a) ≠ ∞ := by rwa [hν'a]
   have key := exp_neg_le_of_seesRewardsUpTo hrM (by omega) halg hν' hDne'
   rw [hν'a, ← hD_def] at key

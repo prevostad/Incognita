@@ -204,6 +204,7 @@ theorem two_arms_sizeRule_eq_stoppedCounts {α : Type*} [Fintype α] [DecidableE
       (ℕ → I) × ((a : α) → Fin ((g.state ω r).1 a) → ℝ)) = boxRestrict (g.state ω r).1 ω := by
     intro ω r
     refine Prod.ext rfl (funext fun a ↦ funext fun i ↦ ?_)
+    -- `(boxRestrict n ω).2 a i = ω.2 a i`, by definition of `boxRestrict`
     change V r (g.state ω r).2 a i = ω.2 a i
     rw [hV g ω r a i, ite_eq_left i.2]
   have hcnt : ∀ ω r, (fun a ↦ (Finset.univ.filter fun i ↦ ((g.state ω r).2 i).1 = a).card) =

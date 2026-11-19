@@ -238,6 +238,19 @@ lemma testKinf_le_imedKinf {w₀ : ℝ} (hw₀ : 0 ≤ w₀) {h : Hist Unit α �
   · conv_rhs => rw [pseudoKinf, ite_eq_right hl1, ite_eq_right hc1]
     exact le_top
 
+omit [Fintype α] [Nonempty α] in
+/-- [INC-P000, proof of Lemma `lem:leaderA`] For rewards in `[0, 1]`, `w₀ ≥ 0` and an arm well
+sampled for a net size `U ≥ 1` (`U ≤ 2 N_c`) with `2 w₀ ≤ ε U`, the pseudo-mean is at least the
+empirical mean minus `ε`: Lemma `lem:pseudo`(i), `m̂_c - m̃_c ≤ 2 w₀ / U`. -/
+lemma pseudoMean_zero_sub_le_of_two_mul_le {w₀ ε : ℝ} (hw₀ : 0 ≤ w₀) {h : Hist Unit α ℝ n}
+    {r U : ℕ} {c : α} (hfb : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1) (hU : 1 ≤ U)
+    (hc : U ≤ 2 * count h r c) (hwU : 2 * w₀ ≤ ε * U) :
+    pseudoMean 0 h r c - ε ≤ pseudoMean w₀ h r c := by
+  have h1 := pseudoMean_zero_sub_le_of_le hw₀ hfb hU hc
+  have hUr : (0 : ℝ) < U := by exact_mod_cast hU
+  have h2 : 2 * w₀ / U ≤ ε := by rw [div_le_iff₀ hUr]; linarith
+  linarith
+
 /-- [INC-P000, proof of Lemma `lem:goodA`, Step 4] The paced target of a rejected arm `c` with
 `K̂_ℓ(c) ≥ D > 0` is at most `K + (1 + ω_ℓ) y_ℓ log t / D`, for `(1 + ω_ℓ) y_ℓ log t ≥ 0`. -/
 lemma target_le_of_rejected {w₀ thr ω' y logt D : ℝ} (hf : 0 ≤ (1 + ω') * y * logt) (hD : 0 < D)
@@ -444,8 +457,7 @@ lemma hyAlg_ae_threshold_eq (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : Grid 
   have hωy : 0 ≤ (1 + ωs j) * g.ratio j ^ 2 := by positivity
   refine HY.threshold_eq_of_forall hL hy _ _ _ _ _ fun c hc _ ↦ ?_
   have hc' : 2 * pullCount IT.action c (g.t (j + 1)) ω < g.netSize β (j + 1) := by
-    unfold HY.IsWellSampled at hc
-    rw [HY.count_history le_rfl] at hc
+    rw [HY.isWellSampled_history_iff_le_pullCount le_rfl] at hc
     omega
   obtain ⟨-, -, h⟩ := hS3 j hj hθ hωy hσ2 hσU hlong _ _ _ rfl rfl (fun _ _ ↦ rfl) c hc'
   rw [HY.count_history le_rfl, HY.testKinf_history (g.strictMono.monotone (Nat.le_succ j))]
@@ -769,16 +781,14 @@ lemma hyAlg_ae_testLevel_le (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : �
   set h₁ := history IT.obs IT.action IT.feedback (g.t (ℓ + 1)) ω with hh₁
   set L := HY.leader w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ)
   have hW : HY.IsWellSampled h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1)) L := by
-    unfold HY.IsWellSampled
-    rw [hh₁, HY.count_history le_rfl]
+    rw [hh₁, HY.isWellSampled_history_iff_le_pullCount le_rfl]
     have := Nat.sub_le (pullCount IT.action L (g.t (ℓ + 1)) ω)
       (pullCount IT.action L (g.imedEnd θ ℓ) ω)
     omega
   set r := HY.reference w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1))
   have hrW : g.netSize β (ℓ + 1) ≤ 2 * pullCount IT.action r (g.t (ℓ + 1)) ω := by
     have := (HY.reference_spec (w₀ := w₀) hW).1
-    unfold HY.IsWellSampled at this
-    rwa [hh₁, HY.count_history le_rfl] at this
+    rwa [hh₁, HY.isWellSampled_history_iff_le_pullCount le_rfl] at this
   have h1 : HY.pseudoMean w₀ h₁ (g.t (ℓ + 1)) r ≤ HY.pseudoMean 0 h₁ (g.t (ℓ + 1)) r :=
     HY.pseudoMean_le_pseudoMean_zero hw₀ fun i ↦ (hfb i).1
   have h2 := hA r hrW
@@ -857,6 +867,16 @@ lemma hyAlg_ae_countsA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ →
     calc L ≤ g.ratio (ℓ + 1) ^ 2 * g.logEnd (ℓ + 2) := by nlinarith
       _ ≤ _ := h
       _ ≤ _ := mul_le_mul_of_nonneg_left hκμ (Nat.cast_nonneg _)
+
+/-- `ENNReal.ofReal z ≤ x` once `ENNReal.ofReal (z + a) ≤ x + ENNReal.ofReal a`, for `a ≥ 0`. -/
+private lemma ofReal_le_of_ofReal_add_le {z a : ℝ} {x : ℝ≥0∞} (ha : 0 ≤ a)
+    (h : ENNReal.ofReal (z + a) ≤ x + ENNReal.ofReal a) : ENNReal.ofReal z ≤ x := by
+  by_cases hz0 : z ≤ 0
+  · rw [ENNReal.ofReal_of_nonpos hz0]
+    exact bot_le
+  refine (ENNReal.add_le_add_iff_right (ENNReal.ofReal_ne_top :
+    ENNReal.ofReal a ≠ ⊤)).mp ?_
+  rwa [← ENNReal.ofReal_add (by linarith) ha]
 
 /-- [INC-P000, Lemma `lem:leaderA`, along a run] Along almost every run of HY (`w₀ ≥ 0`, on a grid
 for `K ≥ 2` arms) on an instance `ν` of `𝒫`, for the test at `t_(ℓ+2)` (the paper's `ℓ`; `ℓ ≥ 1`)
@@ -953,9 +973,8 @@ lemma hyAlg_ae_leaderA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ →
   have hfb₁ : ∀ i, (h₁ i).feedback ∈ Set.Icc (0 : ℝ) 1 := fun i ↦ hfb i
   have hfb₂ : ∀ i, (h₂ i).feedback ∈ Set.Icc (0 : ℝ) 1 := fun i ↦ hfb i
   have hws : ∀ j c, HY.IsWellSampled (history IT.obs IT.action IT.feedback (g.t j) ω) (g.t j)
-      (g.netSize β j) c ↔ g.netSize β j ≤ 2 * pullCount IT.action c (g.t j) ω := fun j c ↦ by
-    unfold HY.IsWellSampled
-    rw [HY.count_history le_rfl]
+      (g.netSize β j) c ↔ g.netSize β j ≤ 2 * pullCount IT.action c (g.t j) ω := fun _ _ ↦
+    HY.isWellSampled_history_iff_le_pullCount le_rfl _ _
   -- the structural facts at the Lean indices `ℓ` and `ℓ + 1`
   obtain ⟨hθ0, hω0, hσ0, hσU0, hlong0⟩ := hR ℓ le_rfl (by omega)
   obtain ⟨hθ1, hω1, hσ1, hσU1, hlong1⟩ := hR (ℓ + 1) (by omega) le_rfl
@@ -1008,13 +1027,8 @@ lemma hyAlg_ae_leaderA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ →
       · exact one_div_le_one_div_of_le (by linarith) (by linarith)
     have hκ0 : 0 ≤ w₀ * Real.log (1 / (1 - μ₁)) :=
       mul_nonneg hw₀ (Real.log_nonneg (by rw [le_div_iff₀ (by linarith)]; linarith))
-    by_cases hz0 : z ≤ 0
-    · rw [ENNReal.ofReal_of_nonpos hz0]
-      exact bot_le
-    refine (ENNReal.add_le_add_iff_right (ENNReal.ofReal_ne_top :
-      ENNReal.ofReal (w₀ * Real.log (1 / (1 - μ₁))) ≠ ⊤)).mp ?_
-    rw [← ENNReal.ofReal_add (by linarith) hκ0]
-    refine le_trans (ENNReal.ofReal_le_ofReal ?_) key
+    -- `h̄_(ℓ+1) ≥ z + w₀ κ(μ̂_(ℓ+1))`, and the term `w₀ κ(μ̂_(ℓ+1))` cancels
+    refine ofReal_le_of_ofReal_add_le hκ0 (le_trans (ENNReal.ofReal_le_ofReal ?_) key)
     linarith
   -- (i): some optimal arm is well sampled at `t_(ℓ+2)`
   have hU2 : 1 ≤ g.netSize β (ℓ + 2) := g.one_le_netSize β _
@@ -1035,14 +1049,9 @@ lemma hyAlg_ae_leaderA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ →
   have hacc : ∀ c, g.netSize β (ℓ + 2) ≤ 2 * pullCount IT.action c (g.t (ℓ + 2)) ω →
       |HY.pseudoMean 0 h₂ (g.t (ℓ + 2)) c - m c| ≤ ε := fun c hc ↦ hA (ℓ + 2) (by omega) le_rfl c hc
   have hlow : ∀ c, g.netSize β (ℓ + 2) ≤ 2 * pullCount IT.action c (g.t (ℓ + 2)) ω →
-      HY.pseudoMean 0 h₂ (g.t (ℓ + 2)) c - ε ≤ HY.pseudoMean w₀ h₂ (g.t (ℓ + 2)) c := by
-    intro c hc
-    have hc' : g.netSize β (ℓ + 2) ≤ 2 * HY.count h₂ (g.t (ℓ + 2)) c := by
-      rwa [hh₂, HY.count_history le_rfl]
-    have h1 := HY.pseudoMean_zero_sub_le_of_le hw₀ hfb₂ hU2 hc'
-    have hUr : (0 : ℝ) < g.netSize β (ℓ + 2) := by exact_mod_cast hU2
-    have h2 : 2 * w₀ / g.netSize β (ℓ + 2) ≤ ε := by rw [div_le_iff₀ hUr]; linarith
-    linarith
+      HY.pseudoMean 0 h₂ (g.t (ℓ + 2)) c - ε ≤ HY.pseudoMean w₀ h₂ (g.t (ℓ + 2)) c :=
+    fun c hc ↦ HY.pseudoMean_zero_sub_le_of_two_mul_le hw₀ hfb₂ hU2
+      (by rwa [hh₂, HY.count_history le_rfl]) hw₀U
   have hup : ∀ c, HY.pseudoMean w₀ h₂ (g.t (ℓ + 2)) c ≤ HY.pseudoMean 0 h₂ (g.t (ℓ + 2)) c :=
     fun c ↦ HY.pseudoMean_le_pseudoMean_zero hw₀ fun i ↦ (hfb₂ i).1
   set r₂ := HY.reference w₀ h₂ (g.t (ℓ + 2)) (g.netSize β (ℓ + 2)) with hr₂
@@ -1093,17 +1102,7 @@ lemma hyAlg_ae_leaderA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ →
     · refine h8.trans ((HY.pseudoKinf_mono le_rfl (by linarith) hμ₂low hμ₂1 hfb₂).trans ?_)
       exact HY.pseudoKinf_zero_le hw₀ hμ₂1 hμ₂0 hfb₂ hN
     · -- `K̃ ≥ K̂`: the leader has the largest pseudo-mean
-      unfold HY.imedKinf HY.testKinf
-      rw [← hr₂, ← hμ₂]
-      have hlead := HY.pseudoMean_le_leader w₀ h₂ (g.t (ℓ + 2)) r₂
-      by_cases hl1 : HY.pseudoMean w₀ h₂ (g.t (ℓ + 2)) (HY.leader w₀ h₂ (g.t (ℓ + 2))) < 1
-      · exact HY.pseudoKinf_mono hw₀ hμ₂0 hlead hl1 hfb₂
-      · have hc1 : HY.pseudoMean w₀ h₂ (g.t (ℓ + 2)) c ≠ 1 := by
-          have := hup c
-          intro h1
-          linarith
-        conv_rhs => rw [HY.pseudoKinf, ite_eq_right hl1, ite_eq_right hc1]
-        exact le_top
+      exact HY.testKinf_le_imedKinf hw₀ hfb₂ (by linarith)
   · -- (iii): the leader is optimal
     set L₂ := HY.leader w₀ h₂ (g.t (ℓ + 2)) with hL₂
     by_contra hne

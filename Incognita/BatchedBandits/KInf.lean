@@ -99,6 +99,7 @@ lemma dInf_unitLaws_le_ofReal_log (hP : P ∈ unitLaws) (hpμ : P[id] ≤ μ) (h
       exact hu.2
     have hmean : μ < ((1 - v) • P + v • Measure.dirac (1 : ℝ))[id] := by
       rw [integral_id_smul_add_smul_dirac_one hP hv1.le]
+      -- `(v : ℝ) = u`, by definition of `v`
       change μ < (1 - u) * p + u
       have := (div_lt_iff₀ hp1').1 hu.1
       linarith
@@ -108,6 +109,7 @@ lemma dInf_unitLaws_le_ofReal_log (hP : P ∈ unitLaws) (hpμ : P[id] ≤ μ) (h
           Incognita.klDiv_le_ofReal_neg_log_smul_add_smul _ hv1
       _ = ENNReal.ofReal (Real.log (1 - u)⁻¹) := by
           rw [NNReal.coe_sub hv1.le, Real.log_inv]
+          -- `((1 : ℝ≥0) : ℝ) = 1` and `(v : ℝ) = u`, by definition
           rfl
   -- the limit `u ↓ u₀`
   have hlim : Tendsto (fun u ↦ ENNReal.ofReal (Real.log (1 - u)⁻¹)) (𝓝[>] u₀)

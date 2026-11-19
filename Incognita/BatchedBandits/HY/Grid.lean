@@ -216,14 +216,14 @@ lemma sum_activated_le {κ : ℕ} (S : Finset ℕ)
     have hfl : 2 ≤ ⌊g.logEnd ℓ⌋₊ := Nat.le_floor (by norm_num; linarith)
     refine ⟨?_, ?_, Nat.log_pos (by norm_num) hfl⟩
     · have h1 : 2 ^ blk ℓ ≤ ⌊g.logEnd ℓ⌋₊ := Nat.pow_log_le_self 2 (by omega)
-      calc (2 : ℝ) ^ blk ℓ = ((2 ^ blk ℓ : ℕ) : ℝ) := by push_cast; rfl
+      calc (2 : ℝ) ^ blk ℓ = ((2 ^ blk ℓ : ℕ) : ℝ) := by norm_cast
         _ ≤ (⌊g.logEnd ℓ⌋₊ : ℝ) := by exact_mod_cast h1
         _ ≤ g.logEnd ℓ := Nat.floor_le hL0
     · have h1 : ⌊g.logEnd ℓ⌋₊ < 2 ^ (blk ℓ + 1) := Nat.lt_pow_succ_log_self (by norm_num) _
       have h2 : ⌊g.logEnd ℓ⌋₊ + 1 ≤ 2 ^ (blk ℓ + 1) := h1
       calc g.logEnd ℓ < (⌊g.logEnd ℓ⌋₊ : ℝ) + 1 := Nat.lt_floor_add_one _
         _ ≤ ((2 ^ (blk ℓ + 1) : ℕ) : ℝ) := by exact_mod_cast h2
-        _ = 2 ^ (blk ℓ + 1) := by push_cast; rfl
+        _ = 2 ^ (blk ℓ + 1) := by norm_cast
   have hmaps : ∀ ℓ ∈ S, blk ℓ ∈ Finset.Ico 1 κ := by
     intro ℓ hℓ
     obtain ⟨h1, -, h3⟩ := hblock ℓ hℓ

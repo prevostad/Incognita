@@ -196,7 +196,8 @@ def geometric (s : ℕ) (hs : max 2 K ≤ s) : Grid K where
     have : 2 ≤ s := (le_max_left 2 K).trans hs
     rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
     · simp; omega
-    · change (if ℓ = 0 then 0 else s * 2 ^ (ℓ - 1)) < (if ℓ + 1 = 0 then 0 else s * 2 ^ (ℓ + 1 - 1))
+    · -- the field `t` of the structure literal, at `ℓ` and `ℓ + 1`
+      change (if ℓ = 0 then 0 else s * 2 ^ (ℓ - 1)) < (if ℓ + 1 = 0 then 0 else s * 2 ^ (ℓ + 1 - 1))
       rw [ite_eq_right (show ℓ ≠ 0 by omega), ite_eq_right (show ℓ + 1 ≠ 0 by omega),
         show ℓ + 1 - 1 = (ℓ - 1) + 1 by omega, pow_succ,
         show s * (2 ^ (ℓ - 1) * 2) = 2 * (s * 2 ^ (ℓ - 1)) by ring]
@@ -213,7 +214,8 @@ def doublyExp (s : ℕ) (hs : max 2 K ≤ s) : Grid K where
     have : 2 ≤ s := (le_max_left 2 K).trans hs
     rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
     · simp; omega
-    · change (if ℓ = 0 then 0 else s ^ 2 ^ (ℓ - 1)) < (if ℓ + 1 = 0 then 0 else s ^ 2 ^ (ℓ + 1 - 1))
+    · -- the field `t` of the structure literal, at `ℓ` and `ℓ + 1`
+      change (if ℓ = 0 then 0 else s ^ 2 ^ (ℓ - 1)) < (if ℓ + 1 = 0 then 0 else s ^ 2 ^ (ℓ + 1 - 1))
       rw [ite_eq_right (show ℓ ≠ 0 by omega), ite_eq_right (show ℓ + 1 ≠ 0 by omega)]
       exact Nat.pow_lt_pow_right (by omega) (Nat.pow_lt_pow_right (by norm_num) (by omega))
   le_t_one := by simpa using hs
@@ -264,12 +266,9 @@ lemma ratio_geometric {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
   have hs0 : (s : ℝ) ≠ 0 := by
     have : 2 ≤ s := (le_max_left 2 K).trans hs
     exact_mod_cast (show s ≠ 0 by omega)
-  rw [ratio_of_two_le _ hℓ, logEnd, logEnd, geometric_t (by omega),
-    geometric_t (by omega), Nat.cast_mul, Nat.cast_mul, Nat.cast_pow, Nat.cast_pow,
-    Real.log_mul hs0 (by positivity), Real.log_mul hs0 (by positivity), Real.log_pow,
-    Real.log_pow, show ℓ - 1 - 1 = ℓ - 2 by omega]
-  push_cast
-  ring
+  rw [ratio_of_two_le _ hℓ]
+  simp [logEnd, geometric_t (show 1 ≤ ℓ by omega), geometric_t (show 1 ≤ ℓ - 1 by omega),
+    Real.log_mul hs0, show ℓ - 1 - 1 = ℓ - 2 by omega]
 
 /-- **Known case** [INC-P006, Proposition `prop:witnesses`(b)]: on the geometric grid `𝖦_s`,
 `x_ℓ → 1`. -/
@@ -366,12 +365,11 @@ lemma ratio_doublyExp {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
     have : 2 ≤ s := (le_max_left 2 K).trans hs
     exact_mod_cast (show 1 < s by omega)
   have hlog : 0 < Real.log s := Real.log_pos hs1
-  rw [ratio_of_two_le _ hℓ, logEnd, logEnd, doublyExp_t (by omega),
-    doublyExp_t (by omega),
-    Nat.cast_pow, Nat.cast_pow, Real.log_pow, Real.log_pow,
-    show ℓ - 1 = (ℓ - 1 - 1) + 1 by omega, pow_succ]
-  field_simp
-  push_cast
+  -- `L_ℓ = 2 ^ (ℓ - 1) log s`, with `ℓ = m + 2`
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le' hℓ
+  rw [ratio_of_two_le _ hℓ, logEnd_doublyExp (by omega), logEnd_doublyExp (by omega),
+    show m + 2 - 1 - 1 = m by omega, show m + 2 - 1 = m + 1 by omega, pow_succ,
+    div_eq_iff (by positivity)]
   ring
 
 /-! ### Batch ends, `L_ℓ` and `x_ℓ` -/

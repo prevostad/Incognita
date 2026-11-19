@@ -224,6 +224,7 @@ lemma stoppedCounts_eq_of_eqOn_box (g : PriorStrategy α) {T' : ℕ} {τ : Sourc
     have : ω' ∈ (fun x ↦ (x.1, (g.state x (τ ω)).2)) ⁻¹' t := hω'
     rw [ht] at this
     exact this
+  -- `stoppedCounts τ ω' = (g.state ω' (τ ω')).1`, by definition
   change (g.state ω' (τ ω')).1 = n
   rw [hτω, ← hst]
   exact h

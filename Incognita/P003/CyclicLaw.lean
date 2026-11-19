@@ -78,6 +78,7 @@ theorem cyclicSize_not_stoppedCounts {α : Type*} [Fintype α] [DecidableEq α] 
     intro k
     refine ae_of_ae_map (p := fun x : ℝ ↦ x = c b k) (by fun_prop) ?_
     rw [map_eval_sourceMeasure]
+    -- the law of `X'_(k,0)` under `νb b` is `δ_(c b k)`, by definition of `νb`
     change ∀ᵐ y ∂(Measure.dirac (c b k)), y = c b k
     rw [ae_dirac_eq]
     exact Filter.eventually_pure.mpr rfl
@@ -153,35 +154,26 @@ theorem cyclicSize_not_stoppedCounts {α : Type*} [Fintype α] [DecidableEq α] 
     rw [measure_eq_zero_iff_ae_notMem]
     filter_upwards [hae b] with ω hω
     simp [hb ω hω]
+  -- under `ν^b`, the cyclic map gives no sample to the arm `k` before `b` in the cycle
+  -- `a₁ → a₂ → a₃ → a₁`
+  have hcyc : ∀ k b, (k = a₁ ∧ b = a₂) ∨ (k = a₂ ∧ b = a₃) ∨ (k = a₃ ∧ b = a₁) →
+      ∀ ω : SourceSpace α, (∀ i, ω.2 i 0 = c b i) → cyclicSize a₁ a₂ a₃ ω k = 0 := by
+    intro k b hkb ω hω
+    unfold cyclicSize
+    simp only [hω, c]
+    rcases hkb with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
+      norm_num [Pi.single_apply, h₁₂, h₁₃, h₂₃, Ne.symm h₁₂, Ne.symm h₁₃, Ne.symm h₂₃]
   have hGk : ∀ k, V (G k) = 0 := by
     intro k
     by_cases hk1 : k = a₁
     · rw [hk1]
-      refine hzero a₁ a₂ fun ω hω ↦ ?_
-      have e1 : ω.2 a₁ 0 = 0 := by rw [hω]; simp [c, h₁₂]
-      have e2 : ω.2 a₂ 0 = 1 := by rw [hω]; simp [c]
-      have e3 : ω.2 a₃ 0 = 0 := by rw [hω]; simp [c, Ne.symm h₂₃]
-      unfold cyclicSize
-      simp only [e1, e2, e3]
-      norm_num [Pi.single_apply, h₁₂, h₁₃, h₂₃, Ne.symm h₁₂, Ne.symm h₁₃, Ne.symm h₂₃]
+      exact hzero a₁ a₂ (hcyc a₁ a₂ (Or.inl ⟨rfl, rfl⟩))
     by_cases hk2 : k = a₂
     · rw [hk2]
-      refine hzero a₂ a₃ fun ω hω ↦ ?_
-      have e1 : ω.2 a₁ 0 = 0 := by rw [hω]; simp [c, h₁₃]
-      have e2 : ω.2 a₂ 0 = 0 := by rw [hω]; simp [c, h₂₃]
-      have e3 : ω.2 a₃ 0 = 1 := by rw [hω]; simp [c]
-      unfold cyclicSize
-      simp only [e1, e2, e3]
-      norm_num [Pi.single_apply, h₁₂, h₁₃, h₂₃, Ne.symm h₁₂, Ne.symm h₁₃, Ne.symm h₂₃]
+      exact hzero a₂ a₃ (hcyc a₂ a₃ (Or.inr (Or.inl ⟨rfl, rfl⟩)))
     by_cases hk3 : k = a₃
     · rw [hk3]
-      refine hzero a₃ a₁ fun ω hω ↦ ?_
-      have e1 : ω.2 a₁ 0 = 1 := by rw [hω]; simp [c]
-      have e2 : ω.2 a₂ 0 = 0 := by rw [hω]; simp [c, Ne.symm h₁₂]
-      have e3 : ω.2 a₃ 0 = 0 := by rw [hω]; simp [c, Ne.symm h₁₃]
-      unfold cyclicSize
-      simp only [e1, e2, e3]
-      norm_num [Pi.single_apply, h₁₂, h₁₃, h₂₃, Ne.symm h₁₂, Ne.symm h₁₃, Ne.symm h₂₃]
+      exact hzero a₃ a₁ (hcyc a₃ a₁ (Or.inr (Or.inr ⟨rfl, rfl⟩)))
     · refine hzero k a₁ fun ω _ ↦ ?_
       unfold cyclicSize
       split_ifs <;> simp [hk1, hk2, hk3]

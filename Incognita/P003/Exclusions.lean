@@ -61,7 +61,7 @@ theorem lookahead_not_isSizeRule {α : Type*} [Fintype α] [DecidableEq α] [Mea
     let ω₀ : SourceSpace α := (fun _ ↦ 0, fun _ _ ↦ 0)
     let ω₁ : SourceSpace α := (fun _ ↦ 0, fun _ j ↦ if j = 1 then 1 else 0)
     have h₁ : ω₁ ∈ {ω : SourceSpace α | lookahead a₁ ω = n} := by
-      change lookahead a₁ ω₁ = n
+      rw [Set.mem_ofPred_eq]
       funext a
       by_cases ha : a = a₁ <;> norm_num [lookahead, ha, ω₁, n]
     have h₀ : ω₀ ∉ {ω : SourceSpace α | lookahead a₁ ω = n} := by
@@ -95,12 +95,14 @@ theorem learner_exclusion {α : Type*} [Fintype α] [DecidableEq α] [Measurable
   refine ⟨fun ⟨f, _, hf⟩ ↦ ?_, fun ⟨π, hπ⟩ ↦ ?_⟩
   · have h0 := hf ω₀
     have h1 := hf ω₁
+    -- fold the abbreviation `N` of the size map
     change f (sourceData N ω₀) = _ at h0
     change f (sourceData N ω₁) = _ at h1
     rw [hD, h1] at h0
     simp [ω₀, ω₁] at h0
   · have h0 := hπ ω₀
     have h1 := hπ ω₁
+    -- fold the abbreviation `N` of the size map
     change π.policy 0 (sourceData N ω₀, _) = _ at h0
     change π.policy 0 (sourceData N ω₁, _) = _ at h1
     rw [hD, h1] at h0

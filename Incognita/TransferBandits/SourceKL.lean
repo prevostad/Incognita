@@ -394,10 +394,8 @@ lemma lintegral_sourceCount_gameMeasure {N : SourceSpace α → α → ℕ} (hN 
       ∫⁻ ω, (N ω a : ℝ≥0∞) ∂(sourceMeasure ν') := by
   have hcount : Measurable fun s : Source α ↦ (sourceCount a s : ℝ≥0∞) :=
     measurable_from_top.comp (by unfold sourceCount; fun_prop)
-  rw [← lintegral_map hcount measurable_fst]
-  change ∫⁻ s, _ ∂((gameMeasure ν' N ν π T).fst) = _
-  rw [fst_gameMeasure, sourceLaw,
+  rw [← lintegral_map hcount measurable_fst, ← Measure.fst, fst_gameMeasure, sourceLaw,
     lintegral_map hcount (measurable_sourceData hN)]
-  rfl
+  simp only [sourceCount_sourceData]
 
 end Incognita.TransferBandits

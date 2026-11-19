@@ -125,8 +125,7 @@ lemma map_fst_gameMeasure_zero {N : SourceSpace α → α → ℕ} (ν' ν : Ker
   have : IsMarkovKernel (onlineKernel π ν 0) := by
     unfold onlineKernel
     infer_instance
-  change (gameMeasure ν' N ν π 0).fst = _
-  rw [gameMeasure, Measure.fst_compProd]
+  rw [← Measure.fst, gameMeasure, Measure.fst_compProd]
 
 omit [MeasurableSpace α] in
 /-- Known case: for deterministic sizes `n`, the source data are `n` and the first `n_k` values of

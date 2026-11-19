@@ -90,6 +90,7 @@ lemma measurable_sizeRule_section_lt [Finite α] {N : SourceSpace α → α → 
   obtain ⟨G, hG, hGeq⟩ := hN.measurableSet_eq n.1
   have hbox : Measurable[M] fun z : α → ℕ → ℝ ↦
       boxRestrict n.1 ((u, z) : SourceSpace α) := by
+    -- `boxRestrict n.1 (u, z) = (u, fun b i ↦ z b i)`, by definition
     change Measurable[M] fun z : α → ℕ → ℝ ↦ (u, fun b (i : Fin (n.1 b)) ↦ z b i)
     refine Measurable.prodMk measurable_const ?_
     refine measurable_pi_iff.mpr fun b ↦ ?_

@@ -233,8 +233,7 @@ lemma exists_card_le_sum_low_le {K' : ℕ} (gr : Grid K') {Λ : ℕ → ℝ} {lW
     have hle : gr.t (i - 1) ≤ gr.t i := gr.strictMono.monotone (by omega)
     have h := t_sub_eq_sum_pullCount_sub (A := A) (ω := ω) gr hi1
     rw [← Nat.cast_sub hle, h]
-    push_cast
-    rfl
+    simp only [Nat.cast_sum, hd]
   rw [hmass]
   rw [show (Fintype.card β : ℝ) * Real.exp v = ∑ _c : β, Real.exp v by
     rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]]
@@ -296,9 +295,8 @@ lemma exists_card_le_sum_low_le {K' : ℕ} (gr : Grid K') {Λ : ℕ → ℝ} {lW
     have : (∑ i ∈ (Finset.Ico lW ℓ).filter (fun i ↦ Λ i < v ∧ i ∉ E), d c i : ℕ) ≤
         pullCount A c (gr.t (e c - 1)) ω := hsub.trans htel
     calc ∑ i ∈ (Finset.Ico lW ℓ).filter (fun i ↦ Λ i < v ∧ i ∉ E), (d c i : ℝ)
-        = ((∑ i ∈ (Finset.Ico lW ℓ).filter (fun i ↦ Λ i < v ∧ i ∉ E), d c i : ℕ) : ℝ) := by
-          push_cast
-          rfl
+        = ((∑ i ∈ (Finset.Ico lW ℓ).filter (fun i ↦ Λ i < v ∧ i ∉ E), d c i : ℕ) : ℝ) :=
+          (Nat.cast_sum _ _).symm
       _ ≤ pullCount A c (gr.t (e c - 1)) ω := by exact_mod_cast this
       _ ≤ Real.exp v := hN.le
 
