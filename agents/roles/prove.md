@@ -16,7 +16,11 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
 ## Steps
 
 1. **Plan.** From the `\uses` graph of the target, list the lemmas it needs; mark those already in
-   `blueprint.md` or in the library; for each standard step, search the dependencies.
+   `blueprint.md` or in the library; for each standard step, search the dependencies. **Close one
+   branch at a time** (owner, 2026-11-19): choose one frozen statement, or one node it needs, and
+   prove it **end to end** before starting another branch; never add lemmas that no frozen
+   statement of this pull request reaches. Prefer the statements that make another one non-vacuous
+   (for example the consistency of an algorithm, which witnesses the hypotheses of a lower bound).
 2. **Prove**, in modules under `Incognita/`: paper-specific material in `Incognita/<prefix>/`,
    general lemmas in general form in `Incognita/ForMathlib/`, `Incognita/ForLML/` or
    `Incognita/<Roadmap>/`. The final theorem `Incognita.<prefix>.<name>` has **exactly** the frozen

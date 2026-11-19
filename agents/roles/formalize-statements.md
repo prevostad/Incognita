@@ -27,8 +27,12 @@ them.
 
 1. **Model first.** Decide the Lean shape of every object the frozen statements use. Search the
    dependencies before defining anything (Grep with `path` set to `.lake/packages/LMLExplore`,
-   `.lake/packages/LeanMachineLearning`, `.lake/packages/mathlib/Mathlib`). Write the decisions in
-   `papers/<P>/blueprint.md` (format below) and commit.
+   `.lake/packages/LeanMachineLearning`, `.lake/packages/mathlib/Mathlib`). **Reuse the definitions
+   of LML and LMLExplore** when they exist (owner, 2026-11-19: the audit found `unitLaws`,
+   `IsConsistentOnUnit` and `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's
+   array model): define a new object only when the dependencies have none, never under a name that
+   the library or a dependency already uses for another object (two `unitBandits` exist today).
+   Write the decisions in `papers/<P>/blueprint.md` (format below) and commit.
 2. **Definitions** not in the library: in `Incognita/<Roadmap>/<File>.lean`, in library generality,
    with docstrings and the roadmap's planned names; prove in the same pull request a witness, a known
    case and an exclusion for each (AGENTS.md §6.4), and write `catalogue/definitions/<Name>.toml`.

@@ -31,8 +31,9 @@ material is re-read, not only stored.
       definition is wrong. Stop there, record a relation `contradiction`, and write an `Ask-owner:`
       line.
    3. **Duplicates**: the same lemma twice in the library, or a lemma the dependencies now provide
-      (Grep with `path` set under `.lake/packages/`). Never delete ours; prove one from the other when
-      it is short, and record a relation `duplicate`; the owner decides migrations.
+      (Grep with `path` set under `.lake/packages/`). **Never add a new copy**: re-prove the existing
+      one from the other (or from the dependency) and turn the copy into a deprecated alias
+      (AGENTS.md §6.3); record a relation `duplicate`.
    4. **Definitions** of the same object: prove the equivalence if you can, and record
       `same-object`.
 3. **Re-verification** of one Lean-verified paper (level 2 or 3), preferring the papers with the
