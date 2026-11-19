@@ -312,12 +312,21 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
     `\underbrace` ("the deviation term") rather than by a new letter; a proof introduces at most
     about five local symbols, and each is defined in its own sentence (rule B8) where it first
     serves.
+  - **No symbol for a short expression** (owner, 2026-11-18): an expression that is already short —
+    one function or operation applied to symbols already defined, such as $\log t_\ell$,
+    $x_\ell^2$ or $1/\Delta_a$ — gets no symbol of its own, unless it appears **nested** in other
+    formulas (in an exponent, a subscript, under a root or inside another function, as
+    $L_\ell^{\beta}$, $\sqrt{L_\ell}$ or $\log L_\ell$ for $L_\ell := \log t_\ell$), where writing
+    it out would make the formula hard to read, or it is the standard notation of the field
+    ($\mathcal K_{\inf}$, $\Delta_a$). A few characters saved do not pay for a symbol the reader must
+    remember.
   This does not weaken section 2a: every symbol that remains is defined with `:=` and linked to its
   definition; there are simply fewer of them. *Test*: list the symbols introduced in the main text
   and count the uses of each; flag those used fewer than three times, those used in one proof only,
   and the near-homonyms; then read the main theorem's statement: can it be read with at most two
   look-ups in the notation table? Then pick three appendix proofs and count their local symbols and
-  the uses of each. A few superfluous symbols is P; a main theorem that cannot be read without
+  the uses of each. For each symbol that stands for a short expression, check that it appears at
+  least once in a nested position or is the standard notation. A few superfluous symbols is P; a main theorem that cannot be read without
   repeated look-ups, more than a third of the main text's symbols used fewer than three times, or a
   proof whose local symbols outnumber its steps, is R.
 
