@@ -311,17 +311,98 @@ with their veto windows, papers depending on a disputed paper, parked targets), 
 frozen, (4) results verified, (5) papers rejected, (6) roadmaps and directions (proposals approved
 or vetoed, candidate directions added, exhausted roadmaps, dependency checks pending), (7) the
 certification of the library (`scripts/certify.py report`, from the audit of main), (8) statistics.
-Then, whatever the way out (but not after a dry run), it puts `REPLACE_ME` back in the token file
+The comment also carries the night's raw events (see "Statistics" below). Then, whatever the way out (but not after a dry run), it puts `REPLACE_ME` back in the token file
 (see "The token").
 
 State, outside the repository, in `~/.incognita/`: `state/nights/<night>/` (attempts per role and
-target, `events.tsv` for the report), `state/lifetime/` (fix rounds per PR, failures per target),
+target, `events.tsv` for the report and the statistics, `usage.tsv`: every reading of the usage), `state/lifetime/` (fix rounds per PR, failures per target),
 `state/parked/` (targets parked after `INCOGNITA_PARK_AFTER` failures in all; delete the file to retry),
 `state/audit/<sha>.txt`, `state/first-night` and `state/last-propose-night` (periodic proposals),
 `state/candidates/<P>` (candidate directions to add for a merged paper: `<pr> <head> <P>`),
 `state/marks/` (veto windows posted, roadmaps found exhausted…), `state/usage-last` (the latest
 reading of the usage: time, `ok` or `err`, figures or reason; never the token), `logs/<night>.log`,
 `heartbeat` (one line a minute: time and activity).
+
+## Statistics (`scripts/stats.py`, the site)
+
+The state of a night lives only on the server, which the owner deletes between nights (owner request
+of 2026-11-19: the statistics must not be lost with it). So the night report (`post_night_report` in
+`scripts/lib.sh`, at the end of the night and on `--stop`) carries the night's raw events: every line
+of `events.tsv` (time, kind, role, target, text: tasks with their turns, seconds and dollars, merges,
+rebases, waits, quota cuts, questions...) and of `usage.tsv` (every reading of the weekly usage, kind
+`usage`), in a collapsed block
+
+```
+<details><summary>Raw events of the night of 2026-11-19 (part 1/1, 68 lines; read by scripts/stats.py)</summary>
+
+<!-- incognita:events v1 night=2026-11-19 part=1/1 lines=68 -->
+~~~tsv
+2026-11-19 21:47:16	task	fix-pr	67	ok pushed #67 b0ebb5d1a324 (turns 19, 181s, $0.53)
+~~~
+
+</details>
+```
+
+appended to the report when both fit in one comment (`INCOGNITA_COMMENT_MAX`, 64 000 bytes), else
+posted after it in comments of their own (kind `night-events`), as many as needed. Lines that are not
+events or that look like a secret are left out; the others are cleaned as agent text is (`<!--`, `@`,
+control characters). `scripts/stats-backfill.sh` (the owner's, run once) posted the nights of
+2026-11-17 to 2026-11-19 in the same format, read over ssh; older nights are read from the task lists
+of their reports (sessions only).
+
+`scripts/stats.py` computes the statistics from GitHub and the repository only, never from the
+server: the pull requests and the trusted comments of the loop (author: the owner's account; marker
+on the first line), the events blocks and the night reports of the issue "Night reports" (a line is
+counted once, whatever the number of comments carrying it), the merge commits and their trailers,
+the locks and proof markers on `main` with their history, `certify.py` (levels), `errata.md` and
+`statement-corrections.md`. It gives:
+
+- production: papers written (agents, owner), accepted, rejected, in review; revision rounds
+  (comments `revise`), repairs (`revise-fix`), days from the opening of the pull request to its
+  merge; new versions; merges by the loop per role (trailer `Incognita-Role`);
+- quality: referee verdicts (all reports, first reports), defects by class F/G/L/R/P (rows of the
+  defect tables, each ID once per pull request), verdicts of the other reviews and of each rubric,
+  per Lean pull request (roles `prove`, `formalize-statements`, or any rubric report) its fix rounds
+  (`fix-pr`, `fix-pr-nochange`), reviews, blocks; errata and statement corrections per paper;
+- formalisation: frozen and proved statements per paper, over time (the day each lock and proof
+  marker reached `main`), papers by certification level;
+- cost: sessions, hours and dollars (the API-equivalent cost Claude Code reports; the subscription
+  bills by weekly usage) by role, per night (with merges, waits, idle time, quota cuts, the weekly
+  usage at the start and the end of its runs from the night reports, and the points used), per paper
+  and per Lean pull request (writing, reviews, rubrics); quota cuts (sessions cut, rate limits, stops
+  at the weekly cap, waits by reason);
+- cost by stage (AGENTS.md 5.5; owner, 2026-11-19): writing (`write-paper`), refereeing (the referees,
+  `revise` and its repairs), acceptance (the loop's merges, no session), frozen statements
+  (`formalize-statements`, `review-statements`), Lean proofs (`prove`), gardening, bibliography,
+  other; a `review-pr`, a rubric or a `fix-pr` counts in the stage of the pull request it works on.
+  Per paper, the cost of its sessions until its acceptance (the merge of the pull request that added
+  it) and until its Lean verification (level 2: when its last lock or proof marker reached `main`);
+- contributors: humans by GitHub login (their merged pull requests, the papers of `owner/*`
+  branches), the `human_authors` of META.toml, agents by role (pull requests opened and merged,
+  sessions), and models: sessions, hours and dollars by model. Since 2026-11-19 each task event
+  records the model of its session (`(turns N, Ss, $C, model M)`, `(exit R, Ss, model M)`, written
+  by `scripts/agent.sh`); older lines are `unrecorded`, except those of the backfilled nights, which
+  take it from the night's log (`== session: <role> <target>, model <m>, …`;
+  `stats.py events-block --log`);
+- the interest score of each paper (the scope referee's /10 on the pull request that added it, its
+  last report that gives one; the same reader as the site's cards) and their distribution;
+- the Lean library over time (the last commit of each day on `main`): files, lines, theorems and
+  lemmas, definitions and deprecated aliases under `Incognita/` and `Statements/`; the lengths of the
+  proofs now (lines from a theorem to the next top-level line);
+- loop efficiency: the hours from opening to merge and the duration of the check "Build and check"
+  (its last run on the head, GitHub check runs) by kind of pull request (paper, statements, proofs,
+  literature, garden, scripted, human...); failed and skipped tasks by role and reason, parked
+  targets, loop restarts;
+- literature: the references of `literature/bibliography.json`, the source notes, the marks
+  "(to be checked)" in the Lean files and the papers; candidate directions per roadmap
+  (`directions.md`): total, open, taken (an open paper pull request of the roadmap names the entry),
+  done (a paper on `main` lists it), dropped.
+
+`python3 scripts/stats.py --json -` prints them (`GH_TOKEN` set; without a token, or when GitHub
+cannot be read, what needs it is marked unavailable and the rest is still computed). The site
+(`scripts/site.py`, workflow Site, every day) publishes them as `stats.html` and `stats.json`, linked
+from the main page. Tests: `scripts/test-stats.py` (fixtures, no network) and the events block of the
+report in `scripts/test-lib.sh` (fake `gh`).
 
 ## Settings (environment variables)
 
@@ -373,8 +454,8 @@ reading of the usage: time, `ok` or `err`, figures or reason; never the token), 
    sandbox test. `--skip-lake` skips the 8 GB copy;
    `--check` only runs the sandbox test.
 3. The token: see "The token" below (a new one before every night).
-4. Tests: `bash scripts/test-lib.sh`, `bash scripts/test-loop.sh` and `bash scripts/test-start.sh`
-   (offline; the last one: the end of a night in Paris time across the changes of hour, the cap,
+4. Tests: `bash scripts/test-lib.sh` (it also runs `scripts/test-stats.py`), `bash scripts/test-loop.sh`
+   and `bash scripts/test-start.sh` (offline; the last one: the end of a night in Paris time across the changes of hour, the cap,
    the answers of the usage endpoint and of `tauceti status`, the decisions before a task, the env
    file, the capture of the token from a fake `claude setup-token`; its env file is a throwaway path),
    `INCOGNITA_REPO=<scratch clone of main> bash scripts/server/test-sandbox.sh` (sandbox, no Claude

@@ -345,8 +345,18 @@ usage_now() {
   fi
   rm -f "$tmp"
   { printf '%s %s %s\n' "$(now)" "$kind" "$line" > "$f"; } 2>/dev/null
+  usage_record "$kind" "$line"
   echo "$line"
   [ "$kind" = ok ]
+}
+# usage_record <ok|err> <reading>: every new reading of the usage during a night, in its usage.tsv
+# (the columns of events.tsv, kind `usage`), posted with the night report for scripts/stats.py (owner
+# request of 2026-11-19). Never the token: the reading is the figures or the reason of a failure.
+usage_record() {
+  [ -n "${NIGHT_DIR:-}" ] && [ -d "$NIGHT_DIR" ] && ! is_dry || return 0
+  { printf '%s\tusage\t-\t-\t%s %s\n' "$(date '+%F %T')" "$1" "$(printf '%s' "$2" | tr '\t\n\r' '   ' | cut -c1-300)" \
+      >> "$NIGHT_DIR/usage.tsv"; } 2>/dev/null
+  return 0
 }
 # usage_persistent <reason>: a failure that waiting does not cure (the token refused, a missing token).
 usage_persistent() {
@@ -619,6 +629,39 @@ post_comment() {
   done
   [ "$rc" = 0 ] || log "could not comment on #$n ($kind)"
   rm -f "$f"
+  return $rc
+}
+
+# post_night_report <issue> <sha> <report-file>: the night report as a comment of the issue "Night
+# reports", with the raw events of the night ($NIGHT_DIR/events.tsv, and usage.tsv: the readings of
+# the weekly usage) in a collapsed, machine-readable block (`<!-- incognita:events v1 night=… -->`, a
+# fenced TSV; format, writer and reader: scripts/stats.py). The state of a night lives only on the
+# server, which the owner deletes between nights: these blocks are what the statistics of the site
+# are computed from (owner request of 2026-11-19). The block is appended to the report when both fit
+# in one comment (GitHub takes 65 536 characters; INCOGNITA_COMMENT_MAX bytes here), else posted
+# after it in comments of their own (kind `night-events`), as many as needed. Lines that are not
+# events, or that look like a secret, are left out by stats.py. Non-zero if a comment failed.
+: "${INCOGNITA_COMMENT_MAX:=64000}"
+post_night_report() {
+  local issue=$1 sha=$2 report=$3 d n k rc=0
+  d=$(mktemp -d) || return 1
+  sanitize 60000 < "$report" > "$d/report.md"
+  if ! n=$(python3 -I "$INCOGNITA_SCRIPTS/stats.py" events-block --night "$INCOGNITA_NIGHT" --out "$d/parts" \
+        "$NIGHT_DIR/events.tsv" "$NIGHT_DIR/usage.tsv" 2>"$d/err") || ! [[ "$n" =~ ^[0-9]+$ ]]; then
+    log "the raw events of the night could not be formatted ($(head -c 300 "$d/err" | tr '\n' ' ')): report posted without them"
+    n=0
+  fi
+  if [ "$n" = 1 ] && [ $(( $(wc -c < "$d/report.md") + $(wc -c < "$d/parts/part-1.md") + 1 )) -le "$INCOGNITA_COMMENT_MAX" ]; then
+    { printf '\n'; cat "$d/parts/part-1.md"; } >> "$d/report.md"
+    n=0
+  fi
+  post_comment "$issue" night-report "$sha" "$d/report.md" >/dev/null || rc=1
+  for k in $(seq 1 "$n"); do
+    { printf 'Raw events of the night of %s, part %d of %d (its night report is above).\n\n' "$INCOGNITA_NIGHT" "$k" "$n"
+      cat "$d/parts/part-$k.md"; } > "$d/c.md"
+    post_comment "$issue" night-events "$sha" "$d/c.md" >/dev/null || rc=1
+  done
+  rm -rf "$d"
   return $rc
 }
 

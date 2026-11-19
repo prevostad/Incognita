@@ -257,11 +257,10 @@ write_report() {
   if ! is_dry && owner_login >/dev/null 2>&1; then
     local issue m
     m=$(repo_git rev-parse origin/main 2>/dev/null)
+    # With the night's raw events (events.tsv, usage.tsv) for scripts/stats.py: post_night_report.
     if issue=$(pinned_issue "Night reports"); then
-      sanitize 60000 < "$f" > "$f.post"
-      post_comment "$issue" night-report "${m:-0000000000000000000000000000000000000000}" "$f.post" >/dev/null \
-        && log "posted on issue #$issue"
-      rm -f "$f.post"
+      post_night_report "$issue" "${m:-0000000000000000000000000000000000000000}" "$f" \
+        && log "posted on issue #$issue (with the raw events of the night)"
     fi
   fi
 }
