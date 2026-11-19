@@ -15,7 +15,8 @@ LML bounds the expected regret of its UCB algorithm `ucbAlgorithm K c` at horizo
 `∑ a, (8 c log (n + 1) / Δ_a + Δ_a (4 + 2 σ² / (c - 2 σ²)))` for σ²-sub-Gaussian rewards and
 `c > 2 σ²` (`Bandits.UCB.regret_le_of_gt_two`). This is `O(log n)`, so UCB is consistent, in the
 regret sense of LMLExplore (`LMLExplore.Bandits.IsConsistent`), over the bandits whose rewards are
-σ²-sub-Gaussian.
+σ²-sub-Gaussian. The logarithmic regret of UCB is [ACF02, Theorem 1] for rewards in `[0, 1]`;
+the bound used here is LML's.
 
 ## Main statements
 

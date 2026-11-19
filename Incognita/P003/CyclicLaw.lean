@@ -10,11 +10,15 @@ public import Incognita.TransferBandits.Checks
 
 /-! # P003, prop:stopped-games (c): no stopped prior game has the law of the cyclic map
 
-Proof of [INC-P003, prop:stopped-games (c)], following the paper's proof. The events `{τ = 0}`
-and `{τ ≥ 1, A'_1 = k}` partition the source space and depend only on the randomisation, so
-their probabilities do not depend on the source instance; each is bounded by the probability of
-an event of the stopped counts (`N' = 0`, or `N'_k ≥ 1`) that the cyclic map gives probability `0`
-under a well-chosen Dirac instance. The probabilities sum to `1`: a contradiction.
+Proof of [INC-P003, prop:stopped-games (c)], following the paper's proof. The cyclic map is a
+classical example: its pattern is that of the stable function that is not sequential of
+[Ber76, Proposition II.2.2], and for three independent Markov chains a cyclic stopping point is not
+predictable [MV81, Section 5.2].
+
+The events `{τ = 0}` and `{τ ≥ 1, A'_1 = k}` partition the source space and depend only on the
+randomisation, so their probabilities do not depend on the source instance; each is bounded by the
+probability of an event of the stopped counts (`N' = 0`, or `N'_k ≥ 1`) that the cyclic map gives
+probability `0` under a well-chosen Dirac instance. The probabilities sum to `1`: a contradiction.
 
 ## Main statements
 

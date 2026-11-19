@@ -16,6 +16,10 @@ under `P'_{ν₂'}`, the density `∏_k ∏_{j < n_k} (dν'_k/dν₂'_k)(X'_{k,j
 
 ## Main statements
 
+* `sourceLaw_eq_withDensity`: [INC-P003, lem:source-law]: if the sizes of the arms of `Z` vanish
+  almost surely under `P'_{ν'}` and `ν'_k ≪ ν₂'_k` for the other arms, the law of the source data
+  under `ν'` has the density `1{s_k = 0 for k ∈ Z} ∏_k ∏_{j < n_k(s)} (dν'_k/dν₂'_k)(x_{k,j})` with
+  respect to its law under `ν₂'`.
 * `map_boxRestrict_sourceMeasure`: the randomisation and the values of the box of `n` have law
   `volume^{⊗ℕ} ⊗ ⊗_k ⊗_{j < n_k} ν'_k`.
 * `sourceMeasure_preimage_boxRestrict`: for `F` measurable,

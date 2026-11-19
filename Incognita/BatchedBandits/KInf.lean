@@ -63,9 +63,10 @@ lemma dInf_unitLaws_eq_zero_of_lt_integral (hP : P ∈ unitLaws) (hμ : μ < P[i
   exact nonpos_iff_eq_zero.1 ((dInf_le hP hμ).trans_eq (klDiv_self P))
 
 /-- [INC-P006, Proposition `prop:kinf`(iii), lower bound] `kl(p, μ) ≤ 𝒦_inf(P, μ)` for
-`p = m(P) ≤ μ`: every competitor `Q` has mean `q > μ`, and `KL(P ‖ Q) ≥ kl(p, q) ≥ kl(p, μ)`. -/
+`p = m(P) ≤ μ`. -/
 lemma klBer_le_dInf_unitLaws (hP : P ∈ unitLaws) (hpμ : P[id] ≤ μ) :
     klBer P[id] μ ≤ dInf unitLaws P μ := by
+  -- Every competitor `Q` has mean `q > μ`, and `KL(P ‖ Q) ≥ kl(p, q) ≥ kl(p, μ)`.
   have := hP.1
   refine le_dInf_iff.2 fun Q hQ hm ↦ ?_
   have := hQ.1
@@ -95,10 +96,11 @@ lemma integral_id_smul_add_smul_dirac_one (hP : P ∈ unitLaws) {u : ℝ≥0} (h
   simp [NNReal.smul_def, NNReal.coe_sub hu]
 
 /-- [INC-P006, Proposition `prop:kinf`(iii), upper bound] For `p = m(P) ≤ μ < 1`,
-`𝒦_inf(P, μ) ≤ log ((1 - p) / (1 - μ))`. For `u ∈ (u₀, 1)`, `u₀ = (μ - p) / (1 - p)`, the mixture
-`(1 - u) P + u δ_1` is a competitor with `KL(P ‖ ·) ≤ log (1 / (1 - u))`; let `u ↓ u₀`. -/
+`𝒦_inf(P, μ) ≤ log ((1 - p) / (1 - μ))`. -/
 lemma dInf_unitLaws_le_ofReal_log (hP : P ∈ unitLaws) (hpμ : P[id] ≤ μ) (hμ : μ < 1) :
     dInf unitLaws P μ ≤ ENNReal.ofReal (Real.log ((1 - P[id]) / (1 - μ))) := by
+  -- For `u ∈ (u₀, 1)`, `u₀ = (μ - p) / (1 - p)`, the mixture `(1 - u) P + u δ_1` is a competitor
+  -- with `KL(P ‖ ·) ≤ log (1 / (1 - u))`; let `u ↓ u₀`.
   have := hP.1
   set p := P[id] with hp
   have hp1 : p < 1 := hpμ.trans_lt hμ

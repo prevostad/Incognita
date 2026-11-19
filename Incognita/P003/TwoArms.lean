@@ -11,10 +11,19 @@ public import Mathlib.MeasureTheory.Constructions.Polish.Basic
 
 /-! # P003, prop:stopped-games (b): with two arms, bounded size rules are stopped games
 
-Proof of [INC-P003, prop:stopped-games (b)], following the paper's proof.
+Proof of [INC-P003, prop:stopped-games (b)], following the paper's proof. The result is a
+pointwise version of [MV81, Theorem 4] (on `ℕ²`, under a conditional independence condition, every
+stopping point is predictable, that is, reached by a policy), and its proof follows that of MV81:
+the events where the size of one arm is reached and that of the other is not are separated, here
+by Lusin's separation theorem.
 
 ## Main statements
 
+* `two_arms_sizeRule_eq_stoppedCounts`: the frozen statement: with two arms, every bounded size rule
+  is, at every point, the stopped counts of a prior game over `sup |N'|` rounds.
+* `exists_separating`: the separation step: with two arms `a₁, a₂` and counts `m`, a Borel set of
+  the data seen at `m` contains the data of the points where the size of `a₁` is reached and that
+  of `a₂` is not, and none of the data of the points where the converse holds.
 * `exists_stack_of_history`: the values of the stacks read by a prior game are measurable
   functions of its history: the `(j+1)`-th value observed on arm `a` is `X'_{a,j}`.
 -/
@@ -215,7 +224,8 @@ lemma exists_separating {N : SourceSpace α → α → ℕ} (hN : IsSizeRule N) 
 end Helpers
 
 /-- [INC-P003, prop:stopped-games (b)] With two arms, every bounded size rule is, at every point,
-the stopped counts of a prior game over `sup |N'|` rounds. -/
+the stopped counts of a prior game over `sup |N'|` rounds: a pointwise version of
+[MV81, Theorem 4] (on `ℕ²`, stopping points are predictable). -/
 theorem two_arms_sizeRule_eq_stoppedCounts {α : Type*} [Fintype α] [DecidableEq α]
     [MeasurableSpace α] [MeasurableSingletonClass α] (hK : Fintype.card α = 2)
     {N : SourceSpace α → α → ℕ} (hN : IsSizeRule N) (hbdd : ∃ M : ℕ, ∀ ω, ∑ a, N ω a ≤ M) :

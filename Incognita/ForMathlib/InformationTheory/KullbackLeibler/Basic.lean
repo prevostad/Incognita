@@ -31,11 +31,11 @@ namespace Incognita
 variable {α : Type*} [MeasurableSpace α] {μ ν : Measure α}
 
 /-- **Relative entropy under a bounded density**: if `c • μ ≤ ν` for probability measures `μ`, `ν`
-and `c > 0`, then `KL(μ ‖ ν) ≤ log (1 / c)`. Indeed `μ ≪ ν` with `dμ/dν ≤ 1 / c`, so the
-log-likelihood ratio is at most `-log c`, `μ`-almost everywhere. -/
+and `c > 0`, then `KL(μ ‖ ν) ≤ log (1 / c)`. -/
 lemma klDiv_le_ofReal_neg_log_of_smul_le [IsProbabilityMeasure μ] [IsProbabilityMeasure ν]
     {c : ℝ≥0} (hc : 0 < c) (h : c • μ ≤ ν) :
     klDiv μ ν ≤ ENNReal.ofReal (-log c) := by
+  -- `μ ≪ ν` with `dμ/dν ≤ 1 / c`, so the log-likelihood ratio is at most `-log c`, `μ`-a.e.
   have hμν : μ ≪ ν := by
     intro s hs
     have h1 := h s

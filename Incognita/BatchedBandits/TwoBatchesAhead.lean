@@ -11,14 +11,22 @@ public import Incognita.ForLML.InformationTheory.KullbackLeibler.Convex
 public import Incognita.ForLML.SequentialLearning.Algorithm
 public import LMLExplore.InformationTheory.KullbackLeibler.Bernoulli
 
-/-! # Two batches ahead: tools
+/-! # Two batches ahead
 
-Tools for the lower bound "two batches ahead" of [INC-P000, Lemma `lem:twobatches`], by the route
-of `formalisation.tex` (a one-sided change of measure and data processing, with no concentration
+The lower bound "two batches ahead" of [INC-P000, Lemma `lem:twobatches`(ii)], by the route of
+`formalisation.tex` (a one-sided change of measure and data processing, with no concentration
 of the log-likelihood ratios).
 
 ## Main statements
 
+* `eventually_lt_integral_pullCount_div_log_t_add_two`: [INC-P000, Lemma `lem:twobatches`(ii)]: for
+  a learner batched on a grid and consistent at its batch ends on `𝒫`, and a suboptimal arm `a`
+  with `E_ν[N_a(t_(ℓ+1))] = O(log t_(ℓ+2))`, `liminf_ℓ E_ν[N_a(t_ℓ)] / log t_(ℓ+2) ≥
+  1 / 𝒦_inf(ν_a, m⋆)`.
+* `two_batches_finite`: the finite-horizon inequality behind it, for three bandits that differ
+  only at `a`.
+* `exists_two_alternatives`: the alternative instances `κ⁺, κ⁻ ∈ 𝒫`.
+* `two_batches_step`: the bound at a fixed index `ℓ`, given the alternative instances.
 * `exp_neg_div_le_of_klBer_le`: data processing in multiplicative form: if `d(q, p) ≤ D` with
   `q > 0`, then `p ≥ exp (-(D + log 2) / q)`.
 * `klDiv_map_hist_switch_left`: the divergence between the switched environment (`ν` before `r`,
@@ -37,7 +45,7 @@ namespace Incognita.BatchedBandits
 
 /-- **Data processing, multiplicative form.** If the binary relative entropy `d(q, p)` is at most
 `D ≥ 0`, with `q ∈ (0, 1]` and `p ∈ [0, 1]`, then `p ≥ exp (-(D + log 2) / q)`: from
-`d(q, p) ≥ q log (1 / p) - log 2`. -/
+`d(q, p) ≥ q log (1 / p) - log 2`, which follows from the decomposition [GMS19, (11)]. -/
 lemma exp_neg_div_le_of_klBer_le {p q D : ℝ} (hq0 : 0 < q) (hq1 : q ≤ 1) (hp : p ∈ Set.Icc 0 1)
     (hD : 0 ≤ D) (hkl : LMLExplore.klBer q p ≤ ENNReal.ofReal D) :
     exp (-(D + log 2) / q) ≤ p := by
@@ -476,9 +484,9 @@ lemma rhs_le_of_counts_le (alg : Algorithm Unit α ℝ) (κm κp : Kernel α ℝ
   refine div_le_div_of_nonneg_right ?_ hMpos.le
   linarith
 
-/-- The arithmetic at the end of the proof two batches ahead: from the logarithm of the
-finite-horizon inequality (`hlog`), the bound on the cutoff (`hLlam`) and `q ≥ 1 - γ / 4`, a
-contradiction with `T₀ ≤ c' log M` once `log M` is large. -/
+/-- **Arithmetic two batches ahead.** Let `0 < γ ≤ 1`, `D ≥ 0`, `lM > 0` and `lam > 0`. If
+`-lam L - (T₀ D + log 2) / q ≤ (γ / 4) lM - lM`, `lam L ≤ (γ / 4) lM + lam`, `q ≥ 1 - γ / 4`,
+`c' D ≤ 1 - γ` and `lam + log 2 + 1 < (γ / 4) lM`, then `c' lM < T₀`. -/
 lemma two_batches_arith {T₀ D c' γ lM lam L q : ℝ} (hγ : 0 < γ) (hγ1 : γ ≤ 1)
     (hD : 0 ≤ D) (hlM : 0 < lM) (hlam : 0 < lam)
     (hlog : L * -lam + -(T₀ * D + Real.log 2) / q ≤ γ / 4 * lM - lM)

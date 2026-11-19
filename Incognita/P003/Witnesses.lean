@@ -12,7 +12,7 @@ public import LMLExplore.Bandits.AsymptoticOptimality
 
 For each frozen statement `Incognita.Statements.P003.<name>`, the lemma
 `Incognita.P003.<name>_satisfiable` gives an explicit instance satisfying all its hypotheses at
-once (AGENTS.md §6.4). The instances use the arms `Bool` (two arms) or `Fin 3` (three arms),
+once. The instances use the arms `Bool` (two arms) or `Fin 3` (three arms),
 Dirac and Bernoulli laws, constant size rules, and constant learners. The hypothesis "`σ` is
 consistent on `𝒫^K`" of `ofAlgorithm_isConsistent` is satisfied by LMLExplore's KL-UCB
 (`isConsistentOnUnit_klucb`, proved here from `LMLExplore.Bandits.KLUCB.isConsistent`).

@@ -14,7 +14,8 @@ public import Incognita.ForMathlib.Probability.Moments.Hoeffding
 `ν` on `[0, 1]` (the stack of an arm), `μ ∈ [0, 1)` a level, `κ(μ) = log (1/(1-μ))`, and
 `F(λ) = ∑_{k < N} log (1 - λ (Y_k - μ))`, so that `N 𝒦_inf(ν̂_N, μ) = sup_{λ ∈ [0, 1/(1-μ))} F(λ)`
 and `𝒦_inf(ν, μ) = sup_λ E_ν[log (1 - λ (Y - μ))]`. For `ε' > 0` let `ϖ = e^(-ε'/4)`,
-`R' = κ(μ) - log (1 - ϖ)` and `ρ' = ε'² / (2 R'²)`.
+`R' = κ(μ) - log (1 - ϖ)` and `ρ' = ε'² / (2 R'²)`. These bounds are variants of those of
+[CGMMS13, Section 5, Theorem 2], [HT15] and [GHMS22, Section 2.3].
 
 * `measure_forall_sum_log_le_le`: Lemma `lem:lowerdev`, for every `λ ∈ [0, 1/(1-μ))`,
   `P(∀ λ'', F(λ'') ≤ N (E_ν[log (1 - λ (Y - μ))] - 3ε'/4)) ≤ e^(-ρ' N)`; with `λ` such that
@@ -51,11 +52,10 @@ lemma log_one_sub_mul_mem {lam μ y : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1) (hla
       mul_le_mul_of_nonneg_left hlam1.le hμ0]
 
 /-- [INC-P000, Lemma `lem:lowerdev`] For independent `Y_k` of law `ν` on `[0, 1]`, `μ ∈ [0, 1)`,
-`ε' > 0`, `λ ∈ [0, 1/(1-μ))` and `N ≥ 1`, with `A = E_ν[log (1 - λ (Y - μ))]`,
-`P(∀ λ'' ∈ [0, 1/(1-μ)), F(λ'') ≤ N (A - 3ε'/4)) ≤ e^(-ρ' N)`. Proof: at `λ'' = ϖ λ` the test
-function `g(y) = log (1 - ϖ λ (y - μ))` has values in an interval of length `R'` and mean
-`≥ A - ε'/4` (Lemma `lem:kinf`(vi)); Hoeffding's inequality (Lemma `lem:hoeffding`(a)) for
-`(g(Y_k) - log (1 - ϖ)) / R' ∈ [0, 1]` concludes. -/
+`ε' > 0`, `λ ∈ [0, 1/(1-μ))` and `N ≥ 1`, with `A = E_ν[log (1 - λ (Y - μ))]` and
+`F(λ'') = ∑_{k < N} log (1 - λ'' (Y_k - μ))`,
+`P(∀ λ'' ∈ [0, 1/(1-μ)), F(λ'') ≤ N (A - 3ε'/4)) ≤ exp (-ε'² N / (2 R'²))`, where
+`R' = log (1/(1-μ)) - log (1 - e^(-ε'/4))`. -/
 lemma measure_forall_sum_log_le_le (hind : iIndepFun Y P) (hmeas : ∀ k, Measurable (Y k))
     {ν : Measure ℝ} [IsProbabilityMeasure ν] (hlaw : ∀ k, P.map (Y k) = ν)
     (hν : ∀ᵐ y ∂ν, y ∈ Set.Icc (0 : ℝ) 1) {μ ε' lam : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1)
@@ -65,6 +65,10 @@ lemma measure_forall_sum_log_le_le (hind : iIndepFun Y P) (hmeas : ∀ k, Measur
           N * (∫ y, Real.log (1 - lam * (y - μ)) ∂ν - 3 * ε' / 4)} ≤
       ENNReal.ofReal (exp (-(ε' ^ 2 / (2 * (Real.log (1 / (1 - μ)) -
         Real.log (1 - exp (-(ε' / 4)))) ^ 2) * N))) := by
+  -- With `ϖ = e^(-ε'/4)`: at `λ'' = ϖ λ` the test function `g(y) = log (1 - ϖ λ (y - μ))` has
+  -- values in an interval of length `R'` and mean `≥ A - ε'/4` (Lemma `lem:kinf`(vi));
+  -- Hoeffding's inequality (Lemma `lem:hoeffding`(a)) for `(g(Y_k) - log (1 - ϖ)) / R' ∈ [0, 1]`
+  -- concludes.
   set ϖ := exp (-(ε' / 4)) with hϖ
   have hϖ0 : 0 < ϖ := Real.exp_pos _
   have hϖ1 : ϖ < 1 := Real.exp_lt_one_iff.mpr (by linarith)
@@ -176,11 +180,10 @@ lemma log_sub_log_le_abs_div {a b c : ℝ} (ha : 0 < a) (hc : 0 < c) (hcb : c �
 /-- [INC-P000, Lemma `lem:upperdev`] For independent `Y_k` of law `ν` on `[0, 1]`, `μ ∈ [0, 1)`,
 `ε' > 0`, `n ≥ 1` and an upper bound `K` of the dual formula of `𝒦_inf(ν, μ)`
 (`E_ν[log (1 - λ (Y - μ))] ≤ K` for every `λ ∈ [0, 1/(1-μ))`; `K = 𝒦_inf(ν, μ)` in the paper),
-`P(∃ λ ∈ [0, 1/(1-μ)), F(λ) ≥ n (K + 7ε'/8)) ≤ n_g e^(-ρ' n)` with
-`n_g = ⌈8 / (ε' (1 - ϖ)(1 - μ))⌉ + 1`; the event contains `{𝒦_inf(ν̂_n, μ) ≥ 𝒦_inf(ν, μ) + ε'}`.
-Proof: the net `λ_j = min(j η', ϖ/(1-μ))`, `η' = ε'(1 - ϖ)/8`; `F` is `n/(1 - ϖ)`-Lipschitz on
-`[0, ϖ/(1-μ)]`; at `λ' = ϖ λ` (Lemma `lem:kinf`(vi)) and the nearest net point,
-`F(λ_j) ≥ n (K + ε'/2)`; Hoeffding at each point of the net. -/
+with `F(λ) = ∑_{k < n} log (1 - λ (Y_k - μ))`,
+`P(∃ λ ∈ [0, 1/(1-μ)), F(λ) ≥ n (K + 7ε'/8)) ≤ n_g exp (-ε'² n / (2 R'²))`, where
+`R' = log (1/(1-μ)) - log (1 - ϖ)`, `n_g = ⌈8 / (ε' (1 - ϖ)(1 - μ))⌉ + 1` and `ϖ = e^(-ε'/4)`;
+the event contains `{𝒦_inf(ν̂_n, μ) ≥ 𝒦_inf(ν, μ) + ε'}`. -/
 lemma measure_exists_add_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ k, Measurable (Y k))
     {ν : Measure ℝ} [IsProbabilityMeasure ν] (hlaw : ∀ k, P.map (Y k) = ν)
     (hν : ∀ᵐ y ∂ν, y ∈ Set.Icc (0 : ℝ) 1) {μ ε' K : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1)
@@ -192,6 +195,9 @@ lemma measure_exists_add_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ k, Me
       ENNReal.ofReal ((⌈8 / (ε' * (1 - exp (-(ε' / 4))) * (1 - μ))⌉₊ + 1 : ℕ) *
         exp (-(ε' ^ 2 / (2 * (Real.log (1 / (1 - μ)) -
           Real.log (1 - exp (-(ε' / 4)))) ^ 2) * n))) := by
+  -- The net `λ_j = min(j η', ϖ/(1-μ))`, `η' = ε'(1 - ϖ)/8`; `F` is `n/(1 - ϖ)`-Lipschitz on
+  -- `[0, ϖ/(1-μ)]`; at `λ' = ϖ λ` (Lemma `lem:kinf`(vi)) and the nearest net point,
+  -- `F(λ_j) ≥ n (K + ε'/2)`; Hoeffding's inequality at each point of the net.
   set ϖ := exp (-(ε' / 4)) with hϖ
   have hϖ0 : 0 < ϖ := Real.exp_pos _
   have hϖ1 : ϖ < 1 := Real.exp_lt_one_iff.mpr (by linarith)

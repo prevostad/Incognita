@@ -24,9 +24,9 @@ batch is the rounds `0` and `1`, and at the round `1` the only arm of index `⊤
 pulled at the round `0`, so KL-UCB ignores the reward of the round `0` there.
 
 No witness is given with a limit `x > 1`: it would need a batched learner consistent on `𝒫` on a
-grid with `x > 1`, which is what Theorem `thm:upper` provides (HY). This is why Theorem
-`thm:lower`(ii) is frozen through Theorem `thm:main`(a), which states it for every `x ≥ 1`
-(`lower_limsup`, `lower_liminf`), and not as a separate statement with the hypothesis `x > 1`.
+grid with `x > 1`, which is what Theorem `thm:upper` provides (HY). Theorem `thm:lower`(ii) is
+contained in the statements of Theorem `thm:main`(a), which hold for every `x ≥ 1`
+(`lower_limsup`, `lower_liminf`).
 -/
 
 @[expose] public section

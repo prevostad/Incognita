@@ -8,16 +8,10 @@ module
 public import LMLExplore.Algebra.BigOperators.Intervals
 
 /-!
-# Placeholder
+# Base module
 
-The library starts empty. This file is a placeholder, to delete when the first result lands.
+A module with no declaration, kept because `Statements/Basic.lean` and `Exploration/Basic.lean`
+import it.
 -/
 
 @[expose] public section
-
-namespace Incognita
-
-/-- A placeholder, to delete together with this file. -/
-lemma placeholder : True := trivial
-
-end Incognita

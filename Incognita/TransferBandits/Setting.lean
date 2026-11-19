@@ -17,7 +17,11 @@ from the source space whose event `{N' = n}` depends only on the randomisation a
 in the box of `n`. The learner then plays `T` rounds of the bandit game `ν`, its actions being
 Markov kernels of the source data and of the online history.
 
-## Conventions (fixed once for the roadmap TransferBandits)
+The source model is that of [PMRM26, Section 3.2] (prior counts chosen by an unknown adaptive
+strategy, independent of the target game), with adaptive sizes given by size rules: a size rule is
+a stopping point of the `K`-parameter filtration `(𝒢_n)_{n ∈ ℕ^K}` [MV81, Section 1.3].
+
+## Conventions
 
 * Arms are a finite type `α` with measurable singletons (the paper's `[K]`, `K = Fintype.card α`).
 * A law on `[0,1]` is a probability measure on `ℝ` concentrated on `Set.Icc 0 1`; an instance is a
@@ -30,7 +34,8 @@ Markov kernels of the source data and of the online history.
 * The source data `(N', (X'_{k,j})_{(k,j) ∈ B(N')})` of the paper, an element of the disjoint union
   `⨆_n [0,1]^{B(n)}`, is represented by the pair `(N', x)` where `x k j = X'_{k,j}` in the box and
   `x k j = 0` outside it. The map from the disjoint union to this representation is a measurable
-  injection with a measurable inverse on its range, so laws, divergences and learners correspond.
+  injection with a measurable inverse on its range, so laws, divergences and learners correspond
+  (a modelling remark, not formalised).
 
 ## Main definitions
 

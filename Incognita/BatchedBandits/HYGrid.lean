@@ -70,14 +70,15 @@ lemma one_le_log_logEnd {ℓ : ℕ} (h : Real.exp (Real.exp 1) ≤ (g.t ℓ : �
 
 /-- [INC-P000, Lemma `lem:sparse`] With the default `ϑ`, for every `k`, the number of activated
 batches `ℓ` (`s_ℓ < t_(ℓ+1)`) with `t_ℓ ≥ e^e` and `L_ℓ ∈ [2^k, 2^(k+1))` is at most `k + 1`:
-written for every finite set `S` of such batches. Each jump is by a factor at least `1 + u`,
-`u = 1 / ((k + 1) log 2)`, the block has ratio `2`, so `(|S| - 1) u / 2 < log 2`, and
-`2 (log 2)² < 1`. The paper's `k ≥ 1` is not assumed: for `k = 0` the set is empty (`L_ℓ ≥ e`). -/
+written for every finite set `S` of such batches. The paper's `k ≥ 1` is not assumed: for `k = 0`
+the set is empty (`L_ℓ ≥ e`). -/
 lemma card_activated_le {k : ℕ} (S : Finset ℕ)
     (hS : ∀ ℓ ∈ S, g.imedEnd g.hyTheta ℓ < g.t (ℓ + 1) ∧
       Real.exp (Real.exp 1) ≤ (g.t ℓ : ℝ) ∧ (2 : ℝ) ^ k ≤ g.logEnd ℓ ∧
       g.logEnd ℓ < 2 ^ (k + 1)) :
     S.card ≤ k + 1 := by
+  -- Each jump is by a factor at least `1 + u`, `u = 1 / ((k + 1) log 2)`, the block has ratio `2`,
+  -- so `(|S| - 1) u / 2 < log 2`, and `2 (log 2)² < 1`.
   set u : ℝ := 1 / ((k + 1) * Real.log 2) with hu
   have hlog2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
   have hu0 : 0 < u := by positivity

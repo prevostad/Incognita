@@ -174,9 +174,10 @@ lemma Grid.logEnd_add_le_pow_mul {K : ℕ} (g : Grid K) {k : ℕ} (hk : 1 ≤ k)
       _ ≤ xp * (xp ^ i * g.logEnd k) := mul_le_mul_of_nonneg_left ih hxp
       _ = xp ^ i * xp * g.logEnd k := by ring
 
-/-- The induction of the proof of Lemma `lem:growth`: with `w(n')` the mass of the batches of
-`(k₀, n'] ∖ S` and `h(n')` the number of batches of `(k₀, n']` in `S`,
-`log (t_(n') + W' - w(n')) ≤ (1 + β₀)^h(n') (log (t_(k₀) + W') + h(n') log 2)`. -/
+/-- The induction of the proof of Lemma `lem:growth`. Let `k₀ ≥ 1`, `β₀ ≥ 0` with `x_j ≤ 1 + β₀`
+for `j > k₀`, a set `S` of batches, and let `w(m)` be the mass `∑ (t_j - t_(j-1))` of the batches
+`j ∈ (k₀, m] ∖ S` and `h(m)` the number of batches of `(k₀, m]` in `S`. If `w(n) ≤ W`, then for
+`k₀ ≤ n' ≤ n`, `log (t_(n') + W - w(n')) ≤ (1 + β₀)^h(n') (log (t_(k₀) + W) + h(n') log 2)`. -/
 lemma Grid.log_t_add_sub_le {K : ℕ} (g : Grid K) {k₀ : ℕ} (hk₀ : 1 ≤ k₀) {β₀ : ℝ}
     (hβ₀ : 0 ≤ β₀) (hx : ∀ j, k₀ < j → g.ratio j ≤ 1 + β₀) (S : Finset ℕ) {W : ℝ} {n : ℕ}
     (hW : ∑ j ∈ Finset.Ioc k₀ n, (if j ∈ S then 0 else ((g.t j : ℝ) - g.t (j - 1))) ≤ W)

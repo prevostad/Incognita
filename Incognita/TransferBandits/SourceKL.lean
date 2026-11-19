@@ -11,12 +11,17 @@ public import Incognita.TransferBandits.OnlineKL
 /-! # The divergence of the source data of a size rule
 
 [INC-P003, prop:source-kl]: for a size rule `N'` with `E_{ν'}[N'_k] < ∞` for every arm,
-`KL(P^D_{ν',N'}, P^D_{ν₂',N'}) = ∑_k E_{ν'}[N'_k] KL(ν'_k, ν₂'_k)`.
+`KL(P^D_{ν',N'}, P^D_{ν₂',N'}) = ∑_k E_{ν'}[N'_k] KL(ν'_k, ν₂'_k)`. For a source collected by a
+bandit game, this source term is part of the decomposition of [PMRM26, Lemma 22].
 
 ## Main statements
 
-* `integrable_sum_range_sizeRule`, `integral_sum_range_sizeRule`: Wald's identity for integrable
-  real functions.
+* `klDiv_sourceLaw`: [INC-P003, prop:source-kl], in `ℝ≥0∞` (with `0 · ∞ = 0`).
+* `klDiv_sourceLaw_of_ne_top`, `klDiv_sourceLaw_eq_top`: its finite and infinite cases.
+* `lintegral_sourceCount_gameMeasure`: [INC-P003, lem:mixture]: the expected size of an arm under
+  the law of the game is its expected size under `P'_{ν'}`.
+* `integrable_sum_range_sizeRule`, `integral_sum_range_sizeRule`: Wald's identity [W44] (to be
+  checked) for integrable real functions.
 -/
 
 @[expose] public section
@@ -240,13 +245,14 @@ lemma klDiv_sourceLaw_of_ne_top [Fintype α] {N : SourceSpace α → α → ℕ}
 
 /-- **Divergence of the source data**, infinite case [INC-P003, prop:source-kl]: if
 `E_{ν'}[N'_k] > 0` and `KL(ν'_k, ν₂'_k) = ∞` for some arm, the divergence of the laws of the
-source data is infinite. The statistic `(1{N'_k > 0}, x_{k,1})` of the source data has the law
-`Ber(P(N'_k > 0)) ⊗ (ν'_k on {N'_k > 0}, δ_0 otherwise)`, since `{N'_k > 0}` is independent of
-`X'_{k,1}`; the chain rule bounds its divergence from below by `P(N'_k > 0) KL(ν'_k, ν₂'_k)`. -/
+source data is infinite. -/
 lemma klDiv_sourceLaw_eq_top [Finite α] {N : SourceSpace α → α → ℕ} (hN : IsSizeRule N)
     (ν' ν₂' : Kernel α ℝ) [IsMarkovKernel ν'] [IsMarkovKernel ν₂'] (k : α)
     (hE : ∫⁻ ω, (N ω k : ℝ≥0∞) ∂(sourceMeasure ν') ≠ 0) (hKL : klDiv (ν' k) (ν₂' k) = ∞) :
     klDiv (sourceLaw ν' N) (sourceLaw ν₂' N) = ∞ := by
+  -- The statistic `(1{N'_k > 0}, x_{k,1})` of the source data has the law
+  -- `Ber(P(N'_k > 0)) ⊗ (ν'_k on {N'_k > 0}, δ_0 otherwise)`, since `{N'_k > 0}` is independent of
+  -- `X'_{k,1}`; the chain rule bounds its divergence from below by `P(N'_k > 0) KL(ν'_k, ν₂'_k)`.
   have hNk : Measurable fun ω : SourceSpace α ↦ N ω k :=
     (measurable_pi_apply k).comp hN.measurable
   have hD := measurable_sourceData hN.measurable

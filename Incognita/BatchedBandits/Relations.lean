@@ -30,6 +30,22 @@ notions reduce to their sequential counterparts.
 * `isBatched_sequential_iff`: batched on `𝖲_s` iff the rewards are ignored in the rounds `< s`.
 * `isConsistentAtBatchEnds_sequential_iff`: consistent at the batch ends of `𝖲_s` iff
   (sequentially) consistent.
+
+Further relations, in the namespace `Relations`:
+
+* `Relations.isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff`: a learner batched on `g`
+  ignores the rewards in the first batch, from `IsBatched.of_isFiner` and
+  `isBatched_sequential_iff`.
+* `Relations.kinf_bounds_of_gap_pos_of_kinf_bounds`: [INC-P006, Proposition `prop:kinf`], (iii)
+  implies (v).
+* `Relations.dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le`:
+  `𝒦_inf(P, m) = ∞` for `m ≥ 1` gives LMLExplore's value of `d_inf` over the Bernoulli laws.
+* `Relations.unitLaws_eq_image_unitIntervalLaws`: the laws on `[0, 1]` are LMLExplore's
+  `unitIntervalLaws`.
+* `Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws`: LMLExplore's transportation cost `K⁺`
+  is at most `𝒦_inf`.
+* `Relations.klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper`: `kl(p, μ) ≤ 𝒦_inf(P, μ)`, from
+  LMLExplore's bound on `K⁺`.
 -/
 
 @[expose] public section
@@ -192,9 +208,10 @@ lemma isConsistentAtBatchEnds_sequential_iff [Finite α] [MeasurableSingletonCla
 
 end Consistency
 
-/-! ### Relations found by gardening
+/-! ### Further relations
 
-`garden` records each relation below in `catalogue/relations.toml`. -/
+Implications between the items of [INC-P006, Theorem `thm:main`] and of
+[INC-P006, Proposition `prop:kinf`], and identifications with the objects of LMLExplore. -/
 
 namespace Relations
 

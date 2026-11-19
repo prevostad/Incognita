@@ -14,10 +14,11 @@ public import Mathlib.Probability.Independence.Integration
 [INC-P003, lem:wald]: for a size rule `N'`, an arm `k` and a measurable `φ ≥ 0`,
 `E_{ν'}[∑_{j < N'_k} φ(X'_{k,j})] = E_{ν'}[N'_k] ∫ φ dν'_k` (0-based indices).
 
-The proof is Wald's, with a stopping point in place of a stopping time: the event `{j < N'_k}` is
-the complement of the countable union of the events `{N' = n}` with `n_k ≤ j`, each of which reads
-only the randomisation and the values of the box of `n`, which does not contain `(k, j)`; so it
-is independent of `X'_{k,j}` (the coordinates of the stacks are independent).
+The proof is that of Wald's identity [W44] (to be checked), with a stopping point in place of a
+stopping time: the event `{j < N'_k}` is the complement of the countable union of the events
+`{N' = n}` with `n_k ≤ j`, each of which reads only the randomisation and the values of the box of
+`n`, which does not contain `(k, j)`; so it is independent of `X'_{k,j}` (the coordinates of the
+stacks are independent).
 
 ## Main statements
 

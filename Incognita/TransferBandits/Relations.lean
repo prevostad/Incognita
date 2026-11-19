@@ -11,7 +11,7 @@ public import Incognita.TransferBandits.Consistency
 
 /-! # Relations between the consistency notions of TransferBandits and BatchedBandits
 
-Gardening relations (recorded in `catalogue/relations.toml`) between the bandit consistency of
+Relations between the bandit consistency of
 [INC-P003, Definition `def:consistency`] (`IsConsistentOnUnit`), the classical consistency of
 LMLExplore (`LMLExplore.Bandits.IsConsistent`, in terms of the expected regret) and the
 consistency at the batch ends of [INC-P006, Definition `def:consistent`]

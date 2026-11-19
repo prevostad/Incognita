@@ -111,7 +111,8 @@ lemma integral_onlineCount_followSource_zero [MeasurableSingletonClass α] (ν' 
 end Helpers
 
 /-- [INC-P003, prop:exclusion] The learner `π^tr` is in no class `𝒞_L`; it already fails on a pair
-`(ν, ν)` with deterministic source sizes. The Lean proof takes the sizes `0`. -/
+`(ν, ν)` with deterministic source sizes. The Lean proof takes the sizes `0`. The instance
+argument `[Nonempty α]` is redundant given `hK`. -/
 theorem followSource_not_isConsistent {α : Type*} [Fintype α] [LinearOrder α] [Nonempty α]
     [MeasurableSpace α] [MeasurableSingletonClass α] (hK : 2 ≤ Fintype.card α) :
     (∀ L : α → ℝ, (∀ a, 0 < L a) → ¬ IsConsistent L (TransferAlgorithm.followSource (α := α))) ∧

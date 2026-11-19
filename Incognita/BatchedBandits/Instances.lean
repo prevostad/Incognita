@@ -9,7 +9,7 @@ public import LMLExplore.Bandits.Instances
 
 /-! # Laws on `[0, 1]` and the class `𝒫` of instances
 
-The instances of the roadmap BatchedBandits [INC-P006, Definition `def:instance`]: an instance is
+The instances of the batched bandit setting [INC-P006, Definition `def:instance`]: an instance is
 an LML bandit `ν : Kernel α ℝ` (arm `a` returns a reward of law `ν a`), the mean of a law `Q` is
 the Bochner integral `Q[id]`, as in LML's `gap` and LMLExplore's `dInf`, and the largest mean is
 `⨆ a, (ν a)[id]`.

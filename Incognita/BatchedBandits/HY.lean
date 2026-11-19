@@ -15,7 +15,9 @@ public import LeanMachineLearning.SequentialLearning.FiniteActions
 
 The learner `HY(w₀, β, ω, ϑ, γ)` of [INC-P000, Definition `def:hy`], as a deterministic LML
 algorithm `Algorithm Unit α ℝ` on a grid `g`, with the default parameters `ω^dy`, `ϑ`, `γ` of the
-same definition.
+same definition. Its IMED phase uses the IMED index of [HT15, Section 2, Algorithm 1], with a
+weight `y` on the logarithm, computed with the statistics frozen at the last batch end and the
+current counts.
 
 **Rounds are numbered from `0`** (LML, [INC-P006]). The paper's round `t ∈ (t_ℓ, t_{ℓ+1}]` is the
 round `n = t - 1 ∈ [t_ℓ, t_{ℓ+1})` here, that is `g.batchOf n = ℓ + 1`. The policy of the round `n`
@@ -32,7 +34,7 @@ For a history `h`, a cutoff `r` (a batch end `t_j`) and an arm `c`:
 * `HY.count h r c` is `N_c(t_j)`, `HY.pseudoMean w₀ h r c` is `m̃_c(t_j) = N_c m̂_c / (N_c + w₀)`;
 * `HY.pseudoKinf w₀ h r c μ` is `𝒦_inf(ν̃_c(t_j), μ)` for the pseudo-empirical law
   `ν̃_c = (N_c ν̂_c + w₀ δ_0) / (N_c + w₀)`, by the dual formula of
-  [INC-P000, Definition `def:kinf`]:
+  [INC-P000, Definition `def:kinf`] (the dual formula of 𝒦_inf is [HT10, Theorem 8]):
   for `μ < 1`, the supremum over `λ ∈ [0, 1 / (1 - μ))` of
   `E_{ν̃_c}[log (1 - λ (X - μ))] = (∑_{i} log (1 - λ (X_i - μ)) + w₀ log (1 + λ μ)) / (N_c + w₀)`,
   and, for `μ ≥ 1` (the paper's `μ = 1`), `0` if the mean of `ν̃_c` is `1` and `∞` otherwise. The
@@ -58,6 +60,11 @@ fixed order" of the paced rule is the arm of smallest index in the enumeration
 * `Incognita.BatchedBandits.Grid.imedEnd θ g ℓ`: `s_ℓ = ⌊t_ℓ ^ (1 + θ_ℓ)⌋`.
 * `Incognita.BatchedBandits.Grid.hyOmega`, `Grid.hyTheta`, `Grid.hyGamma`: the default parameters
   `ω^dy_ℓ = 2 ^ (-k_ℓ)`, `ϑ_ℓ` and `γ_ℓ`.
+* `Incognita.BatchedBandits.HY.imedIndex`, `HY.imedArm`: the IMED index
+  `J(c) = N_c(t - 1) K̃(c) + y log N_c(t - 1)` and the arm of the IMED phase.
+* `Incognita.BatchedBandits.HY.threshold`: the consistency threshold `Λ̂_ℓ` of the test.
+* `Incognita.BatchedBandits.HY.target`, `HY.pacedArm`: the paced targets `n_{ℓ,c}(t)` and the arm
+  of the paced phase.
 * `Incognita.BatchedBandits.HY.next w₀ β ω θ γ g n h`: the arm pulled by HY at the round `n`.
 * `Incognita.BatchedBandits.hyAlg w₀ β ω θ γ g`: the algorithm `HY(w₀, β, ω, ϑ, γ)` on the grid `g`.
 * `Incognita.BatchedBandits.hy w₀ β g`: HY with the default `ω^dy`, `ϑ`, `γ` of the grid `g`.
@@ -291,7 +298,7 @@ noncomputable def threshold (w₀ L y' : ℝ) (h : Hist Unit α ℝ n) (r r' U U
 open Classical in
 /-- The paced target `n_{ℓ,c}(t)` [INC-P000, Definition `def:hy`, (5)-(6)]: `K - 1 + U_{ℓ+1}` if `c`
 is ambiguous, `K - 1 + min(U_{ℓ+1}, ⌈(1 + ω_ℓ) y_ℓ log t / K̂_ℓ(c)⌉)` if `c` is rejected
-(`h / ∞ = 0`),
+(the ceiling term is `0` when `K̂_ℓ(c) = ∞`),
 where `c` is rejected if `K̂_ℓ(c) > 0` and `N_c K̂_ℓ(c) ≥ h_ℓ`. Arguments: `thr = h_ℓ`, `ω = ω_ℓ`,
 `y = y_ℓ`, `logt = log t`, `r = t_ℓ`, `U = U_ℓ` (for `K̂_ℓ`), `Unext = U_{ℓ+1}`. -/
 noncomputable def target (w₀ thr ω y logt : ℝ) (h : Hist Unit α ℝ n) (r U Unext : ℕ) (c : α) : ℕ :=
@@ -450,12 +457,12 @@ end Measurability
 omit [Fintype α] [Nonempty α] in
 /-- **Known case** [INC-P000, Definition `def:kinf`; Lemma `lem:kinf`]: `𝒦_inf(ν̃, μ) = 0` when the
 mean of the pseudo-empirical law `ν̃` is at least the level `μ < 1`, for rewards at most `1`, a
-pseudo-count `w₀ ≥ 0` and a positive total weight `N + w₀`: every term of the dual formula is
-`≤ -λ (m̃ - μ) ≤ 0`, since `log x ≤ x - 1`. -/
+pseudo-count `w₀ ≥ 0` and a positive total weight `N + w₀`. -/
 lemma pseudoKinf_eq_zero_of_le_pseudoMean {w₀ : ℝ} (hw₀ : 0 ≤ w₀) {h : Hist Unit α ℝ n} {r : ℕ}
     {c : α} {μ : ℝ} (hμ : μ < 1) (hy : ∀ i, (h i).feedback ≤ 1)
     (hpos : 0 < (count h r c : ℝ) + w₀) (hle : μ ≤ pseudoMean w₀ h r c) :
     pseudoKinf w₀ h r c μ = 0 := by
+  -- Every term of the dual formula is `≤ -λ (m̃ - μ) ≤ 0`, since `log x ≤ x - 1`.
   rw [pseudoKinf, ite_eq_left hμ]
   refine le_antisymm (iSup_le fun q ↦ ?_) bot_le
   split_ifs with hq
