@@ -134,6 +134,7 @@ carry_rubrics() {
   h0=$(trusted_comments "$n" | jq -r --arg h "$H" \
          '[.[] | select((.kind | test("^rubric-[a-z-]+$")) and .sha != $h)] | last | .sha // empty') || return 1
   [ -n "$h0" ] || return 1
+  { repo_git cat-file -e "$H^{commit}" 2>/dev/null || fetch_pr_head "$n" "$H"; } || return 1
   { repo_git cat-file -e "$h0^{commit}" 2>/dev/null || repo_git fetch -q origin "$h0" 2>/dev/null; } || return 1
   mb0=$(repo_git merge-base origin/main "$h0") && mb=$(repo_git merge-base origin/main "$H") || return 1
   cls=$(change_class "$h0" "$H" "$mb0" "$mb") || return 1
