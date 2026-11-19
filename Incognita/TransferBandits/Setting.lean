@@ -189,6 +189,12 @@ noncomputable def onlineCount {T : ℕ} (a : α) (h : Fin T → α × ℝ) : ℕ
 
 /-! ### Instances and basic API -/
 
+omit [MeasurableSpace α] in
+/-- The size of the source sample of `a` in the source data `sourceData N ω` is `N ω a`. -/
+@[simp]
+lemma sourceCount_sourceData (N : SourceSpace α → α → ℕ) (ω : SourceSpace α) (a : α) :
+    sourceCount a (sourceData N ω) = N ω a := rfl
+
 instance isProbabilityMeasure_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
     IsProbabilityMeasure (sourceMeasure ν') := by
   unfold sourceMeasure

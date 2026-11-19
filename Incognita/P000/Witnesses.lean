@@ -127,9 +127,9 @@ lemma one_batch_ahead_satisfiable :
     ∃ (g : Grid (Fintype.card Bool)) (alg : Algorithm Unit Bool ℝ) (ν : Kernel Bool ℝ)
       (_ : IsMarkovKernel ν) (a : Bool), 2 ≤ Fintype.card Bool ∧ IsBatched alg g ∧
       IsConsistentAtBatchEnds alg g (unitBandits Bool) ∧ ν ∈ unitBandits Bool ∧ 0 < gap ν a :=
-  ⟨seqTwo, klucb, exampleBandit, inferInstance, false, lower_hypotheses.1,
-    lower_hypotheses.2.2.2.1, lower_hypotheses.2.2.2.2.1, lower_hypotheses.2.2.2.2.2.1,
-    lower_hypotheses.2.2.2.2.2.2⟩
+  ⟨seqTwo, klucb, exampleBandit, inferInstance, false, two_le_card_bool,
+    klucb_isBatched_sequential_two, klucb_isConsistentAtBatchEnds _, example_instance.1,
+    example_instance.2.2⟩
 
 /-- `Incognita.Statements.P000.lower_liminf_of_tendsto_ratio_one`: the grid `𝖲_2` (ratios
 `→ 1`), KL-UCB, the example instance and its sub-optimal arm. -/
@@ -138,9 +138,9 @@ lemma lower_liminf_of_tendsto_ratio_one_satisfiable :
       (_ : IsMarkovKernel ν) (a : Bool), 2 ≤ Fintype.card Bool ∧
       Filter.Tendsto g.ratio Filter.atTop (nhds 1) ∧ IsBatched alg g ∧
       IsConsistentAtBatchEnds alg g (unitBandits Bool) ∧ ν ∈ unitBandits Bool ∧ 0 < gap ν a :=
-  ⟨seqTwo, klucb, exampleBandit, inferInstance, false, lower_hypotheses.1,
-    lower_hypotheses.2.2.1, lower_hypotheses.2.2.2.1, lower_hypotheses.2.2.2.2.1,
-    lower_hypotheses.2.2.2.2.2.1, lower_hypotheses.2.2.2.2.2.2⟩
+  ⟨seqTwo, klucb, exampleBandit, inferInstance, false, two_le_card_bool,
+    tendsto_ratio_seqTwo, klucb_isBatched_sequential_two, klucb_isConsistentAtBatchEnds _,
+    example_instance.1, example_instance.2.2⟩
 
 /-- `Incognita.Statements.P000.lower_limsup`: `x = 1`, the grid `𝖲_2`, KL-UCB, the example instance
 and its sub-optimal arm. -/
@@ -162,9 +162,9 @@ lemma lower_liminf_satisfiable :
         (fun ℓ ↦ ∫ ω, (pullCount IT.action a (g.t ℓ) ω : ℝ)
           ∂(trajMeasure alg (Environment.bandit ν)))
         (fun ℓ ↦ Real.log (g.t ℓ))) :=
-  ⟨seqTwo, 1, klucb, exampleBandit, inferInstance, false, lower_hypotheses.1,
-    lower_hypotheses.2.1, lower_hypotheses.2.2.1, lower_hypotheses.2.2.2.1,
-    lower_hypotheses.2.2.2.2.1, lower_hypotheses.2.2.2.2.2.1, lower_hypotheses.2.2.2.2.2.2,
+  ⟨seqTwo, 1, klucb, exampleBandit, inferInstance, false, two_le_card_bool,
+    le_rfl, tendsto_ratio_seqTwo, klucb_isBatched_sequential_two,
+    klucb_isConsistentAtBatchEnds _, example_instance.1, example_instance.2.2,
     Or.inl rfl⟩
 
 /-- `Incognita.Statements.P000.lower_regret_liminf`: `x = 1` (for the alternative of `hlog`), the
@@ -178,9 +178,9 @@ lemma lower_regret_liminf_satisfiable :
         (fun ℓ ↦ ∫ ω, (pullCount IT.action c (g.t ℓ) ω : ℝ)
           ∂(trajMeasure alg (Environment.bandit ν)))
         (fun ℓ ↦ Real.log (g.t ℓ))) :=
-  ⟨seqTwo, 1, klucb, exampleBandit, inferInstance, lower_hypotheses.1, lower_hypotheses.2.1,
-    lower_hypotheses.2.2.1, lower_hypotheses.2.2.2.1, lower_hypotheses.2.2.2.2.1,
-    lower_hypotheses.2.2.2.2.2.1, Or.inl rfl⟩
+  ⟨seqTwo, 1, klucb, exampleBandit, inferInstance, two_le_card_bool, le_rfl,
+    tendsto_ratio_seqTwo, klucb_isBatched_sequential_two, klucb_isConsistentAtBatchEnds _,
+    example_instance.1, Or.inl rfl⟩
 
 /-- `Incognita.Statements.P000.lower_regret_limsup`: `x = 1`, the grid `𝖲_2`, KL-UCB and the
 example instance (which has a sub-optimal arm, so the constant `C_1` is a non-empty sum). -/
@@ -190,9 +190,9 @@ lemma lower_regret_limsup_satisfiable :
       Filter.Tendsto g.ratio Filter.atTop (nhds x) ∧ IsBatched alg g ∧
       IsConsistentAtBatchEnds alg g (unitBandits Bool) ∧ ν ∈ unitBandits Bool ∧
       ∃ a, 0 < gap ν a :=
-  ⟨seqTwo, 1, klucb, exampleBandit, inferInstance, lower_hypotheses.1, lower_hypotheses.2.1,
-    lower_hypotheses.2.2.1, lower_hypotheses.2.2.2.1, lower_hypotheses.2.2.2.2.1,
-    lower_hypotheses.2.2.2.2.2.1, false, lower_hypotheses.2.2.2.2.2.2⟩
+  ⟨seqTwo, 1, klucb, exampleBandit, inferInstance, two_le_card_bool, le_rfl,
+    tendsto_ratio_seqTwo, klucb_isBatched_sequential_two, klucb_isConsistentAtBatchEnds _,
+    example_instance.1, false, example_instance.2.2⟩
 
 /-! ### HY -/
 

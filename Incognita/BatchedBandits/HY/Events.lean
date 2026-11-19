@@ -105,6 +105,104 @@ lemma HY.pseudoLogMean_zero_history_eq {Ω : Type*} {O : ℕ → Ω → Unit} {A
   rw [← h1, ← Finset.Ico_add_one_right_eq_Icc, Finset.sum_Ico_eq_sum_range, Nat.add_sub_cancel]
   exact Finset.sum_congr rfl fun i _ ↦ by rw [add_comm]
 
+omit [MeasurableSpace α] in
+/-- [INC-P000, Lemma `lem:grid`, the evidence on the stack] On a run, if
+`N_c(s) 𝒦_inf(ν̂_c(s), r) ≥ z` with `z > 0` and `r < 1`, then `N_c(s) ≥ 1` and some
+`λ ∈ [0, 1/(1-r))` has `∑_(i < N_c(s)) log (1 - λ (X_(c,i) - r)) ≥ z - 1` on the stack of `c`:
+otherwise every term of the dual supremum is below `(z - 1) / N_c(s)`. -/
+private lemma exists_le_sum_log_of_le_mul_pseudoKinf {Ω : Type*} {O : ℕ → Ω → Unit}
+    {A : ℕ → Ω → α} {R : ℕ → Ω → ℝ} {s : ℕ} {c : α} {r z : ℝ} (hr : r < 1) (hz : 0 < z)
+    (ω' : Ω × (ℕ → α → ℝ))
+    (hzK : ENNReal.ofReal z ≤
+      (pullCount A c s ω'.1 : ℝ≥0∞) * HY.pseudoKinf 0 (history O A R s ω'.1) s c r) :
+    1 ≤ pullCount A c s ω'.1 ∧ ∃ lam, 0 ≤ lam ∧ lam * (1 - r) < 1 ∧
+      z - 1 ≤ ∑ i ∈ range (pullCount A c s ω'.1),
+        Real.log (1 - lam * (rewardByCount A R c (i + 1) ω' - r)) := by
+  set n := pullCount A c s ω'.1 with hn
+  -- `n ≥ 1`, since otherwise the right side is `0`
+  have hn1 : 1 ≤ n := by
+    by_contra h0
+    rw [show n = 0 by omega, Nat.cast_zero, zero_mul] at hzK
+    exact (ENNReal.ofReal_pos.mpr hz).ne' (le_antisymm hzK bot_le)
+  refine ⟨hn1, ?_⟩
+  by_contra hno'
+  have hno : ∀ lam, 0 ≤ lam → lam * (1 - r) < 1 →
+      ∑ i ∈ range n, Real.log (1 - lam * (rewardByCount A R c (i + 1) ω' - r)) < z - 1 :=
+    fun lam h0 h1 ↦ not_le.mp fun hle ↦ hno' ⟨lam, h0, h1, hle⟩
+  have hnpos : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+  -- every term of the dual supremum is below `(z - 1) / n`
+  have hsup : HY.pseudoKinf 0 (history O A R s ω'.1) s c r ≤ ENNReal.ofReal ((z - 1) / n) := by
+    rw [HY.pseudoKinf, ite_eq_left hr]
+    refine iSup_le fun q ↦ ?_
+    split_ifs with hq
+    · refine ENNReal.ofReal_le_ofReal ?_
+      rw [HY.pseudoLogMean_zero_history_eq, ← hn, div_le_div_iff_of_pos_right hnpos]
+      exact (hno q hq.1 hq.2).le
+    · exact bot_le
+  have hmul : (n : ℝ≥0∞) * HY.pseudoKinf 0 (history O A R s ω'.1) s c r ≤
+      (n : ℝ≥0∞) * ENNReal.ofReal ((z - 1) / n) := by gcongr
+  have h1 : (n : ℝ≥0∞) * HY.pseudoKinf 0 (history O A R s ω'.1) s c r ≤
+      ENNReal.ofReal (z - 1) := by
+    refine hmul.trans_eq ?_
+    rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _),
+      mul_div_cancel₀ _ hnpos.ne']
+  have h2 : ENNReal.ofReal (z - 1) < ENNReal.ofReal z :=
+    (ENNReal.ofReal_lt_ofReal_iff hz).mpr (by linarith)
+  exact (lt_irrefl _) ((hzK.trans h1).trans_lt h2)
+
+/-- An event of the runs has the probability of its product with all the reward stacks (or with
+any probability measure). -/
+private lemma measure_eq_prod_univ {Ω β : Type*} [MeasurableSpace Ω] [MeasurableSpace β]
+    (P : Measure Ω) (Q : Measure β) [IsProbabilityMeasure Q] (E : Set Ω) :
+    P E = (P.prod Q) (E ×ˢ Set.univ) := by
+  rw [Measure.prod_prod, measure_univ, mul_one]
+
+/-- The rate `ρ' = ε'² / (2 (κ(μ) - log (1 - e^(-ε'/4)))²)` of Lemmas `lem:lowerdev` and
+`lem:upperdev` is positive for `μ ∈ [0, 1)` and `ε' > 0`, since `κ(μ) ≥ 0 > log (1 - e^(-ε'/4))`. -/
+private lemma deviation_rate_pos {μ ε' : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1) (hε' : 0 < ε') :
+    0 < ε' ^ 2 / (2 * (Real.log (1 / (1 - μ)) - Real.log (1 - Real.exp (-(ε' / 4)))) ^ 2) := by
+  have hden : 0 < Real.log (1 / (1 - μ)) - Real.log (1 - Real.exp (-(ε' / 4))) := by
+    have h1μ : 0 < 1 - μ := by linarith
+    have hκ : 0 ≤ Real.log (1 / (1 - μ)) := Real.log_nonneg (by rw [le_div_iff₀ h1μ]; linarith)
+    have he : Real.exp (-(ε' / 4)) < 1 := Real.exp_lt_one_iff.mpr (by linarith)
+    have he0 : 0 < 1 - Real.exp (-(ε' / 4)) := by linarith
+    have : Real.log (1 - Real.exp (-(ε' / 4))) < 0 :=
+      Real.log_neg he0 (by linarith [Real.exp_pos (-(ε' / 4))])
+    linarith
+  positivity
+
+/-- The geometric tail of the union bounds of Lemma `lem:probasA`(c): if the events `H k` have
+`P (H k) ≤ C e^(-ρ (⌈u⌉ + k))` with `C ≥ 0` and `ρ > 0`, then
+`P (⋃ k, H k) ≤ C e^(-ρ u) / (1 - e^(-ρ))`. -/
+private lemma measure_iUnion_le_geometric {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
+    {H : ℕ → Set Ω} {C ρ u : ℝ} (hC : 0 ≤ C) (hρ : 0 < ρ)
+    (hH : ∀ k : ℕ, P (H k) ≤ ENNReal.ofReal (C * Real.exp (-(ρ * ((⌈u⌉₊ + k : ℕ) : ℝ))))) :
+    P (⋃ k, H k) ≤ ENNReal.ofReal (C * Real.exp (-(ρ * u)) / (1 - Real.exp (-ρ))) := by
+  set q := Real.exp (-ρ) with hq
+  have hq0 : 0 < q := Real.exp_pos _
+  have hq1 : q < 1 := Real.exp_lt_one_iff.mpr (by linarith)
+  -- the bounds are the terms `C q^⌈u⌉ q^k` of a geometric series
+  have hterm : ∀ k : ℕ, P (H k) ≤ ENNReal.ofReal (C * q ^ ⌈u⌉₊ * q ^ k) := fun k ↦ by
+    refine (hH k).trans_eq ?_
+    rw [mul_assoc, ← pow_add, hq, ← Real.exp_nat_mul]
+    congr 3
+    push_cast
+    ring
+  have hsum : Summable fun k : ℕ ↦ C * q ^ ⌈u⌉₊ * q ^ k :=
+    (summable_geometric_of_lt_one hq0.le hq1).mul_left _
+  refine (measure_iUnion_le _).trans ((tsum_le_tsum hterm).trans ?_)
+  rw [← ENNReal.ofReal_tsum_of_nonneg (fun k ↦ by positivity) hsum, tsum_mul_left,
+    tsum_geometric_of_lt_one hq0.le hq1]
+  refine ENNReal.ofReal_le_ofReal ?_
+  -- `q^⌈u⌉ ≤ e^(-ρ u)`
+  have hqN : q ^ ⌈u⌉₊ ≤ Real.exp (-(ρ * u)) := by
+    rw [hq, ← Real.exp_nat_mul, Real.exp_le_exp]
+    have : u ≤ ⌈u⌉₊ := Nat.le_ceil u
+    nlinarith
+  rw [div_eq_mul_inv]
+  have := inv_pos.mpr (show 0 < 1 - q by linarith)
+  gcongr
+
 variable [Fintype α] [MeasurableSingletonClass α]
 
 /-- [INC-P000, Lemma `lem:probasA`(a), for the trace of `𝒜` on the run] For every learner on an
@@ -139,9 +237,7 @@ lemma measure_exists_wellSampled_abs_sub_gt_le {alg : Algorithm Unit α ℝ} {ν
       simp only at this
       rw [this] at hcε
       exact hcε
-  have hE : P E = (P.prod (streamMeasure ν)) (E ×ˢ Set.univ) := by
-    rw [Measure.prod_prod, measure_univ, mul_one]
-  rw [hE]
+  rw [measure_eq_prod_univ P (streamMeasure ν) E]
   refine (measure_mono hsub).trans ((measure_iUnion_fintype_le _ _).trans ?_)
   refine (Finset.sum_le_sum fun c _ ↦ ?_).trans
     (by rw [Finset.sum_const, nsmul_eq_mul, Finset.card_univ])
@@ -219,46 +315,17 @@ lemma measure_le_pullCount_pseudoKinf_lt_le [Countable α] {alg : Algorithm Unit
     rw [div_lt_iff₀ hNpos] at h2
     linarith
   have hE : P E ≤ (P.prod (streamMeasure ν)) ((E ∩ G) ×ˢ Set.univ) := by
-    rw [Measure.prod_prod, measure_univ, mul_one]
+    rw [← measure_eq_prod_univ P (streamMeasure ν)]
     exact measure_mono_ae (hG.mono fun ω hω hωE ↦ ⟨hωE, hω⟩)
-  refine hE.trans ((measure_mono hsub).trans ((measure_iUnion_le _).trans ?_))
-  -- each event of the union, by Lemma `lem:lowerdev`
+  refine hE.trans ((measure_mono hsub).trans ?_)
+  -- each event of the union, by Lemma `lem:lowerdev`, then the geometric tail
   have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq a i
-  set q := Real.exp (-ρ) with hq
-  have hden : 0 < Real.log (1 / (1 - μ)) - Real.log (1 - Real.exp (-(ε' / 4))) := by
-    have h1μ : 0 < 1 - μ := by linarith
-    have hκ : 0 ≤ Real.log (1 / (1 - μ)) := Real.log_nonneg (by rw [le_div_iff₀ h1μ]; linarith)
-    have he : Real.exp (-(ε' / 4)) < 1 := Real.exp_lt_one_iff.mpr (by linarith)
-    have he0 : 0 < 1 - Real.exp (-(ε' / 4)) := by linarith
-    have : Real.log (1 - Real.exp (-(ε' / 4))) < 0 :=
-      Real.log_neg he0 (by linarith [Real.exp_pos (-(ε' / 4))])
-    linarith
-  have hρ0 : 0 < ρ := by rw [hρ]; positivity
-  have hq0 : 0 < q := Real.exp_pos _
-  have hq1 : q < 1 := Real.exp_lt_one_iff.mpr (by linarith)
-  have hterm : ∀ k : ℕ, (P.prod (streamMeasure ν)) (H k) ≤ ENNReal.ofReal (q ^ N₀ * q ^ k) := by
-    intro k
-    refine (measure_forall_sum_log_le_le (Y := Z) (iIndepFun_rewardByCount_add_one_action hseq a)
-      (fun i ↦ measurable_rewardByCount IT.measurable_action IT.measurable_feedback a (i + 1))
-      (fun i ↦ (hlaw i).map_eq) (hν.1 a).2 hμ0 hμ hε' hlam0 hlam1 (N := N₀ + k)
-      (by omega)).trans_eq ?_
-    rw [← pow_add, hq, ← Real.exp_nat_mul]
-    congr 2
-    push_cast
-    ring
-  have hsum : Summable fun k : ℕ ↦ q ^ N₀ * q ^ k :=
-    (summable_geometric_of_lt_one hq0.le hq1).mul_left _
-  refine (tsum_le_tsum hterm).trans ?_
-  rw [← ENNReal.ofReal_tsum_of_nonneg (fun k ↦ by positivity) hsum, tsum_mul_left,
-    tsum_geometric_of_lt_one hq0.le hq1]
-  refine ENNReal.ofReal_le_ofReal ?_
-  have hqN : q ^ N₀ ≤ Real.exp (-(ρ * u)) := by
-    rw [hq, ← Real.exp_nat_mul, Real.exp_le_exp]
-    have : u ≤ N₀ := Nat.le_ceil u
-    nlinarith
-  rw [div_eq_mul_inv]
-  have := inv_pos.mpr (show 0 < 1 - q by linarith)
-  gcongr
+  refine (measure_iUnion_le_geometric (P := P.prod (streamMeasure ν)) (H := H) (C := 1) (ρ := ρ)
+    (u := u) zero_le_one (deviation_rate_pos hμ0 hμ hε') fun k ↦ ?_).trans_eq (by rw [one_mul])
+  rw [one_mul]
+  exact measure_forall_sum_log_le_le (Y := Z) (iIndepFun_rewardByCount_add_one_action hseq a)
+    (fun i ↦ measurable_rewardByCount IT.measurable_action IT.measurable_feedback a (i + 1))
+    (fun i ↦ (hlaw i).map_eq) (hν.1 a).2 hμ0 hμ hε' hlam0 hlam1 (N := N₀ + k) (by omega)
 
 omit [Fintype α] in
 /-- [INC-P000, Lemma `lem:probasA`(c), the event `𝒰`, for its trace on the run] For every learner
@@ -319,49 +386,15 @@ lemma measure_le_pullCount_lt_pseudoKinf_le [Countable α] {alg : Algorithm Unit
     rw [lt_div_iff₀ hNpos] at h2
     have : (N : ℝ) * (Kp + 7 * ε' / 8) ≤ (Kp + ε') * N := by nlinarith
     linarith
-  have hE : P E = (P.prod (streamMeasure ν)) (E ×ˢ Set.univ) := by
-    rw [Measure.prod_prod, measure_univ, mul_one]
-  rw [hE]
-  refine (measure_mono hsub).trans ((measure_iUnion_le _).trans ?_)
-  -- each event of the union, by Lemma `lem:upperdev`
+  rw [measure_eq_prod_univ P (streamMeasure ν) E]
+  refine (measure_mono hsub).trans ?_
+  -- each event of the union, by Lemma `lem:upperdev`, then the geometric tail
   have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq a i
-  set q := Real.exp (-ρ) with hq
-  have hden : 0 < Real.log (1 / (1 - μ)) - Real.log (1 - Real.exp (-(ε' / 4))) := by
-    have h1μ : 0 < 1 - μ := by linarith
-    have hκ : 0 ≤ Real.log (1 / (1 - μ)) := Real.log_nonneg (by rw [le_div_iff₀ h1μ]; linarith)
-    have he : Real.exp (-(ε' / 4)) < 1 := Real.exp_lt_one_iff.mpr (by linarith)
-    have he0 : 0 < 1 - Real.exp (-(ε' / 4)) := by linarith
-    have : Real.log (1 - Real.exp (-(ε' / 4))) < 0 :=
-      Real.log_neg he0 (by linarith [Real.exp_pos (-(ε' / 4))])
-    linarith
-  have hρ0 : 0 < ρ := by rw [hρ]; positivity
-  have hq0 : 0 < q := Real.exp_pos _
-  have hq1 : q < 1 := Real.exp_lt_one_iff.mpr (by linarith)
-  have hterm : ∀ k : ℕ, (P.prod (streamMeasure ν)) (H k) ≤
-      ENNReal.ofReal ((ng : ℝ) * q ^ N₀ * q ^ k) := by
-    intro k
-    refine (measure_exists_add_le_sum_log_le (Y := Z)
-      (iIndepFun_rewardByCount_add_one_action hseq a)
-      (fun i ↦ measurable_rewardByCount IT.measurable_action IT.measurable_feedback a (i + 1))
-      (fun i ↦ (hlaw i).map_eq) (hν.1 a).2 hμ0 hμ hε' hK (n := N₀ + k) (by omega)).trans_eq ?_
-    rw [show (ng : ℝ) * q ^ N₀ * q ^ k = ng * q ^ (N₀ + k) by rw [pow_add]; ring, hq,
-      ← Real.exp_nat_mul]
-    congr 3
-    push_cast
-    ring
-  have hsum : Summable fun k : ℕ ↦ (ng : ℝ) * q ^ N₀ * q ^ k :=
-    (summable_geometric_of_lt_one hq0.le hq1).mul_left _
-  refine (tsum_le_tsum hterm).trans ?_
-  rw [← ENNReal.ofReal_tsum_of_nonneg (fun k ↦ by positivity) hsum, tsum_mul_left,
-    tsum_geometric_of_lt_one hq0.le hq1]
-  refine ENNReal.ofReal_le_ofReal ?_
-  have hqN : q ^ N₀ ≤ Real.exp (-(ρ * u)) := by
-    rw [hq, ← Real.exp_nat_mul, Real.exp_le_exp]
-    have : u ≤ N₀ := Nat.le_ceil u
-    nlinarith
-  rw [div_eq_mul_inv]
-  have := inv_pos.mpr (show 0 < 1 - q by linarith)
-  gcongr
+  refine measure_iUnion_le_geometric (P := P.prod (streamMeasure ν)) (H := H) (C := ng) (ρ := ρ)
+    (u := u) (Nat.cast_nonneg _) (deviation_rate_pos hμ0 hμ hε') fun k ↦ ?_
+  exact measure_exists_add_le_sum_log_le (Y := Z) (iIndepFun_rewardByCount_add_one_action hseq a)
+    (fun i ↦ measurable_rewardByCount IT.measurable_action IT.measurable_feedback a (i + 1))
+    (fun i ↦ (hlaw i).map_eq) (hν.1 a).2 hμ0 hμ hε' hK (n := N₀ + k) (by omega)
 
 omit [Fintype α] in
 /-- [INC-P000, Lemma `lem:probasA`(b), the event `𝒱`, for its trace on the run] For every learner
@@ -393,46 +426,15 @@ lemma measure_lt_mul_pseudoKinf_le [Countable α] {alg : Algorithm Unit α ℝ} 
       z - 1 ≤ ∑ i ∈ range n, Real.log (1 - lam * (Z i ω' - r))} with hH
   have hsub : E ×ˢ (Set.univ : Set (ℕ → α → ℝ)) ⊆ ⋃ n ∈ Finset.Ico 1 U, H n := by
     rintro ⟨ω, x⟩ ⟨⟨hU, hzK⟩, -⟩
+    -- the evidence at `s`: `N_(a')(s) ≥ 1`, and a `λ` of the dual formula above `z - 1`
+    obtain ⟨hn1, hev⟩ := exists_le_sum_log_of_le_mul_pseudoKinf (O := IT.obs) (A := IT.action)
+      (R := IT.feedback) hr hz (ω, x) hzK
+    simp only at hn1 hev
     set n := pullCount IT.action a' s ω with hn
     have hns : n ≤ pullCount IT.action a' t ω := pullCount_mono _ hst _
-    -- `n ≥ 1`, since otherwise the right side is `0`
-    have hn1 : 1 ≤ n := by
-      by_contra h0
-      rw [show n = 0 by omega, Nat.cast_zero, zero_mul] at hzK
-      exact (ENNReal.ofReal_pos.mpr hz).ne' (le_antisymm hzK bot_le)
     have hnU : n < U := lt_of_le_of_lt (hns.trans (Nat.le_mul_of_pos_left _ two_pos)) hU
-    refine Set.mem_iUnion₂.mpr ⟨n, Finset.mem_Ico.mpr ⟨hn1, hnU⟩, ?_⟩
-    by_contra hno'
-    have hno : ∀ lam, 0 ≤ lam → lam * (1 - r) < 1 →
-        ∑ i ∈ range n, Real.log (1 - lam * (Z i (ω, x) - r)) < z - 1 :=
-      fun lam h0 h1 ↦ not_le.mp fun hle ↦ hno' ⟨lam, h0, h1, hle⟩
-    have hnpos : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
-    -- every term of the dual supremum is below `(z - 1) / n`
-    have hsup : HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a' r ≤
-        ENNReal.ofReal ((z - 1) / n) := by
-      rw [HY.pseudoKinf, ite_eq_left hr]
-      refine iSup_le fun q ↦ ?_
-      split_ifs with hq
-      · refine ENNReal.ofReal_le_ofReal ?_
-        have h3 := HY.pseudoLogMean_zero_history_eq (O := IT.obs) (A := IT.action)
-          (R := IT.feedback) s a' q r (ω, x)
-        simp only at h3
-        rw [h3, ← hn, div_le_div_iff_of_pos_right hnpos]
-        exact (hno q hq.1 hq.2).le
-      · exact bot_le
-    have h1 : (n : ℝ≥0∞) * HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a' r ≤
-        ENNReal.ofReal (z - 1) := by
-      have hmul : (n : ℝ≥0∞) * HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s a' r ≤
-          (n : ℝ≥0∞) * ENNReal.ofReal ((z - 1) / n) := by gcongr
-      refine hmul.trans_eq ?_
-      rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _),
-        mul_div_cancel₀ _ hnpos.ne']
-    have h2 : ENNReal.ofReal (z - 1) < ENNReal.ofReal z :=
-      (ENNReal.ofReal_lt_ofReal_iff hz).mpr (by linarith)
-    exact (lt_irrefl _) ((hzK.trans h1).trans_lt h2)
-  have hE : P E = (P.prod (streamMeasure ν)) (E ×ˢ Set.univ) := by
-    rw [Measure.prod_prod, measure_univ, mul_one]
-  rw [hE]
+    exact Set.mem_iUnion₂.mpr ⟨n, Finset.mem_Ico.mpr ⟨hn1, hnU⟩, hev⟩
+  rw [measure_eq_prod_univ P (streamMeasure ν) E]
   refine (measure_mono hsub).trans ((measure_biUnion_finset_le _ _).trans ?_)
   have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq a' i
   have hterm : ∀ n ∈ Finset.Ico 1 U, (P.prod (streamMeasure ν)) (H n) ≤
@@ -503,45 +505,17 @@ lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit �
   set S := (Finset.Ico 1 U ×ˢ Finset.Ico 1 U).filter fun p : ℕ × ℕ ↦ p.1 ≤ p.2 with hS
   have hsub : E ×ˢ (Set.univ : Set (ℕ → α → ℝ)) ⊆ ⋃ p ∈ S, H p := by
     rintro ⟨ω, x⟩ ⟨⟨hU, hzK, hq⟩, -⟩
+    -- the evidence at `s`, as in `measure_lt_mul_pseudoKinf_le`
+    obtain ⟨hn1, hev⟩ := exists_le_sum_log_of_le_mul_pseudoKinf (O := IT.obs) (A := IT.action)
+      (R := IT.feedback) hr hz (ω, x) hzK
+    simp only at hn1 hev
     set n := pullCount IT.action c s ω with hn
     set n' := pullCount IT.action c t ω with hn'
     have hns : n ≤ n' := pullCount_mono _ hst _
-    have hn1 : 1 ≤ n := by
-      by_contra h0
-      rw [show n = 0 by omega, Nat.cast_zero, zero_mul] at hzK
-      exact (ENNReal.ofReal_pos.mpr hz).ne' (le_antisymm hzK bot_le)
     have hn'U : n' < U := lt_of_le_of_lt (Nat.le_mul_of_pos_left _ two_pos) hU
-    refine Set.mem_iUnion₂.mpr ⟨(n, n'), ?_, ?_, ?_⟩
+    refine Set.mem_iUnion₂.mpr ⟨(n, n'), ?_, hev, ?_⟩
     · simp only [hS, Finset.mem_filter, Finset.mem_product, Finset.mem_Ico]
       omega
-    · -- the evidence at `s`, as in `measure_lt_mul_pseudoKinf_le`
-      by_contra hno'
-      have hno : ∀ lam, 0 ≤ lam → lam * (1 - r) < 1 →
-          ∑ i ∈ range n, Real.log (1 - lam * (Z i (ω, x) - r)) < z - 1 :=
-        fun lam h0 h1 ↦ not_le.mp fun hle ↦ hno' ⟨lam, h0, h1, hle⟩
-      have hnpos : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
-      have hsup : HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r ≤
-          ENNReal.ofReal ((z - 1) / n) := by
-        rw [HY.pseudoKinf, ite_eq_left hr]
-        refine iSup_le fun q' ↦ ?_
-        split_ifs with hq'
-        · refine ENNReal.ofReal_le_ofReal ?_
-          have h3 := HY.pseudoLogMean_zero_history_eq (O := IT.obs) (A := IT.action)
-            (R := IT.feedback) s c q' r (ω, x)
-          simp only at h3
-          rw [h3, ← hn, div_le_div_iff_of_pos_right hnpos]
-          exact (hno q' hq'.1 hq'.2).le
-        · exact bot_le
-      have hmul : (n : ℝ≥0∞) * HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r ≤
-          (n : ℝ≥0∞) * ENNReal.ofReal ((z - 1) / n) := by gcongr
-      have h1 : (n : ℝ≥0∞) * HY.pseudoKinf 0 (history IT.obs IT.action IT.feedback s ω) s c r ≤
-          ENNReal.ofReal (z - 1) := by
-        refine hmul.trans_eq ?_
-        rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _),
-          mul_div_cancel₀ _ hnpos.ne']
-      have h2 : ENNReal.ofReal (z - 1) < ENNReal.ofReal z :=
-        (ENNReal.ofReal_lt_ofReal_iff hz).mpr (by linarith)
-      exact (lt_irrefl _) ((hzK.trans h1).trans_lt h2)
     · -- the mean at `t`
       have h3 := HY.pseudoMean_zero_history_eq (O := IT.obs) (A := IT.action) (R := IT.feedback)
         t c (ω, x)
@@ -551,9 +525,7 @@ lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit �
       rw [le_div_iff₀ hn'pos] at hq
       simp only
       linarith
-  have hE : P E = (P.prod (streamMeasure ν)) (E ×ˢ Set.univ) := by
-    rw [Measure.prod_prod, measure_univ, mul_one]
-  rw [hE]
+  rw [measure_eq_prod_univ P (streamMeasure ν) E]
   refine (measure_mono hsub).trans ((measure_biUnion_finset_le _ _).trans ?_)
   have hlaw := fun i ↦ hasLaw_rewardByCount_add_one hseq c i
   have hterm : ∀ p ∈ S, (P.prod (streamMeasure ν)) (H p) ≤

@@ -537,7 +537,8 @@ lemma exists_two_alternatives [Finite α] {ν : Kernel α ℝ} [IsMarkovKernel �
   have : Nonempty α := ⟨a⟩
   obtain ⟨bs, hbs⟩ := exists_eq_ciSup_of_finite (f := fun b ↦ (ν b)[id])
   have hma : (ν a)[id] < m := by
-    have : gap ν a = m - (ν a)[id] := rfl
+    have := ha
+    rw [gap, ← hm] at this
     linarith
   have hm0 : 0 < m :=
     lt_of_le_of_lt (integral_id_mem_Icc_of_mem_unitLaws (hν.1 a)).1 hma
@@ -547,12 +548,14 @@ lemma exists_two_alternatives [Finite α] {ν : Kernel α ℝ} [IsMarkovKernel �
     linarith
   have hQ1 : Q[id] < 1 :=
     integral_id_lt_one_of_klDiv_ne_top hQ hDQ ((hmean_le a).trans_lt hν.2)
+  -- `κ⁺_a = ρ⁺`, a mixture of `ν_a` and `Q` with mean in `(m⋆, m⋆ + δ)`, `m⋆ + δ = m⋆ / (1 - s)`
   set δ := m * s / (1 - s) with hδ_def
   have hδ : 0 < δ := div_pos (mul_pos hm0 hs0) (by linarith)
   obtain ⟨ρp, hρp, hρp1, hρp2, hρp3, hρpKL⟩ :=
     exists_unitLaws_mean_mem_Ioo (hν.1 a) hQ hma hQm hδ
   obtain ⟨hρm, hρmmean⟩ := mix_mem_unitLaws hρp (dirac_mem_unitLaws ⟨le_rfl, zero_le_one⟩)
     hs0.le hs1.le
+  -- `κ⁻_a = ρ⁻ = (1 - s) ρ⁺ + s δ_0`, of mean `(1 - s) m(ρ⁺) < m⋆`
   set ρm := ENNReal.ofReal (1 - s) • ρp + ENNReal.ofReal s • Measure.dirac (0 : ℝ) with hρm_def
   have hρmlt : ρm[id] < m := by
     rw [hρmmean]
@@ -564,48 +567,41 @@ lemma exists_two_alternatives [Finite α] {ν : Kernel α ℝ} [IsMarkovKernel �
       ring
     have : ρp[id] < m / (1 - s) := by linarith
     rwa [lt_div_iff₀ (by linarith), mul_comm] at this
-  have := hρp.1
-  have := hρm.1
-  have hupdp : ∀ b, IsProbabilityMeasure (Function.update (fun b ↦ ν b) a ρp b) := fun b ↦ by
+  -- the kernels `κ± = ν` with the law of `a` replaced by `ρ±`
+  have hupd : ∀ ρ : Measure ℝ, IsProbabilityMeasure ρ →
+      ∀ b, IsProbabilityMeasure (Function.update (fun b ↦ ν b) a ρ b) := fun ρ hρ b ↦ by
     rcases eq_or_ne b a with rfl | hb
     · rwa [Function.update_self]
     · rw [Function.update_of_ne hb]
       infer_instance
-  have hupdm : ∀ b, IsProbabilityMeasure (Function.update (fun b ↦ ν b) a ρm b) := fun b ↦ by
-    rcases eq_or_ne b a with rfl | hb
-    · rwa [Function.update_self]
-    · rw [Function.update_of_ne hb]
-      infer_instance
+  have hupdp := hupd ρp hρp.1
+  have hupdm := hupd ρm hρm.1
   set κp := Kernel.ofFunOfCountable (Function.update (fun b ↦ ν b) a ρp)
   set κm := Kernel.ofFunOfCountable (Function.update (fun b ↦ ν b) a ρm)
   have hκpa : κp a = ρp := by simp [κp]
   have hκma : κm a = ρm := by simp [κm]
   have hκp : ∀ b ≠ a, ν b = κp b := fun b hb ↦ by simp [κp, Function.update_of_ne hb]
   have hκm : ∀ b ≠ a, ν b = κm b := fun b hb ↦ by simp [κm, Function.update_of_ne hb]
-  refine ⟨κp, κm, inferInstance, inferInstance, ⟨fun b ↦ ?_, ?_⟩, ⟨fun b ↦ ?_, ?_⟩, hκp,
+  -- a kernel equal to `ν` off `a`, whose law at `a` is in `𝓜` with mean `< 1`, is in `𝒫`
+  have hmem : ∀ κ : Kernel α ℝ, (∀ b ≠ a, ν b = κ b) → κ a ∈ unitLaws → (κ a)[id] < 1 →
+      κ ∈ unitBandits α := by
+    intro κ hκ hκa hκa1
+    refine ⟨fun b ↦ ?_, ?_⟩
+    · rcases eq_or_ne b a with rfl | hb
+      · exact hκa
+      · rw [← hκ b hb]
+        exact hν.1 b
+    · obtain ⟨b₀, hb₀⟩ := exists_eq_ciSup_of_finite (f := fun b ↦ (κ b)[id])
+      rw [← hb₀]
+      rcases eq_or_ne b₀ a with rfl | hb
+      · exact hκa1
+      · rw [← hκ b₀ hb]
+        exact (hmean_le b₀).trans_lt hν.2
+  refine ⟨κp, κm, inferInstance, inferInstance,
+    hmem κp hκp (by rwa [hκpa]) (by rw [hκpa]; linarith),
+    hmem κm hκm (by rwa [hκma]) (by rw [hκma]; linarith [hν.2]), hκp,
     fun b hb ↦ (hκm b hb).symm.trans (hκp b hb), fun b hb ↦ ?_, ?_, ?_, ?_⟩
-  · rcases eq_or_ne b a with rfl | hb
-    · rwa [hκpa]
-    · rw [← hκp b hb]
-      exact hν.1 b
-  · obtain ⟨b₀, hb₀⟩ := exists_eq_ciSup_of_finite (f := fun b ↦ (κp b)[id])
-    rw [← hb₀]
-    rcases eq_or_ne b₀ a with rfl | hb
-    · rw [hκpa]
-      linarith
-    · rw [← hκp b₀ hb]
-      exact (hmean_le b₀).trans_lt hν.2
-  · rcases eq_or_ne b a with rfl | hb
-    · rwa [hκma]
-    · rw [← hκm b hb]
-      exact hν.1 b
-  · obtain ⟨b₀, hb₀⟩ := exists_eq_ciSup_of_finite (f := fun b ↦ (κm b)[id])
-    rw [← hb₀]
-    rcases eq_or_ne b₀ a with rfl | hb
-    · rw [hκma]
-      linarith [hν.2]
-    · rw [← hκm b₀ hb]
-      exact (hmean_le b₀).trans_lt hν.2
+  -- the gaps: `a` is the unique optimal arm of `κ⁺`, and sub-optimal in `κ⁻`
   · have h1 := LMLExplore.Bandits.sub_le_gap κp b a
     rw [hκpa, ← hκp b hb] at h1
     linarith [hmean_le b]
@@ -645,13 +641,11 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
   have hM2 : 2 ≤ g.t (ℓ + 2) := g.two_le_t (by omega)
   have hMpos : (0 : ℝ) < g.t (ℓ + 2) := by exact_mod_cast (show 0 < g.t (ℓ + 2) by omega)
   have hlogM : 0 < Real.log (g.t (ℓ + 2)) := g.logEnd_pos (ℓ := ℓ + 2) (by omega)
-  have hsees : ∀ j n, n < g.t (j + 1) → SeesRewardsUpTo alg n (g.t j) := by
-    intro j n hn
-    refine (hb n).mono (g.strictMono.monotone ?_)
-    have h1 := g.t_batchOf_sub_one_le n
-    have h2 : g.batchOf n - 1 < j + 1 := g.strictMono.lt_iff_lt.mp (h1.trans_lt hn)
-    omega
+  have hsees : ∀ j n, n < g.t (j + 1) → SeesRewardsUpTo alg n (g.t j) :=
+    fun _ _ hn ↦ hb.seesRewardsUpTo_of_lt hn
   have hη0 : 0 < γ / 4 := by positivity
+  -- the event `S_L = {N_a(t_(ℓ+1)) ≤ L}`, `L = ⌈E_ν[N_a(t_(ℓ+1))] / (γ/4)⌉`, has
+  -- `P_ν(S_L) ≥ 1 - γ/4` (Markov's inequality)
   set T := ∫ ω, (pullCount IT.action a (g.t (ℓ + 1)) ω : ℝ)
     ∂(trajMeasure alg (Environment.bandit ν)) with hT_def
   have hT0 : 0 ≤ T := integral_nonneg fun _ ↦ Nat.cast_nonneg _
@@ -687,6 +681,8 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
     have := le_of_mul_le_mul_left this hL0
     linarith
   have hqpos : 0 < (trajMeasure alg (Environment.bandit ν)).real SL := by linarith
+  -- the change of measure on `S_L` (`two_batches_finite`), and the consistency bounds at
+  -- `t_(ℓ+2)` for its right side (`rhs_le_of_counts_le`)
   have key := two_batches_finite (L := L) hr₀r hrM (by omega)
     (fun n hn ↦ hsees ℓ n hn) (fun n hn ↦ hsees (ℓ + 1) n hn) hκp hmp
     (by linarith : (0 : ℝ) ≤ 1 - s) (by linarith : 1 - s ≤ 1) hdom hDne hqpos
@@ -702,6 +698,7 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
       (g.t (ℓ + 2) : ℝ) ^ (γ / 4) / (g.t (ℓ + 2)) := by
     have : 0 ≤ (g.t (ℓ + 2) : ℝ) ^ (γ / 4) / (g.t (ℓ + 2)) := div_nonneg hMp.le hMpos.le
     linarith
+  -- take logarithms, then bound `L λ` by `E_ν[N_a(t_(ℓ+1))] ≤ C' log t_(ℓ+2)`
   have hlog := Real.log_le_log hlhs_pos (hfin.trans hhalf)
   rw [Real.log_mul (pow_pos (by linarith) L).ne' (exp_pos _).ne', Real.log_pow, Real.log_exp,
     h1s, Real.log_exp, Real.log_div hMp.ne' hMpos.ne', Real.log_rpow hMpos] at hlog
@@ -794,8 +791,7 @@ lemma eventually_lt_integral_pullCount_div_log_t_add_two [Finite α] {K : ℕ} (
   have hδc : 0 < δc := by positivity
   have hδcK : (Fintype.card α : ℝ) * δc ≤ 1 / 8 := by
     rw [hδc_def]
-    field_simp
-    rfl
+    exact le_of_eq (by field_simp)
   have hp0 : 0 < γ / 4 := by positivity
   have hA := (tendsto_order.1 ((hc κm hκm_mem a hgapm (γ / 4) hp0).comp
     (tendsto_add_atTop_nat 2))).2 δc hδc

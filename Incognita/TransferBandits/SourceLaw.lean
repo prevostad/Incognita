@@ -141,6 +141,9 @@ lemma sourceLaw_eq_withDensity [Fintype α] {N : SourceSpace α → α → ℕ} 
   have hℓ := measurable_sourceDensity ν' ν₂' Z
   have hD := measurable_sourceData hN.measurable
   have hbox : ∀ n : α → ℕ, Measurable (boxRestrict (α := α) n) := measurable_boxRestrict
+  -- On a measurable `A`, split `{sourceData N ∈ A}` along the values `n` of `N`; on `{N = n}`, an
+  -- event of the box `𝒢_n`, the density of `ν'` against `ν₂'` is the product of the `n` first
+  -- likelihood ratios (`sourceMeasure_preimage_boxRestrict`).
   ext A hA
   rw [withDensity_apply _ hA, sourceLaw, sourceLaw, Measure.map_apply hD hA,
     setLIntegral_map hA hℓ hD]
@@ -159,7 +162,8 @@ lemma sourceLaw_eq_withDensity [Fintype α] {N : SourceSpace α → α → ℕ} 
   rw [hcover, measure_iUnion hdisj hmeasE, lintegral_iUnion hmeasE hdisj]
   refine tsum_congr fun n ↦ ?_
   by_cases hadm : ∀ a ∈ Z, n a = 0
-  · obtain ⟨G, hG, hGeq⟩ := hN.measurableSet_eq n
+  · -- `n` vanishes on `Z`: `{N = n}` is the preimage of some `G` under the box restriction
+    obtain ⟨G, hG, hGeq⟩ := hN.measurableSet_eq n
     have hφ : Measurable fun y : (ℕ → I) × ((a : α) → Fin (n a) → ℝ) ↦
         ((n, fun a j ↦ if hj : j < n a then y.2 a ⟨j, hj⟩ else 0) : Source α) := by
       refine measurable_const.prodMk (measurable_pi_iff.mpr fun a ↦
@@ -191,16 +195,18 @@ lemma sourceLaw_eq_withDensity [Fintype α] {N : SourceSpace α → α → ℕ} 
     rw [hset, sourceMeasure_preimage_boxRestrict ν' ν₂' n hac' (hG.inter (hφ hA))]
     refine setLIntegral_congr_fun ((hbox n) (hG.inter (hφ hA))) fun ω hω ↦ ?_
     have hn : N ω = n := (hmemG ω).mp hω.1
+    -- the density at the source data `(n, x)`, whose values `x` are read in the box
     rw [sourceData_eq_of_eq hn]
-    change _ = (if ∀ a ∈ Z, n a = 0 then ∏ a, ∏ j ∈ Finset.range (n a), (ν' a).rnDeriv (ν₂' a)
-      (if hj : j < n a then (boxRestrict n ω).2 a ⟨j, hj⟩ else 0) else 0)
+    simp only
     rw [ite_eq_left hadm]
     refine Finset.prod_congr rfl fun a _ ↦ ?_
     rw [Finset.prod_range]
     refine Finset.prod_congr rfl fun i _ ↦ ?_
     rw [dite_eq_left i.2]
+    -- `(boxRestrict n ω).2 a i = ω.2 a i`, by definition of `boxRestrict`
     rfl
-  · push Not at hadm
+  · -- `n a ≠ 0` for some `a ∈ Z`: `{N = n}` is null under `ν'` and the density vanishes on it
+    push Not at hadm
     obtain ⟨a, haZ, hna⟩ := hadm
     have h0 : sourceMeasure ν' (sourceData N ⁻¹' A ∩ {ω | N ω = n}) = 0 := by
       refine measure_mono_null (fun ω hω ↦ ?_) (ae_iff.mp (hZ a haZ))

@@ -8,6 +8,7 @@ module
 public import Incognita.ForMathlib.Probability.Distributions.Bernoulli
 public import Incognita.ForMathlib.Probability.ProductMeasure
 public import Incognita.P003.Exclusions
+public import Incognita.TransferBandits.SourceKL
 public import LMLExplore.InformationTheory.KullbackLeibler.Bernoulli
 public import TauCeti.InformationTheory.KullbackLeibler.ChainRule
 
@@ -152,6 +153,7 @@ lemma lintegral_lookahead (a₁ : α) (ν' : Kernel α ℝ) [IsMarkovKernel ν']
     ← ENNReal.ofReal_add (by positivity) (by positivity)]
   congr 1
   simp only [unitInterval.toNNReal, unitInterval.coe_symm_eq]
+  -- the coercions to `ℝ` of `p` and of `σ p = 1 - p`, by definition
   change (p : ℝ) + (1 - (p : ℝ)) * 2 = 2 - p
   ring
 
@@ -196,24 +198,20 @@ theorem lookahead_divergence {α : Type*} [Fintype α] [DecidableEq α] [Measura
   have hKtop : klDiv (Ber((1 : ℝ), 0, p)) (Ber((1 : ℝ), 0, q)) ≠ ∞ := by
     rw [LMLExplore.klDiv_bernoulliMeasure, LMLExplore.klBer_ne_top_iff hpI hqI]
     exact ⟨fun h ↦ absurd h hq.1.ne', fun h ↦ absurd h hq.2.ne⟩
-  have hcount : Measurable fun s : Source α ↦ (sourceCount a₁ s : ℝ≥0∞) :=
-    measurable_from_top.comp (by unfold sourceCount; fun_prop)
-  have hgame : ∫⁻ x, (sourceCount a₁ x.1 : ℝ≥0∞) ∂(gameMeasure ν' (lookahead a₁) ν π T) =
-      ∫⁻ ω, (lookahead a₁ ω a₁ : ℝ≥0∞) ∂(sourceMeasure ν') := by
-    rw [← lintegral_map hcount measurable_fst]
-    change ∫⁻ s, _ ∂((gameMeasure ν' (lookahead a₁) ν π T).fst) = _
-    rw [fst_gameMeasure, sourceLaw,
-      lintegral_map hcount (measurable_sourceData hmeas)]
-    rfl
+  have hgame := lintegral_sourceCount_gameMeasure hmeas ν' ν π T a₁
   refine ⟨hmeas, hbdd, hnot, ?_, ?_, ?_⟩
-  · rw [gameMeasure, gameMeasure, klDiv_compProd_left,
+  · -- `KL(P, P₂)`: the online kernels agree, and the divergence of the source data is that of
+    -- the first two values of `a₁`
+    rw [gameMeasure, gameMeasure, klDiv_compProd_left,
       klDiv_sourceLaw_lookahead a₁ ν' ν₂' (by rw [h₁]; exact ae_bernoulli_zero_or_one p)
         (by rw [h₂]; exact ae_bernoulli_zero_or_one q), h₁, h₂, TauCeti.klDiv_prod_prod, two_mul]
-  · rw [Finset.sum_eq_single a₁ (fun b _ hb ↦ by rw [h₃ b hb, klDiv_self, mul_zero])
+  · -- the right side: only `a₁` has a positive divergence, and `E[N'_(a₁)] = 2 - p`
+    rw [Finset.sum_eq_single a₁ (fun b _ hb ↦ by rw [h₃ b hb, klDiv_self, mul_zero])
       (by simp)]
     simp only [klDiv_self, mul_zero, Finset.sum_const_zero, add_zero]
     rw [hgame, lintegral_lookahead a₁ ν' h₁, h₁, h₂]
-  · rw [mul_comm _ (klDiv _ _), mul_comm 2 (klDiv _ _)]
+  · -- `(2 - p) kl(p, q) < 2 kl(p, q)`, since `0 < kl(p, q) < ∞` and `p > 0`
+    rw [mul_comm _ (klDiv _ _), mul_comm 2 (klDiv _ _)]
     refine ENNReal.mul_lt_mul_right hK0 hKtop ?_
     rw [← ENNReal.ofReal_ofNat 2]
     exact (ENNReal.ofReal_lt_ofReal_iff (by norm_num)).mpr (by linarith [hp.1])

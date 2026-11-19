@@ -152,6 +152,66 @@ lemma log_sub_log_le_abs_div {a b c : ℝ} (ha : 0 < a) (hc : 0 < c) (hcb : c �
   have h4 : |a - b| / b ≤ |a - b| / c := div_le_div_of_nonneg_left (abs_nonneg _) hc hcb
   linarith
 
+/-- [INC-P000, proof of Lemma `lem:upperdev`, one point of the net] Hoeffding's inequality at a
+fixed `λ ≥ 0` with `λ (1 - μ) ≤ ϖ = e^(-ε'/4)`: for independent `Y_k` of law `ν` on `[0, 1]` and an
+upper bound `K` of the dual formula of `𝒦_inf(ν, μ)`, the terms `log (1 - λ (Y_k - μ))` lie in
+`[log (1 - ϖ), κ(μ)]` with mean at most `K`, so
+`P(∑_(k < n) log (1 - λ (Y_k - μ)) ≥ n (K + ε'/2)) ≤ exp (-ε'² n / (2 R'²))`. -/
+private lemma measure_le_sum_log_le_of_le (hind : iIndepFun Y P) (hmeas : ∀ k, Measurable (Y k))
+    {ν : Measure ℝ} (hlaw : ∀ k, P.map (Y k) = ν) (hν : ∀ᵐ y ∂ν, y ∈ Set.Icc (0 : ℝ) 1)
+    {μ ε' K : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ < 1) (hε' : 0 < ε')
+    (hK : ∀ l, 0 ≤ l → l * (1 - μ) < 1 → ∫ y, Real.log (1 - l * (y - μ)) ∂ν ≤ K)
+    {n : ℕ} (hn : 1 ≤ n) {l : ℝ} (hl0 : 0 ≤ l) (hlb : l * (1 - μ) ≤ exp (-(ε' / 4))) :
+    P {ω | n * (K + ε' / 2) ≤ ∑ k ∈ range n, Real.log (1 - l * (Y k ω - μ))} ≤
+      ENNReal.ofReal (exp (-(ε' ^ 2 / (2 * (Real.log (1 / (1 - μ)) -
+        Real.log (1 - exp (-(ε' / 4)))) ^ 2) * n))) := by
+  set ϖ := exp (-(ε' / 4)) with hϖ
+  have hϖ0 : 0 < ϖ := Real.exp_pos _
+  have hϖ1 : ϖ < 1 := Real.exp_lt_one_iff.mpr (by linarith)
+  set κ := Real.log (1 / (1 - μ)) with hκ
+  have h1μ : 0 < 1 - μ := by linarith
+  have hκ0 : 0 ≤ κ := Real.log_nonneg (by rw [le_div_iff₀ h1μ]; linarith)
+  set a := Real.log (1 - ϖ) with ha
+  have ha0 : a < 0 := Real.log_neg (by linarith) (by linarith)
+  set R := κ - a with hR
+  have hR0 : 0 < R := by linarith
+  have hl1 : l * (1 - μ) < 1 := hlb.trans_lt hϖ1
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have hYb : ∀ k, ∀ᵐ ω ∂P, Y k ω ∈ Set.Icc (0 : ℝ) 1 := fun k ↦
+    ae_of_ae_map (hmeas k).aemeasurable (by rw [hlaw k]; exact hν)
+  -- the test function `f(y) = log (1 - λ (y - μ))` takes its values in `[a, κ]` on `[0, 1]`
+  set f : ℝ → ℝ := fun y ↦ Real.log (1 - l * (y - μ)) with hf
+  have hfm : Measurable f := by simp only [hf]; fun_prop
+  have hfmem : ∀ y ∈ Set.Icc (0 : ℝ) 1, a ≤ f y ∧ f y ≤ κ := by
+    intro y hy
+    obtain ⟨h1, h2⟩ := log_one_sub_mul_mem hμ0 hμ hl0 hl1 hy
+    refine ⟨le_trans (Real.log_le_log (by linarith) (by linarith)) h1, h2⟩
+  have hfY : ∀ k, Measurable fun ω ↦ f (Y k ω) := fun k ↦ hfm.comp (hmeas k)
+  have hfind : iIndepFun (fun k ω ↦ f (Y k ω)) P := hind.comp (g := fun _ ↦ f) fun _ ↦ hfm
+  have hfb : ∀ k, ∀ᵐ ω ∂P, f (Y k ω) ∈ Set.Icc a κ := fun k ↦ by
+    filter_upwards [hYb k] with ω hω using hfmem _ hω
+  have hfmean : ∀ k, P[fun ω ↦ f (Y k ω)] = ∫ y, f y ∂ν := fun k ↦ by
+    rw [← hlaw k, integral_map (hmeas k).aemeasurable hfm.aestronglyMeasurable]
+  -- the event is an upper deviation of `∑ f(Y_k)` by `n ε'/2`, since `E_ν f ≤ K`
+  set dev := n * ε' / 2 with hdev
+  have hsub : {ω | n * (K + ε' / 2) ≤ ∑ k ∈ range n, Real.log (1 - l * (Y k ω - μ))} ⊆
+      {ω | n * ∫ y, f y ∂ν + dev ≤ ∑ k ∈ range n, f (Y k ω)} := by
+    intro ω hω
+    simp only [Set.mem_ofPred_eq] at hω ⊢
+    have hEf : ∫ y, f y ∂ν ≤ K := hK l hl0 hl1
+    have hfs : n * (K + ε' / 2) ≤ ∑ k ∈ range n, f (Y k ω) := by simpa [hf] using hω
+    nlinarith [mul_le_mul_of_nonneg_left hEf hn'.le]
+  have hhoef := measureReal_add_le_sum_range_le_of_mem_Icc hfind
+    (fun k ↦ (hfY k).aemeasurable) hfb hfmean n (by positivity : 0 ≤ dev)
+  refine (measure_mono hsub).trans ?_
+  rw [← ofReal_measureReal]
+  refine ENNReal.ofReal_le_ofReal (hhoef.trans_eq ?_)
+  congr 1
+  have hRne : R ≠ 0 := hR0.ne'
+  have hnne : (n : ℝ) ≠ 0 := hn'.ne'
+  rw [hdev, ← hR]
+  field_simp
+
 /-- [INC-P000, Lemma `lem:upperdev`] For independent `Y_k` of law `ν` on `[0, 1]`, `μ ∈ [0, 1)`,
 `ε' > 0`, `n ≥ 1` and an upper bound `K` of the dual formula of `𝒦_inf(ν, μ)`
 (`E_ν[log (1 - λ (Y - μ))] ≤ K` for every `λ ∈ [0, 1/(1-μ))`; `K = 𝒦_inf(ν, μ)` in the paper),
@@ -178,11 +238,8 @@ lemma measure_exists_add_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ k, Me
   have hϖ1 : ϖ < 1 := Real.exp_lt_one_iff.mpr (by linarith)
   set κ := Real.log (1 / (1 - μ)) with hκ
   have h1μ : 0 < 1 - μ := by linarith
-  have hκ0 : 0 ≤ κ := Real.log_nonneg (by rw [le_div_iff₀ h1μ]; linarith)
   set a := Real.log (1 - ϖ) with ha
-  have ha0 : a < 0 := Real.log_neg (by linarith) (by linarith)
   set R := κ - a with hR
-  have hR0 : 0 < R := by linarith
   set ng := ⌈8 / (ε' * (1 - ϖ) * (1 - μ))⌉₊ + 1 with hng
   have h1ϖ : 0 < 1 - ϖ := by linarith
   have hden : 0 < ε' * (1 - ϖ) * (1 - μ) := by positivity
@@ -190,7 +247,6 @@ lemma measure_exists_add_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ k, Me
   have hη'0 : 0 < η' := by rw [hη']; positivity
   set b := ϖ / (1 - μ) with hb
   set net : ℕ → ℝ := fun j ↦ min (j * η') b with hnet
-  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
   have hYb : ∀ k, ∀ᵐ ω ∂P, Y k ω ∈ Set.Icc (0 : ℝ) 1 := fun k ↦
     ae_of_ae_map (hmeas k).aemeasurable (by rw [hlaw k]; exact hν)
   -- the net points are admissible
@@ -199,45 +255,11 @@ lemma measure_exists_add_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ k, Me
     have := min_le_right (j * η') b
     calc net j * (1 - μ) ≤ b * (1 - μ) := mul_le_mul_of_nonneg_right this h1μ.le
       _ = ϖ := by rw [hb]; field_simp
-  have hnet1 : ∀ j, net j * (1 - μ) < 1 := fun j ↦ (hnetb j).trans_lt hϖ1
-  -- Hoeffding at one net point
+  -- Hoeffding at one point of the net
   have hpoint : ∀ j, P {ω | n * (K + ε' / 2) ≤ ∑ k ∈ range n,
       Real.log (1 - net j * (Y k ω - μ))} ≤
-      ENNReal.ofReal (exp (-(ε' ^ 2 / (2 * R ^ 2) * n))) := by
-    intro j
-    set l := net j with hl
-    have hl0 := hnet0 j
-    have hl1 := hnet1 j
-    set f : ℝ → ℝ := fun y ↦ Real.log (1 - l * (y - μ)) with hf
-    have hfm : Measurable f := by simp only [hf]; fun_prop
-    have hfmem : ∀ y ∈ Set.Icc (0 : ℝ) 1, a ≤ f y ∧ f y ≤ κ := by
-      intro y hy
-      obtain ⟨h1, h2⟩ := log_one_sub_mul_mem hμ0 hμ hl0 hl1 hy
-      refine ⟨le_trans (Real.log_le_log (by linarith) (by linarith [hnetb j])) h1, h2⟩
-    have hfY : ∀ k, Measurable fun ω ↦ f (Y k ω) := fun k ↦ hfm.comp (hmeas k)
-    have hfind : iIndepFun (fun k ω ↦ f (Y k ω)) P := hind.comp (g := fun _ ↦ f) fun _ ↦ hfm
-    have hfb : ∀ k, ∀ᵐ ω ∂P, f (Y k ω) ∈ Set.Icc a κ := fun k ↦ by
-      filter_upwards [hYb k] with ω hω using hfmem _ hω
-    have hfmean : ∀ k, P[fun ω ↦ f (Y k ω)] = ∫ y, f y ∂ν := fun k ↦ by
-      rw [← hlaw k, integral_map (hmeas k).aemeasurable hfm.aestronglyMeasurable]
-    set dev := n * ε' / 2 with hdev
-    have hsub : {ω | n * (K + ε' / 2) ≤ ∑ k ∈ range n, Real.log (1 - l * (Y k ω - μ))} ⊆
-        {ω | n * ∫ y, f y ∂ν + dev ≤ ∑ k ∈ range n, f (Y k ω)} := by
-      intro ω hω
-      simp only [Set.mem_ofPred_eq] at hω ⊢
-      have hEf : ∫ y, f y ∂ν ≤ K := hK l hl0 hl1
-      have hfs : n * (K + ε' / 2) ≤ ∑ k ∈ range n, f (Y k ω) := by simpa [hf] using hω
-      nlinarith [mul_le_mul_of_nonneg_left hEf hn'.le]
-    have hhoef := measureReal_add_le_sum_range_le_of_mem_Icc hfind
-      (fun k ↦ (hfY k).aemeasurable) hfb hfmean n (by positivity : 0 ≤ dev)
-    refine (measure_mono hsub).trans ?_
-    rw [← ofReal_measureReal]
-    refine ENNReal.ofReal_le_ofReal (hhoef.trans_eq ?_)
-    congr 1
-    have hRne : R ≠ 0 := hR0.ne'
-    have hnne : (n : ℝ) ≠ 0 := hn'.ne'
-    rw [hdev, ← hR]
-    field_simp
+      ENNReal.ofReal (exp (-(ε' ^ 2 / (2 * R ^ 2) * n))) := fun j ↦
+    measure_le_sum_log_le_of_le hind hmeas hlaw hν hμ0 hμ hε' hK hn (hnet0 j) (hnetb j)
   -- the event forces a large value on the net
   have hsub : {ω | ∃ l, 0 ≤ l ∧ l * (1 - μ) < 1 ∧
       n * (K + 7 * ε' / 8) ≤ ∑ k ∈ range n, Real.log (1 - l * (Y k ω - μ))} ≤ᵐ[P]

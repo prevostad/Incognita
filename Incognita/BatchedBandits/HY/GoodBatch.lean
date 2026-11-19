@@ -43,6 +43,38 @@ namespace Incognita.BatchedBandits
 variable {α : Type*} [Fintype α] [DecidableEq α] [Nonempty α] [MeasurableSpace α]
   [MeasurableSingletonClass α]
 
+omit [MeasurableSpace α] [MeasurableSingletonClass α] in
+/-- [INC-P000, proof of Lemma `lem:goodA`, Step 2] For rewards in `[0, 1]`, `w₀ ≥ 0`, `N_c ≥ 1`
+and a level `ρ < 1` above the test level `μ̂`, if the empirical divergence is at most `K ≥ 0`,
+`𝒦_inf(ν̂_c, ρ) ≤ K`, and `w₀ κ(ρ) ≤ ε N_c` (`ε ≥ 0`), then `K̂(c) ≤ K + ε`: Lemma `lem:kinf`(iii)
+from `μ̂` to `ρ`, then Lemma `lem:pseudo`(ii). -/
+lemma HY.testKinf_le_ofReal_add {w₀ ρ K ε : ℝ} (hw₀ : 0 ≤ w₀) {n : ℕ} {h : Hist Unit α ℝ n}
+    {r U : ℕ} {c : α} (hfb : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1) (hN : 1 ≤ HY.count h r c)
+    (hμρ : HY.pseudoMean w₀ h r (HY.reference w₀ h r U) ≤ ρ) (hρ : ρ < 1) (hK0 : 0 ≤ K)
+    (hε : 0 ≤ ε) (hK : HY.pseudoKinf 0 h r c ρ ≤ ENNReal.ofReal K)
+    (hw : w₀ * Real.log (1 / (1 - ρ)) ≤ ε * HY.count h r c) :
+    HY.testKinf w₀ h r U c ≤ ENNReal.ofReal (K + ε) := by
+  have hμ0 := HY.pseudoMean_nonneg' hw₀ hfb (r := r) (HY.reference w₀ h r U)
+  set N := HY.count h r c with hNdef
+  have hmono : HY.testKinf w₀ h r U c ≤ HY.pseudoKinf w₀ h r c ρ :=
+    HY.pseudoKinf_mono hw₀ hμ0 hμρ hρ hfb
+  have hmul := HY.mul_pseudoKinf_le hw₀ hρ (by linarith) hfb hN
+  rw [← hNdef] at hmul
+  have hprod : (N : ℝ≥0∞) * HY.testKinf w₀ h r U c ≤ (N : ℝ≥0∞) * ENNReal.ofReal (K + ε) := by
+    calc (N : ℝ≥0∞) * HY.testKinf w₀ h r U c
+        ≤ (N : ℝ≥0∞) * HY.pseudoKinf w₀ h r c ρ := by gcongr
+      _ ≤ (N : ℝ≥0∞) * HY.pseudoKinf 0 h r c ρ +
+          ENNReal.ofReal (w₀ * Real.log (1 / (1 - ρ))) := hmul
+      _ ≤ (N : ℝ≥0∞) * ENNReal.ofReal K + ENNReal.ofReal (ε * N) := by gcongr
+      _ = (N : ℝ≥0∞) * ENNReal.ofReal (K + ε) := by
+          rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (by positivity),
+            ← ENNReal.ofReal_mul (by positivity), ← ENNReal.ofReal_add (by positivity)
+              (by positivity)]
+          congr 1
+          ring
+  have hN0 : (N : ℝ≥0∞) ≠ 0 := by exact_mod_cast (show N ≠ 0 by omega)
+  exact (ENNReal.mul_le_mul_iff_right hN0 (ENNReal.natCast_ne_top N)).mp hprod
+
 /-- [INC-P000, Lemma `lem:goodA`, along a run] Along almost every run of HY (`w₀ ≥ 0`, on a grid
 for `K ≥ 2` arms) on an instance `ν` of `𝒫`, let the batches of Lean indices `ℓ` and `ℓ + 1`
 (`ℓ ≥ 1`) satisfy (R2) (the hypotheses of `hyAlg_ae_structA`, with `ω ≥ 0`), `γ_(ℓ+1) ≥ 0`, and
@@ -174,29 +206,9 @@ lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → �
         (by omega)
       -- `K̂_ℓ(a) ≤ K⁺ + 2ε`
       have hK₀ : HY.testKinf w₀ h₀ (g.t ℓ) (g.netSize β ℓ) a ≤ ENNReal.ofReal (Kp + 2 * ε) := by
-        have hmono : HY.testKinf w₀ h₀ (g.t ℓ) (g.netSize β ℓ) a ≤
-            HY.pseudoKinf w₀ h₀ (g.t ℓ) a (ms + ε) :=
-          HY.pseudoKinf_mono hw₀ hμ₀0 hμ₀hi hmε hfb₀
-        have hmul := HY.mul_pseudoKinf_le hw₀ hmε (by linarith) hfb₀ (c := a) (r := g.t ℓ)
-          (by rw [hc₀]; exact hN₀1)
-        rw [hc₀] at hmul
-        have hN₀r : (1 : ℝ) ≤ N₀ := by exact_mod_cast hN₀1
-        have hprod : (N₀ : ℝ≥0∞) * HY.testKinf w₀ h₀ (g.t ℓ) (g.netSize β ℓ) a ≤
-            (N₀ : ℝ≥0∞) * ENNReal.ofReal (Kp + 2 * ε) := by
-          calc (N₀ : ℝ≥0∞) * HY.testKinf w₀ h₀ (g.t ℓ) (g.netSize β ℓ) a
-              ≤ (N₀ : ℝ≥0∞) * HY.pseudoKinf w₀ h₀ (g.t ℓ) a (ms + ε) := by gcongr
-            _ ≤ (N₀ : ℝ≥0∞) * HY.pseudoKinf 0 h₀ (g.t ℓ) a (ms + ε) +
-                ENNReal.ofReal (w₀ * Real.log (1 / (1 - (ms + ε)))) := hmul
-            _ ≤ (N₀ : ℝ≥0∞) * ENNReal.ofReal (Kp + ε) + ENNReal.ofReal (ε * N₀) := by
-                gcongr
-            _ = (N₀ : ℝ≥0∞) * ENNReal.ofReal (Kp + 2 * ε) := by
-                rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (by positivity),
-                  ← ENNReal.ofReal_mul (by positivity), ← ENNReal.ofReal_add (by positivity)
-                    (by positivity)]
-                congr 1
-                ring
-        have hN₀0 : (N₀ : ℝ≥0∞) ≠ 0 := by exact_mod_cast (show N₀ ≠ 0 by omega)
-        exact (ENNReal.mul_le_mul_iff_right hN₀0 (ENNReal.natCast_ne_top N₀)).mp hprod
+        rw [show Kp + 2 * ε = Kp + ε + ε by ring]
+        exact HY.testKinf_le_ofReal_add hw₀ hfb₀ (by rw [hc₀]; exact hN₀1) hμ₀hi hmε
+          (by linarith) hε.le hUp (by rw [hc₀]; exact hT3)
       have h1 : ENNReal.ofReal ((1 + ωs ℓ) * g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) ≤
           ENNReal.ofReal (N₁ * (Kp + 2 * ε)) := by
         refine hS3a.trans ?_

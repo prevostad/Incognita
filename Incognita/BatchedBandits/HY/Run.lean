@@ -154,6 +154,14 @@ lemma isWellSampled_history {n r : ℕ} (hrn : r ≤ n) (U : ℕ) (c : α) :
   unfold IsWellSampled
   rw [count_history_eq hrn]
 
+omit [Fintype α] [Nonempty α] in
+/-- On a run, `c` is well sampled at the cutoff `r` of a history of length `n ≥ r` if and only if
+`U ≤ 2 N_c(r)`. -/
+lemma isWellSampled_history_iff_le_pullCount {n r : ℕ} (hrn : r ≤ n) (U : ℕ) (c : α) :
+    IsWellSampled (history O A Y n ω) r U c ↔ U ≤ 2 * pullCount A c r ω := by
+  unfold IsWellSampled
+  rw [count_history hrn]
+
 lemma reference_history {n r : ℕ} (hrn : r ≤ n) (w₀ : ℝ) (U : ℕ) :
     reference w₀ (history O A Y n ω) r U = reference w₀ (history O A Y r ω) r U := by
   unfold reference

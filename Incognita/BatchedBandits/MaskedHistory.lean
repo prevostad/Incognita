@@ -77,6 +77,15 @@ lemma history_maskFeedback_of_le {r n : ℕ} (hn : n ≤ r) (y₀ : 𝓨) :
   funext ω i
   simp [history, show (i : ℕ) < r from i.2.trans_le hn]
 
+/-- The masked rewards (`Y m` for `m < r`, the constant `y₀` afterwards) are measurable. -/
+private lemma measurable_maskedFeedback (hY : ∀ n, Measurable (Y n)) (r : ℕ) (y₀ : 𝓨) (m : ℕ) :
+    Measurable (if m < r then Y m else fun _ : Ω ↦ y₀) := by
+  by_cases hm : m < r
+  · simp only [hm, ↓reduceIte]
+    exact hY m
+  · simp only [hm, ↓reduceIte]
+    exact measurable_const
+
 variable {P : Measure Ω} [IsProbabilityMeasure P] {alg : Algorithm Unit 𝓐 𝓨}
   {env envM : Environment Unit 𝓐 𝓨}
 
@@ -92,20 +101,11 @@ lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ
     IsAlgEnvSeqUntil O A (fun n ↦ if n < r then Y n else fun _ ↦ y₀) alg envM P M where
   measurable_obs := h.measurable_obs
   measurable_action := h.measurable_action
-  measurable_feedback n := by
-    by_cases hn : n < r
-    · simp only [hn, ↓reduceIte]
-      exact h.measurable_feedback n
-    · simp only [hn, ↓reduceIte]
-      exact measurable_const
+  measurable_feedback := measurable_maskedFeedback h.measurable_feedback r y₀
   hasCondDistrib_obs n _ :=
     hasCondDistrib_unit (measurable_history h.measurable_obs h.measurable_action
-      (fun m ↦ by
-        by_cases hm : m < r
-        · simp only [hm, ↓reduceIte]
-          exact h.measurable_feedback m
-        · simp only [hm, ↓reduceIte]
-          exact measurable_const) n).aemeasurable _ _
+      (measurable_maskedFeedback h.measurable_feedback r y₀) n).aemeasurable _ _
+  -- the policies see the masked history only through the rewards of the rounds `< r`
   hasCondDistrib_action n hn := by
     have hf : Measurable (Prod.map (fun (h : Hist Unit 𝓐 𝓨 n) (i : Fin n) ↦
         if (i : ℕ) < r then h i else ((), (h i).action, y₀)) (id : Unit → Unit)) :=
@@ -130,6 +130,7 @@ lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ
       · simp [hi]
     rw [hk]
     exact h.hasCondDistrib_action n
+  -- before `r` the feedback is that of `env`, from `r` on it is `δ_(y₀)`
   hasCondDistrib_feedback n hn := by
     by_cases hnr : n < r
     · have h1 : (if n < r then Y n else fun _ ↦ y₀) = Y n := by simp [hnr]
@@ -137,14 +138,9 @@ lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ
       exact h.hasCondDistrib_feedback n
     · have h1 : (if n < r then Y n else fun _ ↦ y₀) = fun _ ↦ y₀ := by simp [hnr]
       rw [h1, hge n (not_lt.mp hnr)]
-      refine hasCondDistrib_const_dirac ?_ y₀
-      refine ((measurable_history h.measurable_obs h.measurable_action (fun m ↦ ?_) n).prodMk
-        (h.measurable_obs n)).prodMk (h.measurable_action n)
-      by_cases hm : m < r
-      · simp only [hm, ↓reduceIte]
-        exact h.measurable_feedback m
-      · simp only [hm, ↓reduceIte]
-        exact measurable_const
+      exact hasCondDistrib_const_dirac (((measurable_history h.measurable_obs h.measurable_action
+        (measurable_maskedFeedback h.measurable_feedback r y₀) n).prodMk
+        (h.measurable_obs n)).prodMk (h.measurable_action n)) y₀
 
 /-- **The masked histories have the same law under two environments that agree before `r`.**
 If the policies of `alg` at the rounds `n < M` see the rewards of the rounds `< r` only, and the

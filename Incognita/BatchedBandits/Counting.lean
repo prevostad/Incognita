@@ -199,6 +199,7 @@ lemma Grid.log_t_add_sub_le {K : ℕ} (g : Grid K) {k₀ : ℕ} (hk₀ : 1 ≤ k
     have hc1 : hc (m + 1) = hc m + (if m + 1 ∈ S then 1 else 0) := by
       simp only [hhc]
       rw [Finset.sum_Ioc_succ_top hm]
+    -- fold back the abbreviations `w` and `hc`, which `induction` unfolded
     change Real.log (g.t (m + 1) + (W - w (m + 1))) ≤
       (1 + β₀) ^ hc (m + 1) * (Real.log (g.t k₀ + W) + (hc (m + 1) : ℝ) * Real.log 2)
     change Real.log (g.t m + (W - w m)) ≤
