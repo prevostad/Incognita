@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.IsLawConsistent"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:class"
+meaning = "pi belongs to Cons(N'): for every (nu, nu') in Theta, every suboptimal arm k and every c > 0, E[N_k(T)] / T^c -> 0 when the source sizes are the deterministic N'(T)."
+conventions = "Source sizes N' : N -> alpha -> N, the game being gameMeasure nu' (constSize (N' T)) nu pi T of [INC-P003]; Bochner expectations of the pull counts, as in IsConsistent of [INC-P003]."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:class]"
+
+[checks]
+witness = ["Incognita.P002.isLawConsistent_klucb"]
+known_cases = ["Incognita.TransferBandits.isLawConsistent_of_isConsistent_one"]
+exclusion = ["Incognita.TransferBandits.not_isLawConsistent_constArm"]
+non_vacuity = ["Incognita.P002.lower_bound_satisfiable", "Incognita.P002.optimal_regret_lower_satisfiable"]

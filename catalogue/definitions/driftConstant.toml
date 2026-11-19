@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.driftConstant"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:constant"
+meaning = "The constant D_a(c) = inf {x > 0 : J_a(x, c; mu*) >= 1}, with J_a(x, c; mu) the infimum of x KL(nu_a, q) + c KL(nu'_a, q') over the pairs (q, q') of probability vectors with m(q) >= mu and d_F(q, q') <= L_a (altPairs, programme)."
+conventions = "Real infimum (the set is nonempty for a suboptimal arm); the programme is in ENNReal with 0 * infinity = 0. armConstant reads it on an arm of a pair of instances."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:constant]"
+
+[checks]
+witness = ["Incognita.TransferBandits.isLeast_driftConstant_single_zero"]
+known_cases = ["Incognita.TransferBandits.driftConstant_single_zero", "Incognita.TransferBandits.driftConstant_eq_zero_of_altPairs_eq_empty"]
+exclusion = ["Incognita.TransferBandits.driftConstant_single_zero_pos"]
+non_vacuity = ["Incognita.P002.upper_bound_transfer_satisfiable", "Incognita.P002.lower_bound_satisfiable", "Incognita.P002.optimal_isLawConsistent_satisfiable", "Incognita.P002.optimal_tendsto_pulls_satisfiable", "Incognita.P002.optimal_tendsto_regret_satisfiable", "Incognita.P002.optimal_regret_lower_satisfiable", "Incognita.P002.order_mean_satisfiable", "Incognita.P002.order_le_mean_satisfiable", "Incognita.P002.order_chain_satisfiable", "Incognita.P002.criteria_gain_over_mean_satisfiable", "Incognita.P002.criteria_source_helps_satisfiable", "Incognita.P002.criteria_source_helps_mean_satisfiable", "Incognita.P002.threshold_iff_satisfiable", "Incognita.P002.threshold_mean_w1_satisfiable", "Incognita.P002.threshold_tv_satisfiable", "Incognita.P002.bernoulli_no_gain_satisfiable", "Incognita.P002.w1_no_gain_satisfiable", "Incognita.P002.tv_projections_satisfiable", "Incognita.P002.tv_strict_gain_satisfiable", "Incognita.P002.tv_strict_gain_self_satisfiable"]

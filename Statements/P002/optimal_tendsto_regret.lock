@@ -1,0 +1,47 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P002.optimal_tendsto_regret
+sha256 c6d6b3f8bfe7756955f7ef651dd4e4acab0b496d4ed854d014e6f4615411efd1
+constant def Incognita.TransferBandits.IsTestClass
+constant def Incognita.TransferBandits.Source
+constant def Incognita.TransferBandits.SourceSpace
+constant inductive Incognita.TransferBandits.TransferAlgorithm
+constant def Incognita.TransferBandits.altPairs
+constant def Incognita.TransferBandits.armConstant
+constant def Incognita.TransferBandits.bestMean
+constant def Incognita.TransferBandits.constSize
+constant def Incognita.TransferBandits.driftConstant
+constant def Incognita.TransferBandits.empVec
+constant def Incognita.TransferBandits.explorationRate
+constant def Incognita.TransferBandits.gameMeasure
+constant def Incognita.TransferBandits.ipm
+constant def Incognita.TransferBandits.klucbLawTransfer
+constant def Incognita.TransferBandits.lawDriftClass
+constant def Incognita.TransferBandits.lawIndex
+constant def Incognita.TransferBandits.lawPolicyMeasure
+constant def Incognita.TransferBandits.lawStat
+constant def Incognita.TransferBandits.lawVec
+constant def Incognita.TransferBandits.onlineCount
+constant def Incognita.TransferBandits.onlineKernel
+constant def Incognita.TransferBandits.probVecs
+constant def Incognita.TransferBandits.programme
+constant def Incognita.TransferBandits.sourceCount
+constant def Incognita.TransferBandits.sourceData
+constant def Incognita.TransferBandits.sourceLaw
+constant def Incognita.TransferBandits.sourceMeasure
+constant def Incognita.TransferBandits.statIndex
+constant def Incognita.TransferBandits.stepKernel
+constant def Incognita.TransferBandits.supportBandits
+constant def Incognita.TransferBandits.vecKL
+constant def Incognita.TransferBandits.vecMean
+constant theorem Incognita.Statements.P002.optimal_tendsto_regret
+constant constructor Incognita.TransferBandits.TransferAlgorithm.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.policy
+constant theorem Incognita.TransferBandits.explorationRate._proof_1
+constant theorem Incognita.TransferBandits.klucbLawTransfer._proof_2
+constant theorem Incognita.TransferBandits.klucbLawTransfer._proof_3
+constant theorem Incognita.TransferBandits.klucbLawTransfer._proof_4
+constant theorem Incognita.TransferBandits.klucbLawTransfer._proof_5
+constant def Incognita.TransferBandits.onlineKernel._f
+constant def Incognita.TransferBandits.onlineKernel.match_1
+constant theorem Incognita.TransferBandits.stepKernel._proof_1

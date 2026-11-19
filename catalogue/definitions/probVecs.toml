@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.probVecs"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:laws"
+meaning = "The probability vectors P_S on a finite set S: nonnegative functions S -> R summing to 1."
+conventions = "S : Finset R; vectors are functions on the subtype of S."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:laws]"
+
+[checks]
+witness = ["Incognita.TransferBandits.single_mem_probVecs"]
+known_cases = ["Incognita.TransferBandits.lawVec_mem_probVecs"]
+exclusion = ["Incognita.TransferBandits.zero_not_mem_probVecs"]
+non_vacuity = ["Incognita.P002.upper_bound_klucb_satisfiable", "Incognita.P002.upper_bound_transfer_satisfiable", "Incognita.P002.lower_bound_satisfiable", "Incognita.P002.optimal_isLawConsistent_satisfiable", "Incognita.P002.optimal_tendsto_pulls_satisfiable", "Incognita.P002.optimal_tendsto_regret_satisfiable", "Incognita.P002.optimal_regret_lower_satisfiable", "Incognita.P002.order_mean_satisfiable", "Incognita.P002.order_le_mean_satisfiable", "Incognita.P002.order_chain_satisfiable", "Incognita.P002.criteria_gain_over_mean_satisfiable", "Incognita.P002.criteria_source_helps_satisfiable", "Incognita.P002.criteria_source_helps_mean_satisfiable", "Incognita.P002.threshold_iff_satisfiable", "Incognita.P002.threshold_mean_w1_satisfiable", "Incognita.P002.threshold_tv_satisfiable", "Incognita.P002.bernoulli_no_gain_satisfiable", "Incognita.P002.w1_no_gain_satisfiable", "Incognita.P002.tv_projections_satisfiable", "Incognita.P002.tv_strict_gain_satisfiable", "Incognita.P002.tv_strict_gain_self_satisfiable"]

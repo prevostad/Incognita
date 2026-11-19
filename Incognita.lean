@@ -46,6 +46,7 @@ public import Incognita.ForMathlib.Probability.ProductMeasure
 public import Incognita.P000.InfoModel
 public import Incognita.P000.LowerBound
 public import Incognita.P000.Witnesses
+public import Incognita.P002.Witnesses
 public import Incognita.P003.Cyclic
 public import Incognita.P003.CyclicLaw
 public import Incognita.P003.Divergence
@@ -65,6 +66,9 @@ public import Incognita.TransferBandits.Checks
 public import Incognita.TransferBandits.Consistency
 public import Incognita.TransferBandits.Examples
 public import Incognita.TransferBandits.LMLHistory
+public import Incognita.TransferBandits.LawDrift
+public import Incognita.TransferBandits.LawDriftChecks
+public import Incognita.TransferBandits.LawTransferAlgorithm
 public import Incognita.TransferBandits.Means
 public import Incognita.TransferBandits.OnlineKL
 public import Incognita.TransferBandits.PriorGame

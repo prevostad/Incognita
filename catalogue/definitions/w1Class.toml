@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.w1Class"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:ipm"
+meaning = "The test functions of the Wasserstein distance W_1: the 1-Lipschitz functions S -> [0,1] (on S in [0,1], the usual W_1)."
+conventions = "Lipschitz for the distance |y - z| of the reals."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:ipm]"
+
+[checks]
+witness = ["Incognita.TransferBandits.w1Class_isTestClass"]
+known_cases = ["Incognita.TransferBandits.ipm_w1Class_single"]
+exclusion = ["Incognita.TransferBandits.indicator_not_mem_w1Class"]
+non_vacuity = ["Incognita.P002.order_chain_satisfiable", "Incognita.P002.threshold_mean_w1_satisfiable", "Incognita.P002.w1_no_gain_satisfiable"]

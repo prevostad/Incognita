@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.thresholdKL"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "prop:threshold"
+meaning = "G^d = min {KL(nu'_a, q') : q' in P_S, m(q') + omega_d(q') >= mu*}, the divergence of the closest source law from which a target law of mean mu* is within reach."
+conventions = "Infimum in ENNReal (inf of the empty set = infinity; the paper's minimum)."
+source = "roadmap TransferBandits, direction D8; [INC-P002, prop:threshold]"
+
+[checks]
+witness = ["Incognita.TransferBandits.thresholdKL_le"]
+known_cases = ["Incognita.TransferBandits.thresholdKL_eq_zero"]
+exclusion = ["Incognita.TransferBandits.thresholdKL_meanClass_single_zero_pos"]
+non_vacuity = ["Incognita.P002.threshold_iff_satisfiable", "Incognita.P002.threshold_mean_w1_satisfiable"]

@@ -1,0 +1,20 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P002.tv_strict_gain
+sha256 deb2d04904a3107b1a2e1b49f81f81dd6197071543d97e6dc45248fd37273695
+constant def Incognita.TransferBandits.IsKLProj
+constant def Incognita.TransferBandits.altPairs
+constant def Incognita.TransferBandits.armConstant
+constant def Incognita.TransferBandits.bestMean
+constant def Incognita.TransferBandits.driftConstant
+constant def Incognita.TransferBandits.ipm
+constant def Incognita.TransferBandits.lawVec
+constant def Incognita.TransferBandits.meanClass
+constant def Incognita.TransferBandits.probVecs
+constant def Incognita.TransferBandits.programme
+constant def Incognita.TransferBandits.supportBandits
+constant def Incognita.TransferBandits.tvClass
+constant def Incognita.TransferBandits.vecKL
+constant def Incognita.TransferBandits.vecKs
+constant def Incognita.TransferBandits.vecMean
+constant theorem Incognita.Statements.P002.tv_strict_gain

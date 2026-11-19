@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.ksClass"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:ipm"
+meaning = "The test functions of the Kolmogorov distance: the indicators of (-infinity, s], s real, so that d_F(q, q') = sup_s |F_q(s) - F_q'(s)|."
+conventions = "The range of s : R -> (y -> if y <= s then 1 else 0)."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:ipm]"
+
+[checks]
+witness = ["Incognita.TransferBandits.ksClass_isTestClass"]
+known_cases = ["Incognita.TransferBandits.ipm_ksClass"]
+exclusion = ["Incognita.TransferBandits.ipm_ksClass_single_pos"]
+non_vacuity = ["Incognita.P002.order_chain_satisfiable"]

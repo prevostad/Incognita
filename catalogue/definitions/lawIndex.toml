@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.lawIndex"
+module = "Incognita.TransferBandits.LawTransferAlgorithm"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:algo"
+meaning = "The index of KL-UCB-d-Transfer (eq:index): the supremum of m(q) over the pairs (q, q') of probability vectors with d_F(q, q') <= L_k and N_k KL(hat nu_k, q) + N'_k KL(hat nu'_k, q') <= delta_t."
+conventions = "A supremum in EReal (sup of the empty set = bottom); products in ENNReal, so 0 * KL = 0."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:algo]"
+
+[checks]
+witness = ["Incognita.TransferBandits.vecMean_le_lawIndex"]
+known_cases = ["Incognita.TransferBandits.lawIndex_zero", "Incognita.TransferBandits.statIndex_of_eq_zero"]
+exclusion = ["Incognita.TransferBandits.lawIndex_eq_bot"]
+non_vacuity = ["Incognita.P002.upper_bound_klucb_satisfiable", "Incognita.P002.upper_bound_transfer_satisfiable", "Incognita.P002.optimal_isLawConsistent_satisfiable", "Incognita.P002.optimal_tendsto_pulls_satisfiable", "Incognita.P002.optimal_tendsto_regret_satisfiable"]

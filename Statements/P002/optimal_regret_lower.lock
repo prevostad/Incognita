@@ -1,0 +1,35 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P002.optimal_regret_lower
+sha256 fad47a577a38eac341fcae70e0344b60b3097d0877dcd99664d72745820143d9
+constant def Incognita.TransferBandits.IsLawConsistent
+constant def Incognita.TransferBandits.IsTestClass
+constant def Incognita.TransferBandits.Source
+constant def Incognita.TransferBandits.SourceSpace
+constant inductive Incognita.TransferBandits.TransferAlgorithm
+constant def Incognita.TransferBandits.altPairs
+constant def Incognita.TransferBandits.armConstant
+constant def Incognita.TransferBandits.bestMean
+constant def Incognita.TransferBandits.constSize
+constant def Incognita.TransferBandits.driftConstant
+constant def Incognita.TransferBandits.gameMeasure
+constant def Incognita.TransferBandits.ipm
+constant def Incognita.TransferBandits.lawDriftClass
+constant def Incognita.TransferBandits.lawVec
+constant def Incognita.TransferBandits.onlineCount
+constant def Incognita.TransferBandits.onlineKernel
+constant def Incognita.TransferBandits.probVecs
+constant def Incognita.TransferBandits.programme
+constant def Incognita.TransferBandits.sourceData
+constant def Incognita.TransferBandits.sourceLaw
+constant def Incognita.TransferBandits.sourceMeasure
+constant def Incognita.TransferBandits.stepKernel
+constant def Incognita.TransferBandits.supportBandits
+constant def Incognita.TransferBandits.vecKL
+constant def Incognita.TransferBandits.vecMean
+constant theorem Incognita.Statements.P002.optimal_regret_lower
+constant constructor Incognita.TransferBandits.TransferAlgorithm.mk
+constant def Incognita.TransferBandits.TransferAlgorithm.policy
+constant def Incognita.TransferBandits.onlineKernel._f
+constant def Incognita.TransferBandits.onlineKernel.match_1
+constant theorem Incognita.TransferBandits.stepKernel._proof_1

@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.tvClass"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:ipm"
+meaning = "The test functions of the total variation: all functions S -> [0,1], so that d_F is the total variation distance."
+conventions = "A set of functions S -> R; the distance is ipm (tvClass S)."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:ipm]"
+
+[checks]
+witness = ["Incognita.TransferBandits.tvClass_isTestClass"]
+known_cases = ["Incognita.TransferBandits.ipm_tvClass"]
+exclusion = ["Incognita.TransferBandits.ipm_tvClass_single"]
+non_vacuity = ["Incognita.P002.order_chain_satisfiable", "Incognita.P002.threshold_tv_satisfiable", "Incognita.P002.tv_projections_satisfiable", "Incognita.P002.tv_strict_gain_satisfiable", "Incognita.P002.tv_strict_gain_self_satisfiable"]
