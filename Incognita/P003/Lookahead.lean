@@ -200,14 +200,18 @@ theorem lookahead_divergence {α : Type*} [Fintype α] [DecidableEq α] [Measura
     exact ⟨fun h ↦ absurd h hq.1.ne', fun h ↦ absurd h hq.2.ne⟩
   have hgame := lintegral_sourceCount_gameMeasure hmeas ν' ν π T a₁
   refine ⟨hmeas, hbdd, hnot, ?_, ?_, ?_⟩
-  · rw [gameMeasure, gameMeasure, klDiv_compProd_left,
+  · -- `KL(P, P₂)`: the online kernels agree, and the divergence of the source data is that of
+    -- the first two values of `a₁`
+    rw [gameMeasure, gameMeasure, klDiv_compProd_left,
       klDiv_sourceLaw_lookahead a₁ ν' ν₂' (by rw [h₁]; exact ae_bernoulli_zero_or_one p)
         (by rw [h₂]; exact ae_bernoulli_zero_or_one q), h₁, h₂, TauCeti.klDiv_prod_prod, two_mul]
-  · rw [Finset.sum_eq_single a₁ (fun b _ hb ↦ by rw [h₃ b hb, klDiv_self, mul_zero])
+  · -- the right side: only `a₁` has a positive divergence, and `E[N'_(a₁)] = 2 - p`
+    rw [Finset.sum_eq_single a₁ (fun b _ hb ↦ by rw [h₃ b hb, klDiv_self, mul_zero])
       (by simp)]
     simp only [klDiv_self, mul_zero, Finset.sum_const_zero, add_zero]
     rw [hgame, lintegral_lookahead a₁ ν' h₁, h₁, h₂]
-  · rw [mul_comm _ (klDiv _ _), mul_comm 2 (klDiv _ _)]
+  · -- `(2 - p) kl(p, q) < 2 kl(p, q)`, since `0 < kl(p, q) < ∞` and `p > 0`
+    rw [mul_comm _ (klDiv _ _), mul_comm 2 (klDiv _ _)]
     refine ENNReal.mul_lt_mul_right hK0 hKtop ?_
     rw [← ENNReal.ofReal_ofNat 2]
     exact (ENNReal.ofReal_lt_ofReal_iff (by norm_num)).mpr (by linarith [hp.1])

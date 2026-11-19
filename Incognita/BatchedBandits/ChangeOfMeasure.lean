@@ -84,6 +84,9 @@ lemma withDensity_map_hist_le (alg : Algorithm Unit 𝓐 𝓨) {e₁ e₂ : Envi
   have hD : ∀ m, Measurable fun h : Hist Unit 𝓐 𝓨 m ↦ ∏ i : Fin m, w i (h i).action := fun m ↦
     Finset.measurable_prod _ fun i _ ↦
       (hw i).comp (Round.measurable_action.comp (measurable_pi_apply i))
+  -- Induction on `n`: the law of the history of `n + 1` rounds is the image under `φ` of the law
+  -- of the history of `n` rounds composed with the step kernel, and the density splits as
+  -- `(∏_(i < n) w i) · w n`; the step is `setLIntegral_stepKernel_le`.
   rw [← IT.history_obs_action_feedback]
   induction n with
   | zero =>
@@ -104,6 +107,7 @@ lemma withDensity_map_hist_le (alg : Algorithm Unit 𝓐 𝓨) {e₁ e₂ : Envi
           (∏ i : Fin n, w i (h i).action) * w n x.action := fun h x ↦ by
       rw [Fin.prod_univ_castSucc]
       simp [φ, MeasurableEquiv.finSuccProd_symm_apply]
+    -- on a measurable `A`: Fubini on `μ₂ ⊗ κ₂`, the step bound, then the induction hypothesis
     refine Measure.le_iff.mpr fun A hA ↦ ?_
     rw [withDensity_apply _ hA, hlaw, hlaw, Measure.map_apply φ.measurable hA,
       setLIntegral_map hA (hD _) φ.measurable, Measure.compProd_apply (φ.measurable hA)]

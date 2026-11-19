@@ -633,8 +633,11 @@ lemma hyAlg_ae_pullCount_le_max' (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ
     intro k k' hkk'
     refine mul_le_mul_of_nonneg_left (Real.log_le_log (by positivity) ?_) hy0.le
     exact_mod_cast Nat.add_le_add_right hkk' 1
+  -- `pullCount_le_max_of_forall`: at each round `k` of the IMED phase at which `c` is pulled,
+  -- `N_c(k) D ≤ N_c(k) K̃_ℓ(c) < y_ℓ log (k + 1)` (Lemma `lem:imedround`)
   have h := pullCount_le_max_of_forall (A := IT.action) (ω := ω) (c := c) hD hg ht'1
     (fun k hk1 hk2 hAk ↦ by
+      -- the round `k` plays the IMED arm of the frozen statistics at `t_ℓ`
       have hb : g.batchOf k = ℓ + 1 := g.batchOf_eq_iff.mpr ⟨hk1, by omega⟩
       have himed : k + 1 ≤ g.imedEnd θ ℓ := by omega
       have hA := hω k
@@ -658,6 +661,7 @@ lemma hyAlg_ae_pullCount_le_max' (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ
           (HY.imedArm w₀ (g.ratio ℓ ^ 2) (history IT.obs IT.action IT.feedback k ω) (g.t ℓ)) := by
         rw [← hA, hAk, ← pullCount_eq_pullCount']
         exact (hN1 ℓ hℓ1 c).trans (pullCount_mono _ hk1 _)
+      -- the IMED index of the arm played is below that of the leader
       have hk1' : 1 ≤ k := by omega
       have hfin := HY.imedKinf_imedArm_ne_top hw₀ hy0 hfbk hpos hk1' hne hNk
       have hlt := HY.mul_toReal_imedKinf_add_lt hw₀ hy0 hfbk hpos hk1' hne hNk
@@ -673,6 +677,7 @@ lemma hyAlg_ae_pullCount_le_max' (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ
           (HY.imedKinf w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ) c).toReal :=
         mul_le_mul_of_nonneg_left hDK' (by linarith)
       linarith)
+  -- the bound at `t' - 1`, with `log ((t' - 1) + 1) = log t'`
   have hcast : g.ratio ℓ ^ 2 * Real.log (((t' - 1 : ℕ) : ℝ) + 1) = g.ratio ℓ ^ 2 * Real.log t' := by
     rw [Nat.cast_sub (by omega), Nat.cast_one, sub_add_cancel]
   rw [hcast] at h

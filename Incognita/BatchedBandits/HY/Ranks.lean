@@ -333,6 +333,9 @@ lemma sum_netSize_mul_le {β η C : ℝ} (hβ : 1 ≤ β) (hη : 0 < η) (hC : 0
       p k ≤ C * (g.netSize β k : ℝ) ^ 4 * (g.t (k + 1) : ℝ) ^ (-(1 + η))) :
     ∑ k ∈ Finset.Ico k₀ L, (g.netSize β (k + 2) : ℝ) * p k ≤
       C * (2 / η * Real.exp (η / 2) * (2 * (5 * β) / (Real.exp 1 * η)) ^ (5 * β)) := by
+  -- Each term is at most `C f(k + 1)`, with
+  -- `f(ℓ) = (t_ℓ - t_(ℓ-1)) (1 + log t_ℓ)^(5β) t_ℓ^(-(1+η))` (from `U_j ≤ (1 + L_(k+1))^β` for
+  -- `j ≤ k + 2`), and the sum of the `f(ℓ)` is bounded by `sum_mul_one_add_log_rpow_le`.
   set f : ℕ → ℝ := fun ℓ ↦ ((g.t ℓ : ℝ) - g.t (ℓ - 1)) * (1 + Real.log (g.t ℓ)) ^ (5 * β) *
     (g.t ℓ : ℝ) ^ (-(1 + η)) with hf
   have hf0 : ∀ ℓ, 1 ≤ ℓ → 0 ≤ f ℓ := fun ℓ hℓ ↦ by
@@ -372,6 +375,7 @@ lemma sum_netSize_mul_le {β η C : ℝ} (hβ : 1 ≤ β) (hη : 0 < η) (hC : 0
     have h5 : M ^ β * M ^ (4 * β) = M ^ (5 * β) := by
       rw [← Real.rpow_add hM0]
       ring_nf
+    -- `L_ℓ` is `log t_ℓ`, by definition
     have hlogt : Real.log (g.t (k + 1)) = g.logEnd (k + 1) := rfl
     calc (g.netSize β (k + 2) : ℝ) * p k
         ≤ M ^ β * (C * M ^ (4 * β) * (g.t (k + 1) : ℝ) ^ (-(1 + η))) := by
@@ -384,6 +388,7 @@ lemma sum_netSize_mul_le {β η C : ℝ} (hβ : 1 ≤ β) (hη : 0 < η) (hC : 0
           rw [hf]
           simp only [Nat.add_sub_cancel, hlogt, ← hM]
           gcongr
+  -- the sum of the `f (k + 1)` over `[k₀, L)` is at most the sum of the `f ℓ` over `[2, L]`
   refine (Finset.sum_le_sum hterm).trans ?_
   rw [← Finset.mul_sum]
   refine mul_le_mul_of_nonneg_left ?_ hC

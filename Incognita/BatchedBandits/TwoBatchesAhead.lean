@@ -644,6 +644,8 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
   have hsees : ∀ j n, n < g.t (j + 1) → SeesRewardsUpTo alg n (g.t j) :=
     fun _ _ hn ↦ hb.seesRewardsUpTo_of_lt hn
   have hη0 : 0 < γ / 4 := by positivity
+  -- the event `S_L = {N_a(t_(ℓ+1)) ≤ L}`, `L = ⌈E_ν[N_a(t_(ℓ+1))] / (γ/4)⌉`, has
+  -- `P_ν(S_L) ≥ 1 - γ/4` (Markov's inequality)
   set T := ∫ ω, (pullCount IT.action a (g.t (ℓ + 1)) ω : ℝ)
     ∂(trajMeasure alg (Environment.bandit ν)) with hT_def
   have hT0 : 0 ≤ T := integral_nonneg fun _ ↦ Nat.cast_nonneg _
@@ -679,6 +681,8 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
     have := le_of_mul_le_mul_left this hL0
     linarith
   have hqpos : 0 < (trajMeasure alg (Environment.bandit ν)).real SL := by linarith
+  -- the change of measure on `S_L` (`two_batches_finite`), and the consistency bounds at
+  -- `t_(ℓ+2)` for its right side (`rhs_le_of_counts_le`)
   have key := two_batches_finite (L := L) hr₀r hrM (by omega)
     (fun n hn ↦ hsees ℓ n hn) (fun n hn ↦ hsees (ℓ + 1) n hn) hκp hmp
     (by linarith : (0 : ℝ) ≤ 1 - s) (by linarith : 1 - s ≤ 1) hdom hDne hqpos
@@ -694,6 +698,7 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
       (g.t (ℓ + 2) : ℝ) ^ (γ / 4) / (g.t (ℓ + 2)) := by
     have : 0 ≤ (g.t (ℓ + 2) : ℝ) ^ (γ / 4) / (g.t (ℓ + 2)) := div_nonneg hMp.le hMpos.le
     linarith
+  -- take logarithms, then bound `L λ` by `E_ν[N_a(t_(ℓ+1))] ≤ C' log t_(ℓ+2)`
   have hlog := Real.log_le_log hlhs_pos (hfin.trans hhalf)
   rw [Real.log_mul (pow_pos (by linarith) L).ne' (exp_pos _).ne', Real.log_pow, Real.log_exp,
     h1s, Real.log_exp, Real.log_div hMp.ne' hMpos.ne', Real.log_rpow hMpos] at hlog
