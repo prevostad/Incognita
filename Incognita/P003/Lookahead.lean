@@ -134,11 +134,8 @@ lemma lintegral_lookahead (a₁ : α) (ν' : Kernel α ℝ) [IsMarkovKernel ν']
   have hf : Measurable fun y : ℝ ↦ ((if (1 / 2 : ℝ) < y then 1 else 2 : ℕ) : ℝ≥0∞) :=
     measurable_from_top.comp (Measurable.ite measurableSet_Ioi measurable_const measurable_const)
   have hsnd : Measurable fun ω : SourceSpace α ↦ ω.2 a₁ 1 := by fun_prop
-  have hmap : (sourceMeasure ν').map (fun ω : SourceSpace α ↦ ω.2 a₁ 1) = ν' a₁ := by
-    have : (fun ω : SourceSpace α ↦ ω.2 a₁ 1) =
-        Prod.snd ∘ (fun ω : SourceSpace α ↦ (ω.2 a₁ 0, ω.2 a₁ 1)) := rfl
-    rw [this, ← Measure.map_map measurable_snd (by fun_prop), map_sourceMeasure_pair,
-      Measure.map_snd_prod, measure_univ, one_smul]
+  have hmap : (sourceMeasure ν').map (fun ω : SourceSpace α ↦ ω.2 a₁ 1) = ν' a₁ :=
+    map_eval_sourceMeasure ν' a₁ 1
   have heq : ∀ ω : SourceSpace α, (lookahead a₁ ω a₁ : ℝ≥0∞) =
       ((if (1 / 2 : ℝ) < ω.2 a₁ 1 then 1 else 2 : ℕ) : ℝ≥0∞) := fun ω ↦ by
     simp [lookahead]

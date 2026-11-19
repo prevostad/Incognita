@@ -6,21 +6,25 @@ Authors: Incognita contributors
 module
 
 public import LMLExplore.Probability.Moments.SubGaussian.Bounded
+public import LeanMachineLearning.ForMathlib.Probability.Moments.SubGaussian
 public import Mathlib.Analysis.SpecificLimits.Basic
 
-/-! # Hoeffding's inequality for `[0, 1]`-valued independent variables
+/-! # Hoeffding's inequality for bounded independent variables
 
 [INC-P000, Lemma `lem:hoeffding`]: for independent `Z_1, Z_2, …` with values in `[0, 1]` and a
 common mean `m`, with `S_n = Z_1 + ⋯ + Z_n` (here `∑ i ∈ range n, Z i`):
 
 * `Incognita.measureReal_add_le_sum_range_le`, `Incognita.measureReal_sum_range_le_sub_le`:
-  (a), `P(S_n ≥ n m + y) ≤ e^(-2y²/n)` and `P(S_n ≤ n m - y) ≤ e^(-2y²/n)` for `n ≥ 1`, `y ≥ 0`;
+  (a), `P(S_n ≥ n m + y) ≤ e^(-2y²/n)` and `P(S_n ≤ n m - y) ≤ e^(-2y²/n)` for `y ≥ 0`, the case
+  `[0, 1]` of `Incognita.measureReal_add_le_sum_range_le_of_mem_Icc` and
+  `Incognita.measureReal_sum_range_le_sub_le_of_mem_Icc` (variables in `[a, b]`, bound
+  `e^(-2y²/(n (b - a)²))`);
 * `Incognita.measure_exists_ge_abs_div_sub_gt_le`: (b), for `ρ > 0` and `u > 0`,
   `P(∃ n ≥ u, |S_n / n - m| > ρ) ≤ 2 e^(-2ρ²u) / (1 - e^(-2ρ²))`.
 
 The variables are only assumed independent with a common mean (the paper's i.i.d. hypothesis is
-stronger). The proofs use Hoeffding's lemma on `[0, 1]` and the sub-Gaussian tail bounds of
-Mathlib and LMLExplore, then a union bound over `n ≥ ⌈u⌉` and a geometric series.
+stronger). The proofs use Mathlib's Hoeffding lemma on `[a, b]` and the sub-Gaussian tail bounds
+of Mathlib, LML and LMLExplore, then a union bound over `n ≥ ⌈u⌉` and a geometric series.
 -/
 
 @[expose] public section
@@ -34,14 +38,26 @@ namespace Incognita
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
   {Z : ℕ → Ω → ℝ} {m : ℝ}
 
-/-- [INC-P000, Lemma `lem:hoeffding`(a), upper tail] For independent `Z_i ∈ [0, 1]` of common mean
-`m`, `n ≥ 1` and `y ≥ 0`, `P(S_n ≥ n m + y) ≤ e^(-2y²/n)`. -/
-lemma measureReal_add_le_sum_range_le (hind : iIndepFun Z P) (hm : ∀ i, AEMeasurable (Z i) P)
-    (hb : ∀ i, ∀ᵐ ω ∂P, Z i ω ∈ Set.Icc (0 : ℝ) 1) (hmean : ∀ i, P[Z i] = m) {n : ℕ}
-    (hn : 1 ≤ n) {y : ℝ} (hy : 0 ≤ y) :
-    P.real {ω | n * m + y ≤ ∑ i ∈ range n, Z i ω} ≤ exp (-2 * y ^ 2 / n) := by
-  have hsub : ∀ i < n, HasSubgaussianMGF (fun ω ↦ Z i ω - m) (1 / 4) P := fun i _ ↦ by
-    simpa [hmean i] using LMLExplore.hasSubgaussianMGF_of_mem_Icc_zero_one (hm i) (hb i)
+/-- The exponent of Mathlib's Hoeffding bound for variables in `[a, b]`:
+`y² / (2 n ((b - a)/2)²) = 2 y² / (n (b - a)²)` (both sides are `0` when `n (b - a)² = 0`). -/
+lemma neg_sq_div_two_mul_nnnorm_sub_div_two_sq (n : ℕ) (a b y : ℝ) :
+    -y ^ 2 / (2 * n * (((‖b - a‖₊ / 2) ^ 2 : ℝ≥0) : ℝ)) = -2 * y ^ 2 / (n * (b - a) ^ 2) := by
+  have h : (2 * n * (((‖b - a‖₊ / 2) ^ 2 : ℝ≥0) : ℝ)) = n * (b - a) ^ 2 / 2 := by
+    push_cast
+    rw [Real.norm_eq_abs, div_pow, sq_abs]
+    ring
+  rw [h, div_div_eq_mul_div]
+  ring
+
+/-- **Hoeffding's inequality**, upper tail: for independent `Z_i ∈ [a, b]` of common mean `m` and
+`y ≥ 0`, `P(S_n ≥ n m + y) ≤ e^(-2y²/(n (b - a)²))` (Mathlib's Hoeffding lemma
+`hasSubgaussianMGF_of_mem_Icc` and `HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun`). -/
+lemma measureReal_add_le_sum_range_le_of_mem_Icc (hind : iIndepFun Z P)
+    (hm : ∀ i, AEMeasurable (Z i) P) {a b : ℝ} (hb : ∀ i, ∀ᵐ ω ∂P, Z i ω ∈ Set.Icc a b)
+    (hmean : ∀ i, P[Z i] = m) (n : ℕ) {y : ℝ} (hy : 0 ≤ y) :
+    P.real {ω | n * m + y ≤ ∑ i ∈ range n, Z i ω} ≤ exp (-2 * y ^ 2 / (n * (b - a) ^ 2)) := by
+  have hsub : ∀ i < n, HasSubgaussianMGF (fun ω ↦ Z i ω - m) ((‖b - a‖₊ / 2) ^ 2) P :=
+    fun i _ ↦ by simpa [hmean i] using hasSubgaussianMGF_of_mem_Icc (hm i) (hb i)
   have h := HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
     (hind.comp (g := fun _ (x : ℝ) ↦ x - m) fun _ ↦ measurable_sub_const m) hsub hy
   have hset : {ω | n * m + y ≤ ∑ i ∈ range n, Z i ω} =
@@ -50,41 +66,46 @@ lemma measureReal_add_le_sum_range_le (hind : iIndepFun Z P) (hm : ∀ i, AEMeas
     simp only [Set.mem_ofPred_eq, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range,
       nsmul_eq_mul]
     constructor <;> intro h <;> linarith
-  rw [hset]
-  refine h.trans_eq ?_
-  congr 1
-  have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast (show n ≠ 0 by omega)
-  push_cast
-  field_simp
-  ring
+  rw [hset, ← neg_sq_div_two_mul_nnnorm_sub_div_two_sq]
+  exact h
 
-/-- [INC-P000, Lemma `lem:hoeffding`(a), lower tail] For independent `Z_i ∈ [0, 1]` of common mean
-`m`, `n ≥ 1` and `y ≥ 0`, `P(S_n ≤ n m - y) ≤ e^(-2y²/n)`. -/
-lemma measureReal_sum_range_le_sub_le (hind : iIndepFun Z P) (hm : ∀ i, AEMeasurable (Z i) P)
-    (hb : ∀ i, ∀ᵐ ω ∂P, Z i ω ∈ Set.Icc (0 : ℝ) 1) (hmean : ∀ i, P[Z i] = m) {n : ℕ}
-    (hn : 1 ≤ n) {y : ℝ} (hy : 0 ≤ y) :
-    P.real {ω | ∑ i ∈ range n, Z i ω ≤ n * m - y} ≤ exp (-2 * y ^ 2 / n) := by
-  have hsub : ∀ i < n, HasSubgaussianMGF (fun ω ↦ m - Z i ω) (1 / 4) P := fun i _ ↦ by
-    have := (LMLExplore.hasSubgaussianMGF_of_mem_Icc_zero_one (hm i) (hb i)).neg
-    rw [hmean i] at this
-    convert this using 1
-    funext ω
-    simp
-  have h := HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun
-    (hind.comp (g := fun _ (x : ℝ) ↦ m - x) fun _ ↦ measurable_const_sub m) hsub hy
+/-- **Hoeffding's inequality**, lower tail: for independent `Z_i ∈ [a, b]` of common mean `m` and
+`y ≥ 0`, `P(S_n ≤ n m - y) ≤ e^(-2y²/(n (b - a)²))` (Mathlib's Hoeffding lemma and LML's
+`HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun`). -/
+lemma measureReal_sum_range_le_sub_le_of_mem_Icc (hind : iIndepFun Z P)
+    (hm : ∀ i, AEMeasurable (Z i) P) {a b : ℝ} (hb : ∀ i, ∀ᵐ ω ∂P, Z i ω ∈ Set.Icc a b)
+    (hmean : ∀ i, P[Z i] = m) (n : ℕ) {y : ℝ} (hy : 0 ≤ y) :
+    P.real {ω | ∑ i ∈ range n, Z i ω ≤ n * m - y} ≤ exp (-2 * y ^ 2 / (n * (b - a) ^ 2)) := by
+  have hsub : ∀ i < n, HasSubgaussianMGF (fun ω ↦ Z i ω - m) ((‖b - a‖₊ / 2) ^ 2) P :=
+    fun i _ ↦ by simpa [hmean i] using hasSubgaussianMGF_of_mem_Icc (hm i) (hb i)
+  have h := HasSubgaussianMGF.measure_sum_range_le_le_of_iIndepFun
+    (hind.comp (g := fun _ (x : ℝ) ↦ x - m) fun _ ↦ measurable_sub_const m) hsub hy
   have hset : {ω | ∑ i ∈ range n, Z i ω ≤ n * m - y} =
-      {ω | y ≤ ∑ i ∈ range n, (fun ω ↦ m - Z i ω) ω} := by
+      {ω | ∑ i ∈ range n, (fun ω ↦ Z i ω - m) ω ≤ -y} := by
     ext ω
     simp only [Set.mem_ofPred_eq, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range,
       nsmul_eq_mul]
     constructor <;> intro h <;> linarith
-  rw [hset]
-  refine h.trans_eq ?_
-  congr 1
-  have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast (show n ≠ 0 by omega)
-  push_cast
-  field_simp
-  ring
+  rw [hset, ← neg_sq_div_two_mul_nnnorm_sub_div_two_sq]
+  exact h
+
+/-- [INC-P000, Lemma `lem:hoeffding`(a), upper tail] For independent `Z_i ∈ [0, 1]` of common mean
+`m` and `y ≥ 0`, `P(S_n ≥ n m + y) ≤ e^(-2y²/n)`: `measureReal_add_le_sum_range_le_of_mem_Icc`
+on `[0, 1]`. -/
+lemma measureReal_add_le_sum_range_le (hind : iIndepFun Z P) (hm : ∀ i, AEMeasurable (Z i) P)
+    (hb : ∀ i, ∀ᵐ ω ∂P, Z i ω ∈ Set.Icc (0 : ℝ) 1) (hmean : ∀ i, P[Z i] = m) (n : ℕ) {y : ℝ}
+    (hy : 0 ≤ y) :
+    P.real {ω | n * m + y ≤ ∑ i ∈ range n, Z i ω} ≤ exp (-2 * y ^ 2 / n) := by
+  simpa using measureReal_add_le_sum_range_le_of_mem_Icc hind hm hb hmean n hy
+
+/-- [INC-P000, Lemma `lem:hoeffding`(a), lower tail] For independent `Z_i ∈ [0, 1]` of common mean
+`m` and `y ≥ 0`, `P(S_n ≤ n m - y) ≤ e^(-2y²/n)`: `measureReal_sum_range_le_sub_le_of_mem_Icc`
+on `[0, 1]`. -/
+lemma measureReal_sum_range_le_sub_le (hind : iIndepFun Z P) (hm : ∀ i, AEMeasurable (Z i) P)
+    (hb : ∀ i, ∀ᵐ ω ∂P, Z i ω ∈ Set.Icc (0 : ℝ) 1) (hmean : ∀ i, P[Z i] = m) (n : ℕ) {y : ℝ}
+    (hy : 0 ≤ y) :
+    P.real {ω | ∑ i ∈ range n, Z i ω ≤ n * m - y} ≤ exp (-2 * y ^ 2 / n) := by
+  simpa using measureReal_sum_range_le_sub_le_of_mem_Icc hind hm hb hmean n hy
 
 /-- The two-sided bound at the deviation `n ρ`:
 `P(n ρ ≤ |S_n - n m|) ≤ 2 e^(-2ρ² n)` for `n ≥ 1`, `ρ ≥ 0`. -/

@@ -87,12 +87,13 @@ lemma Grid.exists_seq_tendsto_zero_div_log_t {K : ℕ} (g : Grid K) {ε₀ : ℝ
 /-! ### Lemma `lem:H` -/
 
 /-- **Running maxima** [INC-P000, Lemma `lem:H`, general form]: if `a_k / b_k → c ≥ 0`, `b` is
-nondecreasing, eventually positive and `b_k → ∞`, then `(max_{1 ≤ k ≤ j} a_k) / b_j → c`; the
+nondecreasing and `b_k → ∞`, then `(max_{1 ≤ k ≤ j} a_k) / b_j → c`; the
 maximum is `⨆ k : Icc 1 j, a k`. -/
 lemma tendsto_iSup_Icc_div_of_tendsto {a b : ℕ → ℝ} {c : ℝ} (hc : 0 ≤ c)
     (hab : Tendsto (fun k ↦ a k / b k) atTop (𝓝 c)) (hb : Monotone b)
-    (hbpos : ∀ᶠ k in atTop, 0 < b k) (hbt : Tendsto b atTop atTop) :
+    (hbt : Tendsto b atTop atTop) :
     Tendsto (fun j ↦ (⨆ k : Finset.Icc 1 j, a k) / b j) atTop (𝓝 c) := by
+  have hbpos : ∀ᶠ k in atTop, 0 < b k := hbt.eventually_gt_atTop 0
   have hle : ∀ j, 1 ≤ j → a j ≤ ⨆ k : Finset.Icc 1 j, a k := fun j hj ↦
     le_ciSup (f := fun k : Finset.Icc 1 j ↦ a k) (Set.finite_range _).bddAbove
       ⟨j, Finset.mem_Icc.mpr ⟨hj, le_rfl⟩⟩
@@ -131,8 +132,7 @@ lemma Grid.tendsto_iSup_ratio_sq_mul_logEnd_div {K : ℕ} (g : Grid K) {x : ℝ}
       g.logEnd j)
       atTop (𝓝 (x ^ 2)) := by
   refine tendsto_iSup_Icc_div_of_tendsto (a := fun k ↦ g.ratio (k - 1) ^ 2 * g.logEnd k)
-    (sq_nonneg x) ?_ g.monotone_logEnd
-    (eventually_atTop.2 ⟨1, fun k hk ↦ g.logEnd_pos hk⟩) g.tendsto_logEnd_atTop
+    (sq_nonneg x) ?_ g.monotone_logEnd g.tendsto_logEnd_atTop
   have hr : Tendsto (fun k ↦ g.ratio (k - 1) ^ 2) atTop (𝓝 (x ^ 2)) :=
     (hg.comp (tendsto_sub_atTop_nat 1)).pow 2
   refine hr.congr' (eventually_atTop.2 ⟨1, fun k hk ↦ ?_⟩)

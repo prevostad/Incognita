@@ -7,6 +7,7 @@ module
 
 public import Incognita.TransferBandits.SourceLaw
 public import Incognita.TransferBandits.OnlineKL
+public import LeanMachineLearning.ForMathlib.MeasureTheory.Group.Arithmetic
 
 /-! # The divergence of the source data of a size rule
 
@@ -35,17 +36,12 @@ namespace Incognita.TransferBandits
 variable {α : Type*} [MeasurableSpace α]
 
 omit [MeasurableSpace α] in
-/-- The partial sums `∑_{j < N'_k} φ(X'_{k,j})` are measurable. -/
+/-- The partial sums `∑_{j < N'_k} φ(X'_{k,j})` are measurable (LML's `measurable_sum_range`). -/
 lemma measurable_sum_range_sizeRule {N : SourceSpace α → α → ℕ} (hN : Measurable N)
     (k : α) {E : Type*} [AddCommMonoid E] [MeasurableSpace E] [MeasurableAdd₂ E] {φ : ℝ → E}
     (hφ : Measurable φ) :
-    Measurable fun ω : SourceSpace α ↦ ∑ j ∈ Finset.range (N ω k), φ (ω.2 k j) := by
-  have hF : Measurable fun p : ℕ × SourceSpace α ↦ ∑ j ∈ Finset.range p.1, φ (p.2.2 k j) :=
-    measurable_from_prod_countable_right fun m ↦ by
-      simp only
-      exact Finset.measurable_sum (f := fun j (y : SourceSpace α) ↦ φ (y.2 k j)) _
-        fun j _ ↦ hφ.comp (by fun_prop)
-  exact hF.comp (((measurable_pi_apply k).comp hN).prodMk measurable_id)
+    Measurable fun ω : SourceSpace α ↦ ∑ j ∈ Finset.range (N ω k), φ (ω.2 k j) :=
+  measurable_sum_range (fun _ ↦ hφ.comp (by fun_prop)) ((measurable_pi_apply k).comp hN)
 
 /-- **Wald's identity for size rules**, integrability: for a size rule with `E[N'_k] < ∞` and a
 measurable `φ` integrable under `ν'_k`, `∑_{j < N'_k} φ(X'_{k,j})` is integrable. -/

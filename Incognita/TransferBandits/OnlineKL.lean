@@ -6,6 +6,8 @@ Authors: Incognita contributors
 module
 
 public import Incognita.TransferBandits.LMLHistory
+public import LMLExplore.SequentialLearning.DivergenceDecomposition
+public import LeanMachineLearning.ForMathlib.InformationTheory.KullbackLeibler.DataProcessing
 public import TauCeti.InformationTheory.KullbackLeibler.ChainRule
 
 /-! # The divergence of the online phase of a transfer game
@@ -16,8 +18,8 @@ laws of the source data plus `∑_k E_P[N_k(T)] KL(ν_k, ν₂_k)`.
 
 For a fixed source data `s`, the learner `π` plays the LML bandit algorithm
 `π(s) : n, (h, o) ↦ π_n(s, histPairs h)`; its online law is LML's law of the first `T` pairs
-(`onlineKernel_apply_eq_map_trajMeasure`), whose divergence decomposition is LML's
-`IsAlgEnvSeq.klDiv_map_history_bandit`.
+(`onlineKernel_apply_eq_map_trajMeasure`), whose divergence decomposition is LMLExplore's
+`IsAlgEnvSeq.klDiv_map_history_eq_sum_pullCount` [LS, Lemma 15.1].
 
 ## Main statements
 
@@ -90,42 +92,29 @@ lemma exists_algorithm_section (π : TransferAlgorithm α) (s : Source α) :
     fun _ _ ↦ rfl⟩
 
 /-- The divergence between the laws of the first `T` (action, reward) pairs is that between the
-LML histories: forgetting the trivial observations is invertible. -/
+LML histories: forgetting the trivial observations is a measurable equivalence (LML's
+`klDiv_map_measurableEmbedding`). -/
 lemma klDiv_map_histPairs {n : ℕ} (μ μ' : Measure (Hist Unit α ℝ n)) [IsFiniteMeasure μ]
     [IsFiniteMeasure μ'] :
-    klDiv (μ.map histPairs) (μ'.map histPairs) = klDiv μ μ' := by
-  refine le_antisymm (klDiv_map_le _ _ (measurable_histPairs n)) ?_
-  have hid : ∀ ρ : Measure (Hist Unit α ℝ n), (ρ.map histPairs).map pairsHist = ρ := fun ρ ↦ by
-    rw [Measure.map_map (measurable_pairsHist n) (measurable_histPairs n)]
-    exact Measure.map_id
-  calc klDiv μ μ' = klDiv ((μ.map histPairs).map pairsHist) ((μ'.map histPairs).map pairsHist) := by
-        rw [hid, hid]
-  _ ≤ _ := klDiv_map_le _ _ (measurable_pairsHist n)
+    klDiv (μ.map histPairs) (μ'.map histPairs) = klDiv μ μ' :=
+  klDiv_map_measurableEmbedding μ μ' (MeasurableEquiv.measurableEmbedding
+    { toFun := histPairs, invFun := pairsHist, left_inv := pairsHist_histPairs,
+      right_inv := histPairs_pairsHist, measurable_toFun := measurable_histPairs n,
+      measurable_invFun := measurable_pairsHist n })
 
 /-- The expected divergence of the reward laws at the actions of the first `T` rounds of an LML
-trajectory is `∑_k E[N_k(T)] KL(ν_k, ν₂_k)`. -/
+trajectory is `∑_k E[N_k(T)] KL(ν_k, ν₂_k)`: LMLExplore's `sum_lintegral_pullCount_mul`. -/
 lemma sum_lintegral_klDiv_action_eq [Fintype α] [DecidableEq α] [MeasurableSingletonClass α]
     {Ω : Type*} [MeasurableSpace Ω] (P : Measure Ω) {A : ℕ → Ω → α} (hA : ∀ t, Measurable (A t))
     (ν ν₂ : Kernel α ℝ) (T : ℕ) :
     ∑ t ∈ Finset.range T, ∫⁻ ω, klDiv (ν (A t ω)) (ν₂ (A t ω)) ∂P =
       ∑ a, (∫⁻ ω, (pullCount A a T ω : ℝ≥0∞) ∂P) * klDiv (ν a) (ν₂ a) := by
-  have hind : ∀ t a, Measurable fun ω ↦ (if A t ω = a then (1 : ℝ≥0∞) else 0) := fun t a ↦
-    Measurable.ite (hA t (measurableSet_singleton a)) measurable_const measurable_const
-  have hkl : ∀ t ω, klDiv (ν (A t ω)) (ν₂ (A t ω)) =
-      ∑ a, (if A t ω = a then (1 : ℝ≥0∞) else 0) * klDiv (ν a) (ν₂ a) := fun t ω ↦ by
-    rw [Finset.sum_eq_single (A t ω) (fun b _ hb ↦ by simp [Ne.symm hb]) (by simp)]
-    simp
-  have hcount : ∀ a ω, (pullCount A a T ω : ℝ≥0∞) =
-      ∑ t ∈ Finset.range T, (if A t ω = a then (1 : ℝ≥0∞) else 0) := fun a ω ↦ by
-    rw [pullCount, Finset.card_filter, Nat.cast_sum]
-    refine Finset.sum_congr rfl fun t _ ↦ ?_
-    split_ifs <;> simp
-  simp_rw [hkl, hcount]
-  rw [Finset.sum_congr rfl fun t _ ↦ lintegral_finsetSum _ fun a _ ↦ (hind t a).mul_const _,
-    Finset.sum_comm]
-  refine Finset.sum_congr rfl fun a _ ↦ ?_
-  rw [lintegral_finsetSum _ fun t _ ↦ hind t a, Finset.sum_mul]
-  exact Finset.sum_congr rfl fun t _ ↦ lintegral_mul_const _ (hind t a)
+  calc ∑ t ∈ Finset.range T, ∫⁻ ω, klDiv (ν (A t ω)) (ν₂ (A t ω)) ∂P
+      = ∫⁻ ω, ∑ t ∈ Finset.range T, klDiv (ν (A t ω)) (ν₂ (A t ω)) ∂P :=
+        (lintegral_finsetSum (f := fun t ω ↦ klDiv (ν (A t ω)) (ν₂ (A t ω))) _ fun t _ ↦
+          (measurable_of_countable fun a ↦ klDiv (ν a) (ν₂ a)).comp (hA t)).symm
+    _ = _ := (LMLExplore.sum_lintegral_pullCount_mul (P := P) (g := fun _ ↦ T) hA
+        measurable_const fun a ↦ klDiv (ν a) (ν₂ a)).symm
 
 /-- **Divergence of the online phase** at a fixed source data [INC-P003, lem:online-kl, inner
 identity]: `KL(κ^T_{π,ν}(s), κ^T_{π,ν₂}(s)) = ∑_k E_{κ^T_{π,ν}(s)}[N_k(T)] KL(ν_k, ν₂_k)`. -/
@@ -144,8 +133,7 @@ lemma klDiv_onlineKernel_apply [Fintype α] [MeasurableSingletonClass α] (π : 
       histPairs ∘ IT.hist (𝓞 := Unit) (𝓐 := α) (𝓨 := ℝ) T := rfl
   rw [e, ← Measure.map_map (measurable_histPairs T) hhist,
     ← Measure.map_map (measurable_histPairs T) hhist, klDiv_map_histPairs,
-    ← IT.history_obs_action_feedback, h.klDiv_map_history_bandit h₂,
-    sum_lintegral_klDiv_action_eq _ (fun t ↦ IT.measurable_action t)]
+    ← IT.history_obs_action_feedback, h.klDiv_map_history_eq_sum_pullCount h₂]
   refine Finset.sum_congr rfl fun a _ ↦ ?_
   congr 1
   rw [IT.history_obs_action_feedback, Measure.map_map (measurable_histPairs T) hhist,

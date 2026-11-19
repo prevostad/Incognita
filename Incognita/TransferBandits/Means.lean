@@ -6,6 +6,7 @@ Authors: Incognita contributors
 module
 
 public import Incognita.TransferBandits.Consistency
+public import LMLExplore.Analysis.Convex.Integral
 
 /-! # Means of instances, the sets `𝒫_L` and the classes `𝒞_L`
 
@@ -31,15 +32,12 @@ namespace Incognita.TransferBandits
 
 variable {α : Type*} [MeasurableSpace α]
 
-/-- The mean of a law of an instance of `𝒫^K` lies in `[0,1]` (Jensen's inequality for the
-convex closed set `[0,1]`, `Convex.integral_mem`). -/
+/-- The mean of a law of an instance of `𝒫^K` lies in `[0,1]` (LMLExplore's
+`integral_id_mem_Icc_of_ae_mem_Icc`). -/
 lemma mean_mem_Icc {ν : Kernel α ℝ} (hν : ν ∈ unitBandits α) (a : α) :
-    (ν a)[id] ∈ Set.Icc 0 1 := by
-  have := hν.1
-  refine (convex_Icc 0 1).integral_mem isClosed_Icc (hν.2 a)
-    (Integrable.of_bound measurable_id.aestronglyMeasurable 1 ((hν.2 a).mono fun x hx ↦ ?_))
-  rw [Real.norm_eq_abs, abs_le]
-  exact ⟨by simp only [id]; linarith [hx.1], hx.2⟩
+    (ν a)[id] ∈ Set.Icc 0 1 :=
+  haveI := hν.1
+  integral_id_mem_Icc_of_ae_mem_Icc (hν.2 a)
 
 /-- Two means of laws of instances of `𝒫^K` differ by at most `1`. -/
 lemma abs_mean_sub_mean_le_one {ν ν' : Kernel α ℝ} (hν : ν ∈ unitBandits α)

@@ -6,6 +6,8 @@ Authors: Incognita contributors
 module
 
 public import LMLExplore.Bandits.AsymptoticOptimality
+public import LeanMachineLearning.Online.Bandit.ArrayProbSpace
+public import Mathlib.Probability.Independence.InfinitePi
 
 /-! # The setting of transfer bandits with adaptively collected source data
 
@@ -55,8 +57,10 @@ a stopping point of the `K`-parameter filtration `(𝒢_n)_{n ∈ ℕ^K}` [MV81,
 * Instances: `isProbabilityMeasure_sourceMeasure`, `isProbabilityMeasure_sourceLaw`,
   `isMarkovKernel_stepKernel`, `isMarkovKernel_onlineKernel`, `isProbabilityMeasure_gameMeasure`.
 * `map_eval_sourceMeasure`, `map_fst_sourceMeasure`: under `P'_{ν'}`, `X'_{k,j}` has law `ν'_k` and
-  the randomisation is uniform; `measurable_boxRestrict`, `measurable_sourceData`;
-  `TransferAlgorithm.ofAlgorithm_policy`; `TransferAlgorithm.ext`.
+  the randomisation is uniform; `sourceMeasure_eq_map_arrayMeasure`: `P'_{ν'}` is LML's array
+  model `arrayMeasure ν'` with the two indices of the rewards exchanged;
+  `measurable_boxRestrict`, `measurable_sourceData`; `TransferAlgorithm.ofAlgorithm_policy`;
+  `TransferAlgorithm.ext`.
 * `onlineKernel_zero`, `onlineKernel_succ`: the recursion defining `κ^T_{π,ν}`; `fst_gameMeasure`:
   the source data of the game have the law `P^D_{ν',N'}`, at every horizon.
 -/
@@ -203,6 +207,30 @@ lemma map_eval_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] (k : α)
 lemma map_fst_sourceMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
     (sourceMeasure ν').map Prod.fst = Measure.infinitePi fun _ : ℕ ↦ (volume : Measure I) := by
   rw [sourceMeasure, Measure.map_fst_prod, measure_univ, one_smul]
+
+/-- **LML's array model**: `P'_{ν'}` is the image of LML's `Bandits.ArrayModel.arrayMeasure ν'`
+(randomisation, and rewards indexed by (round, arm)) under the transposition of the indices of
+the rewards, `z ↦ (a, j) ↦ z j a`. -/
+lemma sourceMeasure_eq_map_arrayMeasure (ν' : Kernel α ℝ) [IsMarkovKernel ν'] :
+    sourceMeasure ν' = (Bandits.ArrayModel.arrayMeasure ν').map
+      (Prod.map id fun (z : ℕ → α → ℝ) (a : α) (j : ℕ) ↦ z j a) := by
+  have hT : Measurable fun (z : ℕ → α → ℝ) (a : α) (j : ℕ) ↦ z j a := by fun_prop
+  have h1 : Bandits.streamMeasure ν' =
+      (Measure.infinitePi fun p : ℕ × α ↦ ν' p.2).map (MeasurableEquiv.curry ℕ α ℝ) :=
+    (Measure.infinitePi_map_curry (fun (_ : ℕ) (a : α) ↦ ν' a)).symm
+  have h2 : Measure.infinitePi (fun a : α ↦ Measure.infinitePi fun _ : ℕ ↦ ν' a) =
+      (Measure.infinitePi fun p : α × ℕ ↦ ν' p.1).map (MeasurableEquiv.curry α ℕ ℝ) :=
+    (Measure.infinitePi_map_curry (fun (a : α) (_ : ℕ) ↦ ν' a)).symm
+  have h3 : (Measure.infinitePi fun p : ℕ × α ↦ ν' p.2).map (fun w q ↦ w (Prod.swap q)) =
+      Measure.infinitePi fun p : α × ℕ ↦ ν' p.1 :=
+    Measure.map_infinitePi_infinitePi_of_inj Prod.swap_injective
+  have hstream : (Bandits.streamMeasure ν').map (fun (z : ℕ → α → ℝ) (a : α) (j : ℕ) ↦ z j a) =
+      Measure.infinitePi fun a : α ↦ Measure.infinitePi fun _ : ℕ ↦ ν' a := by
+    rw [h1, h2, ← h3, Measure.map_map hT (MeasurableEquiv.measurable _),
+      Measure.map_map (MeasurableEquiv.measurable _) (by fun_prop)]
+    rfl
+  rw [Bandits.ArrayModel.arrayMeasure, ← Measure.map_prod_map _ _ measurable_id hT, Measure.map_id,
+    hstream, sourceMeasure]
 
 omit [MeasurableSpace α] in
 lemma measurable_sourceData {N : SourceSpace α → α → ℕ} (hN : Measurable N) :

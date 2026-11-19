@@ -20,6 +20,8 @@ consistency at the batch ends of [INC-P006, Definition `def:consistent`]
 
 ## Main statements
 
+* `Relations.mem_unitBandits_iff_forall_mem_unitLaws`: `ν ∈ 𝒫^K` iff every law `ν a` is in the set
+  `unitLaws` of BatchedBandits.
 * `Relations.batchedUnitBandits_eq_inter`: `𝒫 = 𝒫^K ∩ {m⋆ < 1}`; the two classes are not the
   same object (an instance with an arm `δ_1` is in `𝒫^K` and not in `𝒫`).
 * `Relations.isConsistentOnUnit_iff_isConsistentAtBatchEnds_sequential`: a learner is consistent
@@ -47,6 +49,13 @@ open scoped Topology
 namespace Incognita.TransferBandits.Relations
 
 variable {α : Type*} [MeasurableSpace α]
+
+/-- **Same object**: an instance of `𝒫^K` [INC-P003, Definitions `def:laws` and `def:instance`] is a
+kernel whose laws are all in the set `𝓜 = unitLaws` of the laws on `[0, 1]` of BatchedBandits
+[INC-P006, Definition `def:instance`]. -/
+lemma mem_unitBandits_iff_forall_mem_unitLaws {ν : Kernel α ℝ} :
+    ν ∈ unitBandits α ↔ ∀ a, ν a ∈ Incognita.BatchedBandits.unitLaws :=
+  ⟨fun h a ↦ ⟨h.1.isProbabilityMeasure a, h.2 a⟩, fun h ↦ ⟨⟨fun a ↦ (h a).1⟩, fun a ↦ (h a).2⟩⟩
 
 /-- The class `𝒫` of BatchedBandits [INC-P006, Definition `def:instance`] is the class `𝒫^K` of
 TransferBandits [INC-P003, Definitions `def:laws` and `def:instance`] restricted to the instances

@@ -8,6 +8,7 @@ module
 public import Incognita.BatchedBandits.Instances
 public import Incognita.ForMathlib.InformationTheory.KullbackLeibler.Basic
 public import LMLExplore.Bandits.LaiRobbins
+public import LMLExplore.Identification.Task.RealLaws
 
 /-! # `𝒦_inf` on the laws on `[0, 1]`
 
@@ -17,8 +18,10 @@ Values and bounds of `𝒦_inf(P, μ) = dInf unitLaws P μ`, the infimum of `KL(
 * `dInf_unitLaws_eq_top_of_one_le`: `𝒦_inf(P, μ) = ∞` for `μ ≥ 1` (no law on `[0, 1]` has a mean
   above `1`);
 * `dInf_unitLaws_eq_zero_of_lt_integral`: `𝒦_inf(P, μ) = 0` for `μ < p` (`Q = P`);
-* `klBer_le_dInf_unitLaws`: `kl(p, μ) ≤ 𝒦_inf(P, μ)` for `p ≤ μ` (data processing to the reward,
-  LMLExplore's `klBer_integral_le_klDiv`, and the monotonicity of `kl(p, ·)`);
+* `Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws`: LMLExplore's transportation cost
+  `K⁺(P, μ)` over the laws on `[0, 1]` is at most `𝒦_inf(P, μ)`;
+* `klBer_le_dInf_unitLaws`: `kl(p, μ) ≤ 𝒦_inf(P, μ)` for `p ≤ μ`, from LMLExplore's lower bound
+  `klBer_le_kInfUpper_of_subset_unitIntervalLaws` on `K⁺`;
 * `dInf_unitLaws_le_ofReal_log`: `𝒦_inf(P, μ) ≤ log ((1 - p) / (1 - μ))` for `p ≤ μ < 1`, through
   the mixtures `(1 - u) P + u δ_1`, `u ∈ (u₀, 1)` with `u₀ = (μ - p) / (1 - p)`, whose density bound
   gives `KL(P ‖ ·) ≤ log (1 / (1 - u))` (`Incognita.klDiv_le_ofReal_neg_log_smul_add_smul`);
@@ -54,16 +57,24 @@ lemma dInf_unitLaws_eq_zero_of_lt_integral (hP : P ∈ unitLaws) (hμ : μ < P[i
   have := hP.1
   exact nonpos_iff_eq_zero.1 ((dInf_le hP hμ).trans_eq (klDiv_self P))
 
+/-- LMLExplore's transportation cost `K⁺(P, μ)` over the laws on `[0, 1]` (competitors of mean
+`≥ μ`) is at most `𝒦_inf(P, μ) = dInf unitLaws P μ` (competitors of mean `> μ`). -/
+lemma Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws (P : ProbabilityMeasure ℝ) (μ : ℝ) :
+    Identification.kInfUpper ProbabilityMeasure.toMeasure Identification.unitIntervalLaws
+        (fun Q ↦ (Q : Measure ℝ)[id]) P μ ≤
+      dInf unitLaws (P : Measure ℝ) μ :=
+  le_dInf_iff.2 fun Q hQ hm ↦
+    Identification.kInfUpper_le (κ := ProbabilityMeasure.toMeasure)
+      (m := fun Q ↦ (Q : Measure ℝ)[id]) (y := (⟨Q, hQ.1⟩ : ProbabilityMeasure ℝ))
+      (Identification.mem_unitIntervalLaws_iff.2 hQ.2) hm.le
+
 /-- [INC-P006, Proposition `prop:kinf`(iii), lower bound] `kl(p, μ) ≤ 𝒦_inf(P, μ)` for
-`p = m(P) ≤ μ`. -/
+`p = m(P) ≤ μ`: LMLExplore's bound `kl(p, μ) ≤ K⁺(P, μ)` and `K⁺ ≤ 𝒦_inf`. -/
 lemma klBer_le_dInf_unitLaws (hP : P ∈ unitLaws) (hpμ : P[id] ≤ μ) :
-    klBer P[id] μ ≤ dInf unitLaws P μ := by
-  -- Every competitor `Q` has mean `q > μ`, and `KL(P ‖ Q) ≥ kl(p, q) ≥ kl(p, μ)`.
-  have := hP.1
-  refine le_dInf_iff.2 fun Q hQ hm ↦ ?_
-  have := hQ.1
-  exact (monotoneOn_klBer _ hpμ (hpμ.trans hm.le) hm.le).trans
-    (klBer_integral_le_klDiv hP.2 hQ.2)
+    klBer P[id] μ ≤ dInf unitLaws P μ :=
+  (Identification.klBer_le_kInfUpper_of_subset_unitIntervalLaws (P := ⟨P, hP.1⟩) subset_rfl
+    (Identification.mem_unitIntervalLaws_iff.2 hP.2) hpμ).trans
+    (Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws ⟨P, hP.1⟩ μ)
 
 /-- [INC-P006, Proposition `prop:kinf`(iii), upper bound] For `p = m(P) ≤ μ < 1`,
 `𝒦_inf(P, μ) ≤ log ((1 - p) / (1 - μ))`. -/

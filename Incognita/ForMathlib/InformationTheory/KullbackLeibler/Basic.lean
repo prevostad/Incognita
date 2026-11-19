@@ -7,6 +7,7 @@ module
 
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 public import TauCeti.InformationTheory.KullbackLeibler.Tilted
+public import TauCeti.MeasureTheory.Measure.ProbabilityMeasure.Convex
 
 /-! # Relative entropy under a bounded density
 
@@ -68,15 +69,15 @@ lemma klDiv_le_ofReal_neg_log_of_smul_le [IsProbabilityMeasure μ] [IsProbabilit
 
 /-- **Relative entropy to a mixture**: for probability measures `μ`, `ρ` and `u ∈ [0, 1)`, the
 mixture `ν_u = (1 - u) • μ + u • ρ` satisfies `KL(μ ‖ ν_u) ≤ log (1 / (1 - u))`, since
-`(1 - u) • μ ≤ ν_u`. The weights are in `ℝ≥0`. -/
+`(1 - u) • μ ≤ ν_u`; `ν_u` is a probability measure by Tau Ceti's
+`isProbabilityMeasure_smul_add_smul`. The weights are in `ℝ≥0`. -/
 lemma klDiv_le_ofReal_neg_log_smul_add_smul [IsProbabilityMeasure μ] (ρ : Measure α)
     [IsProbabilityMeasure ρ] {u : ℝ≥0} (hu : u < 1) :
     klDiv μ ((1 - u) • μ + u • ρ) ≤ ENNReal.ofReal (-log ((1 - u : ℝ≥0) : ℝ)) := by
   have : IsProbabilityMeasure ((1 - u) • μ + u • ρ) := by
-    constructor
-    rw [add_apply, smul_apply, smul_apply, measure_univ, measure_univ, ENNReal.smul_def,
-      ENNReal.smul_def, smul_eq_mul, smul_eq_mul, mul_one, mul_one, ← ENNReal.coe_add,
-      tsub_add_cancel_of_le hu.le, ENNReal.coe_one]
+    rw [ENNReal.smul_def, ENNReal.smul_def]
+    exact TauCeti.MeasureTheory.isProbabilityMeasure_smul_add_smul
+      (by rw [← ENNReal.coe_add, tsub_add_cancel_of_le hu.le, ENNReal.coe_one]) μ ρ
   exact klDiv_le_ofReal_neg_log_of_smul_le (tsub_pos_of_lt hu) (Measure.le_add_right le_rfl)
 
 end Incognita

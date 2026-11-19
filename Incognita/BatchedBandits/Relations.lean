@@ -33,19 +33,19 @@ notions reduce to their sequential counterparts.
 
 Further relations, in the namespace `Relations`:
 
-* `Relations.isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff`: a learner batched on `g`
-  ignores the rewards in the first batch, from `IsBatched.of_isFiner` and
-  `isBatched_sequential_iff`.
 * `Relations.kinf_bounds_of_gap_pos_of_kinf_bounds`: [INC-P006, Proposition `prop:kinf`], (iii)
   implies (v).
-* `Relations.dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le`:
-  `𝒦_inf(P, m) = ∞` for `m ≥ 1` gives LMLExplore's value of `d_inf` over the Bernoulli laws.
 * `Relations.unitLaws_eq_image_unitIntervalLaws`: the laws on `[0, 1]` are LMLExplore's
   `unitIntervalLaws`.
-* `Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws`: LMLExplore's transportation cost `K⁺`
-  is at most `𝒦_inf`.
-* `Relations.klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper`: `kl(p, μ) ≤ 𝒦_inf(P, μ)`, from
-  LMLExplore's bound on `K⁺`.
+
+Three former duplicates are deprecated aliases:
+`Relations.isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff` of
+`IsBatched.seesRewardsUpTo_zero`,
+`Relations.dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le` of LMLExplore's
+`LMLExplore.Bandits.dInf_range_bernoulliMeasure_of_one_le`, and
+`Relations.klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper` of `klBer_le_dInf_unitLaws`. The bound
+`K⁺ ≤ 𝒦_inf` (`Relations.kInfUpper_unitIntervalLaws_le_dInf_unitLaws`) is in
+`Incognita.BatchedBandits.KInf`.
 -/
 
 @[expose] public section
@@ -199,14 +199,8 @@ namespace Relations
 
 variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] {K : ℕ}
 
-/-- **Implication** [INC-P006, Theorem `thm:main`(ii) and (iii), first claims]: refining a grid
-preserves batching (`IsBatched.of_isFiner`), and on `𝖲_s` batching means ignoring the rewards in
-the rounds `< s` (`isBatched_sequential_iff`). Together they give the known case
-`IsBatched.seesRewardsUpTo_zero`, with the same hypotheses: `𝖲_{t 1}` is finer than `g`, so a
-learner batched on `g` ignores the rewards in the rounds `< t 1`, the first batch of `g`. -/
-lemma isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff {alg : Algorithm Unit 𝓐 𝓨}
-    {g : Grid K} (h : IsBatched alg g) {n : ℕ} (hn : n < g.t 1) : SeesRewardsUpTo alg n 0 :=
-  (isBatched_sequential_iff g.le_t_one).mp (h.of_isFiner (Grid.sequential_isFiner le_rfl)) n hn
+@[deprecated (since := "2026-11-19")]
+alias isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff := IsBatched.seesRewardsUpTo_zero
 
 section KInf
 
@@ -242,16 +236,9 @@ lemma kinf_bounds_of_gap_pos_of_kinf_bounds
   obtain ⟨h1, h2, h3, h4⟩ := h3 (hν.1 a) hle hν.2
   exact ⟨ENNReal.ofReal_pos.2 (by positivity), h1.trans h2, h3, h4⟩
 
-/-- **Implication** [INC-P006, Proposition `prop:kinf`(i), general form
-`dInf_unitLaws_eq_top_of_one_le`] gives LMLExplore's
-`LMLExplore.Bandits.dInf_range_bernoulliMeasure_of_one_le` [LS, Table 16.1] (to be checked), with
-the same hypotheses (any `P`, `m ≥ 1`): the Bernoulli laws are laws on `[0, 1]`, and `dInf` is
-antitone in the class (`dInf_anti`), so `∞ = 𝒦_inf(P, m) ≤ d_inf^{Ber}(P, m)`. -/
-lemma dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le (P : Measure ℝ)
-    {m : ℝ} (hm : 1 ≤ m) :
-    LMLExplore.Bandits.dInf (Set.range fun q : I ↦ Ber((1 : ℝ), 0, q)) P m = ∞ :=
-  top_le_iff.1 ((dInf_unitLaws_eq_top_of_one_le P hm).symm.le.trans
-    (dInf_anti (Set.range_subset_iff.2 bernoulliMeasure_mem_unitLaws) P m))
+@[deprecated (since := "2026-11-19")]
+alias dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le :=
+  LMLExplore.Bandits.dInf_range_bernoulliMeasure_of_one_le
 
 /-- **Same object**: the set `𝓜 = unitLaws` of laws on `[0, 1]` [INC-P006, Definition
 `def:instance`] is LMLExplore's `unitIntervalLaws`, a set of `ProbabilityMeasure ℝ`, seen in
@@ -265,24 +252,8 @@ lemma unitLaws_eq_image_unitIntervalLaws :
   · rintro ⟨Q', hQ', rfl⟩
     exact ⟨inferInstance, mem_unitIntervalLaws_iff.1 hQ'⟩
 
-/-- LMLExplore's transportation cost `K⁺(P, μ)` over the laws on `[0, 1]` (competitors of mean
-`≥ μ`) is at most `𝒦_inf(P, μ) = dInf unitLaws P μ` (competitors of mean `> μ`). -/
-lemma kInfUpper_unitIntervalLaws_le_dInf_unitLaws (P : ProbabilityMeasure ℝ) (μ : ℝ) :
-    kInfUpper ProbabilityMeasure.toMeasure unitIntervalLaws (fun Q ↦ (Q : Measure ℝ)[id]) P μ ≤
-      LMLExplore.Bandits.dInf unitLaws (P : Measure ℝ) μ :=
-  LMLExplore.Bandits.le_dInf_iff.2 fun Q hQ hm ↦
-    kInfUpper_le (κ := ProbabilityMeasure.toMeasure) (m := fun Q ↦ (Q : Measure ℝ)[id])
-      (y := (⟨Q, hQ.1⟩ : ProbabilityMeasure ℝ)) (mem_unitIntervalLaws_iff.2 hQ.2) hm.le
-
-/-- **Duplicate**: `klBer_le_dInf_unitLaws` [INC-P006, Proposition `prop:kinf`(iii), lower bound]
-repeats the computation of LMLExplore's `klBer_le_kInfUpper_of_subset_unitIntervalLaws` (data
-processing to the reward, `klBer_integral_le_klDiv`, then the monotonicity of `kl(p, ·)`); proved
-again, with the same type, from it and `kInfUpper_unitIntervalLaws_le_dInf_unitLaws`. -/
-lemma klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper {P : Measure ℝ} (hP : P ∈ unitLaws) {μ : ℝ}
-    (hpμ : P[id] ≤ μ) : klBer P[id] μ ≤ LMLExplore.Bandits.dInf unitLaws P μ :=
-  (klBer_le_kInfUpper_of_subset_unitIntervalLaws (P := ⟨P, hP.1⟩) subset_rfl
-    (mem_unitIntervalLaws_iff.2 hP.2) hpμ).trans
-    (kInfUpper_unitIntervalLaws_le_dInf_unitLaws ⟨P, hP.1⟩ μ)
+@[deprecated (since := "2026-11-19")]
+alias klBer_le_dInf_unitLaws_of_klBer_le_kInfUpper := klBer_le_dInf_unitLaws
 
 end KInf
 

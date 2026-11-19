@@ -47,8 +47,6 @@ are fixed during the batch").
   arrivals of Step (b2); `HY.two_mul_target_sub_le`, `hyAlg_ae_backlog_le_of_le`: Step (b2) for
   HY's targets, so Lemma `lem:service`(b) under the paper's condition
   `s_ℓ log s_ℓ ≥ 2(K - 1) U_(ℓ+1)`.
-* `hyAlg_ae_pullCount_le_max`: Lemma `lem:imedround` (its consequence) along almost every run of
-  HY on an instance of `𝒫`.
 * `hyAlg_ae_W2`: (W2) at every round of a batch that is not activated or has a long IMED phase,
   Lemma `lem:W`(i) along almost every run of HY.
 -/
@@ -599,74 +597,6 @@ lemma hyAlg_ae_log_le_imedIndex' (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : 
     hyAlg_ae_one_le_pullCount w₀ β ωs θ γ g env] with ω h1 h2
   intro ℓ hℓ hrs c'
   exact h1 ℓ hℓ (h2 ℓ (Nat.one_le_iff_ne_zero.mpr hℓ)) hrs c'
-
-/-- [INC-P000, Lemma `lem:imedround`, consequence, along a run] Along almost every run of HY
-(`w₀ ≥ 0`, on a grid for `K` arms) on an instance of `𝒫`, for a batch `ℓ + 1` (`ℓ ≥ 1`) and an arm
-`c` other than the leader `ĉ_ℓ` with IMED divergence `K̃_ℓ(c) ≥ D > 0` (both frozen at `t_ℓ`),
-every round `t'` of the batch in its IMED phase (`t_ℓ ≤ t' ≤ s_ℓ`, `t' ≤ t_(ℓ+1)`) has
-`N_c(t') ≤ max(N_c(t_ℓ), 1 + y_ℓ log t' / D)`. -/
-lemma hyAlg_ae_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → ℝ)
-    (g : Grid (Fintype.card α)) {ν : Kernel α ℝ} [IsMarkovKernel ν] (hν : ν ∈ unitBandits α) :
-    ∀ᵐ ω ∂(trajMeasure (hyAlg w₀ β ωs θ γ g : Algorithm Unit α ℝ) (Environment.bandit ν)),
-      ∀ ℓ, ℓ ≠ 0 → ∀ c, c ≠ HY.leader w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ) →
-      ∀ D : ℝ, 0 < D →
-      D ≤ (HY.imedKinf w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ) c).toReal →
-      ∀ t', g.t ℓ ≤ t' → t' ≤ g.imedEnd θ ℓ → t' ≤ g.t (ℓ + 1) →
-        (pullCount IT.action c t' ω : ℝ) ≤
-          max (pullCount IT.action c (g.t ℓ) ω : ℝ) (1 + g.ratio ℓ ^ 2 * Real.log t' / D) := by
-  filter_upwards [hyAlg_ae_action_eq w₀ β ωs θ γ g (Environment.bandit ν),
-    ae_feedback_mem_Icc (alg := hyAlg w₀ β ωs θ γ g) hν,
-    hyAlg_ae_one_le_pullCount w₀ β ωs θ γ g (Environment.bandit ν)] with ω hω hfb hN1
-  intro ℓ hℓ c hc D hD hDK t' ht'1 ht'2 ht'3
-  have hℓ1 : 1 ≤ ℓ := Nat.one_le_iff_ne_zero.mpr hℓ
-  have hy1 : 1 ≤ g.ratio ℓ ^ 2 := one_le_pow₀ (g.one_le_ratio _)
-  have hy0 : 0 < g.ratio ℓ ^ 2 := by linarith
-  have htℓ : 2 ≤ g.t ℓ := g.two_le_t hℓ1
-  have hg : Monotone fun k : ℕ ↦ g.ratio ℓ ^ 2 * Real.log ((k : ℝ) + 1) := by
-    intro k k' hkk'
-    refine mul_le_mul_of_nonneg_left (Real.log_le_log (by positivity) ?_) hy0.le
-    exact_mod_cast Nat.add_le_add_right hkk' 1
-  have h := pullCount_le_max_of_forall (A := IT.action) (ω := ω) (c := c) hD hg ht'1
-    (fun k hk1 hk2 hAk ↦ by
-      -- the round `k` is an IMED round of batch `ℓ + 1`
-      have hb : g.batchOf k = ℓ + 1 := g.batchOf_eq_iff.mpr ⟨hk1, by omega⟩
-      have himed : k + 1 ≤ g.imedEnd θ ℓ := by omega
-      have hA := hω k
-      rw [HY.next_of_imedPhase w₀ β ωs θ γ g hb hℓ himed] at hA
-      have hfbk : ∀ i, (history IT.obs IT.action IT.feedback k ω i).feedback ∈
-          Set.Icc (0 : ℝ) 1 := fun i ↦ hfb i
-      have hlead := HY.leader_history (O := IT.obs) (A := IT.action) (Y := IT.feedback)
-        (ω := ω) hk1 w₀
-      have hpos : 0 < (HY.count (history IT.obs IT.action IT.feedback k ω) (g.t ℓ)
-          (HY.leader w₀ (history IT.obs IT.action IT.feedback k ω) (g.t ℓ)) : ℝ) + w₀ := by
-        rw [HY.count_history hk1]
-        have := hN1 ℓ hℓ1 (HY.leader w₀ (history IT.obs IT.action IT.feedback k ω) (g.t ℓ))
-        have : (1 : ℝ) ≤ pullCount IT.action
-            (HY.leader w₀ (history IT.obs IT.action IT.feedback k ω) (g.t ℓ)) (g.t ℓ) ω := by
-          exact_mod_cast this
-        linarith
-      have hne : HY.imedArm w₀ (g.ratio ℓ ^ 2) (history IT.obs IT.action IT.feedback k ω)
-          (g.t ℓ) ≠ HY.leader w₀ (history IT.obs IT.action IT.feedback k ω) (g.t ℓ) := by
-        rw [← hA, hAk, hlead]
-        exact hc
-      have hNk : 1 ≤ pullCount' k (history IT.obs IT.action IT.feedback k ω)
-          (HY.imedArm w₀ (g.ratio ℓ ^ 2) (history IT.obs IT.action IT.feedback k ω) (g.t ℓ)) := by
-        rw [← hA, hAk, ← pullCount_eq_pullCount']
-        exact (hN1 ℓ hℓ1 c).trans (pullCount_mono _ hk1 _)
-      have hlt := HY.mul_toReal_imedKinf_add_lt hw₀ hy0 hfbk hpos (by omega) hne hNk
-      rw [← hA, hAk, ← pullCount_eq_pullCount', HY.imedKinf_history hk1] at hlt
-      have hNk' : (1 : ℝ) ≤ pullCount IT.action c k ω := by
-        exact_mod_cast (hN1 ℓ hℓ1 c).trans (pullCount_mono _ hk1 _)
-      have hlogN : 0 ≤ g.ratio ℓ ^ 2 * Real.log (pullCount IT.action c k ω) :=
-        mul_nonneg hy0.le (Real.log_nonneg hNk')
-      have hmul : (pullCount IT.action c k ω : ℝ) * D ≤ (pullCount IT.action c k ω : ℝ) *
-          (HY.imedKinf w₀ (history IT.obs IT.action IT.feedback (g.t ℓ) ω) (g.t ℓ) c).toReal :=
-        mul_le_mul_of_nonneg_left hDK (by linarith)
-      linarith)
-  have hcast : g.ratio ℓ ^ 2 * Real.log (((t' - 1 : ℕ) : ℝ) + 1) = g.ratio ℓ ^ 2 * Real.log t' := by
-    rw [Nat.cast_sub (by omega), Nat.cast_one, sub_add_cancel]
-  rw [hcast] at h
-  exact h
 
 /-- [INC-P000, Lemma `lem:W`(i)–(ii), along a run] Along almost every run of HY on a grid for `K`
 arms, for a batch `ℓ + 1` (`ℓ ≥ 1`) that is not activated (`t_(ℓ+1) ≤ s_ℓ`) or whose IMED phase

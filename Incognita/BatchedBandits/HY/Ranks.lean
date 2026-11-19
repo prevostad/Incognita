@@ -238,11 +238,11 @@ lemma eventually_le_netSize {β : ℝ} (hβ : 0 < β) (C : ℝ) :
 
 /-- [INC-P000, proof of Lemma `lem:ranksA`, Step 4, (T3)] For `D > 0` and every `C`,
 `C ≤ D L_ℓ` for every large `ℓ` (the paper's (T3), second part, with `D = ε / κ(m⋆ + ε̄)` and
-`C = w₀ κ(m⋆ + ε̄)`). -/
+`C = w₀ κ(m⋆ + ε̄)`): `eventually_le_mul_logEnd_rpow` at `β = 2`. -/
 lemma eventually_le_mul_logEnd {D : ℝ} (hD : 0 < D) (C : ℝ) :
     ∀ᶠ ℓ in atTop, C ≤ D * g.logEnd ℓ := by
-  filter_upwards [g.tendsto_logEnd_atTop.eventually_ge_atTop (C / D)] with ℓ hℓ
-  rwa [div_le_iff₀ hD, mul_comm] at hℓ
+  filter_upwards [g.eventually_le_mul_logEnd_rpow one_lt_two hD C] with ℓ hℓ
+  rwa [show (2 : ℝ) - 1 = 1 by norm_num, Real.rpow_one] at hℓ
 
 /-- The default consistency margins tend to `0`: `γ_ℓ = min(1/2, max(L_ℓ, 1)^(-1/4)) → 0`. -/
 lemma tendsto_hyGamma : Tendsto g.hyGamma atTop (𝓝 0) := by

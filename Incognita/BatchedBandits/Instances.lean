@@ -5,7 +5,10 @@ Authors: Incognita contributors
 -/
 module
 
+public import LMLExplore.Analysis.Convex.Integral
 public import LMLExplore.Bandits.Instances
+public import LMLExplore.Identification.Task.RealLaws
+public import TauCeti.MeasureTheory.Measure.ProbabilityMeasure.Convex
 
 /-! # Laws on `[0, 1]` and the class `𝒫` of instances
 
@@ -30,8 +33,9 @@ the Bochner integral `Q[id]`, as in LML's `gap` and LMLExplore's `dInf`, and the
   of `[0, 1]` are in `𝓜`; `dirac_two_not_mem_unitLaws`: the Dirac mass at `2` is not.
 * `integrable_id_of_mem_unitLaws`, `integral_id_mem_Icc_of_mem_unitLaws`: a law of `𝓜` has a mean
   in `[0, 1]`.
-* `smul_add_smul_dirac_one_mem_unitLaws`, `integral_id_smul_add_smul_dirac_one`,
-  `mix_mem_unitLaws`: `𝓜` is closed under two-point mixtures, whose means mix linearly.
+* `smul_add_smul_mem_unitLaws`: `𝓜` is convex; `smul_add_smul_dirac_one_mem_unitLaws`,
+  `integral_id_smul_add_smul_dirac_one`, `mix_mem_unitLaws`: its two-point mixtures in the
+  weight conventions used downstream, whose means mix linearly.
 * `bernoulliBandit_mem_unitBandits`: every Bernoulli instance whose means are all below `1` is in
   `𝒫`; `not_mem_unitBandits_of_integral_eq_one`: an instance with an arm of mean `1` (for example
   an arm `δ_1`) is not.
@@ -41,7 +45,7 @@ the Bochner integral `Q[id]`, as in LML's `gap` and LMLExplore's `dInf`, and the
 
 open MeasureTheory ProbabilityTheory
 
-open scoped unitInterval NNReal
+open scoped unitInterval NNReal ENNReal
 
 namespace Incognita.BatchedBandits
 
@@ -64,12 +68,9 @@ lemma isMarkovKernel_of_mem_unitBandits (hν : ν ∈ unitBandits α) : IsMarkov
   ⟨fun a ↦ (hν.1 a).1⟩
 
 /-- The mean of a law on `[0, 1]` is in `[0, 1]`. -/
-lemma integral_id_mem_Icc_of_mem_unitLaws (hQ : Q ∈ unitLaws) : Q[id] ∈ Set.Icc (0 : ℝ) 1 := by
-  have := hQ.1
-  refine ⟨integral_nonneg_of_ae (hQ.2.mono fun x hx ↦ hx.1), ?_⟩
-  calc Q[id] ≤ ∫ _, (1 : ℝ) ∂Q := integral_mono_of_nonneg
-        (hQ.2.mono fun x hx ↦ hx.1) (integrable_const 1) (hQ.2.mono fun x hx ↦ hx.2)
-    _ = 1 := by simp
+lemma integral_id_mem_Icc_of_mem_unitLaws (hQ : Q ∈ unitLaws) : Q[id] ∈ Set.Icc (0 : ℝ) 1 :=
+  haveI := hQ.1
+  integral_id_mem_Icc_of_ae_mem_Icc hQ.2
 
 /-- A Dirac mass at a point of `[0, 1]` is a law on `[0, 1]`. -/
 lemma dirac_mem_unitLaws {x : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) : Measure.dirac x ∈ unitLaws :=
@@ -77,8 +78,8 @@ lemma dirac_mem_unitLaws {x : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) : Measure.di
 
 /-- **Witness and known case**: the Bernoulli law `Ber(p)` on `{0, 1}` is a law on `[0, 1]`. -/
 lemma bernoulliMeasure_mem_unitLaws (p : I) : Ber((1 : ℝ), 0, p) ∈ unitLaws :=
-  ⟨inferInstance, by
-    simpa using LMLExplore.Bandits.ae_mem_Icc_bernoulliBandit (α := Unit) (fun _ ↦ p) ()⟩
+  ⟨inferInstance, LMLExplore.Identification.mem_unitIntervalLaws_iff.1
+    (LMLExplore.Identification.bernoulliMeasure_mem_unitIntervalLaws p)⟩
 
 /-- **Exclusion**: the Dirac mass at `2` is not a law on `[0, 1]`. -/
 lemma dirac_two_not_mem_unitLaws : Measure.dirac (2 : ℝ) ∉ unitLaws := by
@@ -87,26 +88,29 @@ lemma dirac_two_not_mem_unitLaws : Measure.dirac (2 : ℝ) ∉ unitLaws := by
   norm_num at this
 
 /-- The identity is integrable for a law on `[0, 1]`. -/
-lemma integrable_id_of_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) : Integrable id P := by
+lemma integrable_id_of_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) : Integrable id P :=
+  haveI := hP.1
+  Integrable.of_mem_Icc 0 1 aemeasurable_id hP.2
+
+/-- `𝓜` is convex: the mixture `a P + b Q` of two laws on `[0, 1]`, with weights `a + b = 1` in
+`ℝ≥0∞`, is a law on `[0, 1]` (Tau Ceti's `isProbabilityMeasure_smul_add_smul` for the total
+mass). -/
+lemma smul_add_smul_mem_unitLaws {P Q : Measure ℝ} (hP : P ∈ unitLaws) (hQ : Q ∈ unitLaws)
+    {a b : ℝ≥0∞} (hab : a + b = 1) : a • P + b • Q ∈ unitLaws := by
   have := hP.1
-  refine (integrable_const (1 : ℝ)).mono' aemeasurable_id.aestronglyMeasurable ?_
-  filter_upwards [hP.2] with x hx
-  rw [id, Real.norm_eq_abs, abs_le]
-  exact ⟨by linarith [hx.1], hx.2⟩
+  have := hQ.1
+  refine ⟨TauCeti.MeasureTheory.isProbabilityMeasure_smul_add_smul hab P Q, ?_⟩
+  rw [ae_add_measure_iff]
+  exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure hQ.2 _⟩
 
 /-- The mixture `(1 - u) P + u δ_1` of a law on `[0, 1]` with the Dirac mass at `1` is a law on
 `[0, 1]`, for `u ∈ [0, 1]`. -/
 lemma smul_add_smul_dirac_one_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) {u : ℝ≥0}
     (hu : u ≤ 1) :
     (1 - u) • P + u • Measure.dirac (1 : ℝ) ∈ unitLaws := by
-  have := hP.1
-  refine ⟨⟨?_⟩, ?_⟩
-  · rw [add_apply, smul_apply, smul_apply, measure_univ, measure_univ, ENNReal.smul_def,
-      ENNReal.smul_def, smul_eq_mul, smul_eq_mul, mul_one, mul_one, ← ENNReal.coe_add,
-      tsub_add_cancel_of_le hu, ENNReal.coe_one]
-  · rw [ae_add_measure_iff]
-    exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure
-      ((ae_dirac_iff measurableSet_Icc).2 ⟨zero_le_one, le_rfl⟩) _⟩
+  rw [ENNReal.smul_def, ENNReal.smul_def]
+  exact smul_add_smul_mem_unitLaws hP (dirac_mem_unitLaws ⟨zero_le_one, le_rfl⟩)
+    (by rw [← ENNReal.coe_add, tsub_add_cancel_of_le hu, ENNReal.coe_one])
 
 /-- The mean of the mixture `(1 - u) P + u δ_1` is `(1 - u) m(P) + u`. -/
 lemma integral_id_smul_add_smul_dirac_one {P : Measure ℝ} (hP : P ∈ unitLaws) {u : ℝ≥0}
@@ -124,14 +128,9 @@ lemma mix_mem_unitLaws {P Q : Measure ℝ} (hP : P ∈ unitLaws) (hQ : Q ∈ uni
     (ht0 : 0 ≤ t) (ht1 : t ≤ 1) :
     ENNReal.ofReal (1 - t) • P + ENNReal.ofReal t • Q ∈ unitLaws ∧
       (ENNReal.ofReal (1 - t) • P + ENNReal.ofReal t • Q)[id] = (1 - t) * P[id] + t * Q[id] := by
-  have := hP.1
-  have := hQ.1
-  refine ⟨⟨⟨?_⟩, ?_⟩, ?_⟩
-  · simp only [add_apply, smul_apply, measure_univ, smul_eq_mul, mul_one]
-    rw [← ENNReal.ofReal_add (by linarith) ht0]
+  refine ⟨smul_add_smul_mem_unitLaws hP hQ ?_, ?_⟩
+  · rw [← ENNReal.ofReal_add (by linarith) ht0]
     simp
-  · rw [ae_add_measure_iff]
-    exact ⟨Measure.ae_smul_measure hP.2 _, Measure.ae_smul_measure hQ.2 _⟩
   · rw [integral_add_measure ((integrable_id_of_mem_unitLaws hP).smul_measure ENNReal.ofReal_ne_top)
       ((integrable_id_of_mem_unitLaws hQ).smul_measure ENNReal.ofReal_ne_top),
       integral_smul_measure, integral_smul_measure, ENNReal.toReal_ofReal (by linarith),

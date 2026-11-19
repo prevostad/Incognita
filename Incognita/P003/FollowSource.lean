@@ -38,30 +38,8 @@ every round. -/
 lemma ae_onlineKernel_followSource [MeasurableSingletonClass α] (ν : Kernel α ℝ) :
     ∀ (T : ℕ) (s : Source α),
       ∀ᵐ h ∂(onlineKernel (TransferAlgorithm.followSource (α := α)) ν T s),
-        ∀ i, (h i).1 = followSourceArm s
-  | 0, _ => ae_of_all _ fun _ i ↦ i.elim0
-  | T + 1, s => by
-    have hmeas : MeasurableSet {h : Fin (T + 1) → α × ℝ | ∀ i, (h i).1 = followSourceArm s} := by
-      simp only [Set.ofPred_forall]
-      exact MeasurableSet.iInter fun i ↦
-        (by fun_prop : Measurable fun h : Fin (T + 1) → α × ℝ ↦ (h i).1)
-          (measurableSet_singleton _)
-    rw [onlineKernel, Kernel.map_apply _ (MeasurableEquiv.measurable _),
-      (MeasurableEquiv.measurableEmbedding _).ae_map_iff]
-    refine Kernel.ae_compProd_of_ae_ae ((MeasurableEquiv.measurable _) hmeas) ?_
-    filter_upwards [ae_onlineKernel_followSource ν T s] with h hh
-    have hstep : ∀ᵐ x ∂(stepKernel (TransferAlgorithm.followSource (α := α)) ν T (s, h)),
-        x.1 = followSourceArm s := by
-      rw [stepKernel]
-      refine Kernel.ae_compProd_of_ae_ae (measurable_fst (measurableSet_singleton _)) ?_
-      change ∀ᵐ b ∂(Measure.dirac (followSourceArm s)), _
-      rw [ae_dirac_eq]
-      exact Filter.eventually_pure.mpr (ae_of_all _ fun _ ↦ rfl)
-    filter_upwards [hstep] with x hx i
-    rw [MeasurableEquiv.finSuccProd_symm_apply]
-    refine Fin.lastCases ?_ (fun j ↦ ?_) i
-    · simpa using hx
-    · simpa using hh j
+        ∀ i, (h i).1 = followSourceArm s :=
+  TransferBandits.ae_onlineKernel_of_policy_eq_dirac followSourceArm (fun _ _ ↦ rfl) ν
 
 /-- With no source value (`n = 0`), `π^tr` pulls the smallest arm at every round: under the game
 with the size rule `constSize 0`, the expected number of pulls of the smallest arm over `T`
