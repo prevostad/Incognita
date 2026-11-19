@@ -437,12 +437,7 @@ lemma hyAlg_ae_threshold_eq (w₀ β : ℝ) (ωs θ γ : ℕ → ℝ) (g : Grid 
   obtain ⟨j, rfl⟩ : ∃ j, ℓ = j + 1 := ⟨ℓ - 1, by omega⟩
   simp only [Nat.add_sub_cancel] at hθ hω0 hσ2 hσU hlong ⊢
   have hj : j ≠ 0 := by omega
-  have hy : 0 < g.ratio j ^ 2 := by
-    rcases Nat.lt_or_ge j 2 with h | h
-    · rw [show j = 1 by omega, g.ratio_one]
-      norm_num
-    · have := g.one_lt_ratio h
-      positivity
+  have hy : 0 < g.ratio j ^ 2 := pow_pos (zero_lt_one.trans_le (g.one_le_ratio j)) 2
   have hL : 0 ≤ g.logEnd (j + 1) := (g.logEnd_pos (by omega)).le
   have hωy : 0 ≤ (1 + ωs j) * g.ratio j ^ 2 := by positivity
   refine HY.threshold_eq_of_forall hL hy _ _ _ _ _ fun c hc _ ↦ ?_
@@ -617,12 +612,7 @@ lemma hyAlg_ae_pullCount_le_max' (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ
     hyAlg_ae_one_le_pullCount w₀ β ωs θ γ g (Environment.bandit ν)] with ω hω hfb hN1
   intro ℓ hℓ c hc D hD hDK t' ht'1 ht'2 ht'3
   have hℓ1 : 1 ≤ ℓ := Nat.one_le_iff_ne_zero.mpr hℓ
-  have hy1 : 1 ≤ g.ratio ℓ ^ 2 := by
-    rcases Nat.lt_or_ge ℓ 2 with h | h
-    · rw [show ℓ = 1 by omega, g.ratio_one]
-      norm_num
-    · have := g.one_lt_ratio h
-      nlinarith
+  have hy1 : 1 ≤ g.ratio ℓ ^ 2 := one_le_pow₀ (g.one_le_ratio _)
   have hy0 : 0 < g.ratio ℓ ^ 2 := by linarith
   have htℓ : 2 ≤ g.t ℓ := g.two_le_t hℓ1
   have hg : Monotone fun k : ℕ ↦ g.ratio ℓ ^ 2 * Real.log ((k : ℝ) + 1) := by
@@ -695,12 +685,7 @@ lemma hyAlg_ae_logcountC (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ �
   set h := history IT.obs IT.action IT.feedback (g.t ℓ) ω with hh
   set y := g.ratio ℓ ^ 2 with hy
   set N := pullCount IT.action c (g.t (ℓ + 1)) ω with hN
-  have hy1 : 1 ≤ y := by
-    rcases Nat.lt_or_ge ℓ 2 with h' | h'
-    · rw [hy, show ℓ = 1 by omega, g.ratio_one]
-      norm_num
-    · have := g.one_lt_ratio h'
-      nlinarith
+  have hy1 : 1 ≤ y := one_le_pow₀ (g.one_le_ratio ℓ)
   have hN1' : (1 : ℝ) ≤ N := by exact_mod_cast hN1 (ℓ + 1) (by omega) c
   have hfbh : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1 := fun i ↦ hfb i
   set μ' := HY.pseudoMean w₀ h (g.t ℓ) (HY.leader w₀ h (g.t ℓ)) with hμ'
@@ -836,12 +821,7 @@ lemma hyAlg_ae_countsA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ →
       exact le_mul_of_one_le_right hLpos.le (by linarith [mul_comm κ (L ^ (β - 1))])
     exact h3.trans (mul_le_mul_of_nonneg_right h1 hκpos.le)
   · -- `N_c κ ≥ N_c κ(μ̂) ≥ y L_(ℓ+2) ≥ L`
-    have hy : 1 ≤ g.ratio (ℓ + 1) ^ 2 := by
-      rcases Nat.lt_or_ge (ℓ + 1) 2 with h' | h'
-      · rw [show ℓ + 1 = 1 by omega, g.ratio_one]
-        norm_num
-      · have := g.one_lt_ratio h'
-        nlinarith
+    have hy : 1 ≤ g.ratio (ℓ + 1) ^ 2 := one_le_pow₀ (g.one_le_ratio _)
     have hLL : L ≤ g.logEnd (ℓ + 2) := by
       unfold Grid.logEnd
       refine Real.log_le_log (by exact_mod_cast (show 0 < g.t (ℓ + 1) by

@@ -55,7 +55,10 @@ a stopping point of the `K`-parameter filtration `(𝒢_n)_{n ∈ ℕ^K}` [MV81,
 * Instances: `isProbabilityMeasure_sourceMeasure`, `isProbabilityMeasure_sourceLaw`,
   `isMarkovKernel_stepKernel`, `isMarkovKernel_onlineKernel`, `isProbabilityMeasure_gameMeasure`.
 * `map_eval_sourceMeasure`, `map_fst_sourceMeasure`: under `P'_{ν'}`, `X'_{k,j}` has law `ν'_k` and
-  the randomisation is uniform; `measurable_sourceData`; `TransferAlgorithm.ofAlgorithm_policy`.
+  the randomisation is uniform; `measurable_boxRestrict`, `measurable_sourceData`;
+  `TransferAlgorithm.ofAlgorithm_policy`; `TransferAlgorithm.ext`.
+* `onlineKernel_zero`, `onlineKernel_succ`: the recursion defining `κ^T_{π,ν}`; `fst_gameMeasure`:
+  the source data of the game have the law `P^D_{ν',N'}`, at every horizon.
 -/
 
 @[expose] public section
@@ -216,6 +219,7 @@ instance isProbabilityMeasure_sourceLaw (ν' : Kernel α ℝ) [IsMarkovKernel ν
 
 /-- Known case: the source-ignoring learner of an LML algorithm plays, at every round, the policy
 of that algorithm on the online history. -/
+@[simp]
 lemma TransferAlgorithm.ofAlgorithm_policy (alg : Learning.Algorithm Unit α ℝ) (n : ℕ)
     (s : Source α) (h : Fin n → α × ℝ) :
     (TransferAlgorithm.ofAlgorithm alg).policy n (s, h) = alg.policy n (pairsHist h, ()) := rfl
@@ -242,5 +246,38 @@ instance isProbabilityMeasure_gameMeasure (N : SourceSpace α → α → ℕ) (�
     IsProbabilityMeasure (gameMeasure ν' N ν π T) := by
   unfold gameMeasure
   infer_instance
+
+/-- Two transfer learners with the same policies are equal. -/
+@[ext]
+lemma TransferAlgorithm.ext {π π' : TransferAlgorithm α} (h : ∀ n, π.policy n = π'.policy n) :
+    π = π' := by
+  obtain ⟨p, _⟩ := π
+  obtain ⟨p', _⟩ := π'
+  obtain rfl : p = p' := funext h
+  rfl
+
+omit [MeasurableSpace α] in
+/-- Restricting a source point to the box of `n` is measurable. -/
+@[fun_prop]
+lemma measurable_boxRestrict (n : α → ℕ) : Measurable (boxRestrict (α := α) n) := by
+  unfold boxRestrict
+  fun_prop
+
+/-- `κ^0_{π,ν}` is the Dirac mass at the empty history. -/
+@[simp]
+lemma onlineKernel_zero (π : TransferAlgorithm α) (ν : Kernel α ℝ) :
+    onlineKernel π ν 0 = Kernel.deterministic (fun _ ↦ Fin.elim0) measurable_const := rfl
+
+/-- `κ^{T+1}_{π,ν} = κ^T_{π,ν} ⊗ (π_T ⊗ ν)`, the pair (history, round `T`) read as a history of
+`T + 1` rounds. -/
+lemma onlineKernel_succ (π : TransferAlgorithm α) (ν : Kernel α ℝ) (T : ℕ) :
+    onlineKernel π ν (T + 1) = (onlineKernel π ν T ⊗ₖ stepKernel π ν T).map
+      (MeasurableEquiv.finSuccProd (α × ℝ) T).symm := rfl
+
+/-- The source data of the game have the law `P^D_{ν',N'}`, at every horizon `T`. -/
+lemma fst_gameMeasure (N : SourceSpace α → α → ℕ) (ν' ν : Kernel α ℝ) [IsMarkovKernel ν']
+    [IsMarkovKernel ν] (π : TransferAlgorithm α) (T : ℕ) :
+    (gameMeasure ν' N ν π T).fst = sourceLaw ν' N := by
+  rw [gameMeasure, Measure.fst_compProd]
 
 end Incognita.TransferBandits

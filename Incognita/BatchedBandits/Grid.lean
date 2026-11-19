@@ -38,7 +38,9 @@ the regret) is the same in both numberings.
 * `Grid.ratio_doublyExp`: the ratios of the doubly exponential grid are all `2`;
   `Grid.tendsto_ratio_sequential`, `Grid.tendsto_ratio_geometric`: those of the sequential and
   geometric grids tend to `1`.
-* The basic API of `t`, `logEnd` and `ratio`: `Grid.t_pos`, `Grid.t_le_t`, `Grid.monotone_logEnd`,
+* The basic API of `t`, `logEnd` and `ratio`: `Grid.t_pos`, `Grid.t_le_t`, `Grid.logEnd_zero`,
+  `Grid.logEnd_nonneg`, `Grid.ratio_one`, `Grid.ratio_of_two_le`, `Grid.one_le_ratio`,
+  `Grid.isFiner_refl`, `Grid.IsFiner.trans`, `Grid.monotone_logEnd`,
   `Grid.tendsto_logEnd_atTop`, `Grid.exp_logEnd`, `Grid.logEnd_succ_eq`,
   `Grid.tendsto_log_t_add_two_div_log_t` (`L_(ℓ+2) / L_ℓ → x²` when `x_ℓ → x`),
   `Grid.eq_of_forall_one_le_t_eq`, `Grid.logEnd_eq_of_t_eq`, `Grid.ratio_eq_of_t_eq` and
@@ -68,6 +70,8 @@ structure Grid (K : ℕ) where
 
 namespace Grid
 
+attribute [simp] t_zero
+
 variable {K : ℕ} (g : Grid K)
 
 lemma le_t (ℓ : ℕ) : ℓ ≤ g.t ℓ := g.strictMono.id_le ℓ
@@ -92,8 +96,7 @@ lemma lt_t_batchOf (n : ℕ) : n < g.t (g.batchOf n) := (Nat.find_spec (g.exists
 
 lemma t_batchOf_sub_one_le (n : ℕ) : g.t (g.batchOf n - 1) ≤ n := by
   rcases Nat.lt_or_ge (g.batchOf n - 1) 1 with h | h
-  · rw [show g.batchOf n - 1 = 0 by omega, g.t_zero]
-    exact Nat.zero_le n
+  · simp [show g.batchOf n - 1 = 0 by omega]
   · have hlt : g.batchOf n - 1 < g.batchOf n := by have := g.one_le_batchOf n; omega
     have := Nat.find_min (g.exists_lt_t n) hlt
     rw [not_and, not_lt] at this
@@ -125,7 +128,19 @@ noncomputable def ratio (ℓ : ℕ) : ℝ := if ℓ ≤ 1 then 1 else g.logEnd �
 [INC-P006, Definition `def:grid`]. (Both have `t 0 = 0`, so the index `0` changes nothing.) -/
 def IsFiner (g g' : Grid K) : Prop := Set.range g'.t ⊆ Set.range g.t
 
+@[simp]
 lemma ratio_one : g.ratio 1 = 1 := by simp [ratio]
+
+/-- `x_ℓ = L_ℓ / L_{ℓ-1}` for `ℓ ≥ 2` [INC-P006, Definition `def:logratio`]. -/
+lemma ratio_of_two_le {ℓ : ℕ} (hℓ : 2 ≤ ℓ) : g.ratio ℓ = g.logEnd ℓ / g.logEnd (ℓ - 1) := by
+  simp [ratio, show ¬ ℓ ≤ 1 by omega]
+
+/-- `L_0 = log 0 = 0` (the junk value). -/
+@[simp]
+lemma logEnd_zero : g.logEnd 0 = 0 := by simp [logEnd]
+
+/-- `L_ℓ = log t_ℓ ≥ 0`, `t_ℓ` being a natural number. -/
+lemma logEnd_nonneg (ℓ : ℕ) : 0 ≤ g.logEnd ℓ := Real.log_natCast_nonneg _
 
 lemma log_two_le_logEnd {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : Real.log 2 ≤ g.logEnd ℓ := by
   unfold logEnd
@@ -137,11 +152,17 @@ lemma logEnd_pos {ℓ : ℕ} (hℓ : 1 ≤ ℓ) : 0 < g.logEnd ℓ :=
 
 /-- The ratios after the first are larger than `1`. -/
 lemma one_lt_ratio {ℓ : ℕ} (hℓ : 2 ≤ ℓ) : 1 < g.ratio ℓ := by
-  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), one_lt_div (g.logEnd_pos (by omega))]
+  rw [g.ratio_of_two_le hℓ, one_lt_div (g.logEnd_pos (by omega))]
   unfold logEnd
   gcongr
   · exact_mod_cast (show 0 < g.t (ℓ - 1) by have := g.two_le_t (ℓ := ℓ - 1) (by omega); omega)
   · exact_mod_cast g.strictMono (show ℓ - 1 < ℓ by omega)
+
+/-- All the ratios are at least `1` (`x_0 = x_1 = 1`). -/
+lemma one_le_ratio (ℓ : ℕ) : 1 ≤ g.ratio ℓ := by
+  rcases Nat.lt_or_ge ℓ 2 with h | h
+  · simp [ratio, show ℓ ≤ 1 by omega]
+  · exact (g.one_lt_ratio h).le
 
 /-- No grid is the sequence `t ℓ = ℓ`: its first batch has one round [INC-P006,
 Proposition `prop:witnesses`(b)]. -/
@@ -197,10 +218,12 @@ def doublyExp (s : ℕ) (hs : max 2 K ≤ s) : Grid K where
       exact Nat.pow_lt_pow_right (by omega) (Nat.pow_lt_pow_right (by norm_num) (by omega))
   le_t_one := by simpa using hs
 
+@[simp]
 lemma sequential_t {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
     (sequential s hs).t ℓ = s + ℓ - 1 := by
   simp [sequential, show ℓ ≠ 0 by omega]
 
+@[simp]
 lemma doublyExp_t {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
     (doublyExp s hs).t ℓ = s ^ 2 ^ (ℓ - 1) := by
   simp [doublyExp, show ℓ ≠ 0 by omega]
@@ -220,6 +243,7 @@ lemma sequential_batchOf_of_lt {hs : max 2 K ≤ s} {n : ℕ} (hn : n < s) :
     sequential_t le_rfl]
   omega
 
+@[simp]
 lemma geometric_t {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
     (geometric s hs).t ℓ = s * 2 ^ (ℓ - 1) := by
   simp [geometric, show ℓ ≠ 0 by omega]
@@ -240,7 +264,7 @@ lemma ratio_geometric {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
   have hs0 : (s : ℝ) ≠ 0 := by
     have : 2 ≤ s := (le_max_left 2 K).trans hs
     exact_mod_cast (show s ≠ 0 by omega)
-  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), logEnd, logEnd, geometric_t (by omega),
+  rw [ratio_of_two_le _ hℓ, logEnd, logEnd, geometric_t (by omega),
     geometric_t (by omega), Nat.cast_mul, Nat.cast_mul, Nat.cast_pow, Nat.cast_pow,
     Real.log_mul hs0 (by positivity), Real.log_mul hs0 (by positivity), Real.log_pow,
     Real.log_pow, show ℓ - 1 - 1 = ℓ - 2 by omega]
@@ -292,7 +316,7 @@ lemma tendsto_ratio_sequential (hs : max 2 K ≤ s) :
     simp only [hx]
     exact_mod_cast (show 2 ≤ s + ℓ - 2 by omega)
   have hlogpos : 0 < Real.log (x ℓ) := Real.log_pos (by linarith)
-  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), logEnd, logEnd, sequential_t (by omega),
+  rw [ratio_of_two_le _ hℓ, logEnd, logEnd, sequential_t (by omega),
     sequential_t (by omega), show s + (ℓ - 1) - 1 = s + ℓ - 2 by omega,
     show s + ℓ - 1 = (s + ℓ - 2) + 1 by omega]
   simp only [Function.comp_apply, hx, Nat.cast_add, Nat.cast_one] at hlogpos ⊢
@@ -303,6 +327,11 @@ lemma tendsto_ratio_sequential (hs : max 2 K ≤ s) :
 /-- Every grid is finer than itself. -/
 lemma isFiner_refl (g : Grid K) : g.IsFiner g := subset_rfl
 
+/-- Being finer is transitive: `IsFiner` is a preorder on the grids. -/
+lemma IsFiner.trans {g₁ g₂ g₃ : Grid K} (h₁₂ : g₁.IsFiner g₂) (h₂₃ : g₂.IsFiner g₃) :
+    g₁.IsFiner g₃ :=
+  Set.Subset.trans h₂₃ h₁₂
+
 /-- **Witness and known case**: the sequential grid `𝖲_s`, whose ends are `0` and every
 `n ≥ s`, is finer than every grid whose first end is at least `s`; observing after every round
 (the sequential setting) is the finest way to observe. -/
@@ -310,7 +339,7 @@ lemma sequential_isFiner {hs : max 2 K ≤ s} {g' : Grid K} (h : s ≤ g'.t 1) :
     (sequential s hs).IsFiner g' := by
   rintro _ ⟨ℓ, rfl⟩
   rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · exact ⟨0, by rw [(sequential s hs).t_zero, g'.t_zero]⟩
+  · exact ⟨0, by simp⟩
   · have := g'.strictMono.monotone (show 1 ≤ ℓ by omega)
     refine ⟨g'.t ℓ - s + 1, ?_⟩
     rw [sequential_t (by omega)]
@@ -337,7 +366,7 @@ lemma ratio_doublyExp {hs : max 2 K ≤ s} {ℓ : ℕ} (hℓ : 2 ≤ ℓ) :
     have : 2 ≤ s := (le_max_left 2 K).trans hs
     exact_mod_cast (show 1 < s by omega)
   have hlog : 0 < Real.log s := Real.log_pos hs1
-  rw [ratio, ite_eq_right (show ¬ ℓ ≤ 1 by omega), logEnd, logEnd, doublyExp_t (by omega),
+  rw [ratio_of_two_le _ hℓ, logEnd, logEnd, doublyExp_t (by omega),
     doublyExp_t (by omega),
     Nat.cast_pow, Nat.cast_pow, Real.log_pow, Real.log_pow,
     show ℓ - 1 = (ℓ - 1 - 1) + 1 by omega, pow_succ]
@@ -364,10 +393,8 @@ lemma t_le_t {ℓ ℓ' : ℕ} (h : ℓ ≤ ℓ') : (g.t ℓ : ℝ) ≤ g.t ℓ' 
 lemma monotone_logEnd : Monotone g.logEnd := by
   intro ℓ ℓ' h
   rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · simp only [Grid.logEnd, g.t_zero, Nat.cast_zero, Real.log_zero]
-    rcases Nat.eq_zero_or_pos ℓ' with rfl | hℓ'
-    · simp [g.t_zero]
-    · exact (g.logEnd_pos hℓ').le
+  · rw [logEnd_zero]
+    exact g.logEnd_nonneg ℓ'
   · exact Real.log_le_log (g.t_pos hℓ) (g.t_le_t h)
 
 /-- `L_ℓ → ∞`. -/
@@ -405,7 +432,7 @@ lemma eq_of_forall_one_le_t_eq {g g' : Grid K} (h : ∀ j, 1 ≤ j → g.t j = g
     g = g' := by
   refine Grid.ext (funext fun j ↦ ?_)
   rcases Nat.eq_zero_or_pos j with rfl | hj
-  · rw [g.t_zero, g'.t_zero]
+  · simp
   · exact h j hj
 
 /-- Two grids with the same ends `t 0, …, t ℓ` have the same `logEnd j` for `j ≤ ℓ`. -/

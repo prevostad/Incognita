@@ -400,7 +400,7 @@ lemma lintegral_sourceCount_gameMeasure {N : SourceSpace α → α → ℕ} (hN 
     measurable_from_top.comp (by unfold sourceCount; fun_prop)
   rw [← lintegral_map hcount measurable_fst]
   change ∫⁻ s, _ ∂((gameMeasure ν' N ν π T).fst) = _
-  rw [gameMeasure, Measure.fst_compProd, sourceLaw,
+  rw [fst_gameMeasure, sourceLaw,
     lintegral_map hcount (measurable_sourceData hN)]
   rfl
 

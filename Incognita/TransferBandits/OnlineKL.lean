@@ -22,6 +22,8 @@ For a fixed source data `s`, the learner `π` plays the LML bandit algorithm
 ## Main statements
 
 * `onlineKernel_apply_congr`: `κ^T_{π,ν}(s)` depends only on the kernels of `π` at `s`.
+* `gameMeasure_congr`: the law of the game depends only on the policies at the source data that
+  the size map produces.
 * `klDiv_onlineKernel_apply`: for every `s`,
   `KL(κ^T_{π,ν}(s), κ^T_{π,ν₂}(s)) = ∑_k E_{κ^T_{π,ν}(s)}[N_k(T)] KL(ν_k, ν₂_k)`.
 * `klDiv_gameMeasure_eq_add`: `KL(P, P₂) = KL(P^D_{ν',N'}, P^D_{ν₂',N'}) +
@@ -51,6 +53,21 @@ lemma onlineKernel_apply_congr {π π' : TransferAlgorithm α} (ν : Kernel α �
     rw [onlineKernel, onlineKernel, Kernel.map_apply _ (MeasurableEquiv.measurable _),
       Kernel.map_apply _ (MeasurableEquiv.measurable _), Kernel.compProd_apply_eq_compProd_sectR,
       Kernel.compProd_apply_eq_compProd_sectR, onlineKernel_apply_congr ν h T, hstep]
+
+/-- The law of the game depends only on the policies at the source data that the size map `N`
+produces: two learners whose policies agree on `Set.range (sourceData N)` (and every online
+history) give the same law of the game. -/
+lemma gameMeasure_congr {N : SourceSpace α → α → ℕ} (hN : Measurable N) (ν' ν : Kernel α ℝ)
+    [IsMarkovKernel ν'] [IsMarkovKernel ν] {π π' : TransferAlgorithm α}
+    (h : ∀ ω n (x : Fin n → α × ℝ),
+      π.policy n (sourceData N ω, x) = π'.policy n (sourceData N ω, x)) (T : ℕ) :
+    gameMeasure ν' N ν π T = gameMeasure ν' N ν π' T := by
+  ext A hA
+  rw [gameMeasure, gameMeasure, Measure.compProd_apply hA, Measure.compProd_apply hA, sourceLaw,
+    lintegral_map (Kernel.measurable_kernel_prodMk_left hA) (measurable_sourceData hN),
+    lintegral_map (Kernel.measurable_kernel_prodMk_left hA) (measurable_sourceData hN)]
+  refine lintegral_congr fun ω ↦ ?_
+  rw [onlineKernel_apply_congr ν (h ω) T]
 
 /-- For a fixed source data `s`, the online law of `π` is LML's law of the first `T` pairs of any
 bandit algorithm whose policy at round `n` is `π_n(s, ·)` read on pairs. -/
