@@ -130,7 +130,8 @@ without a justification on the line; a load-bearing step without one, or more th
 lines tested, is R; otherwise P. **Apply the notation count of W17** (the owner, 2026-11-18): list the
 symbols of the main text with their number of uses and report, in the W17 line, those used fewer
 than three times, those used in one proof only and the near-homonyms, then count the local symbols
-of three appendix proofs (W17 applies to proofs too). For each defect:
+of three appendix proofs (W17 applies to proofs too), and flag symbols for short expressions that
+never appear nested (in an exponent, a subscript or inside another function). For each defect:
 
 - its class is **R** (readability) when it prevents an expert from understanding or checking what
   is proved, or hides or distorts what is claimed; **P** when an expert could fix it without anyone
