@@ -17,6 +17,12 @@ Objects of [INC-P003] used by its statements (paper `P003-transfer-setting`).
 * `lookahead a₁`: the look-ahead map `N^la` of thm:main (b) and lem:lookahead: `N^la_{a₁} = 1` if
   the second value of the stack of `a₁` exceeds `1/2`, and `2` otherwise; `0` on the other arms.
 * `TransferAlgorithm.constArm a`: the learner that pulls `a` at every round.
+* `cyclicSize a₁ a₂ a₃`: the cyclic map `N^cyc` of prop:stopped-games (c), on three arms.
+* `sourceMean s k`: the source empirical mean `m̂'_k(s)` of arm `k` (def:source-data).
+* `bestSourceArm s`: the smallest arm maximising the source empirical mean.
+* `followSourceArm s`, `TransferAlgorithm.followSource`: the learner `π^tr` of prop:exclusion, which
+  pulls `bestSourceArm s` at every round when every arm has a source value, and the smallest arm
+  otherwise.
 -/
 
 @[expose] public section

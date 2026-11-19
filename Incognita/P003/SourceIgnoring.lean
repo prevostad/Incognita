@@ -23,8 +23,8 @@ Proofs of the three frozen statements of [INC-P003, prop:witness].
 * `ucb_isConsistentOnUnit`: LML's UCB with `c > 1/2` is consistent on `𝒫^K`, from LML's regret
   bound (`Bandits.UCB.isConsistent_unit`) and `Δ_a E[N_a(T)] ≤ E[R_T]`
   (`isConsistentOnUnit_of_isConsistent`).
-* `exists_isConsistent`: `𝒞_L ≠ ∅`, witnessed by `π^σ` for LMLExplore's KL-UCB on the arms `α`
-  (any algorithm consistent on `𝒫^K` would do; UCB is defined on `Fin K` only).
+* `exists_isConsistent`: `𝒞_L ≠ ∅`, witnessed by `π^σ` for LMLExplore's KL-UCB [CGMMS13] on the arms
+  `α` (any algorithm consistent on `𝒫^K` would do; UCB is defined on `Fin K` only).
 -/
 
 @[expose] public section
@@ -56,7 +56,7 @@ theorem ucb_isConsistentOnUnit (K : ℕ) [NeZero K] (_hK : 2 ≤ K) {c : ℝ} (h
   isConsistentOnUnit_of_isConsistent (Bandits.UCB.isConsistent_unit hc)
 
 /-- [INC-P003, prop:witness] For every `L ∈ (0,∞)^K`, some transfer learner belongs to `𝒞_L`: the
-source-ignoring learner of KL-UCB. -/
+source-ignoring learner of KL-UCB [CGMMS13]. -/
 theorem exists_isConsistent {α : Type*} [Fintype α] [MeasurableSpace α]
     [MeasurableSingletonClass α] (hK : 2 ≤ Fintype.card α) {L : α → ℝ} (hL : ∀ a, 0 < L a) :
     ∃ π : TransferAlgorithm α, IsConsistent L π := by

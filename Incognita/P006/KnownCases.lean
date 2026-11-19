@@ -10,19 +10,21 @@ public import Incognita.P006.KInf
 public import Incognita.P006.Main
 public import LMLExplore.Bandits.AsymptoticOptimality
 
-/-! # P006: the verified statements on known cases (gardening re-check)
+/-! # P006: the verified statements on known cases
 
-A `known-cases` re-check of [INC-P006] (AGENTS.md, section 8): the frozen statements of the paper,
-used through their proofs `Incognita.P006.<name>` (whose types are exactly those of
+Checks of [INC-P006] on cases with a known answer: the frozen statements of the paper, used
+through their proofs `Incognita.P006.<name>` (whose types are exactly those of
 `Incognita.Statements.P006.<name>`), are instantiated on cases whose answer is known independently,
 and the instances are proved.
 
+* `isConsistentAtBatchEnds_of_isConsistent`: [INC-P006, Theorem `thm:main`(ii) and (iii)]: a
+  learner sequentially consistent on `E ⊆ 𝒫` is consistent at the batch ends of every grid on `E`.
 * `isConsistentAtBatchEnds_klucb`, `isConsistentAtBatchEnds_ucbF`: [INC-P006, Theorem `thm:main`(ii)
   and (iii)] on two learners that LMLExplore proves sequentially consistent, KL-UCB on the bandits
   with rewards in `[0, 1]` [CGMMS13] and the asymptotically optimal UCB of [LS, Algorithm 6]
   (to be checked) with `σ² = 1 / 4` (Hoeffding's lemma): both are consistent at the batch ends of
-  every grid on `𝒫`. This is the consistency half of [INC-P006, Corollary `cor:ucb`] (not
-  formalised: `UCB1` is not defined), for these two learners and on every grid.
+  every grid on `𝒫`. This is the consistency half of [INC-P006, Corollary `cor:ucb`], stated there
+  for `UCB1`, for these two learners instead, on every grid.
 * `kinf_dirac_zero`: [INC-P006, Proposition `prop:kinf`(iv)] at `p = 0`, `Ber(0) = δ_0`:
   `𝒦_inf(δ_0, μ) = kl(0, μ) = log (1 / (1 - μ))` for `0 ≤ μ < 1`. With item (iii) this shows
   that the upper bound `log ((1 - p) / (1 - μ))` of (iii) is attained
@@ -34,10 +36,9 @@ and the instances are proved.
   Bernoulli bandits [LS, Table 16.1] (to be checked); and (v) then gives
   `2 Δ_a² ≤ kl(p_a, p⋆) ≤ log ((1 - p_a) / (1 - p⋆))`.
 * `kinf_bernoulli_eq_kInfUpper`: (iv) against LMLExplore's independent computation of the
-  transportation cost `K⁺` (competitors of mean `≥ μ`) at the Bernoulli laws (the work of Agrawal,
-  Juneja and Glynn cited by LMLExplore at
-  `LMLExplore.Identification.kInfUpper_unitIntervalLaws_bernoulliMeasure`, to be checked): the two
-  costs agree, `kl(p, μ)`, for `p ≤ μ < 1`.
+  transportation cost `K⁺` (competitors of mean `≥ μ`) at the Bernoulli laws
+  (`LMLExplore.Identification.kInfUpper_unitIntervalLaws_bernoulliMeasure`): the two costs
+  agree, `kl(p, μ)`, for `p ≤ μ < 1`.
 * `klBer_le_ofReal_log`: (iii) and (iv) together give `kl(p, μ) ≤ log ((1 - p) / (1 - μ))` for
   `0 ≤ p ≤ μ < 1`, the elementary inequality (`p log (p / μ) ≤ 0`); the lower bound of one item
   and the upper bound of the other are consistent.
@@ -165,8 +166,7 @@ theorem kinf_bernoulliBandit {α : Type*} [Finite α] [MeasurableSpace α]
 
 /-- **Known case** [INC-P006, Proposition `prop:kinf`(iv)] against LMLExplore's independent
 computation of the transportation cost `K⁺` over the laws on `[0, 1]` at the Bernoulli laws
-(`kInfUpper_unitIntervalLaws_bernoulliMeasure`, after the work of Agrawal, Juneja and Glynn cited
-there, to be checked): for `p ≤ μ < 1`, `𝒦_inf(Ber(p), μ)`
+(`kInfUpper_unitIntervalLaws_bernoulliMeasure`): for `p ≤ μ < 1`, `𝒦_inf(Ber(p), μ)`
 (competitors of mean `> μ`) equals `K⁺(Ber(p), μ)` (competitors of mean `≥ μ`), both `kl(p, μ)`. -/
 theorem kinf_bernoulli_eq_kInfUpper {p : I} {μ : ℝ} (hpμ : (p : ℝ) ≤ μ) (hμ : μ < 1) :
     dInf unitLaws Ber((1 : ℝ), 0, p) μ =

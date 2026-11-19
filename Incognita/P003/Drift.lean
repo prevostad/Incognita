@@ -21,6 +21,9 @@ Proofs of [INC-P003, prop:drift (a)–(e)], [INC-P003, prop:classes (a)–(b)] a
 
 The general facts on means, `𝒫_L` and `𝒞_L` they use are in
 `Incognita.TransferBandits.Means`.
+
+The hypotheses `K ≥ 2` (`_hK`) and `L > 0`, `L' > 0` (`_hL`, `_hL'`) of the frozen statements
+are not used.
 -/
 
 @[expose] public section

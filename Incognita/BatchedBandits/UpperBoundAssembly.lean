@@ -16,7 +16,7 @@ and `prop:fixedC`): an upper bound `limsup_ℓ E_ν[N_a(t_ℓ)] / log t_ℓ ≤ 
 every instance of `𝒫` and every suboptimal arm gives consistency, then (with the lower bound of
 Theorem `thm:lower`) the limit of the counts, then the limit of the regret. The `limsup` bound is
 written `∀ c > L, ∀ᶠ ℓ in atTop, u_ℓ / log t_ℓ < c`, the form dual to the `liminf` bounds of the
-lower bound (P000, modelling decision 7).
+lower bound.
 
 * `isBigO_log_t_of_eventually_div_lt`: a nonnegative sequence with `limsup u_ℓ / log t_ℓ < ∞` is
   `O(log t_ℓ)`.

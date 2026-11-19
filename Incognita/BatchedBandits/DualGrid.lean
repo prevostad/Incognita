@@ -13,7 +13,8 @@ public import Incognita.BatchedBandits.HYKinf
 stack), a level `r ∈ [0, 1)` and `F(λ) = ∑_{i < n} log (1 - λ (y_i - r))` (so that
 `n 𝒦_inf(Ĝ, r) = sup_{λ ∈ [0, 1/(1-r))} F(λ)` for the empirical law `Ĝ`), the supremum is reached
 up to `1` on the finite grid `λ^(k) = τ_n^k / (1 - r)`, `1 ≤ k ≤ k_n`, with `τ_n = 1 - 1/(2n)` and
-`k_n = ⌈2n log (n / (1 - r))⌉ + 1`.
+`k_n = ⌈2n log (n / (1 - r))⌉ + 1`. The deviation bounds of [INC-P000] built on this grid are
+variants of those of [CGMMS13, Section 5, Theorem 2], [HT15] and [GHMS22, Section 2.3].
 
 * `exists_grid_le_sum_log`: if `F(λ) ≥ z' ≥ 1` for some `λ ∈ [0, 1/(1-r))`, then
   `F(λ^(k)) ≥ z' - 1` for some `k ∈ [1, k_n]`; with `z' = z - 1`, this is Lemma `lem:grid` (if
@@ -68,9 +69,8 @@ lemma gridSize_le {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1
 
 /-- [INC-P000, Lemma `lem:grid`] Let `n ≥ 1`, `y_i ∈ [0, 1]` for `i < n`, `r ∈ [0, 1)` and
 `F(λ) = ∑_{i < n} log (1 - λ (y_i - r))`. If `F(λ) ≥ z' ≥ 1` for some `λ ∈ [0, 1/(1-r))`, then
-`F(λ^(k)) ≥ z' - 1` for some `k ∈ [1, k_n]`. Proof: `λ > 1/n ≥ λ^(k_n)` (as `F(λ) ≤ n λ r`), so
-`λ ∈ (λ^(k), λ^(k-1)]` for some `k`, and rounding down to `λ^(k) = ϖ λ`, `ϖ ≥ τ_n`, costs at most
-`n log (1/τ_n) ≤ 1` (Lemma `lem:kinf`(vi)). -/
+`F(λ^(k)) ≥ z' - 1` for some `k` with `1 ≤ k ≤ ⌈2 n log (n / (1 - r))⌉ + 1`, where
+`λ^(k) = (1 - 1/(2n))^k / (1 - r)`. -/
 lemma exists_grid_le_sum_log {n : ℕ} (hn : 1 ≤ n) {y : ℕ → ℝ}
     (hy : ∀ i < n, y i ∈ Set.Icc (0 : ℝ) 1) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) {z' lam : ℝ}
     (hz' : 1 ≤ z') (hlam0 : 0 ≤ lam) (hlam1 : lam * (1 - r) < 1)
@@ -78,6 +78,9 @@ lemma exists_grid_le_sum_log {n : ℕ} (hn : 1 ≤ n) {y : ℕ → ℝ}
     ∃ k, 1 ≤ k ∧ k ≤ ⌈2 * n * Real.log (n / (1 - r))⌉₊ + 1 ∧
       z' - 1 ≤ ∑ i ∈ range n,
         Real.log (1 - (1 - 1 / (2 * n : ℝ)) ^ k / (1 - r) * (y i - r)) := by
+  -- With `τ = 1 - 1/(2n)` and `k_n = ⌈2 n log (n / (1 - r))⌉ + 1`: `λ > 1/n ≥ λ^(k_n)` (as
+  -- `F(λ) ≤ n λ r`), so `λ ∈ (λ^(k), λ^(k-1)]` for some `k`, and rounding down to
+  -- `λ^(k) = ϖ λ`, `ϖ ≥ τ`, costs at most `n log (1/τ) ≤ 1` (Lemma `lem:kinf`(vi)).
   have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
   have hn0 : (0 : ℝ) < n := by linarith
   have h1r : 0 < 1 - r := by linarith

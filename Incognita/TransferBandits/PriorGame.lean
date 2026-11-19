@@ -55,9 +55,11 @@ namespace PriorStrategy
 variable [DecidableEq α]
 
 /-- The state of the prior game after `r` rounds on the source point `ω`: the counts
-`C_k(r)` and the history `(A'_i, Y'_i)_{i < r}`. At round `r` the arm `A'_r = act r (U', history)`
-is chosen, its count is incremented, and the value observed is `Y'_r = X'_{A'_r, C_{A'_r}(r)}`,
-the next unread value of its stack (0-based index `C_{A'_r}(r - 1)`). -/
+`C_k(r)` (the number of rounds `i < r` with `A'_i = k`) and the history `(A'_i, Y'_i)_{i < r}`.
+At the 0-based round `r` the arm `A'_r = act r (U', history)` is chosen and the value observed is
+`Y'_r = ω.2 A'_r (C_{A'_r}(r)) = X'_{A'_r, C_{A'_r}(r)}` (0-based stack index), the next unread
+value of its stack; then the count of `A'_r` is incremented. In the paper's rounds and stack
+indices, both from `1`, this is `Y'_{r+1} = X'_{A'_{r+1}, C_{A'_{r+1}}(r+1)}`. -/
 def state (g : PriorStrategy α) (ω : SourceSpace α) : (r : ℕ) → (α → ℕ) × (Fin r → α × ℝ)
   | 0 => (0, fun i ↦ i.elim0)
   | r + 1 =>

@@ -12,7 +12,7 @@ public import LMLExplore.SequentialLearning.Algorithms.OfSeq
 
 /-! # Checks of the definitions of the TransferBandits setting
 
-Witnesses, known cases and exclusions (AGENTS.md §6.4) for the definitions of
+Witnesses, known cases and exclusions for the definitions of
 `Incognita.TransferBandits.Setting`, `Consistency`, `Examples` and `PriorGame`
 ([INC-P003, sec:setting]).
 

@@ -16,6 +16,10 @@ round `n` (rounds from `0`) is a Markov kernel `alg.policy n` from the histories
 `0, …, n - 1` to the actions [INC-P006, Definition `def:learner`; the paper's `π_t` is
 `alg.policy (t - 1)`].
 
+The closest notions in the literature: batched learners on a grid chosen by the learner [PRCS16],
+and batch-aware and batch-oblivious learners on a grid imposed by the environment [QW26] (the
+information models `𝓜_⊤` and `𝓜_0` respectively).
+
 ## Main definitions
 
 * `Incognita.BatchedBandits.SeesRewardsUpTo alg n r`: the policy of the round `n` depends on the

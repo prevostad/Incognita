@@ -11,7 +11,8 @@ public import Incognita.BatchedBandits.HY
 
 Properties of `HY.pseudoKinf w₀ h r c μ`, the divergence `𝒦_inf(ν̃_c, μ)` of the pseudo-empirical
 law `ν̃_c = (N_c ν̂_c + w₀ δ_0) / (N_c + w₀)` of the rewards of `c` in the rounds `< r`, by the dual
-formula with **rational** `λ` [INC-P000, Definition `def:kinf`; P000, modelling decision 3]. The
+formula with **rational** `λ` [INC-P000, Definition `def:kinf`] (the dual formula of 𝒦_inf is
+[HT10, Theorem 8]). The
 rewards of the history are in `[0, 1]` (as on every run, almost surely), the pseudo-count is
 `w₀ ≥ 0`, and the level is `μ ∈ [0, 1)`. With `F(λ) = HY.pseudoLogMean w₀ h r c λ μ`
 (`= E_{ν̃_c}[log (1 - λ (X - μ))]`):
@@ -19,7 +20,7 @@ rewards of the history are in `[0, 1]` (as on every run, almost surely), the pse
 * `HY.continuousAt_pseudoLogMean`, `HY.ofReal_pseudoLogMean_le_pseudoKinf`,
   `HY.pseudoKinf_le_of_forall`, `HY.pseudoKinf_eq_iSup_real`: the supremum over the rational
   `λ ∈ [0, 1 / (1 - μ))` equals the supremum over the real ones (the remark of Definition
-  `def:kinf`; P000, Open problems), since `F` is continuous on that interval.
+  `def:kinf`), since `F` is continuous on that interval.
 * Lemma `lem:kinf` for `ν̃_c`: (i) `HY.pseudoKinf_le_ofReal_log`, `𝒦_inf ≤ κ(μ) = log (1/(1-μ))`;
   (ii) is `HY.pseudoKinf_eq_zero_of_le_pseudoMean`; (iii) `HY.pseudoKinf_mono`, monotone in the
   level; (iv) `HY.ofReal_sq_div_eight_le_pseudoKinf`, `𝒦_inf ≥ (μ - q)² / 8` if the mean is

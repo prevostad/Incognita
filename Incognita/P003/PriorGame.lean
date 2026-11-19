@@ -19,6 +19,8 @@ Proofs of [INC-P003, lem:prior-game (b)] and [INC-P003, prop:stopped-games (a)].
 The general facts on the prior game are in `Incognita.TransferBandits.SizeRules`: the stopped game
 reads only values of the box of its counts (`PriorStrategy.stoppedCounts_eq_of_eqOn_box`), so the
 criterion `isSizeRule_of_eqOn_box` applies.
+
+The hypothesis `K ≥ 2` (`_hK`) of the frozen statement `stoppedCounts_isSizeRule` is not used.
 -/
 
 @[expose] public section

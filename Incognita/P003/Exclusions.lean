@@ -20,6 +20,8 @@ Proofs of [INC-P003, lem:lookahead] and [INC-P003, lem:learner-exclusion].
 
 Both rest on the two points `ω₀` (every value `0`) and `ω₁` (the second value of every stack is
 `1`, the others `0`), which agree on every box containing no second value.
+
+The hypothesis `K ≥ 2` (`_hK`) of the frozen statements is not used.
 -/
 
 @[expose] public section

@@ -26,7 +26,7 @@ against the bandit `ν`, in particular of LML's `trajMeasure σ (Environment.ban
 
 LML's rewards are real; the paper's lem:lml-history extends kernels on `[0,1]`-valued histories to
 real histories by clamping. In the Lean setting both the transfer learners and LML's algorithms
-are already kernels on real histories (blueprint.md, decision 7), so no clamping is needed here.
+are already kernels on real histories, so no clamping is needed here.
 -/
 
 @[expose] public section

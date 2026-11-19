@@ -14,6 +14,8 @@ public import Mathlib.Probability.Moments.Basic
 `[0, 1]` and a common mean `m` (the paper's i.i.d. stack of an arm, law `ν`), `r ∈ [0, 1)` a level
 and
 `F(λ) = ∑_{i < n} log (1 - λ (Y_i - r))`, so that `n 𝒦_inf(ν̂_n, r) = sup_{λ ∈ [0, 1/(1-r))} F(λ)`.
+These bounds are variants of those of [CGMMS13, Section 5, Theorem 2], [HT15] and
+[GHMS22, Section 2.3].
 
 * `measureReal_le_sum_log_le`: the Chernoff bound at one `λ ∈ [0, 1/(1-r))` with the power
   `s = 1 + 2η`: `P(F(λ) ≥ w) ≤ e^(-s w)` when `2 η r ≤ m - r`.

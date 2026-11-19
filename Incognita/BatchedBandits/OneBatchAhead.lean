@@ -24,7 +24,7 @@ law under the *switched* environment, which follows `ν'` before `t ℓ` and `ν
 (`map_history_maskFeedback_eq`); the divergence between `ν` and the switched environment is
 `E_ν[N_a(t ℓ)] KL(ν_a, Q)` (`klDiv_map_hist_switch`). The Bretagnolle–Huber inequality on the
 event `{2 N_a(t (ℓ + 1)) ≥ t (ℓ + 1)}`, Markov's inequality and consistency under `ν` and `ν'`
-conclude.
+conclude: the route of the sequential lower bound [LS, Theorem 16.2].
 
 ## Main statements
 

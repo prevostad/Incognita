@@ -20,7 +20,8 @@ nondecreasing on `[σ, T]` and at most `B` (the paper's `U_(ℓ+1) + K - 1`), an
 
 HY's paced rule (pull the first demanding non-leader, the leader if there is none) satisfies both;
 the order is not used. The backlog after the round `t` is
-`Q(t) = ∑_{c ∈ C} (n_c(t) - N_c(t))⁺` (natural subtraction).
+`Q(t) = ∑_{c ∈ C} (n_c(t) - N_c(t))⁺` (natural subtraction). The closest known form is the
+tracking lemma [GK16, Appendix B.1, Lemma 15].
 
 * `pullCount_le_max_target`: (a), `N_c(t) ≤ max(N_c(σ), n_c(t))`; `pullCount_sub_le_target`: so
   `c` is pulled at most `B` times in `(σ, t]`.
