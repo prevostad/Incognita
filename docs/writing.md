@@ -320,12 +320,22 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
     it out would make the formula hard to read, or it is the standard notation of the field
     ($\mathcal K_{\inf}$, $\Delta_a$). A few characters saved do not pay for a symbol the reader must
     remember.
+  - **Dependencies visible** (owner, 2026-11-19): a symbol shows the indices it depends on (the
+    batch $\ell$, the arm $a$, the round $t$…) when they vary in the paper or in the proof where it
+    is used: $M_\ell$, not $M$. Parameters fixed throughout (the instance $\nu$, the grid, the
+    algorithm) need no index. An index may be dropped only where it is fixed and the text says so
+    ("Fix $\ell$ and write $M := M_\ell$ in this proof"); such an abbreviation is a new local
+    symbol and obeys the rules above (at least three uses in that proof, at most about five local
+    symbols), so keep $M_\ell$ unless dropping the index really lightens many formulas. A dependency
+    index counts as one of the two decorations; a symbol that would need three is better written as
+    a function, $M(\ell, a)$.
   This does not weaken section 2a: every symbol that remains is defined with `:=` and linked to its
   definition; there are simply fewer of them. *Test*: list the symbols introduced in the main text
   and count the uses of each; flag those used fewer than three times, those used in one proof only,
   and the near-homonyms; then read the main theorem's statement: can it be read with at most two
   look-ups in the notation table? Then pick three appendix proofs and count their local symbols and
-  the uses of each. For each symbol that stands for a short expression, check that it appears at
+  the uses of each, and check that each symbol shows the indices that vary where it is used. For
+  each symbol that stands for a short expression, check that it appears at
   least once in a nested position or is the standard notation. A few superfluous symbols is P; a main theorem that cannot be read without
   repeated look-ups, more than a third of the main text's symbols used fewer than three times, or a
   proof whose local symbols outnumber its steps, is R.
