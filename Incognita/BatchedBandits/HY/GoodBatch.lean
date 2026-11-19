@@ -13,16 +13,18 @@ public import Incognita.BatchedBandits.HY.Structure
 `a` is rejected at the test and is pulled at most according to its plan
 `K + (1 + ω_ℓ) y_ℓ log t / D_ε` during the next batch.
 
-* `hyAlg_ae_goodA`: Steps 2–4 of the paper's proof, along almost every run, with the facts of its
-  Step 1 as hypotheses: they are the conclusions of `hyAlg_ae_leaderA` (the leaders are optimal,
-  the test levels are accurate), of `hyAlg_ae_countsA` (the counts of `a` are above the count
-  threshold), and the traces on the run of the events `ℒ_ℓ^c` and `𝒰_ℓ^c` at these counts
-  (Definition `def:evA`), with the condition (T3) at these counts.
+* `hyAlg_ae_le_mul_testKinf_and_pullCount_le_max`: Steps 2–4 of the paper's proof, along almost
+  every run, with the facts of its Step 1 as hypotheses: they are the conclusions of
+  `hyAlg_ae_integral_leader_eq_iSup` (the leaders are optimal, the test levels are accurate), of
+  `hyAlg_ae_logEnd_div_log_le_pullCount` (the counts of `a` are above the count threshold), and the
+  traces on the run of the events `ℒ_ℓ^c` and `𝒰_ℓ^c` at these counts (Definition `def:evA`), with
+  the condition (T3) at these counts.
 
 [INC-P000, Lemma `lem:decompA`], its pieces:
-* (a), the three cases of (eq:DA) along a run: Case 1 is `hyAlg_ae_goodA`; Case 2,
-  `hyAlg_ae_net_le` (an arm other than the leader with `K̃ ≥ ε'² / 8` receives at most a net
-  `2 U_(ℓ+1)`); Case 3, `pullCount_le_add_sub` (the whole batch).
+* (a), the three cases of (eq:DA) along a run: Case 1 is
+  `hyAlg_ae_le_mul_testKinf_and_pullCount_le_max`; Case 2, `hyAlg_ae_net_le` (an arm other than the
+  leader with `K̃ ≥ ε'² / 8` receives at most a net `2 U_(ℓ+1)`); Case 3, `pullCount_le_add_sub`
+  (the whole batch).
 * (b), `le_max_add_sum_of_step`: the iteration of (eq:DA) over the batches, for any real sequence.
 
 [INC-P000, Lemma `lem:goodhigh`] (the case `x = 1`), Step 2: `card_filter_lt_le_card`, at most `K`
@@ -54,7 +56,7 @@ lemma HY.testKinf_le_ofReal_add {w₀ ρ K ε : ℝ} (hw₀ : 0 ≤ w₀) {n : �
     (hε : 0 ≤ ε) (hK : HY.pseudoKinf 0 h r c ρ ≤ ENNReal.ofReal K)
     (hw : w₀ * Real.log (1 / (1 - ρ)) ≤ ε * HY.count h r c) :
     HY.testKinf w₀ h r U c ≤ ENNReal.ofReal (K + ε) := by
-  have hμ0 := HY.pseudoMean_nonneg' hw₀ hfb (r := r) (HY.reference w₀ h r U)
+  have hμ0 := HY.pseudoMean_nonneg hw₀ hfb (r := r) (HY.reference w₀ h r U)
   set N := HY.count h r c with hNdef
   have hmono : HY.testKinf w₀ h r U c ≤ HY.pseudoKinf w₀ h r c ρ :=
     HY.pseudoKinf_mono hw₀ hμ0 hμρ hρ hfb
@@ -77,10 +79,10 @@ lemma HY.testKinf_le_ofReal_add {w₀ ρ K ε : ℝ} (hw₀ : 0 ≤ w₀) {n : �
 
 /-- [INC-P000, Lemma `lem:goodA`, along a run] Along almost every run of HY (`w₀ ≥ 0`, on a grid
 for `K ≥ 2` arms) on an instance `ν` of `𝒫`, let the batches of Lean indices `ℓ` and `ℓ + 1`
-(`ℓ ≥ 1`) satisfy (R2) (the hypotheses of `hyAlg_ae_structA`, with `ω ≥ 0`), `γ_(ℓ+1) ≥ 0`, and
-let `a` be a sub-optimal arm, `ε > 0`, `D = D_ε > 0` and `K⁺ = 𝒦_inf(ν_a, m⋆ + ε) ≥ 0` (so that
-`K⁺ + 2ε` is the paper's `K_ε⁺`) with:
-* (Step 1, `hyAlg_ae_leaderA`) the leader `ĉ_(ℓ+1)` is optimal,
+(`ℓ ≥ 1`) satisfy (R2) (the hypotheses of `hyAlg_ae_pullCount_le_max_target_and_netSize_le_sub`,
+with `ω ≥ 0`), `γ_(ℓ+1) ≥ 0`, and let `a` be a sub-optimal arm, `ε > 0`, `D = D_ε > 0` and
+`K⁺ = 𝒦_inf(ν_a, m⋆ + ε) ≥ 0` (so that `K⁺ + 2ε` is the paper's `K_ε⁺`) with:
+* (Step 1, `hyAlg_ae_integral_leader_eq_iSup`) the leader `ĉ_(ℓ+1)` is optimal,
   `m⋆ - 2ε ≤ μ̂_(ℓ+1) ≤ m⋆ + ε`, `μ̂_ℓ ≤ m⋆ + ε`, `0 ≤ m⋆ - 2ε` and `m⋆ + ε < 1`;
 * (Step 1, `ℒ^c`) `𝒦_inf(ν̂_a(t_(ℓ+1)), m⋆ - 2ε) ≥ D`;
 * (Step 1, `𝒰^c` and (T3)) `𝒦_inf(ν̂_a(t_ℓ), m⋆ + ε) ≤ K⁺ + ε` and
@@ -92,7 +94,7 @@ Then `a` is rejected at `t_(ℓ+1)` (`K̂_(ℓ+1)(a) > 0` and
 round `t ∈ [t_(ℓ+1), t_(ℓ+2)]` has
 `N_a(t) ≤ max(N_a(t_(ℓ+1)), K + (1 + ω_(ℓ+1)) y_(ℓ+1) log t / D)`.
 -/
-lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → ℝ)
+lemma hyAlg_ae_le_mul_testKinf_and_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → ℝ)
     (g : Grid (Fintype.card α)) (hK : 2 ≤ Fintype.card α) {ν : Kernel α ℝ} [IsMarkovKernel ν]
     (hν : ν ∈ unitBandits α) :
     ∀ᵐ ω ∂(trajMeasure (hyAlg w₀ β ωs θ γ g : Algorithm Unit α ℝ) (Environment.bandit ν)),
@@ -136,8 +138,10 @@ lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → �
       ∀ t, g.t (ℓ + 1) ≤ t → t ≤ g.t (ℓ + 2) →
         (pullCount IT.action a t ω : ℝ) ≤ max (pullCount IT.action a (g.t (ℓ + 1)) ω : ℝ)
           (Fintype.card α + (1 + ωs (ℓ + 1)) * g.ratio (ℓ + 1) ^ 2 * Real.log t / D) := by
-  filter_upwards [hyAlg_ae_structA w₀ β ωs θ γ g (Environment.bandit ν) hK,
-    hyAlg_ae_structA_S3 w₀ β ωs θ γ g (Environment.bandit ν) hK,
+  filter_upwards [hyAlg_ae_pullCount_le_max_target_and_netSize_le_sub w₀ β ωs θ γ g
+      (Environment.bandit ν) hK,
+    hyAlg_ae_le_pullCount_mul_testKinf_of_two_mul_pullCount_lt w₀ β ωs θ γ g
+      (Environment.bandit ν) hK,
     hyAlg_ae_threshold_eq w₀ β ωs θ γ g (Environment.bandit ν) hK,
     hyAlg_ae_pullCount_le_max' w₀ β hw₀ ωs θ γ g hν,
     hyAlg_ae_one_le_pullCount w₀ β ωs θ γ g (Environment.bandit ν),
@@ -169,7 +173,7 @@ lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → �
   set μ₀ := HY.pseudoMean w₀ h₀ (g.t ℓ) (HY.reference w₀ h₀ (g.t ℓ) (g.netSize β ℓ)) with hμ₀
   set μ₁ := HY.pseudoMean w₀ h₁ (g.t (ℓ + 1))
     (HY.reference w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1))) with hμ₁
-  have hμ₀0 : 0 ≤ μ₀ := HY.pseudoMean_nonneg' hw₀ hfb₀ _
+  have hμ₀0 : 0 ≤ μ₀ := HY.pseudoMean_nonneg hw₀ hfb₀ _
   have hμ₁1 : μ₁ < 1 := by linarith
   -- Step 1, last item: `K̂_(ℓ+1)(a) ≥ D`
   have hpos₁ : 0 < (HY.count h₁ (g.t (ℓ + 1)) a : ℝ) + w₀ := by
@@ -296,6 +300,9 @@ lemma hyAlg_ae_goodA (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → �
   · have h5' := (Nat.cast_le (α := ℝ)).mpr h5
     exact h5'.trans (htgt.trans (le_max_right _ _))
 
+@[deprecated (since := "2026-11-19")]
+alias hyAlg_ae_goodA := hyAlg_ae_le_mul_testKinf_and_pullCount_le_max
+
 /-! ### The decomposition of the counts, Lemma `lem:decompA` -/
 
 omit [Fintype α] [Nonempty α] [MeasurableSpace α] [MeasurableSingletonClass α] in
@@ -311,10 +318,11 @@ lemma pullCount_le_add_sub {Ω : Type*} {A : ℕ → Ω → α} {ω : Ω} (c : �
 
 /-- [INC-P000, proof of Lemma `lem:decompA`(a), Case 2, along a run] Along almost every run of HY
 (`w₀ ≥ 0`, on a grid for `K ≥ 2` arms) on an instance of `𝒫`, for a batch `ℓ + 1` (`ℓ ≥ 1`)
-satisfying the hypotheses of `hyAlg_ae_structA` with `ω_ℓ ≥ 0`, an arm `a` other than the leader
-`ĉ_ℓ` with `K̃_ℓ(a) ≥ ε'² / 8` (Lemma `lem:leaderA`(ii) at the accuracy `ε'`) receives at most a
-net: if (R1) `x_ℓ ≤ x₊` and (T4) `K + 1 + 8 x₊² L_(ℓ+1) / ε'² ≤ U_(ℓ+1)` hold, then
-`N_a(t) ≤ max(N_a(t_ℓ), 2 U_(ℓ+1))` for every round `t ∈ [t_ℓ, t_(ℓ+1)]`. -/
+satisfying the hypotheses of `hyAlg_ae_pullCount_le_max_target_and_netSize_le_sub` with `ω_ℓ ≥ 0`,
+an arm `a` other than the leader `ĉ_ℓ` with `K̃_ℓ(a) ≥ ε'² / 8` (Lemma `lem:leaderA`(ii) at the
+accuracy `ε'`) receives at most a net: if (R1) `x_ℓ ≤ x₊` and (T4)
+`K + 1 + 8 x₊² L_(ℓ+1) / ε'² ≤ U_(ℓ+1)` hold, then `N_a(t) ≤ max(N_a(t_ℓ), 2 U_(ℓ+1))` for every
+round `t ∈ [t_ℓ, t_(ℓ+1)]`. -/
 lemma hyAlg_ae_net_le (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → ℝ)
     (g : Grid (Fintype.card α)) (hK : 2 ≤ Fintype.card α) {ν : Kernel α ℝ} [IsMarkovKernel ν]
     (hν : ν ∈ unitBandits α) :
@@ -332,7 +340,8 @@ lemma hyAlg_ae_net_le (w₀ β : ℝ) (hw₀ : 0 ≤ w₀) (ωs θ γ : ℕ → 
       ∀ t, g.t ℓ ≤ t → t ≤ g.t (ℓ + 1) →
         pullCount IT.action a t ω ≤
           max (pullCount IT.action a (g.t ℓ) ω) (2 * g.netSize β (ℓ + 1)) := by
-  filter_upwards [hyAlg_ae_structA w₀ β ωs θ γ g (Environment.bandit ν) hK,
+  filter_upwards [hyAlg_ae_pullCount_le_max_target_and_netSize_le_sub w₀ β ωs θ γ g
+      (Environment.bandit ν) hK,
     hyAlg_ae_pullCount_le_max' w₀ β hw₀ ωs θ γ g hν] with ω hS hImed
   intro ℓ hℓ hθ hω0 hσ2 hσU hlong ε' xp a hε' haL hKt hx hT4 t ht1 ht2
   set U := g.netSize β (ℓ + 1) with hU

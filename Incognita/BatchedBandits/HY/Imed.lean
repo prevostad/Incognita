@@ -19,7 +19,8 @@ at the cutoff `r = t_ℓ`; the paper's round is `t = n + 1`, and its `N_c(t - 1)
   `J_ℓ(c, t) < y_ℓ log t` (Steps 1–2); `HY.imedKinf_imedArm_ne_top`: then `K̃_ℓ(c) < ∞` (for
   `N_c(t - 1) ≥ 1`); `HY.mul_toReal_imedKinf_add_lt`: the real form
   `N_c(t - 1) K̃_ℓ(c) + y_ℓ log N_c(t - 1) < y_ℓ log t`.
-* `HY.highC`: Lemma `lem:highC`, evidence in a high batch, with (W1) as a hypothesis.
+* `HY.pseudoKinf_pos_and_le_mul_pseudoKinf`: Lemma `lem:highC`, evidence in a high batch, with (W1)
+  as a hypothesis.
 * `HY.imedIndex_imedArm_le`: the IMED arm minimises the index (the hypothesis (min) of the
   water-level lemma `lem:W`, `Incognita.BatchedBandits.log_div_card_le_index`).
 * `HY.pullCount'_pacedArm_lt_target`, `HY.target_le_pullCount'_of_pacedArm_eq`: the paced rule
@@ -153,26 +154,29 @@ lemma mul_toReal_imedKinf_add_lt {w₀ y : ℝ} (hw₀ : 0 ≤ w₀) (hy : 0 < y
 
 omit [Fintype α] [Nonempty α] in
 /-- For rewards `≥ 0` and `w₀ ≥ 0`, the pseudo-mean is nonnegative. -/
-lemma pseudoMean_nonneg' {w₀ : ℝ} (hw₀ : 0 ≤ w₀) (hfb : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1)
+lemma pseudoMean_nonneg {w₀ : ℝ} (hw₀ : 0 ≤ w₀) (hfb : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1)
     (c : α) : 0 ≤ pseudoMean w₀ h r c := by
   unfold pseudoMean
   exact div_nonneg (Finset.sum_nonneg fun i _ ↦ mul_nonneg (ind_nonneg i) (hfb i).1)
     (by positivity)
+
+@[deprecated (since := "2026-11-19")] alias pseudoMean_nonneg' := pseudoMean_nonneg
 
 /-- [INC-P000, Lemma `lem:highC`] Evidence in a high batch, for the statistics of HY at the cutoff
 `r = t_(i-1)`: let `r' ∈ [m̃⋆_(i-1), 1)`, `D = 𝒦_inf(ν̃_c(t_(i-1)), r')`, `y = y_(i-1) ≥ 1`, and an
 arm `c` whose count `N = N_c(t_i)` satisfies `1 ≤ N ≤ N̄` and (W1) at the level `v`,
 `N K̃_(i-1)(c) / y ≥ v - log N` (the paper's `v ≤ Λ_i ≤ N K̃/y + log N`). If `Y = v - log N̄ > 0`,
 then `0 < D ≤ κ(r')` and `N D ≥ Y`. -/
-lemma highC {w₀ : ℝ} (hw₀ : 0 ≤ w₀) (hfb : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1)
-    {c : α} (hpos : 0 < (count h r c : ℝ) + w₀) {r' : ℝ} (hr' : r' < 1)
+lemma pseudoKinf_pos_and_le_mul_pseudoKinf {w₀ : ℝ} (hw₀ : 0 ≤ w₀)
+    (hfb : ∀ i, (h i).feedback ∈ Set.Icc (0 : ℝ) 1) {c : α} (hpos : 0 < (count h r c : ℝ) + w₀)
+    {r' : ℝ} (hr' : r' < 1)
     (hlead : pseudoMean w₀ h r (leader w₀ h r) ≤ r') {N : ℕ} (hN1 : 1 ≤ N) {Nbar y v : ℝ}
     (hy : 1 ≤ y) (hNb : (N : ℝ) ≤ Nbar) (hY : 0 < v - Real.log Nbar)
     (hW1 : ENNReal.ofReal (v - Real.log N) ≤ (N : ℝ≥0∞) * imedKinf w₀ h r c / ENNReal.ofReal y) :
     0 < pseudoKinf w₀ h r c r' ∧
       pseudoKinf w₀ h r c r' ≤ ENNReal.ofReal (Real.log (1 / (1 - r'))) ∧
       ENNReal.ofReal (v - Real.log Nbar) ≤ (N : ℝ≥0∞) * pseudoKinf w₀ h r c r' := by
-  have hμ0 := pseudoMean_nonneg' (r := r) hw₀ hfb (leader w₀ h r)
+  have hμ0 := pseudoMean_nonneg (r := r) hw₀ hfb (leader w₀ h r)
   have hr'0 : 0 ≤ r' := hμ0.trans hlead
   -- `K̃_(i-1)(c) ≤ D`, Lemma `lem:kinf`(iii)
   have hKD : imedKinf w₀ h r c ≤ pseudoKinf w₀ h r c r' :=
@@ -196,6 +200,8 @@ lemma highC {w₀ : ℝ} (hw₀ : 0 ≤ w₀) (hfb : ∀ i, (h i).feedback ∈ S
   refine pos_iff_ne_zero.mpr fun hD ↦ ?_
   rw [hD, mul_zero, nonpos_iff_eq_zero, ENNReal.ofReal_eq_zero] at hmain
   linarith
+
+@[deprecated (since := "2026-11-19")] alias highC := pseudoKinf_pos_and_le_mul_pseudoKinf
 
 /-- **The IMED rule** [INC-P000, Definition `def:hy`, IMED phase; the hypothesis (min) of
 Lemma `lem:W`]: the arm of the IMED phase minimises the IMED index `J_ℓ(·, t)`. -/

@@ -148,7 +148,7 @@ theorem kinf_bernoulliBandit {α : Type*} [Finite α] [MeasurableSpace α]
       ENNReal.ofReal (2 * Bandits.gap (bernoulliBandit p) a ^ 2) ≤ klBer (p a) (⨆ b, (p b : ℝ)) ∧
       klBer (p a) (⨆ b, (p b : ℝ)) ≤
         ENNReal.ofReal (Real.log ((1 - p a) / (1 - ⨆ b, (p b : ℝ)))) := by
-  have hν := bernoulliBandit_mem_unitBandits p hp
+  have hν := bernoulliBandit_mem_unitBandits_of_lt_one p hp
   have hmax : (⨆ b, ∫ x, id x ∂(bernoulliBandit p b)) = ⨆ b, (p b : ℝ) := by
     simp only [integral_id_bernoulliBandit]
   have hle : (p a : ℝ) ≤ ⨆ b, (p b : ℝ) :=

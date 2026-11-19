@@ -28,10 +28,10 @@ between the laws of the histories of the first `r` rounds under `ν` and under `
 
 ## Main statements
 
-* `Incognita.BatchedBandits.isAlgEnvSeqUntil_maskFeedback`: the masked process of a run is an
+* `Learning.IsAlgEnvSeq.isAlgEnvSeqUntil_ite_lt`: the masked process of a run is an
   algorithm-environment sequence until `M` for an environment whose feedback is `δ_{y₀}` at the
   rounds `≥ r`.
-* `Incognita.BatchedBandits.map_history_maskFeedback_eq`: the masked histories have the same law
+* `Incognita.BatchedBandits.map_history_ite_lt_eq`: the masked histories have the same law
   under two environments that agree at the rounds `< r`.
 * `Incognita.BatchedBandits.klDiv_map_hist_switch`: the divergence for the switched environment.
 -/
@@ -44,8 +44,9 @@ namespace Incognita.BatchedBandits
 
 variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨]
 
-/-- The map that replaces the rewards of the rounds `≥ r` of an `n`-round history by `y₀`. -/
-lemma measurable_maskFeedback (r n : ℕ) (y₀ : 𝓨) :
+/-- The map that replaces the rewards of the rounds `≥ r` of an `n`-round history by `y₀` is
+measurable. -/
+lemma measurable_hist_ite_lt (r n : ℕ) (y₀ : 𝓨) :
     Measurable (fun (h : Hist Unit 𝓐 𝓨 n) (i : Fin n) ↦
       if (i : ℕ) < r then h i else ((), (h i).action, y₀)) := by
   refine Measurable.of_eval fun i ↦ ?_
@@ -56,12 +57,14 @@ lemma measurable_maskFeedback (r n : ℕ) (y₀ : 𝓨) :
     exact measurable_const.prodMk
       ((Round.measurable_action.comp (measurable_pi_apply i)).prodMk measurable_const)
 
+@[deprecated (since := "2026-11-19")] alias measurable_maskFeedback := measurable_hist_ite_lt
+
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {O : ℕ → Ω → Unit} {A : ℕ → Ω → 𝓐}
   {Y : ℕ → Ω → 𝓨}
 
 omit [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] in
 /-- The history of the masked process is the masked history. -/
-lemma history_maskFeedback (r : ℕ) (y₀ : 𝓨) (n : ℕ) (ω : Ω) :
+lemma history_ite_lt (r : ℕ) (y₀ : 𝓨) (n : ℕ) (ω : Ω) :
     history O A (fun m ↦ if m < r then Y m else fun _ ↦ y₀) n ω =
       fun i : Fin n ↦
         if (i : ℕ) < r then history O A Y n ω i else ((), (history O A Y n ω i).action, y₀) := by
@@ -70,12 +73,16 @@ lemma history_maskFeedback (r : ℕ) (y₀ : 𝓨) (n : ℕ) (ω : Ω) :
   · simp [history, hi]
   · simp [history, hi, Round.action]
 
+@[deprecated (since := "2026-11-19")] alias history_maskFeedback := history_ite_lt
+
 omit [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] in
 /-- Below `r`, the masked history is the history. -/
-lemma history_maskFeedback_of_le {r n : ℕ} (hn : n ≤ r) (y₀ : 𝓨) :
+lemma history_ite_lt_of_le {r n : ℕ} (hn : n ≤ r) (y₀ : 𝓨) :
     history O A (fun m ↦ if m < r then Y m else fun _ ↦ y₀) n = history O A Y n := by
   funext ω i
   simp [history, show (i : ℕ) < r from i.2.trans_le hn]
+
+@[deprecated (since := "2026-11-19")] alias history_maskFeedback_of_le := history_ite_lt_of_le
 
 /-- The masked rewards (`Y m` for `m < r`, the constant `y₀` afterwards) are measurable. -/
 private lemma measurable_maskedFeedback (hY : ∀ n, Measurable (Y n)) (r : ℕ) (y₀ : 𝓨) (m : ℕ) :
@@ -94,7 +101,8 @@ run of `alg` against `env`, and let `alg` see the rewards of the rounds `< r` on
 `n < M`. Replace the rewards of the rounds `≥ r` by `y₀`. The process obtained is a run of `alg`
 until `M` against any environment `envM` whose feedback kernels are those of `env` at the rounds
 `< r` and `δ_{y₀}` at the rounds `≥ r`. -/
-lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ} (y₀ : 𝓨)
+lemma _root_.Learning.IsAlgEnvSeq.isAlgEnvSeqUntil_ite_lt (h : IsAlgEnvSeq O A Y alg env P)
+    {r M : ℕ} (y₀ : 𝓨)
     (halg : ∀ n < M, SeesRewardsUpTo alg n r)
     (hlt : ∀ n < r, envM.feedback n = env.feedback n)
     (hge : ∀ n, r ≤ n → envM.feedback n = Kernel.const _ (Measure.dirac y₀)) :
@@ -109,14 +117,14 @@ lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ
   hasCondDistrib_action n hn := by
     have hf : Measurable (Prod.map (fun (h : Hist Unit 𝓐 𝓨 n) (i : Fin n) ↦
         if (i : ℕ) < r then h i else ((), (h i).action, y₀)) (id : Unit → Unit)) :=
-      (measurable_maskFeedback r n y₀).prodMap measurable_id
+      (measurable_hist_ite_lt r n y₀).prodMap measurable_id
     have heq : (fun ω ↦ (history O A (fun m ↦ if m < r then Y m else fun _ ↦ y₀) n ω, O n ω)) =
         (Prod.map (fun (h : Hist Unit 𝓐 𝓨 n) (i : Fin n) ↦
           if (i : ℕ) < r then h i else ((), (h i).action, y₀)) id) ∘
           (fun ω ↦ (history O A Y n ω, O n ω)) := by
       funext ω
       simp only [Function.comp_apply, Prod.map_apply, id_eq]
-      rw [history_maskFeedback]
+      rw [history_ite_lt]
     rw [heq]
     refine HasCondDistrib.comp_right (hf := hf) ?_
     have hk : (alg.policy n).comap _ hf = alg.policy n := by
@@ -134,7 +142,7 @@ lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ
   hasCondDistrib_feedback n hn := by
     by_cases hnr : n < r
     · have h1 : (if n < r then Y n else fun _ ↦ y₀) = Y n := by simp [hnr]
-      rw [h1, history_maskFeedback_of_le hnr.le, hlt n hnr]
+      rw [h1, history_ite_lt_of_le hnr.le, hlt n hnr]
       exact h.hasCondDistrib_feedback n
     · have h1 : (if n < r then Y n else fun _ ↦ y₀) = fun _ ↦ y₀ := by simp [hnr]
       rw [h1, hge n (not_lt.mp hnr)]
@@ -142,12 +150,15 @@ lemma isAlgEnvSeqUntil_maskFeedback (h : IsAlgEnvSeq O A Y alg env P) {r M : ℕ
         (measurable_maskedFeedback h.measurable_feedback r y₀) n).prodMk
         (h.measurable_obs n)).prodMk (h.measurable_action n)) y₀
 
+@[deprecated (since := "2026-11-19")]
+alias isAlgEnvSeqUntil_maskFeedback := Learning.IsAlgEnvSeq.isAlgEnvSeqUntil_ite_lt
+
 /-- **The masked histories have the same law under two environments that agree before `r`.**
 If the policies of `alg` at the rounds `n < M` see the rewards of the rounds `< r` only, and the
 environments `env`, `env'` have the same feedback kernels at the rounds `< r`, then the histories
 of the first `M` rounds with the rewards of the rounds `≥ r` replaced by `y₀` have the same law
 under `env` and `env'`. -/
-lemma map_history_maskFeedback_eq (alg : Algorithm Unit 𝓐 𝓨) {env env' : Environment Unit 𝓐 𝓨}
+lemma map_history_ite_lt_eq (alg : Algorithm Unit 𝓐 𝓨) {env env' : Environment Unit 𝓐 𝓨}
     {r M : ℕ} (henv : ∀ n < r, env.feedback n = env'.feedback n)
     (halg : ∀ n < M, SeesRewardsUpTo alg n r) (y₀ : 𝓨) :
     (trajMeasure alg env).map
@@ -168,10 +179,12 @@ lemma map_history_maskFeedback_eq (alg : Algorithm Unit 𝓐 𝓨) {env env' : E
     by simp [envM, hn, henv n hn]
   have hge : ∀ n, r ≤ n → envM.feedback n = Kernel.const _ (Measure.dirac y₀) :=
     fun n hn ↦ by simp [envM, not_lt.mpr hn]
-  rw [(isAlgEnvSeqUntil_maskFeedback (IT.isAlgEnvSeq_trajMeasure alg env) y₀ halg hlt
+  rw [((IT.isAlgEnvSeq_trajMeasure alg env).isAlgEnvSeqUntil_ite_lt y₀ halg hlt
       hge).map_history,
-    (isAlgEnvSeqUntil_maskFeedback (IT.isAlgEnvSeq_trajMeasure alg env') y₀ halg hlt'
+    ((IT.isAlgEnvSeq_trajMeasure alg env').isAlgEnvSeqUntil_ite_lt y₀ halg hlt'
       hge).map_history]
+
+@[deprecated (since := "2026-11-19")] alias map_history_maskFeedback_eq := map_history_ite_lt_eq
 
 /-- **Divergence for the switched environment.** Let `env` be the environment that follows the
 bandit `ν'` at the rounds `< r` and the bandit `ν` at the rounds `≥ r`. For `r ≤ M`, the relative

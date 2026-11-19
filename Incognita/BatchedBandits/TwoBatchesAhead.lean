@@ -23,10 +23,11 @@ of the log-likelihood ratios).
   a learner batched on a grid and consistent at its batch ends on `𝒫`, and a suboptimal arm `a`
   with `E_ν[N_a(t_(ℓ+1))] = O(log t_(ℓ+2))`, `liminf_ℓ E_ν[N_a(t_ℓ)] / log t_(ℓ+2) ≥
   1 / 𝒦_inf(ν_a, m⋆)`.
-* `two_batches_finite`: the finite-horizon inequality behind it, for three bandits that differ
-  only at `a`.
+* `pow_mul_exp_neg_le_integral_pullCount_div_add`: the finite-horizon inequality behind it, for
+  three bandits that differ only at `a`.
 * `exists_two_alternatives`: the alternative instances `κ⁺, κ⁻ ∈ 𝒫`.
-* `two_batches_step`: the bound at a fixed index `ℓ`, given the alternative instances.
+* `mul_log_t_add_two_lt_integral_pullCount`: the bound at a fixed index `ℓ`, given the alternative
+  instances.
 * `exp_neg_div_le_of_klBer_le`: data processing in multiplicative form: if `d(q, p) ≤ D` with
   `q > 0`, then `p ≥ exp (-(D + log 2) / q)`.
 * `klDiv_map_hist_switch_left`: the divergence between the switched environment (`ν` before `r`,
@@ -201,8 +202,9 @@ bandits `ν`, `κ⁺`, `κ⁻` agree outside the arm `a`, with `κ⁻_a ≥ c κ
   ≤ 2 E_{κ⁻}[N_a(M)] / M + 2 (M - E_{κ⁺}[N_a(M)]) / M`.
 Only the pulls of `a` before `r₀` pay the divergence `KL(ν_a, κ⁺_a)`; the pulls of `a` in the
 rounds `[r₀, r)` pay the factor `c` each. -/
-lemma two_batches_finite [Finite α] {alg : Algorithm Unit α ℝ} {r₀ r M L : ℕ} (hr₀r : r₀ ≤ r)
-    (hrM : r ≤ M) (hM : 0 < M) (halg₀ : ∀ n < r, SeesRewardsUpTo alg n r₀)
+lemma pow_mul_exp_neg_le_integral_pullCount_div_add [Finite α] {alg : Algorithm Unit α ℝ}
+    {r₀ r M L : ℕ} (hr₀r : r₀ ≤ r) (hrM : r ≤ M) (hM : 0 < M)
+    (halg₀ : ∀ n < r, SeesRewardsUpTo alg n r₀)
     (halg : ∀ n < M, SeesRewardsUpTo alg n r) {ν κp κm : Kernel α ℝ} [IsMarkovKernel ν]
     [IsMarkovKernel κp] [IsMarkovKernel κm] {a : α} (hνp : ∀ b ≠ a, ν b = κp b)
     (hmp : ∀ b ≠ a, κm b = κp b) {c : ℝ} (hc0 : 0 ≤ c) (hc1 : c ≤ 1)
@@ -252,7 +254,7 @@ lemma two_batches_finite [Finite α] {alg : Algorithm Unit α ℝ} {r₀ r M L :
       ext ω
       simp only [Set.mem_preimage, hF, hSL, Set.mem_ofPred_eq]
       rw [← pullCount_eq_pullCount' (O := IT.obs) (R' := Ym)]
-    have hlaw := map_history_maskFeedback_eq (M := r) alg (env := eQ)
+    have hlaw := map_history_ite_lt_eq (M := r) alg (env := eQ)
       (env' := Environment.bandit ν) (fun n hn ↦ by simp [eQ, hn]) halg₀ 0
     rw [← hpre, ← map_measureReal_apply hmeas hFm, hlaw, map_measureReal_apply hmeas hFm, hpre]
   -- Data processing between `eQ` and `κ⁺` on the histories of the first `r` rounds.
@@ -322,7 +324,7 @@ lemma two_batches_finite [Finite α] {alg : Algorithm Unit α ℝ} {r₀ r M L :
       ext ω
       simp only [Set.mem_preimage, hG', hG, Set.mem_ofPred_eq]
       rw [← pullCount_eq_pullCount' (O := IT.obs) (R' := Ym)]
-    have hlaw := map_history_maskFeedback_eq (M := M) alg (env := Environment.bandit κm)
+    have hlaw := map_history_ite_lt_eq (M := M) alg (env := Environment.bandit κm)
       (env' := e₁) (fun n hn ↦ by simp [e₁, hn]) halg 0
     rw [← hpre, ← Measure.map_apply hmeas hG'm, hlaw, Measure.map_apply hmeas hG'm]
   have hdens : ∀ ω : ℕ → Round Unit α ℝ, ∏ i : Fin M, w i (IT.hist M ω i).action =
@@ -381,6 +383,9 @@ lemma two_batches_finite [Finite α] {alg : Algorithm Unit α ℝ} {r₀ r M L :
     _ ≤ _ := add_le_add (measureReal_le_two_mul_integral_pullCount_div alg _ a hM)
         (measureReal_compl_le_two_mul_sub_integral_pullCount_div alg _ a hM)
 
+@[deprecated (since := "2026-11-19")]
+alias two_batches_finite := pow_mul_exp_neg_le_integral_pullCount_div_add
+
 end Counts
 
 section Laws
@@ -415,8 +420,8 @@ variable {α : Type*} [Fintype α] [DecidableEq α] [MeasurableSpace α] [Measur
 
 /-- The right-hand side of the finite-horizon inequalities is at most `M ^ p / M / 2` when
 `E_{κ⁻}[N_a(M)] ≤ δ M ^ p` and `E_{κ⁺}[N_b(M)] ≤ δ M ^ p` for every `b ≠ a`, with `K δ ≤ 1/8`. -/
-lemma rhs_le_of_counts_le (alg : Algorithm Unit α ℝ) (κm κp : Kernel α ℝ) [IsMarkovKernel κm]
-    [IsMarkovKernel κp] (a : α) {M : ℕ} (hM : 0 < M) {p δ : ℝ} (hδ : 0 ≤ δ)
+lemma two_mul_integral_pullCount_div_add_le_rpow_div (alg : Algorithm Unit α ℝ) (κm κp : Kernel α ℝ)
+    [IsMarkovKernel κm] [IsMarkovKernel κp] (a : α) {M : ℕ} (hM : 0 < M) {p δ : ℝ} (hδ : 0 ≤ δ)
     (hδK : (Fintype.card α : ℝ) * δ ≤ 1 / 8)
     (hA : ∫ ω, (pullCount IT.action a M ω : ℝ) ∂(trajMeasure alg (Environment.bandit κm)) ≤
       δ * (M : ℝ) ^ p)
@@ -465,10 +470,13 @@ lemma rhs_le_of_counts_le (alg : Algorithm Unit α ℝ) (κm κp : Kernel α ℝ
   refine div_le_div_of_nonneg_right ?_ hMpos.le
   linarith
 
+@[deprecated (since := "2026-11-19")]
+alias rhs_le_of_counts_le := two_mul_integral_pullCount_div_add_le_rpow_div
+
 /-- **Arithmetic two batches ahead.** Let `0 < γ ≤ 1`, `D ≥ 0`, `lM > 0` and `lam > 0`. If
 `-lam L - (T₀ D + log 2) / q ≤ (γ / 4) lM - lM`, `lam L ≤ (γ / 4) lM + lam`, `q ≥ 1 - γ / 4`,
 `c' D ≤ 1 - γ` and `lam + log 2 + 1 < (γ / 4) lM`, then `c' lM < T₀`. -/
-lemma two_batches_arith {T₀ D c' γ lM lam L q : ℝ} (hγ : 0 < γ) (hγ1 : γ ≤ 1)
+lemma mul_lt_of_mul_neg_add_neg_div_le {T₀ D c' γ lM lam L q : ℝ} (hγ : 0 < γ) (hγ1 : γ ≤ 1)
     (hD : 0 ≤ D) (hlM : 0 < lM) (hlam : 0 < lam)
     (hlog : L * -lam + -(T₀ * D + Real.log 2) / q ≤ γ / 4 * lM - lM)
     (hLlam : L * lam ≤ γ / 4 * lM + lam) (hq : 1 - γ / 4 ≤ q)
@@ -514,6 +522,8 @@ lemma two_batches_arith {T₀ D c' γ lM lam L q : ℝ} (hγ : 0 < γ) (hγ1 : �
       _ ≤ (1 - γ) * lM := mul_le_mul_of_nonneg_right hc'D hlM.le
       _ = lM - 4 * (γ / 4 * lM) := by ring
   linarith
+
+@[deprecated (since := "2026-11-19")] alias two_batches_arith := mul_lt_of_mul_neg_add_neg_div_le
 
 omit [Fintype α] [DecidableEq α] in
 /-- **The alternative instances two batches ahead.** For `ν ∈ 𝒫`, a suboptimal arm `a`, a law `Q`
@@ -618,7 +628,8 @@ lemma exists_two_alternatives [Finite α] {ν : Kernel α ℝ} [IsMarkovKernel �
 `eventually_lt_integral_pullCount_div_log_t_add_two` at a fixed index `ℓ`, given the alternative
 instances (`exists_two_alternatives`), the consistency bounds at `t (ℓ + 2)` and the logarithmic
 bound on `E_ν[N_a(t (ℓ + 1))]`: `c' log t (ℓ + 2) < E_ν[N_a(t ℓ)]`. -/
-lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb : IsBatched alg g)
+lemma mul_log_t_add_two_lt_integral_pullCount {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ}
+    (hb : IsBatched alg g)
     {ν κp κm : Kernel α ℝ} [IsMarkovKernel ν] [IsMarkovKernel κp] [IsMarkovKernel κm] {a : α}
     (hκp : ∀ b ≠ a, ν b = κp b) (hmp : ∀ b ≠ a, κm b = κp b) {s lam : ℝ} (hs0 : 0 < s)
     (hs1 : s < 1) (h1s : 1 - s = exp (-lam)) (hlam : 0 < lam)
@@ -681,12 +692,14 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
     have := le_of_mul_le_mul_left this hL0
     linarith
   have hqpos : 0 < (trajMeasure alg (Environment.bandit ν)).real SL := by linarith
-  -- the change of measure on `S_L` (`two_batches_finite`), and the consistency bounds at
-  -- `t_(ℓ+2)` for its right side (`rhs_le_of_counts_le`)
-  have key := two_batches_finite (L := L) hr₀r hrM (by omega)
+  -- the change of measure on `S_L` (`pow_mul_exp_neg_le_integral_pullCount_div_add`), and the
+  -- consistency bounds at `t_(ℓ+2)` for its right side
+  -- (`two_mul_integral_pullCount_div_add_le_rpow_div`)
+  have key := pow_mul_exp_neg_le_integral_pullCount_div_add (L := L) hr₀r hrM (by omega)
     (fun n hn ↦ hsees ℓ n hn) (fun n hn ↦ hsees (ℓ + 1) n hn) hκp hmp
     (by linarith : (0 : ℝ) ≤ 1 - s) (by linarith : 1 - s ≤ 1) hdom hDne hqpos
-  have hrhs := rhs_le_of_counts_le alg κm κp a (show 0 < g.t (ℓ + 2) by omega) hδc hδcK hA hB
+  have hrhs := two_mul_integral_pullCount_div_add_le_rpow_div alg κm κp a
+    (show 0 < g.t (ℓ + 2) by omega) hδc hδcK hA hB
   have hfin := key.trans hrhs
   set D := (klDiv (ν a) (κp a)).toReal with hD_def
   set T₀ := ∫ ω, (pullCount IT.action a (g.t ℓ) ω : ℝ) ∂(trajMeasure alg (Environment.bandit ν))
@@ -714,17 +727,21 @@ lemma two_batches_step {K : ℕ} (g : Grid K) {alg : Algorithm Unit α ℝ} (hb 
       _ = γ / 4 * Real.log (g.t (ℓ + 2)) + lam := by
           rw [hlam_def]
           field_simp
-  exact two_batches_arith hγ hγ1 ENNReal.toReal_nonneg hlogM hlam
+  exact mul_lt_of_mul_neg_add_neg_div_le hγ hγ1 ENNReal.toReal_nonneg hlogM hlam
     (by linarith) hLlam hq hc'D hlarge
+
+@[deprecated (since := "2026-11-19")]
+alias two_batches_step := mul_log_t_add_two_lt_integral_pullCount
 
 omit [Fintype α] in
 /-- **Two batches ahead** [INC-P000, Lemma `lem:twobatches`(ii), at the index `ℓ + 1`]. For every
 grid, every learner batched on it and consistent at its batch ends on `𝒫`, every `ν ∈ 𝒫` and every
 arm `a` with `gap ν a > 0` whose counts satisfy `E_ν[N_a(t_(ℓ+1))] = O(log t_(ℓ+2))`:
 `liminf_ℓ E_ν[N_a(t_ℓ)] / log t_(ℓ+2) ≥ 1 / 𝒦_inf(ν_a, m⋆)`. The route is that of
-`formalisation.tex`: the change of measure between `κ⁻` and `κ⁺` (`two_batches_finite`), which
-costs `1 - s` per pull of `a` in batch `ℓ + 1`, data processing from the environment that is `ν`
-before `t ℓ`, and consistency under `κ⁻` and `κ⁺`. -/
+`formalisation.tex`: the change of measure between `κ⁻` and `κ⁺`
+(`pow_mul_exp_neg_le_integral_pullCount_div_add`), which costs `1 - s` per pull of `a` in batch
+`ℓ + 1`, data processing from the environment that is `ν` before `t ℓ`, and consistency under `κ⁻`
+and `κ⁺`. -/
 lemma eventually_lt_integral_pullCount_div_log_t_add_two [Finite α] {K : ℕ} (g : Grid K)
     {alg : Algorithm Unit α ℝ} (hb : IsBatched alg g)
     (hc : IsConsistentAtBatchEnds alg g (unitBandits α)) {ν : Kernel α ℝ} [IsMarkovKernel ν]
@@ -813,7 +830,8 @@ lemma eventually_lt_integral_pullCount_div_log_t_add_two [Finite α] {K : ℕ} (
   have hMp : 0 < (g.t (ℓ + 2) : ℝ) ^ (γ / 4) := Real.rpow_pos_of_pos (by
     have := g.two_le_t (ℓ := ℓ + 2) (by omega)
     exact_mod_cast (show 0 < g.t (ℓ + 2) by omega)) _
-  have hstep := two_batches_step g hb hκp hmp hs0 hs1 h1s hlam hdom hDne hγ hγ1 hc'D hC'1 rfl
+  have hstep := mul_log_t_add_two_lt_integral_pullCount g hb hκp hmp hs0 hs1 h1s hlam hdom hDne hγ
+    hγ1 hc'D hC'1 rfl
     hδc.le hδcK ℓ ((div_lt_iff₀ hMp).mp hAℓ).le (fun b hb ↦ ((div_lt_iff₀ hMp).mp (hBℓ b hb)).le)
     (hCℓ.trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (hlogpos ℓ).le)) hLℓ
   rw [lt_div_iff₀ (hlogpos ℓ)]

@@ -20,7 +20,7 @@ Bretagnolle–Huber in place of data processing for the binary relative entropy.
 with the law of `a` replaced by a law `Q` on `[0, 1]` of mean above `m⋆`. The actions of the
 rounds `< t (ℓ + 1)` see the rewards of the rounds `< t ℓ` only, so their law under `ν'` is their
 law under the *switched* environment, which follows `ν'` before `t ℓ` and `ν` afterwards
-(`map_history_maskFeedback_eq`); the divergence between `ν` and the switched environment is
+(`map_history_ite_lt_eq`); the divergence between `ν` and the switched environment is
 `E_ν[N_a(t ℓ)] KL(ν_a, Q)` (`klDiv_map_hist_switch`). The Bretagnolle–Huber inequality on the
 event `{2 N_a(t (ℓ + 1)) ≥ t (ℓ + 1)}`, Markov's inequality and consistency under `ν` and `ν'`
 conclude: the route of the sequential lower bound [LS, Theorem 16.2].
@@ -88,15 +88,15 @@ lemma exp_neg_le_of_seesRewardsUpTo {alg : Algorithm Unit α ℝ} {r M : ℕ} (h
   have hfac : mask = (fun (h : Hist Unit α ℝ M) (i : Fin M) ↦
       if (i : ℕ) < r then h i else ((), (h i).action, (0 : ℝ))) ∘ IT.hist M := by
     funext ω
-    exact history_maskFeedback r 0 M ω
+    exact history_ite_lt r 0 M ω
   -- Under `ν'` and under the switched environment, the masked histories have the same law.
   have hlaw : (trajMeasure alg env₂).map mask = P'.map mask :=
-    map_history_maskFeedback_eq alg (fun n hn ↦ by simp [env₂, hn]) halg 0
+    map_history_ite_lt_eq alg (fun n hn ↦ by simp [env₂, hn]) halg 0
   -- The divergence between the laws of the masked histories is at most `T D`.
   have hKL : klDiv (P.map mask) (P'.map mask) ≤ ENNReal.ofReal (T * D) := by
-    rw [← hlaw, hfac, ← Measure.map_map (measurable_maskFeedback r M 0) (IT.measurable_hist M),
-      ← Measure.map_map (measurable_maskFeedback r M 0) (IT.measurable_hist M)]
-    refine (klDiv_map_le _ _ (measurable_maskFeedback r M 0)).trans ?_
+    rw [← hlaw, hfac, ← Measure.map_map (measurable_hist_ite_lt r M 0) (IT.measurable_hist M),
+      ← Measure.map_map (measurable_hist_ite_lt r M 0) (IT.measurable_hist M)]
+    refine (klDiv_map_le _ _ (measurable_hist_ite_lt r M 0)).trans ?_
     rw [klDiv_map_hist_switch alg ν ν' hrM (fun n hn ↦ by simp [env₂, hn])
       (fun n hn ↦ by simp [env₂, not_lt.mpr hn])]
     exact (IT.isAlgEnvSeq_trajMeasure alg _).klDiv_map_history_le_ofReal_integral_pullCount_mul

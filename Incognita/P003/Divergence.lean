@@ -17,7 +17,7 @@ online phase (`Incognita.TransferBandits.klDiv_gameMeasure_eq_add`, with lem:onl
 is `∑_k E_{ν'}[N'_k] KL(ν'_k, ν₂'_k)` (`Incognita.TransferBandits.klDiv_sourceLaw`,
 prop:source-kl), and `E_{ν'}[N'_k] = E_P[N'_k]` (lem:mixture). The fundamental inequality is the
 data processing inequality for the Bernoulli laws of the means of `Z`
-(`Incognita.klDiv_bernoulli_integral_le`).
+(`Incognita.klDiv_bernoulliMeasure_integral_le`).
 
 ## Main statements
 
@@ -71,7 +71,7 @@ theorem fundamental_inequality {α : Type*} [Fintype α] [MeasurableSpace α]
   have : IsMarkovKernel ν' := hν'.1
   have : IsMarkovKernel ν₂ := hν₂.1
   have : IsMarkovKernel ν₂' := hν₂'.1
-  refine (klDiv_bernoulli_integral_le _ _ hZ hZ01).trans (le_of_eq ?_)
+  refine (klDiv_bernoulliMeasure_integral_le _ _ hZ hZ01).trans (le_of_eq ?_)
   rw [divergence_decomposition hK hN π T hν hν' hν₂ hν₂' hfin]
   congr 1
   refine Finset.sum_congr rfl fun a _ ↦ ?_

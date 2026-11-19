@@ -77,7 +77,7 @@ fixed order" of the paced rule is the arm of smallest index in the enumeration
 * `HY.pseudoKinf_eq_zero_of_le_pseudoMean`: known case, `𝒦_inf(ν̃, μ) = 0` when the mean of `ν̃` is
   at least `μ`; `HY.pseudoKinf_ne_zero_example`: one observation `0` and `μ = 1/2` give a positive
   divergence.
-* `Grid.hyOmega_mem`, `Grid.hyTheta_mem`, `Grid.hyGamma_mem`, `Grid.hyOmega_antitone`: the default
+* `Grid.hyOmega_mem`, `Grid.hyTheta_mem`, `Grid.hyGamma_mem`, `Grid.hyOmega_anti`: the default
   parameters have the ranges that Definition `def:hy` requires;
   `Grid.hyOmega_hyGamma_of_logEnd_le_one` gives their values while `L_ℓ ≤ 1`.
 * `Grid.netSize_one`, `Grid.netSize_succ`, `Grid.one_le_netSize`, `Grid.imedEnd_zero`,
@@ -579,7 +579,7 @@ lemma hyOmega_mem (ℓ : ℕ) : g.hyOmega ℓ ∈ Set.Ioc (0 : ℝ) 1 :=
   ⟨pow_pos (by norm_num) _, pow_le_one₀ (by norm_num) (by norm_num)⟩
 
 /-- The default margins are non-increasing in `ℓ ≥ 1` [INC-P000, Definition `def:hy`]. -/
-lemma hyOmega_antitone {ℓ ℓ' : ℕ} (hℓ : 1 ≤ ℓ) (hℓℓ' : ℓ ≤ ℓ') : g.hyOmega ℓ' ≤ g.hyOmega ℓ := by
+lemma hyOmega_anti {ℓ ℓ' : ℕ} (hℓ : 1 ≤ ℓ) (hℓℓ' : ℓ ≤ ℓ') : g.hyOmega ℓ' ≤ g.hyOmega ℓ := by
   refine pow_le_pow_of_le_one (by norm_num) (by norm_num) (Nat.floor_mono ?_)
   refine mul_le_mul_of_nonneg_left (Real.logb_le_logb_of_le (by norm_num)
     (lt_of_lt_of_le one_pos (le_max_right _ _)) (max_le_max_right 1 ?_)) (by norm_num)
@@ -587,6 +587,8 @@ lemma hyOmega_antitone {ℓ ℓ' : ℕ} (hℓ : 1 ≤ ℓ) (hℓℓ' : ℓ ≤ �
   gcongr
   · exact_mod_cast (show 0 < g.t ℓ by have := g.two_le_t hℓ; omega)
   · exact_mod_cast g.strictMono.monotone hℓℓ'
+
+@[deprecated (since := "2026-11-19")] alias hyOmega_antitone := hyOmega_anti
 
 /-- The default activation exponents are in `(0, 1]` [INC-P000, Definition `def:hy`]. -/
 lemma hyTheta_mem (ℓ : ℕ) : g.hyTheta ℓ ∈ Set.Ioc (0 : ℝ) 1 := by

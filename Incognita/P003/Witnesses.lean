@@ -178,8 +178,7 @@ lemma followSource_not_isConsistent_satisfiable :
   ⟨by simp, ⟨true⟩⟩
 
 @[deprecated (since := "2026-11-19")]
-alias isConsistentOnUnit_of_isConsistent :=
-  Relations.isConsistentOnUnit_of_isConsistent_of_isConsistentAtBatchEnds
+alias isConsistentOnUnit_of_isConsistent := LMLExplore.Bandits.IsConsistent.isConsistentOnUnit
 
 @[deprecated (since := "2026-11-19")]
 alias isConsistentOnUnit_klucb := Relations.isConsistentOnUnit_klucb

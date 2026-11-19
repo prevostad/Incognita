@@ -5,6 +5,7 @@ Authors: Incognita contributors
 -/
 module
 
+public import LMLExplore.Analysis.SpecialFunctions.Log.Basic
 public import LeanMachineLearning.SequentialLearning.FiniteActions
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Data.EReal.Basic
@@ -39,12 +40,8 @@ namespace Incognita.BatchedBandits
 
 variable {β Ω : Type*} [DecidableEq β] {A : ℕ → Ω → β} {ω : Ω}
 
-/-- `log` is monotone on the natural numbers (`log 0 = 0 = log 1`). -/
-lemma log_natCast_le_log_natCast {a b : ℕ} (h : a ≤ b) : Real.log a ≤ Real.log b := by
-  rcases Nat.eq_zero_or_pos a with rfl | ha
-  · rw [Nat.cast_zero, Real.log_zero]
-    exact Real.log_natCast_nonneg b
-  · exact Real.log_le_log (by exact_mod_cast ha) (by exact_mod_cast h)
+@[deprecated (since := "2026-11-19")]
+alias log_natCast_le_log_natCast := Real.log_natCast_le_log_natCast
 
 /-- [INC-P000, proof of Lemma `lem:W`, Step 1] (W2) at the IMED rounds: an arm `c` pulled at an
 IMED round `t ∈ (r, s]` has `y log N_c(r) ≤ I_(T+1)(c')` for every arm `c'`:
@@ -62,7 +59,7 @@ lemma log_pullCount_le_index {I : β → ℕ → EReal} {r s T : ℕ} (hsT : s �
   calc ((y * Real.log (pullCount A (A (t - 1) ω) r ω) : ℝ) : EReal)
       ≤ ((y * Real.log (pullCount A (A (t - 1) ω) (t - 1) ω) : ℝ) : EReal) :=
         EReal.coe_le_coe_iff.mpr (mul_le_mul_of_nonneg_left
-          (log_natCast_le_log_natCast hcount) hy)
+          (Real.log_natCast_le_log_natCast hcount) hy)
     _ ≤ I (A (t - 1) ω) t := hlog _ t hrt (by omega)
     _ ≤ I c' t := hmin t hrt hts c'
     _ ≤ I c' (T + 1) := hmono c' t (T + 1) hrt (by omega) le_rfl

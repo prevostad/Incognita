@@ -40,7 +40,8 @@ first `N_c(t)` rewards of its stack (`HY.pseudoMean_zero_history_eq`), which is
   the event `Π` and one sub-optimal arm, through Lemma `lem:pair` (with the moment conditions of
   Lemma `lem:constA`(c) as hypotheses).
 * `exists_tilt_moment_le`: Lemma `lem:constA`(c), the moment conditions, for the law of one
-  sub-optimal arm (from Lemma `lem:theta`); `constA_means`: Lemma `lem:constA`(a).
+  sub-optimal arm (from Lemma `lem:theta`); `iSup_integral_add_lt_one_and_integral_add_lt_sub`:
+  Lemma `lem:constA`(a).
 -/
 
 @[expose] public section
@@ -545,7 +546,7 @@ lemma measure_lt_mul_pseudoKinf_and_le_le [Countable α] {alg : Algorithm Unit �
         (by fun_prop)
       refine le_of_eq_of_le ?_ hΨ
       congr 1
-    · have hg := gridSize_le hp.1.1.1 hr0 hr
+    · have hg := dualGridSize_le hp.1.1.1 hr0 hr
       have hpU : (p.1 : ℝ) ≤ U := by exact_mod_cast hp.1.1.2.le
       have hp0 : (0 : ℝ) ≤ p.1 := Nat.cast_nonneg _
       have he : 0 ≤ Real.exp (2 * (1 + 2 * η)) * Real.exp (-(1 + 2 * η) * z) := by positivity
@@ -592,7 +593,7 @@ omit [DecidableEq α] [MeasurableSingletonClass α] [Fintype α] in
 `ε ∈ (0, min(Δ/5, (1 - m⋆)/2)]` has `m⋆ + ε < 1`, `m_c + ε < m⋆ - 3ε` for every sub-optimal `c`,
 and `m₂ + ε < m⋆ - 2ε`. (The paper's `ε̄` is also below the `ε_(θ,c)`; it takes `m₂` the second
 largest mean and `Δ` the smallest positive gap; `m⋆ < 1` follows from `0 < ε ≤ (1 - m⋆)/2`.) -/
-lemma constA_means (ν : Kernel α ℝ) {Δ m₂ ε : ℝ}
+lemma iSup_integral_add_lt_one_and_integral_add_lt_sub (ν : Kernel α ℝ) {Δ m₂ ε : ℝ}
     (hΔ : ∀ c, (∫ y, id y ∂(ν c)) < ⨆ b, ∫ y, id y ∂(ν b) →
       Δ ≤ (⨆ b, ∫ y, id y ∂(ν b)) - ∫ y, id y ∂(ν c))
     (hm₂ : m₂ ≤ (⨆ b, ∫ y, id y ∂(ν b)) - Δ) (hε : 0 < ε) (hεΔ : ε ≤ Δ / 5)
@@ -604,6 +605,9 @@ lemma constA_means (ν : Kernel α ℝ) {Δ m₂ ε : ℝ}
   refine ⟨by linarith, fun c hc ↦ ?_, by linarith⟩
   have := hΔ c hc
   linarith
+
+@[deprecated (since := "2026-11-19")]
+alias constA_means := iSup_integral_add_lt_one_and_integral_add_lt_sub
 
 /-- [INC-P000, Lemma `lem:constA`(c), the moment conditions, for one law] For a law `Q` on `[0, 1]`
 of mean `m < m⋆ < 1` (the law `ν_c` of a sub-optimal arm), there are a tilt `θ > 0`, a constant
@@ -656,9 +660,9 @@ lemma exists_tilt_moment_le {Q : Measure ℝ} (hQ : Q ∈ unitLaws) {ms : ℝ}
       rw [integral_congr_ae (hone.mono fun y hy ↦ (by simp [hy] : id y = (fun _ ↦ (1 : ℝ)) y))]
       simp
     linarith
-  obtain ⟨hc, hε⟩ := tilt_const_pos hΦ0 hΦ1 hΨ0 hΨ1 hθ
+  obtain ⟨hc, hε⟩ := half_mul_min_log_pos_and_min_pos hΦ0 hΦ1 hΨ0 hΨ1 hθ
   refine ⟨θ, _, _, hθ, hc, hε, fun ε hεθ r η hr hη hηc ↦ ?_⟩
-  have hsh := tilt_shift (P := Q) (Y := id) hθ hΦ0 hΦ1 hΨ0 hΨ1 hεθ
+  have hsh := exp_mul_integral_exp_le_one_and_le_one_sub (P := Q) (Y := id) hθ hΦ0 hΦ1 hΨ0 hΨ1 hεθ
   simp only [id] at hsh
   have hexp : Real.exp (2 * η * Real.log (1 / (1 - r))) ≤
       Real.exp ((1 / 2) * min (Real.log (1 / ∫ y, Real.exp (θ * (y - ms)) ∂Q))

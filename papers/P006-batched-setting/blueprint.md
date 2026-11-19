@@ -58,7 +58,7 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 
 | Item | Lean | Status |
 |---|---|---|
-| (a) Bernoulli instances with all $p_c<1$ are in $\mathcal P$ | `Incognita.BatchedBandits.bernoulliBandit_mem_unitBandits` | proved |
+| (a) Bernoulli instances with all $p_c<1$ are in $\mathcal P$ | `Incognita.BatchedBandits.bernoulliBandit_mem_unitBandits_of_lt_one` | proved |
 | (a) an arm $\delta_1$ excludes an instance from $\mathcal P$ | `Incognita.BatchedBandits.not_mem_unitBandits_of_integral_eq_one` (any arm of mean 1) | proved |
 | (a) an arm $\mathcal N(0,1)$ excludes an instance from $\mathcal P$ | — | not done (the law `δ_2` is excluded from $\mathcal M$ instead: `dirac_two_not_mem_unitLaws`) |
 | (b) $\mathsf S_s,\mathsf G_s,\mathsf D_s$ are grids | `Grid.sequential`, `Grid.geometric`, `Grid.doublyExp` (by construction) | proved |

@@ -68,7 +68,7 @@ lemma example_instance :
         else ⟨1 / 2, by norm_num, by norm_num⟩)) true = 0 ∧
       0 < gap (bernoulliBandit (fun b : Bool ↦ if b then (⟨7 / 10, by norm_num, by norm_num⟩ : I)
         else ⟨1 / 2, by norm_num, by norm_num⟩)) false := by
-  refine ⟨bernoulliBandit_mem_unitBandits _ fun b ↦ ?_, gap_bernoulliBandit_bool_true
+  refine ⟨bernoulliBandit_mem_unitBandits_of_lt_one _ fun b ↦ ?_, gap_bernoulliBandit_bool_true
     example_means.1, ?_⟩
   · cases b <;> norm_num
   · rw [gap_bernoulliBandit_bool_false example_means.1]

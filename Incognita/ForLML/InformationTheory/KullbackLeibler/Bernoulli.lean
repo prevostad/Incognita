@@ -11,8 +11,8 @@ public import LMLExplore.InformationTheory.KullbackLeibler.Bernoulli
 
 ## Main statements
 
-* `Incognita.klDiv_bernoulli_integral_le`: `kl(E_μ Z, E_ν Z) ≤ KL(μ, ν)` for a measurable `Z` with
-  values in `[0, 1]`, from LMLExplore's `klBer_integral_le_klDiv` and Mathlib's `klDiv_map_le`.
+* `Incognita.klDiv_bernoulliMeasure_integral_le`: `kl(E_μ Z, E_ν Z) ≤ KL(μ, ν)` for a measurable `Z`
+  with values in `[0, 1]`, from LMLExplore's `klBer_integral_le_klDiv` and Mathlib's `klDiv_map_le`.
 -/
 
 @[expose] public section
@@ -24,7 +24,7 @@ namespace Incognita
 /-- **Data processing for the means** [INC-P003, cite:GMS19-Lemma1]: for probability measures
 `μ, ν` and a measurable `Z` with values in `[0, 1]`, `kl(E_μ Z, E_ν Z) ≤ KL(μ, ν)`, with
 `kl(x, y)` the divergence between the Bernoulli laws of parameters `x` and `y`. -/
-lemma klDiv_bernoulli_integral_le {X : Type*} [MeasurableSpace X] (μ ν : Measure X)
+lemma klDiv_bernoulliMeasure_integral_le {X : Type*} [MeasurableSpace X] (μ ν : Measure X)
     [IsProbabilityMeasure μ] [IsProbabilityMeasure ν] {Z : X → ℝ} (hZ : Measurable Z)
     (hZ01 : ∀ x, Z x ∈ Set.Icc 0 1) :
     klDiv (Ber((1 : ℝ), 0, Set.projIcc 0 1 zero_le_one (∫ x, Z x ∂μ)))
@@ -40,5 +40,8 @@ lemma klDiv_bernoulli_integral_le {X : Type*} [MeasurableSpace X] (μ ν : Measu
     exact (ae_map_iff hZ.aemeasurable measurableSet_Icc).mpr (ae_of_all _ hZ01)
   rw [h1, h2]
   exact (LMLExplore.klBer_integral_le_klDiv (hae μ) (hae ν)).trans (klDiv_map_le _ _ hZ)
+
+@[deprecated (since := "2026-11-19")]
+alias klDiv_bernoulli_integral_le := klDiv_bernoulliMeasure_integral_le
 
 end Incognita

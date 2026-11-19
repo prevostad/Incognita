@@ -164,7 +164,7 @@ lemma measure_exists_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ i, Measur
         {ω | z - 2 ≤ ∑ i ∈ range n, Real.log (1 - grid k * (Y i ω - r))} := by
     filter_upwards [ae_all_iff.2 hb] with ω hω
     rintro ⟨lam, hlam0, hlam1, hF⟩
-    obtain ⟨k, hk1, hkle, hk⟩ := exists_grid_le_sum_log hn (y := fun i ↦ Y i ω)
+    obtain ⟨k, hk1, hkle, hk⟩ := exists_dualGrid_le_sum_log hn (y := fun i ↦ Y i ω)
       (fun i _ ↦ hω i) hr0 hr (z' := z - 1) (by linarith) hlam0 hlam1 hF
     simp only [Set.mem_iUnion, Finset.mem_Icc, Set.mem_ofPred_eq]
     exact ⟨k, ⟨hk1, hkle⟩, by linarith⟩
@@ -173,7 +173,7 @@ lemma measure_exists_le_sum_log_le (hind : iIndepFun Y P) (hmeas : ∀ i, Measur
       P {ω | z - 2 ≤ ∑ i ∈ range n, Real.log (1 - grid k * (Y i ω - r))} ≤
         ENNReal.ofReal (exp (2 * s) * exp (-s * z)) := by
     intro k hk
-    obtain ⟨hg0, hg1⟩ := grid_mem hn hr (Finset.mem_Icc.mp hk).1
+    obtain ⟨hg0, hg1⟩ := dualGrid_mem hn hr (Finset.mem_Icc.mp hk).1
     rw [← ofReal_measureReal]
     refine ENNReal.ofReal_le_ofReal ((measureReal_le_sum_log_le hind hmeas hb hmean hg0 hg1
       hη hηr n (z - 2)).trans_eq ?_)
@@ -197,7 +197,7 @@ lemma measure_exists_le_sum_log_le' (hind : iIndepFun Y P) (hmeas : ∀ i, Measu
         exp (-(1 + 2 * η) * z)) := by
   refine (measure_exists_le_sum_log_le hind hmeas hb hmean hr0 hr hη hηr hn z).trans
     (ENNReal.ofReal_le_ofReal ?_)
-  have h := gridSize_le hn hr0 hr
+  have h := dualGridSize_le hn hr0 hr
   have he : 0 ≤ exp (2 * (1 + 2 * η)) * exp (-(1 + 2 * η) * z) := by positivity
   calc ((⌈2 * n * Real.log (n / (1 - r))⌉₊ + 1 : ℕ) : ℝ) * exp (2 * (1 + 2 * η)) *
         exp (-(1 + 2 * η) * z)
@@ -411,7 +411,7 @@ lemma measure_exists_le_sum_log_le_and_le_sum (hind : iIndepFun Y P)
         n' * q ≤ ∑ i ∈ range n', Y i ω} := by
     filter_upwards [ae_all_iff.2 hb] with ω hω
     rintro ⟨⟨lam, hlam0, hlam1, hF⟩, hS⟩
-    obtain ⟨k, hk1, hkle, hk⟩ := exists_grid_le_sum_log hn (y := fun i ↦ Y i ω)
+    obtain ⟨k, hk1, hkle, hk⟩ := exists_dualGrid_le_sum_log hn (y := fun i ↦ Y i ω)
       (fun i _ ↦ hω i) hr0 hr (z' := z - 1) (by linarith) hlam0 hlam1 hF
     simp only [Set.mem_iUnion, Finset.mem_Icc, Set.mem_ofPred_eq]
     exact ⟨k, ⟨hk1, hkle⟩, by linarith, hS⟩
@@ -420,7 +420,7 @@ lemma measure_exists_le_sum_log_le_and_le_sum (hind : iIndepFun Y P)
       P {ω | z - 2 ≤ ∑ i ∈ range n, Real.log (1 - grid k * (Y i ω - r)) ∧
         n' * q ≤ ∑ i ∈ range n', Y i ω} ≤ ENNReal.ofReal (exp (2 * s) * exp (-s * z)) := by
     intro k hk
-    obtain ⟨hg0, hg1⟩ := grid_mem hn hr (Finset.mem_Icc.mp hk).1
+    obtain ⟨hg0, hg1⟩ := dualGrid_mem hn hr (Finset.mem_Icc.mp hk).1
     exact hpoint _ hg0 hg1
   refine (Finset.sum_le_sum hterm).trans ?_
   rw [Finset.sum_const, Nat.card_Icc, nsmul_eq_mul, show kn + 1 - 1 = kn by omega,

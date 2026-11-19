@@ -16,11 +16,11 @@ up to `1` on the finite grid `λ^(k) = τ_n^k / (1 - r)`, `1 ≤ k ≤ k_n`, wit
 `k_n = ⌈2n log (n / (1 - r))⌉ + 1`. The deviation bounds of [INC-P000] built on this grid are
 variants of those of [CGMMS13, Section 5, Theorem 2], [HT15] and [GHMS22, Section 2.3].
 
-* `exists_grid_le_sum_log`: if `F(λ) ≥ z' ≥ 1` for some `λ ∈ [0, 1/(1-r))`, then
+* `exists_dualGrid_le_sum_log`: if `F(λ) ≥ z' ≥ 1` for some `λ ∈ [0, 1/(1-r))`, then
   `F(λ^(k)) ≥ z' - 1` for some `k ∈ [1, k_n]`; with `z' = z - 1`, this is Lemma `lem:grid` (if
   `n 𝒦_inf(Ĝ, r) ≥ z ≥ 2`, some `λ` has `F(λ) ≥ z - 1`).
-* `grid_mem`: `λ^(k) ∈ [0, 1/(1-r))` for `k ≥ 1`.
-* `gridSize_le`: `k_n ≤ (4 + 2 κ(r)) n²`, `κ(r) = log (1/(1-r))`.
+* `dualGrid_mem`: `λ^(k) ∈ [0, 1/(1-r))` for `k ≥ 1`.
+* `dualGridSize_le`: `k_n ≤ (4 + 2 κ(r)) n²`, `κ(r) = log (1/(1-r))`.
 -/
 
 @[expose] public section
@@ -31,7 +31,7 @@ namespace Incognita.BatchedBandits
 
 /-- [INC-P000, Lemma `lem:grid`, "moreover"] The grid points `λ^(k) = τ_n^k / (1 - r)`, `k ≥ 1`,
 are in `[0, 1/(1-r))`: `λ^(k) (1 - r) = τ_n^k < 1`. -/
-lemma grid_mem {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr : r < 1) {k : ℕ} (hk : 1 ≤ k) :
+lemma dualGrid_mem {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr : r < 1) {k : ℕ} (hk : 1 ≤ k) :
     0 ≤ (1 - 1 / (2 * n : ℝ)) ^ k / (1 - r) ∧
       (1 - 1 / (2 * n : ℝ)) ^ k / (1 - r) * (1 - r) < 1 := by
   have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
@@ -46,9 +46,11 @@ lemma grid_mem {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr : r < 1) {k : ℕ} (hk : 1
   rw [div_mul_cancel₀ _ h1r.ne']
   exact pow_lt_one₀ hτ0 hτ1 (by omega)
 
+@[deprecated (since := "2026-11-19")] alias grid_mem := dualGrid_mem
+
 /-- [INC-P000, Lemma `lem:grid`, the size of the grid] `k_n = ⌈2n log (n / (1 - r))⌉ + 1 ≤
 (4 + 2 κ(r)) n²` for `n ≥ 1` and `r ∈ [0, 1)`: `k_n ≤ 2n (log n + κ(r)) + 2` and `log n ≤ n`. -/
-lemma gridSize_le {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) :
+lemma dualGridSize_le {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) :
     ((⌈2 * n * Real.log (n / (1 - r))⌉₊ + 1 : ℕ) : ℝ) ≤
       (4 + 2 * Real.log (1 / (1 - r))) * n ^ 2 := by
   have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
@@ -67,11 +69,13 @@ lemma gridSize_le {n : ℕ} (hn : 1 ≤ n) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1
   nlinarith [mul_le_mul_of_nonneg_left hlogn (by positivity : (0 : ℝ) ≤ 2 * n),
     mul_le_mul_of_nonneg_right hnn hκ]
 
+@[deprecated (since := "2026-11-19")] alias gridSize_le := dualGridSize_le
+
 /-- [INC-P000, Lemma `lem:grid`] Let `n ≥ 1`, `y_i ∈ [0, 1]` for `i < n`, `r ∈ [0, 1)` and
 `F(λ) = ∑_{i < n} log (1 - λ (y_i - r))`. If `F(λ) ≥ z' ≥ 1` for some `λ ∈ [0, 1/(1-r))`, then
 `F(λ^(k)) ≥ z' - 1` for some `k` with `1 ≤ k ≤ ⌈2 n log (n / (1 - r))⌉ + 1`, where
 `λ^(k) = (1 - 1/(2n))^k / (1 - r)`. -/
-lemma exists_grid_le_sum_log {n : ℕ} (hn : 1 ≤ n) {y : ℕ → ℝ}
+lemma exists_dualGrid_le_sum_log {n : ℕ} (hn : 1 ≤ n) {y : ℕ → ℝ}
     (hy : ∀ i < n, y i ∈ Set.Icc (0 : ℝ) 1) {r : ℝ} (hr0 : 0 ≤ r) (hr : r < 1) {z' lam : ℝ}
     (hz' : 1 ≤ z') (hlam0 : 0 ≤ lam) (hlam1 : lam * (1 - r) < 1)
     (hF : z' ≤ ∑ i ∈ range n, Real.log (1 - lam * (y i - r))) :
@@ -191,5 +195,7 @@ lemma exists_grid_le_sum_log {n : ℕ} (hn : 1 ≤ n) {y : ℕ → ℝ}
   have : (n : ℝ) * Real.log τ ≤ n * Real.log ϖ := mul_le_mul_of_nonneg_left hlogϖ hn0.le
   simp only [hgrid] at hsum
   linarith
+
+@[deprecated (since := "2026-11-19")] alias exists_grid_le_sum_log := exists_dualGrid_le_sum_log
 
 end Incognita.BatchedBandits
