@@ -77,6 +77,109 @@ lemma HY.testKinf_le_ofReal_add {w₀ ρ K ε : ℝ} (hw₀ : 0 ≤ w₀) {n : �
   have hN0 : (N : ℝ≥0∞) ≠ 0 := by exact_mod_cast (show N ≠ 0 by omega)
   exact (ENNReal.mul_le_mul_iff_right hN0 (ENNReal.natCast_ne_top N)).mp hprod
 
+/-! ### The steps of the proof of Lemma `lem:goodA`
+
+Deterministic statements (no run, no probability): the two cases of Step 2, its conclusion (the
+rejection of `a`), and Steps 3–4 for any counts. `hyAlg_ae_le_mul_testKinf_and_pullCount_le_max`
+glues them along almost every run of HY. -/
+
+/-- [INC-P000, proof of Lemma `lem:goodA`, Step 2, case `a ∈ W_(ℓ+1)`] On a grid, for `ℓ ≥ 1`, a
+count with `U_(ℓ+1) ≤ 2N`, `D > 0`, (T2) `D L_ℓ^(β-1) ≥ 2 x₊³` and (R1) `x_ℓ, x_(ℓ+1) ≤ x₊`:
+`N D ≥ L_ℓ^β D / 2 ≥ x₊³ L_ℓ ≥ y_ℓ L_(ℓ+1)` (`U_(ℓ+1) ≥ L_ℓ^β`, `L_(ℓ+1) = x_(ℓ+1) L_ℓ`). -/
+private lemma ratio_sq_mul_logEnd_le_mul_of_netSize_le {K : ℕ} (g : Grid K) {β xp D : ℝ}
+    {ℓ N : ℕ} (hℓ : ℓ ≠ 0) (hD : 0 < D) (hW : g.netSize β (ℓ + 1) ≤ 2 * N)
+    (hT2 : 2 * xp ^ 3 ≤ D * g.logEnd ℓ ^ (β - 1)) (hx0 : g.ratio ℓ ≤ xp)
+    (hx1 : g.ratio (ℓ + 1) ≤ xp) :
+    g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1) ≤ N * D := by
+  have hLpos : 0 < g.logEnd ℓ := g.logEnd_pos (by omega)
+  have hU : g.logEnd ℓ ^ β ≤ g.netSize β (ℓ + 1) := by
+    rw [g.netSize_succ β (by omega : 1 ≤ ℓ)]
+    exact Nat.le_ceil _
+  have hW' : (g.netSize β (ℓ + 1) : ℝ) ≤ 2 * N := by exact_mod_cast hW
+  have hLb : g.logEnd ℓ ^ β = g.logEnd ℓ * g.logEnd ℓ ^ (β - 1) := by
+    rw [Real.rpow_sub_one hLpos.ne', mul_div_cancel₀ _ hLpos.ne']
+  have hL1 : g.logEnd (ℓ + 1) = g.ratio (ℓ + 1) * g.logEnd ℓ := g.logEnd_succ_eq (by omega)
+  have hx3 : g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) ≤ xp ^ 3 := by
+    have h0 : 0 ≤ g.ratio ℓ := zero_le_one.trans (g.one_le_ratio ℓ)
+    have h1 : 0 ≤ g.ratio (ℓ + 1) := zero_le_one.trans (g.one_le_ratio (ℓ + 1))
+    calc g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) ≤ xp ^ 2 * xp := by gcongr
+      _ = xp ^ 3 := by ring
+  calc g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)
+      = g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) * g.logEnd ℓ := by rw [hL1]; ring
+    _ ≤ xp ^ 3 * g.logEnd ℓ := by gcongr
+    _ ≤ (D * g.logEnd ℓ ^ (β - 1) / 2) * g.logEnd ℓ := by gcongr; linarith
+    _ = g.logEnd ℓ ^ β / 2 * D := by rw [hLb]; ring
+    _ ≤ N * D := by gcongr; linarith
+
+/-- [INC-P000, proof of Lemma `lem:goodA`, Step 2, case `a ∉ W_(ℓ+1)`] If
+`N K̂_ℓ(a) ≥ (1 + ω_ℓ) y_ℓ L_(ℓ+1)` ((S3) at `ℓ`), `K̂_ℓ(a) ≤ K_ε⁺` (outside `𝒰`) and the margin
+`K_ε⁺ ≤ (1 + ω_ℓ) D` holds, with `ω_ℓ ≥ 0` and `K_ε⁺ ≥ 0`, then `N D ≥ y_ℓ L_(ℓ+1)`. -/
+private lemma mul_le_mul_of_ofReal_le_mul {N : ℕ} {ω' y L Kε D : ℝ} {k : ℝ≥0∞} (hω : 0 ≤ ω')
+    (hK0 : 0 ≤ Kε) (hS3 : ENNReal.ofReal ((1 + ω') * y * L) ≤ (N : ℝ≥0∞) * k)
+    (hk : k ≤ ENNReal.ofReal Kε) (hmarg : Kε ≤ (1 + ω') * D) : y * L ≤ N * D := by
+  have h1 : ENNReal.ofReal ((1 + ω') * y * L) ≤ ENNReal.ofReal (N * Kε) := by
+    refine hS3.trans ?_
+    rw [ENNReal.ofReal_mul (Nat.cast_nonneg _), ENNReal.ofReal_natCast]
+    gcongr
+  have h2 : (1 + ω') * (y * L) ≤ (1 + ω') * (N * D) := by
+    calc (1 + ω') * (y * L) = (1 + ω') * y * L := by ring
+      _ ≤ N * Kε := (ENNReal.ofReal_le_ofReal_iff (by positivity)).mp h1
+      _ ≤ N * ((1 + ω') * D) := mul_le_mul_of_nonneg_left hmarg (Nat.cast_nonneg _)
+      _ = (1 + ω') * (N * D) := by ring
+  exact le_of_mul_le_mul_left h2 (by linarith)
+
+/-- [INC-P000, proof of Lemma `lem:goodA`, Step 2, conclusion] If `N D ≥ y L ≥ 0`, `K̂ ≥ D > 0` and
+`γ ≥ 0`, then `K̂ > 0` and `N K̂ ≥ (1 - γ) y L`: the arm is rejected against the threshold
+`h̄ = (1 - γ) y L`. -/
+private lemma pos_and_ofReal_le_mul_of_le_mul {N : ℕ} {γ' y L D : ℝ} {k : ℝ≥0∞} (hD : 0 < D)
+    (hγ : 0 ≤ γ') (hyL : 0 ≤ y * L) (hND : y * L ≤ N * D) (hk : ENNReal.ofReal D ≤ k) :
+    0 < k ∧ ENNReal.ofReal ((1 - γ') * y * L) ≤ (N : ℝ≥0∞) * k := by
+  refine ⟨(ENNReal.ofReal_pos.mpr hD).trans_le hk, ?_⟩
+  have h : (1 - γ') * y * L = y * L - γ' * (y * L) := by ring
+  calc ENNReal.ofReal ((1 - γ') * y * L) ≤ ENNReal.ofReal (N * D) :=
+        ENNReal.ofReal_le_ofReal (by rw [h]; linarith [mul_nonneg hγ hyL])
+    _ = (N : ℝ≥0∞) * ENNReal.ofReal D := by
+        rw [ENNReal.ofReal_mul (Nat.cast_nonneg _), ENNReal.ofReal_natCast]
+    _ ≤ (N : ℝ≥0∞) * k := by gcongr
+
+/-- [INC-P000, proof of Lemma `lem:goodA`, Steps 3–4] For `2 ≤ u ≤ t`, `K ≥ 1`, `ω ≥ 0`, `y ≥ 0`
+and `D > 0`: `1 + y log u / D ≤ K + (1 + ω) y log t / D`. -/
+private lemma one_add_mul_log_div_le {K ω' y D : ℝ} (hK : 1 ≤ K) (hω : 0 ≤ ω') (hy : 0 ≤ y)
+    (hD : 0 < D) {u t : ℕ} (hu : 2 ≤ u) (hut : u ≤ t) :
+    1 + y * Real.log u / D ≤ K + (1 + ω') * y * Real.log t / D := by
+  have hlogu : 0 ≤ Real.log u := Real.log_nonneg (by exact_mod_cast (show 1 ≤ u by omega))
+  have hlogut : Real.log u ≤ Real.log t :=
+    Real.log_le_log (by exact_mod_cast (show 0 < u by omega)) (by exact_mod_cast hut)
+  have h : y * Real.log u ≤ (1 + ω') * y * Real.log t := by
+    calc y * Real.log u ≤ y * Real.log t := by gcongr
+      _ ≤ (1 + ω') * (y * Real.log t) :=
+        le_mul_of_one_le_left (mul_nonneg hy (hlogu.trans hlogut)) (by linarith)
+      _ = _ := by ring
+  have := div_le_div_of_nonneg_right h hD.le
+  linarith
+
+/-- [INC-P000, proof of Lemma `lem:goodA`, Steps 3–4] Counts `N` on a batch `[s, T]` (`s ≥ 2`)
+whose IMED phase ends at `σ ∈ [s, T]`: if `N(t) ≤ max(N(s), 1 + y log t / D)` in the IMED phase
+(Lemma `lem:imedround`), `N(t) ≤ max(N(σ), n(t))` in the paced phase ((S1)), and the paced target
+is `n(t) ≤ K + (1 + ω) y log t / D` there (`K ≥ 1`, `ω ≥ 0`, `y ≥ 0`, `D > 0`), then
+`N(t) ≤ max(N(s), K + (1 + ω) y log t / D)` on the whole batch. -/
+private lemma le_max_of_imed_of_paced {N n : ℕ → ℕ} {s σ T : ℕ} {K ω' y D : ℝ} (hK : 1 ≤ K)
+    (hω : 0 ≤ ω') (hy : 0 ≤ y) (hD : 0 < D) (hs : 2 ≤ s) (hsσ : s ≤ σ) (hσT : σ ≤ T)
+    (himed : ∀ t, s ≤ t → t ≤ σ → t ≤ T → (N t : ℝ) ≤ max (N s : ℝ) (1 + y * Real.log t / D))
+    (hpaced : ∀ t, σ ≤ t → t ≤ T → N t ≤ max (N σ) (n t))
+    (htgt : ∀ t, σ ≤ t → t ≤ T → (n t : ℝ) ≤ K + (1 + ω') * y * Real.log t / D) :
+    ∀ t, s ≤ t → t ≤ T → (N t : ℝ) ≤ max (N s : ℝ) (K + (1 + ω') * y * Real.log t / D) := by
+  intro t hst htT
+  -- Step 3: the IMED phase
+  by_cases htσ : t ≤ σ
+  · exact (himed t hst htσ htT).trans
+      (max_le_max le_rfl (one_add_mul_log_div_le hK hω hy hD (hs.trans hst) le_rfl))
+  -- Step 4: the paced phase, from the count at `σ` or below the target
+  rcases le_max_iff.mp (hpaced t (by omega) htT) with h | h
+  · exact (Nat.cast_le.mpr h).trans ((himed σ hsσ le_rfl hσT).trans
+      (max_le_max le_rfl (one_add_mul_log_div_le hK hω hy hD (hs.trans hsσ) (by omega))))
+  · exact (Nat.cast_le.mpr h).trans ((htgt t (by omega) htT).trans (le_max_right _ _))
+
 /-- [INC-P000, Lemma `lem:goodA`, along a run] Along almost every run of HY (`w₀ ≥ 0`, on a grid
 for `K ≥ 2` arms) on an instance `ν` of `𝒫`, let the batches of Lean indices `ℓ` and `ℓ + 1`
 (`ℓ ≥ 1`) satisfy (R2) (the hypotheses of `hyAlg_ae_pullCount_le_max_target_and_netSize_le_sub`,
@@ -156,94 +259,36 @@ lemma hyAlg_ae_le_mul_testKinf_and_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 �
   have hfb₁ : ∀ i, (h₁ i).feedback ∈ Set.Icc (0 : ℝ) 1 := fun i ↦ hfb i
   set N₀ := pullCount IT.action a (g.t ℓ) ω with hN₀
   set N₁ := pullCount IT.action a (g.t (ℓ + 1)) ω with hN₁
-  have hN₀1 : 1 ≤ N₀ := hN1 ℓ (by omega) a
   have hN₁1 : 1 ≤ N₁ := hN1 (ℓ + 1) (by omega) a
   have hc₀ : HY.count h₀ (g.t ℓ) a = N₀ := HY.count_history le_rfl a
   have hc₁ : HY.count h₁ (g.t (ℓ + 1)) a = N₁ := HY.count_history le_rfl a
+  have hpos₁ : 0 < (HY.count h₁ (g.t (ℓ + 1)) a : ℝ) + w₀ := by
+    have : (1 : ℝ) ≤ N₁ := by exact_mod_cast hN₁1
+    rw [hc₁]
+    linarith
   obtain ⟨hθ0, hω0, hσ0, hσU0, hlong0⟩ := hR ℓ le_rfl (by omega)
   obtain ⟨hθ1, hω1, hσ1, hσU1, hlong1⟩ := hR (ℓ + 1) (by omega) le_rfl
-  have hωy0 : 0 ≤ (1 + ωs ℓ) * g.ratio ℓ ^ 2 := by positivity
   have hωy1 : 0 ≤ (1 + ωs (ℓ + 1)) * g.ratio (ℓ + 1) ^ 2 := by positivity
-  have hratio : ∀ j, 1 ≤ g.ratio j := g.one_le_ratio
-  have hLpos : 0 < g.logEnd ℓ := g.logEnd_pos (by omega)
-  have hL1pos : 0 < g.logEnd (ℓ + 1) := g.logEnd_pos (by omega)
-  -- the threshold of the test at `t_(ℓ+1)` is deterministic (Lemma `lem:thrA`)
-  have hthr := hThr (ℓ + 1) (by omega) hθ0 hω0 hσ0 hσU0 hlong0
-  simp only [Nat.add_sub_cancel] at hthr
-  set μ₀ := HY.pseudoMean w₀ h₀ (g.t ℓ) (HY.reference w₀ h₀ (g.t ℓ) (g.netSize β ℓ)) with hμ₀
-  set μ₁ := HY.pseudoMean w₀ h₁ (g.t (ℓ + 1))
-    (HY.reference w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1))) with hμ₁
-  have hμ₀0 : 0 ≤ μ₀ := HY.pseudoMean_nonneg hw₀ hfb₀ _
-  have hμ₁1 : μ₁ < 1 := by linarith
-  -- Step 1, last item: `K̂_(ℓ+1)(a) ≥ D`
-  have hpos₁ : 0 < (HY.count h₁ (g.t (ℓ + 1)) a : ℝ) + w₀ := by
-    rw [hc₁]
-    have : (1 : ℝ) ≤ N₁ := by exact_mod_cast hN₁1
-    linarith
+  -- Step 1, last item: `K̂_(ℓ+1)(a) ≥ 𝒦_inf(ν̂_a, μ̂_(ℓ+1)) ≥ 𝒦_inf(ν̂_a, m⋆ - 2ε) ≥ D`
   have hK₁ : ENNReal.ofReal D ≤ HY.testKinf w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1)) a := by
-    refine hLo.trans ((HY.pseudoKinf_mono le_rfl hms2 hμ₁lo hμ₁1 hfb₁).trans ?_)
-    exact HY.pseudoKinf_zero_le hw₀ hμ₁1 (hms2.trans hμ₁lo) hfb₁ (by rw [hc₁]; exact hN₁1)
-  -- Step 2: `N_a(t_(ℓ+1)) K̂_(ℓ+1)(a) ≥ y_ℓ L_(ℓ+1)`
+    refine hLo.trans ((HY.pseudoKinf_mono le_rfl hms2 hμ₁lo (by linarith) hfb₁).trans ?_)
+    exact HY.pseudoKinf_zero_le hw₀ (by linarith) (hms2.trans hμ₁lo) hfb₁
+      (by rw [hc₁]; exact hN₁1)
+  -- Step 2: `N_a(t_(ℓ+1)) D ≥ y_ℓ L_(ℓ+1)`, so `a` is rejected at `t_(ℓ+1)`
   have hND : g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1) ≤ N₁ * D := by
     by_cases hW : g.netSize β (ℓ + 1) ≤ 2 * N₁
     · -- `a` is well sampled: (T2) and (R1)
-      have hU : g.logEnd ℓ ^ β ≤ g.netSize β (ℓ + 1) := by
-        rw [g.netSize_succ β (by omega : 1 ≤ ℓ)]
-        exact Nat.le_ceil _
-      have hW' : (g.netSize β (ℓ + 1) : ℝ) ≤ 2 * N₁ := by exact_mod_cast hW
-      have hLb : g.logEnd ℓ ^ β = g.logEnd ℓ * g.logEnd ℓ ^ (β - 1) := by
-        rw [Real.rpow_sub_one hLpos.ne', mul_div_cancel₀ _ hLpos.ne']
-      have hL1 : g.logEnd (ℓ + 1) = g.ratio (ℓ + 1) * g.logEnd ℓ := g.logEnd_succ_eq (by omega)
-      have hx3 : g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) ≤ xp ^ 3 := by
-        have h0 : 0 ≤ g.ratio ℓ := (zero_le_one.trans (hratio ℓ))
-        have h1 : 0 ≤ g.ratio (ℓ + 1) := (zero_le_one.trans (hratio (ℓ + 1)))
-        calc g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) ≤ xp ^ 2 * xp := by gcongr
-          _ = xp ^ 3 := by ring
-      calc g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)
-          = g.ratio ℓ ^ 2 * g.ratio (ℓ + 1) * g.logEnd ℓ := by rw [hL1]; ring
-        _ ≤ xp ^ 3 * g.logEnd ℓ := by gcongr
-        _ ≤ (D * g.logEnd ℓ ^ (β - 1) / 2) * g.logEnd ℓ := by gcongr; linarith
-        _ = g.logEnd ℓ ^ β / 2 * D := by rw [hLb]; ring
-        _ ≤ N₁ * D := by gcongr; linarith
-    · -- `a` is not well sampled: (S3) at `ℓ` and `𝒰^c`
-      obtain ⟨-, -, hS3a⟩ := hS3 ℓ hℓ hθ0 hωy0 hσ0 hσU0 hlong0 _ _ _ rfl rfl (fun _ _ ↦ rfl) a
-        (by omega)
-      -- `K̂_ℓ(a) ≤ K⁺ + 2ε`
-      have hK₀ : HY.testKinf w₀ h₀ (g.t ℓ) (g.netSize β ℓ) a ≤ ENNReal.ofReal (Kp + 2 * ε) := by
-        rw [show Kp + 2 * ε = Kp + ε + ε by ring]
-        exact HY.testKinf_le_ofReal_add hw₀ hfb₀ (by rw [hc₀]; exact hN₀1) hμ₀hi hmε
-          (by linarith) hε.le hUp (by rw [hc₀]; exact hT3)
-      have h1 : ENNReal.ofReal ((1 + ωs ℓ) * g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) ≤
-          ENNReal.ofReal (N₁ * (Kp + 2 * ε)) := by
-        refine hS3a.trans ?_
-        rw [ENNReal.ofReal_mul (Nat.cast_nonneg _), ENNReal.ofReal_natCast]
-        gcongr
-      have h2 := (ENNReal.ofReal_le_ofReal_iff (by positivity)).mp h1
-      have h3 : (1 + ωs ℓ) * (g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) ≤ (1 + ωs ℓ) * (N₁ * D) := by
-        have : (N₁ : ℝ) * (Kp + 2 * ε) ≤ N₁ * ((1 + ωs ℓ) * D) :=
-          mul_le_mul_of_nonneg_left hmarg (Nat.cast_nonneg _)
-        nlinarith
-      exact le_of_mul_le_mul_left h3 (by linarith)
-  have hZ : ENNReal.ofReal (g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) ≤
-      (N₁ : ℝ≥0∞) * HY.testKinf w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1)) a := by
-    refine (ENNReal.ofReal_le_ofReal hND).trans ?_
-    rw [ENNReal.ofReal_mul (Nat.cast_nonneg _), ENNReal.ofReal_natCast]
-    gcongr
-  have hyL : 0 ≤ g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1) := by positivity
-  have hrejR : ENNReal.ofReal ((1 - γ (ℓ + 1)) * g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) ≤
-      (N₁ : ℝ≥0∞) * HY.testKinf w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1)) a := by
-    refine le_trans (ENNReal.ofReal_le_ofReal ?_) hZ
-    have : (1 - γ (ℓ + 1)) * g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1) =
-        (1 - γ (ℓ + 1)) * (g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) := by ring
-    rw [this]
-    nlinarith
-  have hDpos : (0 : ℝ≥0∞) < ENNReal.ofReal D := ENNReal.ofReal_pos.mpr hD
-  have hrej : 0 < HY.testKinf w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1)) a ∧
-      ENNReal.ofReal ((1 - γ (ℓ + 1)) * g.ratio ℓ ^ 2 * g.logEnd (ℓ + 1)) ≤
-        (N₁ : ℝ≥0∞) * HY.testKinf w₀ h₁ (g.t (ℓ + 1)) (g.netSize β (ℓ + 1)) a :=
-    ⟨hDpos.trans_le hK₁, hrejR⟩
-  refine ⟨⟨hrej, hK₁⟩, fun t ht1 ht2 ↦ ?_⟩
-  -- Step 3: the IMED phase
+      exact ratio_sq_mul_logEnd_le_mul_of_netSize_le g hℓ hD hW hT2 hx0 hx1
+    · -- `a` is not well sampled: (S3) at `ℓ`, and `K̂_ℓ(a) ≤ K⁺ + 2ε` by `𝒰^c` and (T3)
+      obtain ⟨-, -, hS3a⟩ := hS3 ℓ hℓ hθ0 (by positivity) hσ0 hσU0 hlong0 _ _ _ rfl rfl
+        (fun _ _ ↦ rfl) a (by omega)
+      have hK₀ := HY.testKinf_le_ofReal_add hw₀ hfb₀ (by rw [hc₀]; exact hN1 ℓ (by omega) a)
+        hμ₀hi hmε (by linarith) hε.le hUp (by rw [hc₀]; exact hT3)
+      exact mul_le_mul_of_ofReal_le_mul hω0 (by linarith) hS3a hK₀ (by linarith)
+  have hrej := pos_and_ofReal_le_mul_of_le_mul hD hγ
+    (mul_nonneg (sq_nonneg _) (g.logEnd_pos (by omega)).le) hND hK₁
+  refine ⟨⟨hrej, hK₁⟩, ?_⟩
+  -- Steps 3–4: the IMED phase (Lemma `lem:imedround`) and the paced phase ((S1) at `ℓ + 1`)
   have haL : a ≠ HY.leader w₀ h₁ (g.t (ℓ + 1)) := by
     intro he
     rw [← he] at hlead
@@ -252,36 +297,15 @@ lemma hyAlg_ae_le_mul_testKinf_and_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 �
     hK₁.trans (HY.testKinf_le_imedKinf hw₀ hfb₁ hpos₁)
   have htℓ1 : 2 ≤ g.t (ℓ + 1) := g.two_le_t (by omega)
   have hσ : g.t (ℓ + 1) ≤ g.imedEnd θ (ℓ + 1) := g.t_le_imedEnd hθ1
-  have hKpos : (0 : ℝ) < Fintype.card α := by exact_mod_cast Fintype.card_pos
-  have hK1 : (1 : ℝ) ≤ Fintype.card α := by exact_mod_cast Fintype.card_pos
-  have hbound : ∀ u : ℕ, 2 ≤ u → u ≤ t →
-      1 + g.ratio (ℓ + 1) ^ 2 * Real.log u / D ≤
-        Fintype.card α + (1 + ωs (ℓ + 1)) * g.ratio (ℓ + 1) ^ 2 * Real.log t / D := by
-    intro u hu2 hut
-    have hlogu : 0 ≤ Real.log u := Real.log_nonneg (by exact_mod_cast (show 1 ≤ u by omega))
-    have hlogut : Real.log u ≤ Real.log t :=
-      Real.log_le_log (by exact_mod_cast (show 0 < u by omega)) (by exact_mod_cast hut)
-    have : g.ratio (ℓ + 1) ^ 2 * Real.log u ≤
-        (1 + ωs (ℓ + 1)) * g.ratio (ℓ + 1) ^ 2 * Real.log t := by
-      have hy := sq_nonneg (g.ratio (ℓ + 1))
-      calc g.ratio (ℓ + 1) ^ 2 * Real.log u ≤ g.ratio (ℓ + 1) ^ 2 * Real.log t := by gcongr
-        _ ≤ (1 + ωs (ℓ + 1)) * (g.ratio (ℓ + 1) ^ 2 * Real.log t) :=
-          le_mul_of_one_le_left (by positivity) (by linarith)
-        _ = _ := by ring
-    have := div_le_div_of_nonneg_right this hD.le
-    linarith
   have hσT : g.imedEnd θ (ℓ + 1) ≤ g.t (ℓ + 1 + 1) := by
     have : 0 < Fintype.card α * (g.netSize β (ℓ + 1 + 1) + Fintype.card α) :=
       Nat.mul_pos (by omega) (by omega)
     omega
-  by_cases htσ : t ≤ g.imedEnd θ (ℓ + 1)
-  · have h3 := hImed (ℓ + 1) (by omega) a haL D hD hKt t ht1 htσ ht2
-    exact h3.trans (max_le_max le_rfl (hbound t (htℓ1.trans ht1) le_rfl))
-  -- Step 4: the paced phase
   obtain ⟨hS1, -, -⟩ := hS (ℓ + 1) (by omega) hθ1 hωy1 hσ1 hσU1 hlong1 _ _ _ rfl rfl
     (fun _ _ ↦ rfl)
-  have h4 := hS1 a haL t (by omega) ht2
-  have h3 := hImed (ℓ + 1) (by omega) a haL D hD hKt (g.imedEnd θ (ℓ + 1)) hσ le_rfl hσT
+  -- the rejection of `a`, with the threshold of the paced targets (Lemma `lem:thrA`)
+  have hthr := hThr (ℓ + 1) (by omega) hθ0 hω0 hσ0 hσU0 hlong0
+  simp only [Nat.add_sub_cancel] at hthr
   have hthr' : (1 - γ (ℓ + 1)) * g.ratio (ℓ + 1 - 1) ^ 2 * (if ℓ + 1 = 1 then g.logEnd 1 else
       HY.threshold w₀ (g.logEnd (ℓ + 1)) (g.ratio (ℓ + 1 - 1) ^ 2) h₁ (g.t (ℓ + 1))
         (g.t (ℓ + 1 - 1)) (g.netSize β (ℓ + 1)) (g.netSize β (ℓ + 1 - 1))) =
@@ -291,14 +315,11 @@ lemma hyAlg_ae_le_mul_testKinf_and_pullCount_le_max (w₀ β : ℝ) (hw₀ : 0 �
     rw [hthr]
   have hrej' := hrej
   rw [← hthr', ← hc₁] at hrej'
-  have htgt := HY.target_le_of_rejected (ω' := ωs (ℓ + 1)) (y := g.ratio (ℓ + 1) ^ 2)
-    (logt := Real.log t) (Unext := g.netSize β (ℓ + 1 + 1))
-    (mul_nonneg hωy1 (Real.log_nonneg (by exact_mod_cast (show 1 ≤ t by omega)))) hD hrej' hK₁
-  rcases le_max_iff.mp h4 with h5 | h5
-  · have h5' := (Nat.cast_le (α := ℝ)).mpr h5
-    exact h5'.trans (h3.trans (max_le_max le_rfl (hbound _ (htℓ1.trans hσ) (by omega))))
-  · have h5' := (Nat.cast_le (α := ℝ)).mpr h5
-    exact h5'.trans (htgt.trans (le_max_right _ _))
+  have hK1 : (1 : ℝ) ≤ Fintype.card α := by exact_mod_cast Fintype.card_pos
+  exact le_max_of_imed_of_paced (N := fun t ↦ pullCount IT.action a t ω) hK1 hω1 (sq_nonneg _)
+    hD htℓ1 hσ hσT (hImed (ℓ + 1) (by omega) a haL D hD hKt) (fun t h1 h2 ↦ hS1 a haL t h1 h2)
+    fun t h1 _ ↦ HY.target_le_of_rejected
+      (mul_nonneg hωy1 (Real.log_nonneg (by exact_mod_cast (show 1 ≤ t by omega)))) hD hrej' hK₁
 
 @[deprecated (since := "2026-11-19")]
 alias hyAlg_ae_goodA := hyAlg_ae_le_mul_testKinf_and_pullCount_le_max
