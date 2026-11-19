@@ -4,9 +4,11 @@ name: Site
 # every paper on main, compiled with its certification (scripts/certify.py leanok: the line under the
 # title and the green "LEAN APPROVED" boxes) in its two builds (the paper, and its blueprint with
 # every dependency printed), and scripts/site.py for the page: the three stages of
-# verification (refereeing, Lean, gardening) and the interest score of the scope referee. Rebuilt at
-# every change of the papers or of their verification on main, and every day (an interest score lives
-# in a pull request comment). Nothing is committed.
+# verification (refereeing, Lean, gardening) and the interest score of the scope referee; and
+# stats.html, the statistics of the loop (scripts/stats.py: pull requests, their reports, the raw
+# events of the nights on the issue "Night reports"; reading issues and pull requests is enough).
+# Rebuilt at every change of the papers or of their verification on main, and every day (an interest
+# score lives in a pull request comment, the events of a night in an issue comment). Nothing is committed.
 
 on:
   push:
@@ -18,6 +20,7 @@ on:
       - 'templates/paper/**'
       - 'scripts/certify.py'
       - 'scripts/site.py'
+      - 'scripts/stats.py'
       - '.github/workflows/site.yml'
   schedule:
     - cron: '17 6 * * *'

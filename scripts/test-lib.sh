@@ -660,5 +660,41 @@ ok "the parked targets are listed" '[ "$(parked_list)" = "prove_P001-x" ]'
 d=$(INCOGNITA_DEADLINE=02:45 deadline_epoch)
 ok "deadline in the next 24 h" '[ "$d" -gt "$(now)" ] && [ "$d" -le $(( $(now) + 86400 )) ]'
 
+# ---- the night report on GitHub, with the raw events of the night (owner request of 2026-11-19)
+gh() {  # fake gh: keeps the body of every comment posted, in order
+  local a k
+  for a in "$@"; do case "$a" in body=@*)
+    k=$(find "$t" -maxdepth 1 -name 'posted.*' | wc -l | tr -d ' ')
+    cp "${a#body=@}" "$t/posted.$k"; echo "https://github.com/owner/repo/issues/21#issuecomment-$k"; return 0 ;; esac
+  done
+  return 0
+}
+posted_n() { find "$t" -maxdepth 1 -name 'posted.*' | wc -l | tr -d ' '; }
+printf '%s\t%s\t%s\t%s\t%s\n' "2026-11-19 22:00:00" task prove P001-x 'ok pr #7 (turns 3, 60s, $1.5)' \
+  "2026-11-19 22:01:00" ask-owner prove P001-x "see <!-- here --> and @bob" \
+  "2026-11-19 22:02:00" ask-owner prove P001-x "a token sk-ant-oat01-ABCDEFGHIJKLMNOPQRSTUV leaked" > "$NIGHT_DIR/events.tsv"
+rm -f "$NIGHT_DIR/usage.tsv"
+usage_record ok "39 1795399200 74 1795111800 agent"
+ok "usage readings are recorded for the night (kind usage)" '[ "$(cut -f2- "$NIGHT_DIR/usage.tsv")" = "$(printf "usage\t-\t-\tok 39 1795399200 74 1795111800 agent")" ]'
+printf '# Night report test\n\nBody of the report.\n' > "$t/report.md"
+post_night_report 21 0123456789012345678901234567890123456789 "$t/report.md" 2>/dev/null; rc=$?
+p0=$(cat "$t/posted.0" 2>/dev/null)
+ok "report: one comment, the events appended to it" '[ "$rc" = 0 ] && [ "$(posted_n)" = 1 ] && [[ "$p0" == "<!-- incognita:night-report:0123456789012345678901234567890123456789 -->"*"Body of the report."*"<!-- incognita:events v1 night=test part=1/1 lines=3 -->"* ]]'
+ok "report: the events in a collapsed fenced block" '[[ "$p0" == *"<details><summary>Raw events of the night of test"*$'"'"'\n~~~tsv\n'"'"'*$'"'"'\n2026-11-19 22:00:00\ttask\tprove\tP001-x\tok pr #7'"'"'*$'"'"'\n~~~\n\n</details>'"'"'* ]]'
+ok "report: a line that looks like a secret is left out" '[[ "$p0" != *sk-ant* && "$p0" == *"1 line left out"* ]]'
+ok "report: event texts cleaned like agent text (<!--, @)" '[[ "$p0" == *"&lt;!-- here"* && "$p0" == *$'"'"'@\xe2\x80\x8bbob'"'"'* ]]'
+ok "report: stats.py reads the events back (usage reading included)" '[ "$(python3 -I "$here/stats.py" events-read "$t/posted.0" | cut -f3 | sort | tr "\n" " ")" = "ask-owner task usage " ]'
+rm -f "$t"/posted.*
+awk 'BEGIN { for (i = 0; i < 400; i++) { printf "2026-11-19 %02d:%02d:%02d\ttask\treview-pr\t%d\tok verdict approve ", int(i / 60) % 24, i % 60, i % 60, i; for (j = 0; j < 30; j++) printf "padding%02d ", j; printf "(turns 1, 10s, $0.1)\n" } }' > "$NIGHT_DIR/events.tsv"
+post_night_report 21 0123456789012345678901234567890123456789 "$t/report.md" 2>/dev/null; rc=$?
+ok "a long night: the report alone, then the events in comments of their own" '[ "$rc" = 0 ] && [ "$(posted_n)" -ge 3 ] && ! grep -q "incognita:events" "$t/posted.0" && head -n 1 "$t/posted.1" | grep -q "^<!-- incognita:night-events:"'
+ok "a long night: every comment within the limit of GitHub" '[ -z "$(find "$t" -maxdepth 1 -name "posted.*" -size +65000c)" ]'
+ok "a long night: every event read back, once" '[ "$(python3 -I "$here/stats.py" events-read "$t"/posted.* | sort -u | wc -l | tr -d " ")" = 401 ]'
+rm -f "$t"/posted.*
+unset -f gh
+
+# ---- scripts/stats.py on fixtures (no network)
+ok "stats.py: the fixture test (scripts/test-stats.py)" 'python3 -I "$here/test-stats.py" > "$t/stats.log" 2>&1 || { cat "$t/stats.log"; false; }'
+
 echo "$fails failure(s)"
 [ "$fails" = 0 ]
