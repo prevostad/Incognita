@@ -121,6 +121,36 @@ lean_row() {
   fi
   case "${LEAN[$k]}" in 1) return 0 ;; 0) return 1 ;; *) return 2 ;; esac
 }
+# carry_rubrics <pr> <H>: proportionate rubric reviews (owner, 2026-11-19). On a new head of a Lean
+# pull request no rubric has judged yet, the approvals of the previous head the rubrics judged (h0,
+# the head of their latest report) are carried over when the change h0..H is "none" or "comments"
+# (change_class), except for the rubrics of rubric_recheck; a "code" change is judged by all. Once
+# per head (mark). 0 if a status was carried (STS is refreshed for H).
+carry_rubrics() {
+  local n=$1 H=$2 h0 mb0 mb cls sts0 r carried=""
+  [ "$INCOGNITA_RUBRIC_CARRY" = proportionate ] || return 1
+  mark_has "carried $H" && return 1
+  is_dry || mark_set "carried $H"
+  h0=$(trusted_comments "$n" | jq -r --arg h "$H" \
+         '[.[] | select((.kind | test("^rubric-[a-z-]+$")) and .sha != $h)] | last | .sha // empty') || return 1
+  [ -n "$h0" ] || return 1
+  { repo_git cat-file -e "$h0^{commit}" 2>/dev/null || repo_git fetch -q origin "$h0" 2>/dev/null; } || return 1
+  mb0=$(repo_git merge-base origin/main "$h0") && mb=$(repo_git merge-base origin/main "$H") || return 1
+  cls=$(change_class "$h0" "$H" "$mb0" "$mb") || return 1
+  case "$cls" in none|comments) ;; *) return 1 ;; esac
+  sts0=$(statuses_of "$h0") || return 1
+  for r in $(rubrics_enabled); do
+    in_list "$r" "$(rubric_recheck "$cls")" && continue
+    [ "$(verdict_in "$sts0" "$(rubric_context "$r")" "rubric-$r")" = approve ] || continue
+    set_status "$H" "$(rubric_context "$r")" success \
+      "role=rubric-$r verdict=approve pr=$n carried-from=${h0:0:12} change=$cls" && carried="$carried $r"
+  done
+  [ -n "$carried" ] || return 1
+  log "#$n: rubric approvals carried from ${h0:0:12} to ${H:0:12} (change: $cls):$carried"
+  record_event carry - "$n" "change $cls, carried$carried"
+  unset "STS[$H]"
+  return 0
+}
 is_busy() {  # role target (target "*" = any)
   if [ "$2" = "*" ]; then grep -q "^$1 " "$BUSY"; else grep -qxF "$1 $2" "$BUSY"; fi
 }
@@ -742,7 +772,14 @@ choose_task() {
     lean=0 rb=approve
     if [ "$kind" = generic ] || [ "$kind" = statements ]; then
       lr=0; lean_row "$n" "$H" "$role" || lr=$?
-      case "$lr" in 0) lean=1; rb=$(rubrics_state "$STS_CUR") ;; 1) ;; *) continue ;; esac
+      case "$lr" in
+        0) lean=1; rb=$(rubrics_state "$STS_CUR")
+           # A head no rubric judged yet: approvals of the previous head carried over when proportionate.
+           if [ "$rb" = "next $(rubrics_enabled | head -1)" ] && ! rubric_verdicts "$STS_CUR" | grep -qv ' none$'                && carry_rubrics "$n" "$H"; then
+             load_sts "$H" || continue
+             rb=$(rubrics_state "$STS_CUR")
+           fi ;;
+        1) ;; *) continue ;; esac
     fi
     if [ "$kind" = paper ]; then
       sc=$(verdict_in "$STS_CUR" "Referee scope" referee-scope)

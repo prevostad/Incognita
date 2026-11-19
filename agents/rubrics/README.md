@@ -56,8 +56,19 @@ on the first line, no JSON, no marker).
 - **Statuses**: each rubric posts its report as a comment with the loop's trusted marker (kind
   `rubric-<name>`) and sets the status `Incognita rubric/<name>` on the head (`role=rubric-<name>
   verdict=<v> pr=<n>`; success only for `approve`). A verdict counts only on the head it was given
-  on: after a fix commit every rubric runs again. A mechanical rebase that leaves the pull request's
-  change identical, blob for blob, copies them, as it copies the Incognita review.
+  on: after a fix commit the rubrics run again, in proportion to the change (owner, 2026-11-19;
+  `INCOGNITA_RUBRIC_CARRY`, default `proportionate`, `off` to rerun all). The loop compares the new
+  head with the last head the rubrics judged, on the pull request's own `.lean` files, comments
+  removed (`change_class` in `scripts/lib.sh`):
+  - **code changed**: every rubric judges the new head;
+  - **only comments** (docstrings, `--` and `/- -/` blocks): `documentation`, `attribution` and
+    `quality-pass` judge it again; the others keep an approval they gave (status
+    `... carried-from=<h0> change=comments`);
+  - **no `.lean` file changed** (paper, blueprint, notes): only `quality-pass` judges it again.
+  A verdict other than `approve` is never carried: that rubric always judges the new head. The
+  Incognita review (review-pr, review-statements) always judges it. A mechanical rebase that leaves
+  the pull request's change identical, blob for blob, copies every status, as it copies the
+  Incognita review.
 - **block**: the round stops on that head (the rubrics after it do not run). As in Tau Ceti, the
   author answers it: one `fix-pr` round, told which rubric blocked (it fixes the problem within the
   pull request's purpose, or contests the finding with its reasons, or asks the owner). A block on

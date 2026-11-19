@@ -443,6 +443,29 @@ status "$h" "Incognita review" review-pr approve success
 rubrics "$h" approve success correctness
 rubrics "$h" block failure reuse
 pass "a block stops the round: a fix round answers it" "== task: fix-pr 83"
+# Proportionate reviews (owner, 2026-11-19): a fix round that changed only comments keeps the
+# approvals of the previous head, except documentation, attribution and the quality pass.
+LEANDOC='mkdir -p Incognita/P001; printf "/-- T. -/\ntheorem t : True := trivial\n" > Incognita/P001/T.lean'
+LEANCODE='mkdir -p Incognita/P001; printf "theorem t : True := by trivial\n" > Incognita/P001/T.lean'
+world "Reviewed by owner: 2026-11-14"
+h0=$(prx 88 prove P001-x "$LEAN")
+jq 'map(select(.number != 88))' "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
+# shellcheck disable=SC2086
+rubrics "$h0" approve success $RUBRICS
+comment 89 owner "<!-- incognita:rubric-quality-pass:$h0 -->" "Verdict: approve" "2026-11-14T09:00:00Z"
+h=$(prx 89 prove P001-x "$LEANDOC")
+pass "comments only: the approval of correctness is carried" "would set status Incognita rubric/correctness=success on ${h:0:12}"
+nopass "comments only: documentation judges again" "would set status Incognita rubric/documentation=success"
+nopass "comments only: the quality pass judges again" "would set status Incognita rubric/quality-pass=success"
+INCOGNITA_RUBRIC_CARRY=off nopass "INCOGNITA_RUBRIC_CARRY=off: nothing carried" "would set status Incognita rubric/correctness"
+world "Reviewed by owner: 2026-11-14"
+h0=$(prx 88 prove P001-x "$LEAN")
+jq 'map(select(.number != 88))' "$FAKE/prs.json" > "$FAKE/p.tmp" && mv "$FAKE/p.tmp" "$FAKE/prs.json"
+# shellcheck disable=SC2086
+rubrics "$h0" approve success $RUBRICS
+comment 89 owner "<!-- incognita:rubric-quality-pass:$h0 -->" "Verdict: approve" "2026-11-14T09:00:00Z"
+h=$(prx 89 prove P001-x "$LEANCODE")
+nopass "a code change: no approval carried" "would set status Incognita rubric/"
 pass "the fixer is told which rubric blocked" 'The rubric `reuse` (Tau Ceti'"'"'s review) blocked the head'
 nopass "no rubric runs after a block" "== task: rubric-scope 83"
 comment 83 owner "<!-- incognita:rubric-reuse:$old -->" "Verdict: block" "2026-11-14T09:00:00Z"
