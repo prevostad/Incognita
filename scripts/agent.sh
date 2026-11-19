@@ -688,17 +688,20 @@ rc=$(cat "$tmp/rc" 2>/dev/null || echo 1)
 elapsed=$(( $(now) - t0 ))
 counter_inc tasks-total >/dev/null
 
+# The model of the session in its task event, for scripts/stats.py (owner request of 2026-11-19):
+# "(turns N, Ss, $C, model M)", one word whatever INCOGNITA_MODEL_* holds.
+model_tag=${model//[^A-Za-z0-9._:-]/}; model_tag=${model_tag:-unknown}
 if jq -e 'type == "object"' "$tmp/result.json" >/dev/null 2>&1; then
   is_error=$(jq -r '.is_error // false' "$tmp/result.json")
   subtype=$(jq -r '.subtype // "unknown"' "$tmp/result.json")
   jq -r '.result // ""' "$tmp/result.json" > "$tmp/result.txt"
-  session_info="(turns $(jq -r '.num_turns // "?"' "$tmp/result.json"), ${elapsed}s, \$$(jq -r '.total_cost_usd // "?"' "$tmp/result.json"))"
+  session_info="(turns $(jq -r '.num_turns // "?"' "$tmp/result.json"), ${elapsed}s, \$$(jq -r '.total_cost_usd // "?"' "$tmp/result.json"), model $model_tag)"
 else
   is_error=true subtype=no-json
   [ "$elapsed" -ge $(( timeout_s - 30 )) ] && subtype=timeout
   [ -e "$tmp/cap-stop" ] && subtype=weekly-cap
   : > "$tmp/result.txt"
-  session_info="(exit $rc, ${elapsed}s)"
+  session_info="(exit $rc, ${elapsed}s, model $model_tag)"
 fi
 log "session ended: is_error=$is_error subtype=$subtype $session_info"
 errtext=$( { head -c 4000 "$tmp/result.txt"; tail -c 4000 "$tmp/session.err"; } 2>/dev/null)

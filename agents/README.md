@@ -370,7 +370,33 @@ the locks and proof markers on `main` with their history, `certify.py` (levels),
   bills by weekly usage) by role, per night (with merges, waits, idle time, quota cuts, the weekly
   usage at the start and the end of its runs from the night reports, and the points used), per paper
   and per Lean pull request (writing, reviews, rubrics); quota cuts (sessions cut, rate limits, stops
-  at the weekly cap, waits by reason).
+  at the weekly cap, waits by reason);
+- cost by stage (AGENTS.md 5.5; owner, 2026-11-19): writing (`write-paper`), refereeing (the referees,
+  `revise` and its repairs), acceptance (the loop's merges, no session), frozen statements
+  (`formalize-statements`, `review-statements`), Lean proofs (`prove`), gardening, bibliography,
+  other; a `review-pr`, a rubric or a `fix-pr` counts in the stage of the pull request it works on.
+  Per paper, the cost of its sessions until its acceptance (the merge of the pull request that added
+  it) and until its Lean verification (level 2: when its last lock or proof marker reached `main`);
+- contributors: humans by GitHub login (their merged pull requests, the papers of `owner/*`
+  branches), the `human_authors` of META.toml, agents by role (pull requests opened and merged,
+  sessions), and models: sessions, hours and dollars by model. Since 2026-11-19 each task event
+  records the model of its session (`(turns N, Ss, $C, model M)`, `(exit R, Ss, model M)`, written
+  by `scripts/agent.sh`); older lines are `unrecorded`, except those of the backfilled nights, which
+  take it from the night's log (`== session: <role> <target>, model <m>, …`;
+  `stats.py events-block --log`);
+- the interest score of each paper (the scope referee's /10 on the pull request that added it, its
+  last report that gives one; the same reader as the site's cards) and their distribution;
+- the Lean library over time (the last commit of each day on `main`): files, lines, theorems and
+  lemmas, definitions and deprecated aliases under `Incognita/` and `Statements/`; the lengths of the
+  proofs now (lines from a theorem to the next top-level line);
+- loop efficiency: the hours from opening to merge and the duration of the check "Build and check"
+  (its last run on the head, GitHub check runs) by kind of pull request (paper, statements, proofs,
+  literature, garden, scripted, human...); failed and skipped tasks by role and reason, parked
+  targets, loop restarts;
+- literature: the references of `literature/bibliography.json`, the source notes, the marks
+  "(to be checked)" in the Lean files and the papers; candidate directions per roadmap
+  (`directions.md`): total, open, taken (an open paper pull request of the roadmap names the entry),
+  done (a paper on `main` lists it), dropped.
 
 `python3 scripts/stats.py --json -` prints them (`GH_TOKEN` set; without a token, or when GitHub
 cannot be read, what needs it is marked unavailable and the rest is still computed). The site

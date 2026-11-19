@@ -5,6 +5,8 @@
 # written there), formats it with scripts/stats.py events-block (the format night.sh posts), and posts
 # it as a comment on the issue "Night reports", headed "Backfill of the night of <night>", in as many
 # comments as GitHub's size limit needs. scripts/stats.py then reads it like the blocks of the loop.
+# The model of each session, which these task lines do not carry, is taken from the night's log
+# (~/.incognita/logs/<night>.log, read the same way: `== session: <role> <target>, model <m>, …`).
 #
 #   bash scripts/stats-backfill.sh --dry-run                  show what would be posted, post nothing
 #   bash scripts/stats-backfill.sh                            the nights 2026-11-17, 2026-11-18, 2026-11-19
@@ -77,7 +79,10 @@ for n in "${nights[@]}"; do
   if ! ssh -o BatchMode=yes "$host" "cat ~/.incognita/state/nights/$n/events.tsv" > "$t/$n.tsv" 2>"$t/ssh.err"; then
     echo "$n: no events on $host ($(head -c 200 "$t/ssh.err" | tr '\n' ' '))"; continue
   fi
-  k=$("$PY" -I "$here/stats.py" events-block --night "$n" --out "$t/$n" "$t/$n.tsv") || { echo "$n: could not be formatted" >&2; exit 1; }
+  # The night's log, for the model of each session (task lines of these nights do not carry it yet).
+  logs=()
+  ssh -o BatchMode=yes "$host" "cat ~/.incognita/logs/$n.log" > "$t/$n.log" 2>/dev/null && logs=(--log "$t/$n.log")
+  k=$("$PY" -I "$here/stats.py" events-block --night "$n" --out "$t/$n" "${logs[@]}" "$t/$n.tsv") || { echo "$n: could not be formatted" >&2; exit 1; }
   [ "$k" -gt 0 ] 2>/dev/null || { echo "$n: no event line"; continue; }
   for i in $(seq 1 "$k"); do
     { printf '# Backfill of the night of %s%s\n\n' "$n" "$( [ "$k" -gt 1 ] && echo " (part $i of $k)")"

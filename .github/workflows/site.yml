@@ -36,6 +36,7 @@ permissions:
   id-token: write
   pull-requests: read
   issues: read
+  checks: read   # scripts/stats.py: the duration of "Build and check" per pull request
 
 jobs:
   build:

@@ -33,11 +33,17 @@ Usage:
         trailers, errata: from the repository) are still computed. --fixtures DIR reads GitHub from
         files instead (tests, no network): pulls.json, issues.json, comments/<n>.json, in the format
         of the REST API.
-    stats.py events-block --night NIGHT --out DIR [--budget BYTES] FILE...
+    stats.py events-block --night NIGHT --out DIR [--budget BYTES] [--log FILE] FILE...
         The events files (a missing one is skipped) as blocks DIR/part-<k>.md of at most BYTES
         bytes each (default 60000); prints the number of parts (0: no event). Lines that are not
         events, or that look like a secret, are left out; the others are cleaned as the loop cleans
-        what it posts (control and bidi characters, `<!--`, `@`).
+        what it posts (control and bidi characters, `<!--`, `@`). --log: the night's log, which gives
+        their model to task lines written before it was recorded (scripts/stats-backfill.sh).
+
+The metrics (agents/README.md, "Statistics"): production, quality, formalisation, cost (by role,
+night, paper, Lean pull request, stage, model; to acceptance and to Lean verification),
+contributors, interest scores, the Lean library over time, loop efficiency (open to merge, duration
+of "Build and check"), literature and candidate directions. Extended on 2026-11-19 (owner).
     stats.py events-read FILE...
         The events stored in comment bodies (Markdown files), one TSV line each, the night first.
 
@@ -54,12 +60,14 @@ import re
 import statistics
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 
-REPO = os.environ.get("GITHUB_REPOSITORY", "prevostad/Incognita")
+REPO =os.environ.get("GITHUB_REPOSITORY", "prevostad/Incognita")
 OWNER = os.environ.get("INCOGNITA_OWNER", REPO.split("/")[0])
 TOKEN = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
 REPORT_TITLE = "Night reports"
+CI_CHECK = "Build and check"   # the check of the workflow CI (CI_JQ in scripts/lib.sh)
 
 # ---------------------------------------------------------------- the events blocks
 BLOCK_VERSION = 1
@@ -118,11 +126,44 @@ def block_text(night, part, total, lines, dropped=0):
                "".join(x + "\n" for x in lines)))
 
 
-def events_block(night, paths, budget=60000):
+LOG_SESSION = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) == session: (\S+) (\S+), model ([A-Za-z0-9._:\[\]-]+),")
+
+
+def with_models(lines, logs):
+    """Task lines written before the model was recorded (2026-11-19) get it from the night's log:
+    the model of the last line `== session: <role> <target>, model <m>, …` of the same role and target
+    before the task ended. Used by scripts/stats-backfill.sh (--log)."""
+    starts = []
+    for path in logs or []:
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    m = LOG_SESSION.match(line)
+                    if m:
+                        starts.append(m.groups())
+        except (FileNotFoundError, IsADirectoryError, NotADirectoryError):
+            continue
+    if not starts:
+        return lines
+    out = []
+    for line in lines:
+        c = line.split("\t")
+        m = SESSION_RE.search(c[4]) or EXIT_RE.search(c[4])
+        if c[1] == "task" and m and m.group(m.re.groups) is None:
+            ms = [s[3] for s in starts if s[1] == c[2] and s[2] == c[3] and s[0] <= c[0]]
+            if ms and re.match(r"^[A-Za-z0-9._:\[\]-]+$", ms[-1]):
+                c[4] = re.sub(r"\)\s*$", ", model %s)" % ms[-1], c[4])
+                line = "\t".join(c)
+        out.append(line)
+    return out
+
+
+def events_block(night, paths, budget=60000, logs=None):
     """The parts (Markdown texts) of the events of a night, each at most `budget` bytes."""
     if not NIGHT_RE.match(night):
         raise ValueError("bad night name: %r" % night)
     lines, dropped = event_lines(paths)
+    lines = with_models(lines, logs)
     if not lines:
         return []
     room = budget - len(block_text(night, 99, 99, [], 999).encode())
@@ -203,6 +244,10 @@ class Api:
     def comments(self, n):
         return self.pages("repos/%s/issues/%d/comments" % (REPO, n))
 
+    def check_runs(self, sha):
+        return self.get("repos/%s/commits/%s/check-runs?check_name=%s&per_page=100"
+                        % (REPO, sha, urllib.parse.quote(CI_CHECK))).get("check_runs", [])
+
 
 class Fixtures:
     """The same answers from files: pulls.json, issues.json, comments/<n>.json (tests)."""
@@ -228,6 +273,9 @@ class Fixtures:
 
     def comments(self, n):
         return self.load(os.path.join("comments", "%d.json" % n), [])
+
+    def check_runs(self, sha):
+        return self.load(os.path.join("checks", "%s.json" % sha), {}).get("check_runs", [])
 
 
 def source_from(fixtures):
@@ -289,7 +337,11 @@ def pr_record(p):
     r = {"number": p.get("number"), "title": p.get("title") or "", "role": m.group(1) if m else None,
          "target": m.group(2) if m else None, "ref": ref, "state": state, "labels": labels,
          "created": p.get("created_at") or "", "merged": p.get("merged_at") or "",
-         "closed": p.get("closed_at") or "", "by": "owner" if ref.startswith("owner/") else "agents"}
+         "closed": p.get("closed_at") or "", "by": "owner" if ref.startswith("owner/") else "agents",
+         "login": (p.get("user") or {}).get("login") or "?", "sha": head.get("sha") or "",
+         "body": body}
+    mm = re.search(r"Model: `([^`]*)`", body.split("\n", 1)[0])
+    r["model"] = mm.group(1) if mm else None
     r["agents"] = bool(m) and (hr is None or br is None or hr == br) \
         and (ref.startswith("agent/") or ref.startswith("owner/")) and (p.get("user") or {}).get("login") == OWNER
     pm = PAPER_DIR.match(r["target"] or "")
@@ -298,13 +350,18 @@ def pr_record(p):
     return r
 
 
-def days(a, b):
+def seconds_between(a, b):
     try:
         t0 = datetime.datetime.fromisoformat(a.replace("Z", "+00:00"))
         t1 = datetime.datetime.fromisoformat(b.replace("Z", "+00:00"))
-    except ValueError:
+    except (ValueError, AttributeError):
         return None
-    return round((t1 - t0).total_seconds() / 86400, 1)
+    return (t1 - t0).total_seconds()
+
+
+def days(a, b):
+    s = seconds_between(a, b)
+    return None if s is None else round(s / 86400, 1)
 
 
 def median(xs):
@@ -325,6 +382,7 @@ def production(prs, tc):
         cs = tc.get(r["number"], [])
         papers.append({"pr": r["number"], "paper": r["paper"], "by": r["by"], "state": r["state"],
                        "submitted": r["created"][:10], "accepted": r["merged"][:10] or None,
+                       "accepted_at": r["merged"] or None,
                        "days_to_accept": days(r["created"], r["merged"]) if r["merged"] else None,
                        "revision_rounds": sum(1 for c in cs if c["kind"] == "revise"),
                        "repairs": sum(1 for c in cs if c["kind"] in ("revise-fix", "revise-fix-nochange")),
@@ -392,6 +450,141 @@ def quality(prs, tc):
             "fix_rounds_mean": mean([x["fix_rounds"] for x in lean if x["state"] == "merged"])}
 
 
+INTEREST_RE = re.compile(r"^\|\s*Interest\s*\|\s*(\d+)\s*/\s*(10|5)\b[^|]*\|\s*([^|\n]*)", re.M)
+
+
+def interest_from(tcs):
+    """(score out of 10, one-line reason, report URL) of the trusted comments of the pull request
+    that added a paper: the score of the last scope report that gives one (a score out of 5, of
+    older reports, is doubled), the reason of the last substantive one; Nones without a score.
+    Also used by scripts/site.py."""
+    score = url = reason = None
+    for c in reversed(tcs or []):
+        if c["kind"] != "referee-scope":
+            continue
+        m = INTEREST_RE.search(c["body"])
+        if not m:
+            continue
+        if score is None:
+            score = int(m.group(1)) * (2 if m.group(2) == "5" else 1)
+            url = c.get("url")
+        r = m.group(3).strip()
+        if len(r) > 30 and not re.match(r"(?i)(unchanged|same|as before)", r):
+            reason = r
+            break
+    return score, reason or "", url
+
+
+def interest(prs, tc):
+    rows = []
+    for r in prs:
+        if r["role"] == "write-paper" and r["paper"]:
+            s, _reason, url = interest_from(tc.get(r["number"], []))
+            rows.append({"paper": r["paper"], "pr": r["number"], "state": r["state"], "score": s, "url": url})
+    scores = [x["score"] for x in rows if x["score"] is not None]
+    return {"papers": sorted(rows, key=lambda x: x["paper"]), "median": median(scores), "mean": mean(scores),
+            "distribution": {str(k): scores.count(k) for k in range(1, 11)}}
+
+
+PR_KINDS = {"write-paper": "paper", "revise": "paper", "formalize-statements": "statements", "prove": "proofs",
+            "bibliographer": "literature", "garden": "garden", "loop": "scripted", "propose-roadmap": "roadmap"}
+
+
+def pr_kind(r):
+    return PR_KINDS.get(r["role"], "other") if r["agents"] else "human"
+
+
+def efficiency(all_prs, src, tasks, events, warnings):
+    """Open to merge and the duration of the check "Build and check" (on the last head) per kind of
+    pull request; failed, skipped and parked tasks."""
+    merge_h = collections.defaultdict(list)
+    for r in all_prs:
+        if r["merged"]:
+            s = seconds_between(r["created"], r["merged"])
+            if s is not None:
+                merge_h[pr_kind(r)].append(round(s / 3600, 1))
+    ci = collections.defaultdict(list)
+    fails = 0
+    for r in all_prs:
+        if not r["sha"] or src is None or fails >= 5:
+            continue
+        try:
+            runs = [x for x in src.check_runs(r["sha"]) if x.get("name") == CI_CHECK
+                    and x.get("started_at") and x.get("completed_at")]
+            fails = 0
+        except Unavailable as e:
+            fails += 1
+            if fails == 5:
+                warnings.append("check runs not read any more after 5 failures (%s)" % e)
+            continue
+        if runs:
+            x = max(runs, key=lambda y: y["completed_at"])
+            s = seconds_between(x["started_at"], x["completed_at"])
+            if s is not None:
+                ci[pr_kind(r)].append(round(s / 60, 1))
+
+    def summary(xs):
+        return {"count": len(xs), "median": median(xs), "mean": mean(xs), "max": max(xs) if xs else None}
+    kinds = sorted(set(merge_h) | set(ci))
+    tk = tasks or []
+    return {"open_to_merge_hours": {k: summary(merge_h.get(k, [])) for k in kinds},
+            "ci_minutes": {k: summary(ci.get(k, [])) for k in kinds},
+            "ci_minutes_all": summary([v for xs in ci.values() for v in xs]),
+            "tasks": None if tasks is None else {
+                "total": len(tk), "fail": sum(1 for t in tk if t["outcome"] == "fail"),
+                "skip": sum(1 for t in tk if t["outcome"] == "skip"),
+                "fail_by_role": dict(collections.Counter(t["role"] for t in tk if t["outcome"] == "fail").most_common()),
+                "fail_reasons": dict(collections.Counter(t["detail"] for t in tk if t["outcome"] == "fail").most_common()),
+                "skip_reasons": dict(collections.Counter(t["detail"] for t in tk if t["outcome"] == "skip").most_common()),
+                "parked": sorted("%s %s" % (e[3], e[4]) for e in events or [] if e[2] == "parked"),
+                "loop_restarts": sum(1 for e in events or [] if e[2] == "loop-died"),
+                "refused": sum(1 for e in events or [] if e[2] == "refused")}}
+
+
+def contributors(all_prs, form, tasks, by_role):
+    """Humans (their merged pull requests, their papers), agents by role, models."""
+    humans = collections.defaultdict(lambda: {"prs_merged": 0, "owner_papers": 0})
+    for r in all_prs:
+        if not r["agents"] and r["merged"]:
+            humans[r["login"]]["prs_merged"] += 1
+        if r["agents"] and r["by"] == "owner" and r["role"] in ("write-paper", "revise"):
+            humans[r["login"]]["owner_papers"] += 1
+    authors = collections.defaultdict(list)
+    for p in form["papers"]:
+        for a in p.get("human_authors") or []:
+            authors[a].append(p["paper"])
+    roles = collections.defaultdict(lambda: {"prs_opened": 0, "prs_merged": 0})
+    models_prs = collections.Counter()
+    for r in all_prs:
+        if r["agents"] and r["ref"].startswith("agent/"):
+            roles[r["role"]]["prs_opened"] += 1
+            roles[r["role"]]["prs_merged"] += 1 if r["merged"] else 0
+            if r["model"] and r["model"] != "-":
+                models_prs[r["model"]] += 1
+    for k, v in (by_role or {}).items():
+        roles[k].update(sessions=v["sessions"], hours=round(v["seconds"] / 3600, 1), usd=v["usd"])
+    return {"humans": dict(sorted(humans.items())), "human_authors": dict(sorted(authors.items())),
+            "agents_by_role": dict(sorted(roles.items())), "prs_by_model": dict(models_prs.most_common())}
+
+
+def milestones(prod, form, tasks):
+    """Per paper: the cumulative cost of its sessions until its acceptance (merge of the pull request
+    that added it) and until its Lean verification (level 2), when reached."""
+    acc = {x["paper"]: x for x in (prod or {}).get("papers", []) if x["paper"]}
+    out = {}
+    for p in form["papers"]:
+        k = p["paper"]
+        ts = [t for t in tasks if t["paper"] == k]
+        a = acc.get(k)
+        at = iso_utc(a.get("accepted_at")) if a and a.get("accepted_at") else None
+        vt = p.get("verified_at")
+        out[k] = {"accepted_at": at, "verified_at": vt, "sessions": len(ts),
+                  "usd_total": round(sum(t["usd"] or 0 for t in ts), 2),
+                  "usd_to_acceptance": round(sum(t["usd"] or 0 for t in ts if t["time"] <= at), 2) if at else None,
+                  "usd_to_verification": round(sum(t["usd"] or 0 for t in ts if t["time"] <= vt), 2) if vt else None}
+    return out
+
+
 # ---------------------------------------------------------------- the repository
 def git(repo, *args):
     r = subprocess.run(["git", "-C", repo, "-c", "core.quotePath=false", *args], capture_output=True, text=True)
@@ -419,6 +612,171 @@ def merges(repo):
             "by_the_owner": owner_merged, "prs": numbers}
 
 
+def utc(epoch):
+    """'YYYY-MM-DD HH:MM:SS' in UTC, the format of the events' times (the server runs in UTC)."""
+    return datetime.datetime.fromtimestamp(epoch, datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def iso_utc(s):
+    """An ISO time of GitHub ('2026-11-16T10:00:00Z') in the format of the events' times."""
+    return (s or "").replace("T", " ").replace("Z", "")[:19] or None
+
+
+# Lean declarations (at the start of a line, after attributes and modifiers).
+DECL_RE = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:(?:private|protected|noncomputable|nonrec|partial|unsafe)\s+)*"
+                     r"(theorem|lemma|def|abbrev|instance|structure|class|inductive|alias|example|opaque|axiom)\b")
+# A line at column 0 that ends the declaration before it (for the length of a proof).
+TOP_RE = re.compile(r"^(?:@\[|/--|/-!|--|#|section\b|namespace\b|end\b|open\b|variable\b|attribute\b|set_option\b|"
+                    r"universe\b|noncomputable section|private\b|protected\b|noncomputable\b|theorem\b|lemma\b|def\b|"
+                    r"abbrev\b|instance\b|structure\b|class\b|inductive\b|alias\b|example\b|opaque\b|axiom\b|import\b)")
+DEPRECATED_RE = re.compile(r"@\[\s*deprecated\b")
+
+
+def lean_counts(text):
+    """{files, lines, theorems, defs, deprecated} of one .lean file."""
+    c = collections.Counter(files=1, lines=text.count("\n") + (0 if text.endswith("\n") or not text else 1))
+    for line in text.splitlines():
+        m = DECL_RE.match(line)
+        if m:
+            k = m.group(1)
+            c["theorems" if k in ("theorem", "lemma") else "defs" if k in ("def", "abbrev") else "others"] += 1
+    c["deprecated"] = len(DEPRECATED_RE.findall(text))
+    return c
+
+
+def proof_lengths(text):
+    """[(name, lines)] of the theorems and lemmas of a file: from the declaration to the next top-level
+    line, without the trailing blank lines."""
+    lines = text.splitlines()
+    out = []
+    starts = [i for i, x in enumerate(lines) if DECL_RE.match(x)]
+    for i in starts:
+        m = DECL_RE.match(lines[i])
+        if m.group(1) not in ("theorem", "lemma"):
+            continue
+        j = i + 1
+        while j < len(lines) and not (lines[j][:1].strip() and TOP_RE.match(lines[j])):
+            j += 1
+        while j > i + 1 and not lines[j - 1].strip():
+            j -= 1
+        name = re.search(r"\b(?:theorem|lemma)\s+(\S+)", lines[i])
+        out.append((name.group(1) if name else "?", j - i))
+    return out
+
+
+def lean_history(repo):
+    """The Lean library under Incognita/ and Statements/: per day (the last commit of the day on the
+    first-parent line of HEAD) files, lines, theorems and lemmas, defs, deprecated aliases; and the
+    distribution of the proof lengths now."""
+    days = collections.OrderedDict()
+    for line in git(repo, "log", "--first-parent", "--format=%H %ct", "HEAD").splitlines():
+        sha, ct = line.split()
+        d = utc(int(ct))[:10]
+        if d not in days:
+            days[d] = sha   # newest first: the day's last commit
+    trees, blobs = {}, set()
+    for d, sha in days.items():
+        files = []
+        for row in git(repo, "ls-tree", "-r", sha, "--", "Incognita", "Statements").splitlines():
+            meta, path = row.split("\t", 1)
+            if path.endswith(".lean"):
+                files.append((path, meta.split()[2]))
+                blobs.add(meta.split()[2])
+        trees[d] = files
+    texts = {}
+    if blobs:
+        r = subprocess.run(["git", "-C", repo, "cat-file", "--batch"],
+                           input=("\n".join(sorted(blobs)) + "\n").encode(), capture_output=True)
+        data, k = r.stdout, 0
+        while k < len(data):
+            nl = data.index(b"\n", k)
+            head = data[k:nl].decode().split()
+            if len(head) < 3:
+                break
+            size = int(head[2])
+            texts[head[0]] = data[nl + 1:nl + 1 + size].decode("utf-8", "replace")
+            k = nl + 1 + size + 1
+    counts = {b: lean_counts(t) for b, t in texts.items()}
+    series = []
+    for d in sorted(trees):
+        row = {"day": d}
+        for part in ("Incognita", "Statements"):
+            c = sum((counts.get(b, collections.Counter()) for p, b in trees[d] if p.startswith(part + "/")),
+                    collections.Counter())
+            row[part] = {k: c.get(k, 0) for k in ("files", "lines", "theorems", "defs", "deprecated")}
+        series.append(row)
+    lengths = []
+    if series:
+        for p, b in trees[max(trees)]:
+            if p.startswith("Incognita/"):
+                lengths += [(p, n, k) for n, k in proof_lengths(texts.get(b, ""))]
+    ks = sorted(k for _, _, k in lengths)
+    buckets = collections.OrderedDict((b, 0) for b in ("1-5", "6-20", "21-50", "51-100", "101-200", ">200"))
+    for k in ks:
+        b = "1-5" if k <= 5 else "6-20" if k <= 20 else "21-50" if k <= 50 else "51-100" if k <= 100 \
+            else "101-200" if k <= 200 else ">200"
+        buckets[b] += 1
+    return {"series": series, "proofs": {"count": len(ks), "median": median(ks), "max": ks[-1] if ks else None,
+                                         "buckets": dict(buckets),
+                                         "longest": [{"name": n, "file": p, "lines": k} for p, n, k in
+                                                     sorted(lengths, key=lambda x: -x[2])[:5]]}}
+
+
+TO_CHECK_RE = re.compile(r"\(\s*to be checked\s*\)", re.I)
+
+
+def literature(repo):
+    """References of literature/bibliography.json, source notes, and "(to be checked)" in the Lean
+    files and the papers."""
+    try:
+        with open(os.path.join(repo, "literature", "bibliography.json"), encoding="utf-8") as f:
+            refs = len(json.load(f))
+    except (FileNotFoundError, ValueError):
+        refs = None
+    notes = sorted(x for x in os.listdir(os.path.join(repo, "literature", "notes"))
+                   if x.endswith(".md") and x not in ("TEMPLATE.md", "README.md")) \
+        if os.path.isdir(os.path.join(repo, "literature", "notes")) else []
+    marks = {"lean": collections.Counter(), "papers": collections.Counter()}
+    for top, kind, ext in (("Incognita", "lean", ".lean"), ("Statements", "lean", ".lean"), ("papers", "papers", ".tex")):
+        for d, _dirs, files in os.walk(os.path.join(repo, top)):
+            for fn in files:
+                if not fn.endswith(ext) or (kind == "papers" and fn != "paper.tex"):
+                    continue
+                path = os.path.join(d, fn)
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    n = len(TO_CHECK_RE.findall(f.read()))
+                if n:
+                    marks[kind][os.path.relpath(path, repo).replace(os.sep, "/")] = n
+    return {"references": refs, "source_notes": len(notes),
+            "to_be_checked": {k: {"occurrences": sum(v.values()), "files": dict(sorted(v.items()))} for k, v in marks.items()}}
+
+
+def directions(repo, C, prs):
+    """Candidate directions (roadmaps/*/directions.md) per roadmap: total, open, taken (an open paper
+    pull request of the roadmap names the entry in its description), done (a paper on main lists it
+    in META.toml), dropped."""
+    tree = C.Tree(repo)
+    out = {}
+    for r in tree.ls("roadmaps"):
+        text = tree.read("roadmaps/%s/directions.md" % r)
+        if text is None or not C.ROADMAP_NAME.match(r):
+            continue
+        try:
+            items = {i: (s, d) for i, s, d in C.items(tree, r) if re.match(r"^C\d+$", i)}
+        except C.Fail:
+            continue
+        open_prs = [p for p in prs or [] if p["state"] == "open" and p["role"] == "write-paper" and p["target"] == r]
+        row = collections.Counter(total=len(items))
+        for i, (s, _d) in items.items():
+            taken = any(re.search(r"\b%s\b" % i, p["body"] + " " + p["title"]) for p in open_prs)
+            k = "dropped" if s == "dropped" else "done" if s == "covered" else "taken" if taken else "open"
+            row[k] += 1
+        out[r] = {k: row.get(k, 0) for k in ("total", "open", "taken", "done", "dropped")}
+        if prs is None:
+            out[r]["taken"] = None
+    return out
+
+
 def formalisation(repo, C):
     tree = C.Tree(repo)
     ps, certs = C.certify(tree, None)
@@ -430,28 +788,35 @@ def formalisation(repo, C):
         levels["%d %s" % (c.level, name)] += 1
         papers.append({"paper": p.prefix, "dir": p.dir, "kind": p.kind, "roadmap": p.roadmap, "version": p.version,
                        "level": c.level, "status": name, "frozen": len(c.frozen), "proved": k,
+                       "human_authors": [a for a in p.human_authors if isinstance(a, str)]
+                       if isinstance(p.human_authors, list) else [],
                        "refuted": sum(1 for s in c.frozen.values() if s == "refuted"),
                        "errata": len(C.entries(p.errata, ("E",))),
                        "errata_open": len([e for e in C.entries(p.errata, ("E",)) if not e[1] and not e[2]]),
                        "corrections": len(C.entries(p.corrections, ("SC",))),
                        "corrections_resolved": len([e for e in C.entries(p.corrections, ("SC",)) if e[2]])})
     # Over time: the day each lock (frozen statement) and each proof marker reached the branch.
-    log = git(repo, "log", "--reverse", "--diff-filter=A", "--format=@%cs", "--name-only", "HEAD", "--",
+    log = git(repo, "log", "--reverse", "--diff-filter=A", "--format=@%ct", "--name-only", "HEAD", "--",
               "Statements", "catalogue/results")
-    day, events = None, []
+    day, when, events = None, None, []
     for line in log.splitlines():
         if line.startswith("@"):
-            day = line[1:]
+            when = utc(int(line[1:]))
+            day = when[:10]
             continue
         m = re.match(r"^Statements/(P\d{3})/(.+)\.lock$", line)
         if m:
-            events.append((day, m.group(1), "frozen"))
+            events.append((day, m.group(1), "frozen", when))
         m = re.match(r"^catalogue/results/(P\d{3})-(.+)\.toml$", line)
         if m:
-            events.append((day, m.group(1), "proved"))
+            events.append((day, m.group(1), "proved", when))
+    # A Lean-verified paper (level 2 or more): verified when its last lock or proof marker arrived.
+    for x in papers:
+        ts = [e[3] for e in events if e[1] == x["paper"]]
+        x["verified_at"] = max(ts) if certs[x["paper"]].verified and ts else None
     timeline = collections.defaultdict(list)
     tot = collections.defaultdict(lambda: [0, 0])
-    for d, p, what in events:
+    for d, p, what, _ in events:
         tot[p][0 if what == "frozen" else 1] += 1
         if timeline[p] and timeline[p][-1][0] == d:
             timeline[p][-1] = [d, tot[p][0], tot[p][1]]
@@ -468,8 +833,10 @@ REPORT_SPAN = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) → (\d{4}-\d{2}-\d{
 REPORT_USAGE = re.compile(r"^Weekly usage of the subscription[^:]*: (.*?) at the start, (.*?) at the end; "
                           r"cap ([^;]*?)(?:; weekly reset ([^;]*?))?\.\s*$", re.M)
 REPORT_TASK = re.compile(r"^- (\d{2}):(\d{2}) (\S+) (\S+): (.*)$")
-SESSION_RE = re.compile(r"\(turns (\d+|\?), (\d+)s, \$([0-9.]+|\?)\)\s*$")
-EXIT_RE = re.compile(r"\(exit (-?\d+), (\d+)s\)\s*$")
+# The session of a task event: "(turns N, Ss, $C)" or "(exit R, Ss)", since 2026-11-19 with ", model M"
+# before the parenthesis closes (older events have none: model "unrecorded").
+SESSION_RE = re.compile(r"\(turns (\d+|\?), (\d+)s, \$([0-9.]+|\?)(?:, model ([A-Za-z0-9._:\[\]-]+))?\)\s*$")
+EXIT_RE = re.compile(r"\(exit (-?\d+), (\d+)s(?:, model ([A-Za-z0-9._:\[\]-]+))?\)\s*$")
 MADE_RE = re.compile(r"\b(?:pr|draft) #(\d+)\b")
 
 
@@ -513,17 +880,17 @@ def parse_report(body):
 
 
 def session(text):
-    """(outcome, turns, seconds, usd) of the text of a task event."""
+    """(outcome, turns, seconds, usd, model) of the text of a task event."""
     w = text.split()
     outcome = w[0] if w else "?"
     m = SESSION_RE.search(text)
     if m:
         return (outcome, None if m.group(1) == "?" else int(m.group(1)), int(m.group(2)),
-                None if m.group(3) == "?" else float(m.group(3)))
+                None if m.group(3) == "?" else float(m.group(3)), m.group(4))
     m = EXIT_RE.search(text)
     if m:
-        return outcome, None, int(m.group(2)), None
-    return outcome, None, None, None
+        return outcome, None, int(m.group(2)), None, m.group(3)
+    return outcome, None, None, None, None
 
 
 def nights(issue_comments):
@@ -573,21 +940,41 @@ def category(role):
     return "reviews" if role in REVIEW_ROLES else "writing"
 
 
+# The stages of a paper's way (AGENTS.md 5.5): the role of a session gives its stage; a review, a
+# rubric or a fix round belongs to the stage of the pull request it works on.
+STAGES = ("writing", "refereeing", "acceptance", "statements", "proofs", "gardening", "bibliography", "other")
+STAGE_OF_ROLE = {"write-paper": "writing", "referee-scope": "refereeing", "referee-proofs": "refereeing",
+                 "revise": "refereeing", "formalize-statements": "statements", "review-statements": "statements",
+                 "prove": "proofs", "garden": "gardening", "bibliographer": "bibliography"}
+
+
+def stage_of(role, pr_role):
+    if role in ("review-pr", "fix-pr") or role.startswith("rubric-"):
+        return "refereeing" if pr_role in ("write-paper", "revise") else STAGE_OF_ROLE.get(pr_role or "", "other")
+    return STAGE_OF_ROLE.get(role, "other")
+
+
 def cost(events, reports, prinfo, merged_prs):
     tasks = []
     created = {}   # PR -> (role, paper) of the session that opened it
     for night, time, kind, role, target, text, src in events:
         if kind != "task":
             continue
-        outcome, turns, secs, usd = session(text)
+        outcome, turns, secs, usd, model = session(text)
         m = MADE_RE.search(text)
         pm = PAPER_DIR.match(target)
         if m:
             created.setdefault(int(m.group(1)), (role, pm.group(1) if pm else None))
+        w = text.split()
         tasks.append({"night": night, "time": time, "role": role, "target": target, "outcome": outcome,
-                      "turns": turns, "seconds": secs, "usd": usd, "made": int(m.group(1)) if m else None,
-                      "paper": pm.group(1) if pm else None, "quota_cut": "quota-cut" in text.split()[:3],
-                      "source": src})
+                      "detail": w[1] if len(w) > 1 else "", "turns": turns, "seconds": secs, "usd": usd,
+                      "model": model or "unrecorded", "made": int(m.group(1)) if m else None,
+                      "paper": pm.group(1) if pm else None, "quota_cut": "quota-cut" in w[:3], "source": src})
+
+    def pr_role(n):
+        if n in prinfo:
+            return prinfo[n]["role"]
+        return created.get(n, (None,))[0] or (merged_prs.get(n) or {}).get("role")
 
     def pr_paper(n):
         if n in prinfo and prinfo[n]["paper"]:
@@ -611,6 +998,8 @@ def cost(events, reports, prinfo, merged_prs):
                                                "usd": 0.0, "turns": 0})
     per_paper = collections.defaultdict(lambda: {c: zero() for c in ("writing", "reviews", "rubrics")})
     per_pr = collections.defaultdict(lambda: {c: zero() for c in ("writing", "reviews", "rubrics")})
+    by_stage = {s: zero() for s in STAGES}
+    by_model = collections.defaultdict(zero)
     for t in tasks:
         r = by_role[t["role"]]
         r["sessions"] += 1
@@ -620,6 +1009,12 @@ def cost(events, reports, prinfo, merged_prs):
         r["turns"] += t["turns"] or 0
         pr = int(t["target"]) if t["target"].isdigit() else t["made"]
         paper = t["paper"] or (pr_paper(pr) if pr else None)
+        t["pr"], t["paper"] = pr, paper
+        t["stage"] = stage_of(t["role"], pr_role(pr) if pr else None)
+        if t["role"] == "fix-pr" and t["target"] == "main":
+            t["stage"] = "other"
+        add(by_stage[t["stage"]], t)
+        add(by_model[t["model"]], t)
         cat = category(t["role"])
         if paper:
             add(per_paper[paper][cat], t)
@@ -670,10 +1065,14 @@ def cost(events, reports, prinfo, merged_prs):
     pts = [(n["usd"], n["usage_points"]) for n in nights_out.values() if n["usage_points"]]
     for r in by_role.values():
         r["usd"] = round(r["usd"], 2)
-    for d in list(per_paper.values()) + list(per_pr.values()):
+    for d in list(per_paper.values()) + list(per_pr.values()) + [by_stage, by_model]:
         for c in d.values():
             c["usd"] = round(c["usd"], 2)
+    by_stage["acceptance"]["merges"] = sum(1 for e in events if e[2] == "merge")   # collect() takes the trailers'
     return {"sessions": len(tasks), "seconds": sum(t["seconds"] or 0 for t in tasks),
+            "by_stage": by_stage,
+            "by_model": dict(sorted(by_model.items(), key=lambda kv: -kv[1]["usd"])),
+            "_tasks": tasks,
             "usd": round(sum(t["usd"] or 0 for t in tasks), 2),
             "by_role": dict(sorted(by_role.items(), key=lambda kv: -kv[1]["usd"])),
             "per_night": nights_out,
@@ -717,25 +1116,43 @@ def collect(repo=".", fixtures=None):
         except Unavailable as e:
             data["github"] = {"available": False, "reason": str(e)}
             prs, tc, issue_comments = [], {}, None
+    all_prs = prs
     prs = [r for r in prs if r["agents"]]
-    if data["github"]["available"]:
+    gh_ok = data["github"]["available"]
+    if gh_ok:
         data["production"] = production(prs, tc)
         data["quality"] = quality(prs, tc)
         for x in data["quality"]["lean_prs"]:
             x["merged_by_the_loop"] = x["pr"] in mg["prs"]
+        data["interest"] = interest(prs, tc)
     else:
-        data["production"] = data["quality"] = None
+        data["production"] = data["quality"] = data["interest"] = None
     lean_prs = {x["pr"] for x in (data["quality"] or {}).get("lean_prs", [])}
     prinfo = {r["number"]: dict(r, lean=r["number"] in lean_prs) for r in prs}
+    tasks = events = None
     if issue_comments is not None:
         events, reports, w = nights(issue_comments)
         data["warnings"] += w
         data["cost"] = cost(events, reports, prinfo, mg["prs"])
+        tasks = data["cost"].pop("_tasks")
+        # Acceptance: the loop's merges, all of them (merge trailers), not only the nights with events.
+        data["cost"]["by_stage"]["acceptance"]["merges"] = mg["by_the_loop"]
+        data["cost"]["milestones"] = milestones(data["production"], data["formalisation"], tasks)
         data["nights"] = {"with_events": sorted({e[0] for e in events if e[6] == "events"}),
                           "from_reports_only": sorted({e[0] for e in events if e[6] == "report"}
                                                       - {e[0] for e in events if e[6] == "events"})}
     else:
         data["cost"] = data["nights"] = None
+    data["contributors"] = contributors(all_prs, data["formalisation"], tasks,
+                                        (data["cost"] or {}).get("by_role")) if gh_ok else None
+    if data["contributors"] is not None:
+        data["contributors"]["models"] = (data["cost"] or {}).get("by_model")
+    data["efficiency"] = efficiency(all_prs, src if gh_ok else None, tasks, events, data["warnings"]) if gh_ok else None
+    data["lean"] = lean_history(repo)
+    data["literature"] = literature(repo)
+    data["directions"] = directions(repo, C, prs if gh_ok else None)
+    if gh_ok:
+        data["github"]["calls"] = src.calls
     return data
 
 
@@ -898,6 +1315,7 @@ def html_fragment(d):
                           + [money(sum(v[x]["usd"] for x in v)), fmt(sum(v[x]["sessions"] for x in v))]
                           for k, v in c["per_paper"].items()], num=(1, 2, 3, 4, 5)))
         out.append("</section>")
+    out.append(html_more(d))
     notes = []
     if d.get("nights"):
         notes.append("Nights with raw events: %s; from the night reports only: %s."
@@ -909,6 +1327,117 @@ def html_fragment(d):
     return "\n".join(out)
 
 
+def html_more(d):
+    """The sections added on 2026-11-19 (owner): stages, contributors, interest, Lean library,
+    efficiency, literature and directions."""
+    e = html.escape
+    out = []
+    c = d.get("cost")
+    if c:
+        out.append('<section><h2 id="stages">Cost by stage</h2><p>The stages of a paper (AGENTS.md 5.5): a review, '
+                   'a rubric or a fix round counts in the stage of the pull request it works on; acceptance is the '
+                   "loop's merges (no session).</p>")
+        st = c["by_stage"]
+        top = max([v["usd"] for v in st.values()], default=0)
+        out.append(table(["Stage", "Sessions", "Hours", "Cost", ""],
+                         [[e(k) + (" (%d merges)" % v["merges"] if "merges" in v else ""), fmt(v["sessions"]),
+                           hours(v["seconds"]), money(v["usd"]), bar(v["usd"], top)] for k, v in st.items()],
+                         num=(1, 2, 3)))
+        ms = c.get("milestones") or {}
+        out.append("<h3>Per paper, to acceptance and to Lean verification</h3><p>Cost of the sessions on the paper "
+                   "(its pull requests, its statements and proofs) until the merge of the pull request that added it, "
+                   "and until it was Lean-verified (level 2), when it was.</p>")
+        out.append(table(["Paper", "Accepted", "To acceptance", "Lean-verified", "To verification", "Total", "Sessions"],
+                         [[e(k), e((v["accepted_at"] or "–")[:10]), money(v["usd_to_acceptance"]),
+                           e((v["verified_at"] or "–")[:10]), money(v["usd_to_verification"]), money(v["usd_total"]),
+                           fmt(v["sessions"])] for k, v in ms.items()], num=(2, 4, 5, 6)))
+        out.append("</section>")
+    k = d.get("contributors")
+    if k:
+        out.append('<section><h2 id="contributors">Contributors</h2><h3>Humans</h3>')
+        out.append(table(["GitHub account", "Pull requests merged (human)", "Papers submitted (owner/* branches)"],
+                         [[e(n), fmt(v["prs_merged"]), fmt(v["owner_papers"])] for n, v in k["humans"].items()],
+                         num=(1, 2)))
+        out.append(table(["Human author (META.toml)", "Papers"],
+                         [[e(n), e(", ".join(v))] for n, v in k["human_authors"].items()]))
+        out.append("<h3>Agents</h3>")
+        out.append(table(["Role", "Pull requests opened", "merged", "Sessions", "Hours", "Cost"],
+                         [[e(n), fmt(v["prs_opened"]), fmt(v["prs_merged"]), fmt(v.get("sessions")), fmt(v.get("hours")),
+                           money(v.get("usd"))] for n, v in k["agents_by_role"].items()], num=(1, 2, 3, 4, 5)))
+        out.append("<h3>Models</h3><p>The model of each session (recorded since 2026-11-19; earlier ones from the "
+                   "night's log when it was backfilled, else unrecorded).</p>")
+        out.append(table(["Model", "Sessions", "Hours", "Cost"],
+                         [[e(n), fmt(v["sessions"]), hours(v["seconds"]), money(v["usd"])]
+                          for n, v in (k.get("models") or {}).items()], num=(1, 2, 3)))
+        out.append("</section>")
+    i = d.get("interest")
+    if i:
+        out.append('<section><h2 id="interest">Interest</h2><p>The score out of 10 of the scope referee, on the pull '
+                   "request that added the paper (its last report that gives one): median %s, mean %s.</p>"
+                   % (fmt(i["median"]), fmt(i["mean"])))
+        top = max(i["distribution"].values(), default=0)
+        out.append(table(["Score", "Papers", ""], [[e(s), fmt(n), bar(n, top)] for s, n in i["distribution"].items()],
+                         num=(1,)))
+        out.append(table(["Paper", "Pull request", "State", "Score"],
+                         [[e(x["paper"]), pr_link(x["pr"]), e(x["state"]),
+                           ('<a href="%s">%d/10</a>' % (e(x["url"]), x["score"])) if x["score"] is not None else "–"]
+                          for x in i["papers"]], num=(3,)))
+        out.append("</section>")
+    lean = d.get("lean")
+    if lean and lean["series"]:
+        out.append('<section><h2 id="lean">Lean library</h2><p>Per day, on <code>main</code> (its last commit of the '
+                   "day): the files and lines of <code>Incognita/</code> (the library) and <code>Statements/</code> (the "
+                   "frozen statements), their theorems and lemmas, definitions and deprecated aliases.</p>")
+        rows = []
+        for r in lean["series"]:
+            a, s = r["Incognita"], r["Statements"]
+            rows.append([e(r["day"]), fmt(a["files"]), fmt(a["lines"]), fmt(a["theorems"]), fmt(a["defs"]),
+                         fmt(a["deprecated"]), fmt(s["files"]), fmt(s["lines"]), fmt(s["theorems"])])
+        out.append(table(["Day", "Library files", "lines", "theorems", "defs", "deprecated", "Statement files", "lines",
+                          "statements"], rows, num=range(1, 9)))
+        pf = lean["proofs"]
+        out.append("<p>Proofs now: %d theorems and lemmas, median %s lines, longest %s lines (lines from the declaration "
+                   "to the next one).</p>" % (pf["count"], fmt(pf["median"]), fmt(pf["max"])))
+        out.append(table(["Lines", "Theorems and lemmas"], [[e(b), fmt(n)] for b, n in pf["buckets"].items()], num=(1,)))
+        out.append(table(["Longest", "File", "Lines"],
+                         [["<code>%s</code>" % e(x["name"]), e(x["file"]), fmt(x["lines"])] for x in pf["longest"]],
+                         num=(2,)))
+        out.append("</section>")
+    ef = d.get("efficiency")
+    if ef:
+        out.append('<section><h2 id="efficiency">Loop efficiency</h2>')
+        out.append(table(["Kind of pull request", "Merged", "Open to merge, median (h)", "mean (h)",
+                          "CI runs", "Build and check, median (min)", "mean (min)"],
+                         [[e(kk), fmt(ef["open_to_merge_hours"][kk]["count"]), fmt(ef["open_to_merge_hours"][kk]["median"]),
+                           fmt(ef["open_to_merge_hours"][kk]["mean"]), fmt(ef["ci_minutes"][kk]["count"]),
+                           fmt(ef["ci_minutes"][kk]["median"]), fmt(ef["ci_minutes"][kk]["mean"])]
+                          for kk in ef["open_to_merge_hours"]], num=range(1, 7)))
+        t = ef.get("tasks")
+        if t:
+            out.append("<p>%d tasks: %d failed (%s), %d skipped (%s). Parked targets: %s. Loop restarts: %d; outputs "
+                       "refused: %d.</p>"
+                       % (t["total"], t["fail"], e(", ".join("%s %d" % kv for kv in t["fail_by_role"].items()) or "none"),
+                          t["skip"], e(", ".join("%s %d" % kv for kv in t["skip_reasons"].items()) or "none"),
+                          e(", ".join(t["parked"]) or "none"), t["loop_restarts"], t["refused"]))
+        out.append("</section>")
+    lit, dr = d.get("literature"), d.get("directions")
+    out.append('<section><h2 id="literature">Literature and directions</h2>')
+    if lit:
+        tc = lit["to_be_checked"]
+        out.append("<p>%s references in <code>literature/bibliography.json</code>, %d source notes. Marked "
+                   '"(to be checked)": %d in the Lean files (%d files), %d in the papers (%d papers).</p>'
+                   % (fmt(lit["references"]), lit["source_notes"], tc["lean"]["occurrences"], len(tc["lean"]["files"]),
+                      tc["papers"]["occurrences"], len(tc["papers"]["files"])))
+    if dr:
+        out.append("<p>Candidate directions (<code>roadmaps/*/directions.md</code>): taken, an open paper pull request "
+                   "of the roadmap names it; done, a paper on <code>main</code> serves it.</p>")
+        out.append(table(["Roadmap", "Total", "Open", "Taken", "Done", "Dropped"],
+                         [[e(r)] + [fmt(v[x]) for x in ("total", "open", "taken", "done", "dropped")]
+                          for r, v in dr.items()], num=range(1, 6)))
+    out.append("</section>")
+    return "\n".join(out)
+
+
 # ---------------------------------------------------------------- command line
 def main(argv):
     if argv and argv[0] == "events-block":
@@ -916,9 +1445,10 @@ def main(argv):
         ap.add_argument("--night", required=True)
         ap.add_argument("--out", required=True)
         ap.add_argument("--budget", type=int, default=60000)
+        ap.add_argument("--log", action="append", default=[], help="the night's log: models of older task lines")
         ap.add_argument("files", nargs="+")
         a = ap.parse_args(argv[1:])
-        parts = events_block(a.night, a.files, a.budget)
+        parts = events_block(a.night, a.files, a.budget, a.log)
         os.makedirs(a.out, exist_ok=True)
         for k, text in enumerate(parts, 1):
             with open(os.path.join(a.out, "part-%d.md" % k), "w", encoding="utf-8", newline="\n") as f:
