@@ -671,7 +671,12 @@ What the file defines and proves, the main declarations, the conventions. -/
   request.
 - **No theorem lost.** Never delete a theorem of `Incognita/` or change its statement. Proof markers
   `catalogue/results/*.toml` are additions only, and the audit fails if a marked statement is no
-  longer proved.
+  longer proved. Two exceptions keep every name usable (owner, 2026-11-19, after the audit of the
+  library on Tau Ceti's rubrics): a theorem that is **not** a frozen statement nor a constant of a
+  lock may be **renamed** with its old name kept as `@[deprecated (since := "<date>")] alias <old> :=
+  <new>`; a theorem that **duplicates** another (same statement, up to binder order) is re-proved
+  from the other and kept as such a deprecated alias. A step of one proof, not meant for reuse, may
+  be `private` (new code only).
 - `Exploration/`: drafts, `sorry` allowed, never imported from outside `Exploration/`; use
   `Exploration/<prefix>/` for a paper.
 
