@@ -44,6 +44,10 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 # Tau Ceti's review rubrics for the Lean pull requests (owner, 2026-11-17; agents/rubrics/): the ones
 # that run, comma-separated (always in the order of RUBRICS_ALL below); empty: none.
 : "${INCOGNITA_RUBRICS=correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass}"
+# Proportionate rubric reviews (owner, 2026-11-19): after a fix round that changed only comments of
+# the Lean files, or no Lean file, the rubrics that approved the previous head keep their approval
+# (rubric_recheck says which run again); "off": every rubric judges every head.
+: "${INCOGNITA_RUBRIC_CARRY:=proportionate}"
 : "${INCOGNITA_BLOCK_LIMIT:=2}"             # heads of a Lean PR blocked by a rubric, then needs-human (1: the first block)
 : "${INCOGNITA_PARK_AFTER:=4}"              # failed attempts on a target (all nights), then parked
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task
@@ -1331,6 +1335,65 @@ rubric_blocked_heads() {
          and (.body | split("\n") | map(select(startswith("Verdict: "))) | (first // "") | test("^Verdict: *`?block")))
        | .sha] | unique | length'
 }
+# ---------------------------------------------------------------- proportionate rubric reviews
+# (owner, 2026-11-19: twelve reviews for a change of comments are out of proportion.)
+# lean_strip_comments: a Lean source on stdin, without its comments (nested /- -/ blocks, docstrings
+# /-- -/ and /-! -/, line comments --); string literals kept; blank lines and trailing blanks
+# dropped, indentation kept (it is syntax).
+lean_strip_comments() {
+  awk '
+    { line = $0; out = ""; i = 1; n = length(line); instr = 0
+      while (i <= n) {
+        c = substr(line, i, 1); d = substr(line, i, 2)
+        if (depth > 0) {
+          if (d == "/-") { depth++; i += 2; continue }
+          if (d == "-/") { depth--; i += 2; continue }
+          i++; continue
+        }
+        if (instr) {
+          out = out c
+          if (c == "\\") { out = out substr(line, i + 1, 1); i += 2; continue }
+          if (c == "\"") instr = 0
+          i++; continue
+        }
+        if (d == "/-") { depth = 1; i += 2; continue }
+        if (d == "--") break
+        if (c == "\"") instr = 1
+        out = out c; i++
+      }
+      sub(/[ \t]+$/, "", out)
+      if (out != "") print out
+    }'
+}
+# change_class <h0> <h> <base0> <base>: what a pull request changed between two of its heads, h0
+# (on base0) and h (on base), in its own .lean files (those its diff changes at h0 or at h; a file of
+# main the rebase brought does not count):
+#   none       no such file changed
+#   comments   only their comments changed (lean_strip_comments: same code)
+#   code       their code changed
+change_class() {
+  local f cls=none
+  for f in $( { repo_git diff --name-only --no-renames "$3" "$1"; repo_git diff --name-only --no-renames "$4" "$2"; } \
+                | grep -E '^(Incognita|Statements)/.+\.lean$' | LC_ALL=C sort -u); do
+    [ "$(repo_git rev-parse -q --verify "$1:$f" 2>/dev/null)" = "$(repo_git rev-parse -q --verify "$2:$f" 2>/dev/null)" ] && continue
+    cls=comments
+    if [ "$(repo_git show "$1:$f" 2>/dev/null | lean_strip_comments)" != "$(repo_git show "$2:$f" 2>/dev/null | lean_strip_comments)" ]; then
+      echo code; return 0
+    fi
+  done
+  echo "$cls"
+}
+# rubric_recheck <class>: the rubrics that judge the new head again whatever their verdict on the
+# previous one (the others keep an approval). quality-pass always: the fix round rewrites the
+# description it judges. "code": all of them.
+rubric_recheck() {
+  case "$1" in
+    none) echo "quality-pass" ;;
+    comments) echo "attribution documentation quality-pass" ;;
+    *) echo "$RUBRICS_ALL" ;;
+  esac
+}
+
 # replace_section <body> <summary> <heading>: the text <body> with its section "## <heading>" (up to
 # the next "## " heading or the line "Opened by `scripts/agent.sh`...") replaced by the one of
 # <summary>; added before that line, or at the end, when <body> has none. Prints the new text; 1 if

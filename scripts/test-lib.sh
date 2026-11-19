@@ -635,6 +635,25 @@ git checkout -q -f -B sigre2 "$pr2"; echo q > papers/P001-sig/paper.tex; git com
 ok "diff_signature: differs when the paper changed" '[ "$(diff_signature "$wbase" "$pr1")" != "$(diff_signature "$m3" HEAD)" ]'
 git checkout -q -f "$wbase"
 
+# ---- proportionate rubric reviews (owner, 2026-11-19): lean_strip_comments, change_class
+printf '%s\n' '/-- doc' '  more -/' 'theorem foo : 1 = 1 := by -- note' '  /- a /- nested -/ b -/ rfl' '  exact "a--b\"c" -- x' '/-! mod -/' '' 'end' > "$t/c.lean"
+ok "lean_strip_comments: docstrings, nested blocks and line comments go, strings and indentation stay" \
+  '[ "$(lean_strip_comments < "$t/c.lean")" = "$(printf "%s\n" "theorem foo : 1 = 1 := by" "   rfl" "  exact \"a--b\\\"c\"" end)" ]'
+git checkout -q -f -B ccbase "$wbase"; mkdir -p Incognita/CC; printf 'theorem a : True := trivial\n' > Incognita/CC/A.lean
+printf 'theorem b : True := trivial\n' > Incognita/CC/Main.lean; git add -A; git commit -qm ccbase; ccb=$(git rev-parse HEAD)
+printf '/-- A. -/\ntheorem a : True := trivial\n' > Incognita/CC/A.lean; git commit -qam pr; cc0=$(git rev-parse HEAD)
+echo "p" > papers/note.md 2>/dev/null || { mkdir -p papers; echo p > papers/note.md; }; git add -A; git commit -qm notes; cc1=$(git rev-parse HEAD)
+printf '/-- A, better. -/\ntheorem a : True := trivial -- why\n' > Incognita/CC/A.lean; git commit -qam doc; cc2=$(git rev-parse HEAD)
+printf '/-- A, better. -/\ntheorem a : True := by trivial\n' > Incognita/CC/A.lean; git commit -qam code; cc3=$(git rev-parse HEAD)
+git checkout -q -f -B ccmain "$ccb"; printf 'theorem b : 1 = 1 := rfl\n' > Incognita/CC/Main.lean; git commit -qam main; ccm=$(git rev-parse HEAD)
+git checkout -q -f -B ccre "$cc2"; GIT_EDITOR=true git rebase -q "$ccm" >/dev/null 2>&1; ccr=$(git rev-parse HEAD)
+ok "change_class: no Lean file of the PR changed" '[ "$(change_class "$cc0" "$cc1" "$ccb" "$ccb")" = none ]'
+ok "change_class: only comments changed" '[ "$(change_class "$cc1" "$cc2" "$ccb" "$ccb")" = comments ]'
+ok "change_class: code changed" '[ "$(change_class "$cc2" "$cc3" "$ccb" "$ccb")" = code ]'
+ok "change_class: a file of main brought by a rebase does not count" '[ "$(change_class "$cc1" "$ccr" "$ccb" "$ccm")" = comments ]'
+ok "rubric_recheck: comments rerun documentation, attribution and the quality pass only" '[ "$(rubric_recheck comments)" = "attribution documentation quality-pass" ] && [ "$(rubric_recheck none)" = quality-pass ] && [ "$(rubric_recheck code)" = "$RUBRICS_ALL" ]'
+git checkout -q -f "$wbase"
+
 # ---- the owner's answers (L13)
 cat > "$t/qcomments.json" <<'EOF'
 [{"user": {"login": "owner"}, "created_at": "2026-11-20T10:00:00Z", "body": "<!-- incognita:ask-owner:0123456789012345678901234567890123456789 -->\nFrom #3:\n\nAsk-owner: is D2 still open?"},
