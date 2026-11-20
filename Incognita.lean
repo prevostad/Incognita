@@ -13,6 +13,7 @@ public import Incognita.BatchedBandits.HY.Amb.Basic
 public import Incognita.BatchedBandits.HY.Amb.Prob
 public import Incognita.BatchedBandits.HY.Amb.Series
 public import Incognita.BatchedBandits.HY.Constants
+public import Incognita.BatchedBandits.HY.Decomposition
 public import Incognita.BatchedBandits.HY.Events
 public import Incognita.BatchedBandits.HY.Events.XOne
 public import Incognita.BatchedBandits.HY.GoodBatch
@@ -21,6 +22,7 @@ public import Incognita.BatchedBandits.HY.HighBatches
 public import Incognita.BatchedBandits.HY.Imed
 public import Incognita.BatchedBandits.HY.InfoModel
 public import Incognita.BatchedBandits.HY.KInf
+public import Incognita.BatchedBandits.HY.LostBatches
 public import Incognita.BatchedBandits.HY.Ranks
 public import Incognita.BatchedBandits.HY.Ranks.XOne
 public import Incognita.BatchedBandits.HY.Run
