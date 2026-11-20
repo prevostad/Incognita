@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.IsUniformlyFastConvergent"
+module = "Incognita.StochasticBandits.UCB"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:ufc"
+meaning = "A learner is uniformly fast convergent on a class E if, for every Markov instance of E, every suboptimal arm a and every p in (0, 1], E[N_a(T)] / T^p tends to 0."
+conventions = "Anytime LML Algorithm; N_a(T) is pullCount IT.action a T (rounds 0, ..., T - 1) under trajMeasure alg (Environment.bandit ν); suboptimal is 0 < gap ν a."
+source = "[GMS19, Definition 1]; [INC-P007]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isUniformlyFastConvergent_const"]
+known_cases = ["Incognita.StochasticBandits.IsUniformlySuperFastConvergent.isUniformlyFastConvergent"]
+exclusion = ["Incognita.StochasticBandits.not_isUniformlyFastConvergent_const"]
+non_vacuity = ["Incognita.P007.ucb_isUniformlyFastConvergent_satisfiable", "Incognita.P007.not_isUniformlyFastConvergent_const_satisfiable"]

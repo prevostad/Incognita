@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.productClass"
+module = "Incognita.StochasticBandits.GravesLai"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:product"
+meaning = "The unstructured class of a family (D_a) of models: the instances (kernels from the arms to the real line) whose arm a has its law in D a."
+conventions = "An instance is an LML bandit Kernel α ℝ; D^α is productClass (fun _ ↦ D); the same set as the class {ν | ∀ a, ν a ∈ M a} of LMLExplore's Lai-Robbins bound."
+source = "roadmap StochasticBandits, Definitions; [INC-P007]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.bernoulliBandit_mem_productClass"]
+known_cases = ["Incognita.StochasticBandits.unitBandits_eq_productClass_inter"]
+exclusion = ["Incognita.StochasticBandits.const_dirac_two_not_mem_productClass"]
+non_vacuity = ["Incognita.P007.gravesLai_productClass_satisfiable", "Incognita.P007.lower_bound_gravesLai_satisfiable", "Incognita.P007.not_isConsistent_const_satisfiable", "Incognita.P007.ucb_pullCount_le_satisfiable", "Incognita.P007.ucb_tail_pullCount_satisfiable"]

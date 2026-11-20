@@ -1,0 +1,10 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P007.ucb_tail_pullCount
+sha256 0ee2c62ce81f70d20369a76340b1c1f7450ff9915620cb624f1ceeb0ba507ca1
+constant def Incognita.BatchedBandits.unitLaws
+constant def Incognita.StochasticBandits.IsHoeffdingUCB
+constant def Incognita.StochasticBandits.hoeffdingIndex
+constant def Incognita.StochasticBandits.productClass
+constant theorem Incognita.Statements.P007.ucb_tail_pullCount
+constant theorem Incognita.StochasticBandits.hoeffdingIndex._proof_1

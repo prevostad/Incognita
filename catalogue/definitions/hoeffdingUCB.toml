@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.hoeffdingUCB"
+module = "Incognita.StochasticBandits.UCB"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:ucb"
+meaning = "UCB with a Hoeffding bonus and the tie rule of LML's argmax: LMLExplore's index policy with hoeffdingIndex."
+conventions = "Anytime, deterministic; rounds from 0."
+source = "[INC-P007, Definition def:ucb]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isHoeffdingUCB_hoeffdingUCB"]
+known_cases = ["Incognita.StochasticBandits.hoeffdingIndex_le_hoeffdingIndex_nextArm"]
+exclusion = ["Incognita.StochasticBandits.not_isHoeffdingUCB_const"]
+non_vacuity = ["Incognita.P007.exists_isHoeffdingUCB"]

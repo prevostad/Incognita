@@ -1,0 +1,7 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P007.gravesLai_eq_zero_of_identifies
+sha256 c92457f152d571ed68577a1048bbafedf0c9edbaa5f8bab53c77d3adb1d86855
+constant def Incognita.StochasticBandits.alt
+constant def Incognita.StochasticBandits.gravesLai
+constant theorem Incognita.Statements.P007.gravesLai_eq_zero_of_identifies
