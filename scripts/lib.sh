@@ -43,7 +43,11 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_REVISION_ROUNDS:=4}"         # revision rounds of a paper, then rejected (owner, 2026-11-14)
 # Tau Ceti's review rubrics for the Lean pull requests (owner, 2026-11-17; agents/rubrics/): the ones
 # that run, comma-separated (always in the order of RUBRICS_ALL below); empty: none.
-: "${INCOGNITA_RUBRICS=correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass}"
+: "${INCOGNITA_RUBRICS=}"
+# Off since 2026-11-20 (owner: Incognita advances research, LMLExplore builds the library; one
+# review per pull request, review-pr or review-statements, carries the criteria that matter for
+# the truth of the results). For a one-off audit of the library, set the list, for example
+# correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass
 # Proportionate rubric reviews (owner, 2026-11-19): after a fix round that changed only comments of
 # the Lean files, or no Lean file, the rubrics that approved the previous head keep their approval
 # (rubric_recheck says which run again); "off": every rubric judges every head.

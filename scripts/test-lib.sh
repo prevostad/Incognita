@@ -9,6 +9,8 @@ t=$(mktemp -d)
 trap 'rm -rf "$t"' EXIT
 export INCOGNITA_HOME=$t/home INCOGNITA_NIGHT=test INCOGNITA_GH_REPO=owner/repo
 export INCOGNITA_REPO=$t/repo
+# Tau Ceti's rubrics are off by default (2026-11-20): their tests turn them all on.
+export INCOGNITA_RUBRICS=correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass
 mkdir -p "$INCOGNITA_REPO"
 # shellcheck source=scripts/lib.sh
 . "$here/lib.sh"
@@ -699,7 +701,7 @@ printf '# Night report test\n\nBody of the report.\n' > "$t/report.md"
 post_night_report 21 0123456789012345678901234567890123456789 "$t/report.md" 2>/dev/null; rc=$?
 p0=$(cat "$t/posted.0" 2>/dev/null)
 ok "report: one comment, the events appended to it" '[ "$rc" = 0 ] && [ "$(posted_n)" = 1 ] && [[ "$p0" == "<!-- incognita:night-report:0123456789012345678901234567890123456789 -->"*"Body of the report."*"<!-- incognita:events v1 night=test part=1/1 lines=3 -->"* ]]'
-ok "report: the events in a collapsed fenced block" '[[ "$p0" == *"<details><summary>Raw events of the night of test"*$'"'"'\n~~~tsv\n'"'"'*$'"'"'\n2026-11-19 22:00:00\ttask\tprove\tP001-x\tok pr #7'"'"'*$'"'"'\n~~~\n\n</details>'"'"'* ]]'
+ok "report: the events in a collapsed fenced block" '[[ "$p0" == *"<details><summary>Raw events of the night of test"*$'"'"'\n~~~tsv\n'"'"'*$'"'"'2026-11-19 22:00:00\ttask\tprove\tP001-x\tok pr #7'"'"'*$'"'"'\n~~~\n\n</details>'"'"'* ]]'
 ok "report: a line that looks like a secret is left out" '[[ "$p0" != *sk-ant* && "$p0" == *"1 line left out"* ]]'
 ok "report: event texts cleaned like agent text (<!--, @)" '[[ "$p0" == *"&lt;!-- here"* && "$p0" == *$'"'"'@\xe2\x80\x8bbob'"'"'* ]]'
 ok "report: stats.py reads the events back (usage reading included)" '[ "$(python3 -I "$here/stats.py" events-read "$t/posted.0" | cut -f3 | sort | tr "\n" " ")" = "ask-owner task usage " ]'
@@ -711,6 +713,8 @@ ok "a long night: every comment within the limit of GitHub" '[ -z "$(find "$t" -
 ok "a long night: every event read back, once" '[ "$(python3 -I "$here/stats.py" events-read "$t"/posted.* | sort -u | wc -l | tr -d " ")" = 401 ]'
 rm -f "$t"/posted.*
 unset -f gh
+
+ok "Tau Ceti's rubrics are off by default (owner, 2026-11-20)" 'grep -qxF -- "$(printf ": \"\${INCOGNITA_RUBRICS=}\"")" "$here/lib.sh"'
 
 # ---- scripts/stats.py on fixtures (no network)
 ok "stats.py: the fixture test (scripts/test-stats.py)" 'python3 -I "$here/test-stats.py" > "$t/stats.log" 2>&1 || { cat "$t/stats.log"; false; }'

@@ -60,18 +60,18 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
 8. **Checks**, once, at the end: `scripts/check-build.sh Incognita --no-sorry`,
    `lake exe audit --check`, `lake lint`, `lake exe mk_all --check --lib Incognita`, and
    `scripts/build.sh Exploration` if you touched it.
-9. **Quality pass** (Tau Ceti's, AGENTS.md §1 and §6.8): run the checks Q1–Q5 of
-   `.agents/quality-pass.md` over every lemma and theorem you add or change, fix what they find,
-   and report each check in the summary. Your pull request is reviewed by `review-pr`, then by
-   the 11 rubrics of Tau Ceti (correctness, reuse, scope, attribution, API, generality, placement,
-   naming, documentation, proof quality, this quality pass): it merges only when they all approve.
+9. **Self-check** before the end: no lemma that the library or its dependencies already provide
+   (search `Incognita/` and the dependencies, LMLExplore, LML, Statlib, TauCeti, Mathlib, before
+   proving a general step: AGENTS.md §6.7); no lemma
+   that no frozen statement of this pull request uses. Your pull request is reviewed by
+   `review-pr` (AGENTS.md §6.8); if task.md asks for Tau Ceti's quality pass, run it too.
 
 Partial progress is useful: commit the lemmas you proved, and say in the summary which lemma
 remains and what blocks it. A small pull request that merges is worth more than a large one that
 waits: stop at the size limit even with time left.
 
 Summary (AGENTS.md §1): Results (each statement or lemma proved, in mathematics, with its Lean name),
-Frozen statements (None), Sources read, Not done, Quality pass.
+Frozen statements (None), Sources read, Not done (and Quality pass if task.md asks for it).
 
 ## Do not
 

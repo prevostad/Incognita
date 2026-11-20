@@ -65,10 +65,8 @@ material is re-read, not only stored.
    is the commit `origin/main` of task.md.
 7. **Checks**, once, at the end, if you changed Lean files: `scripts/check-build.sh Incognita
    --no-sorry`, `lake exe audit --check`, `lake lint`, `lake exe mk_all --check --lib Incognita`.
-8. **Quality pass**, if you changed a `.lean` file under `Incognita/`: your pull request is then
-   reviewed by Tau Ceti's 11 rubrics too (AGENTS.md §6.8). Run the checks Q1–Q5 of
-   `.agents/quality-pass.md` over every lemma and theorem you add, and report each one in the
-   summary, section `## Quality pass` (AGENTS.md §1).
+8. **Self-check**, if you changed a `.lean` file under `Incognita/`: no lemma that the library or
+   its dependencies already provide; if task.md asks for Tau Ceti's quality pass, run it too.
 
 You may change only `Incognita/` (lemmas and theorems, no deletion), `Incognita.lean`,
 `catalogue/relations.toml`, `catalogue/garden.md`, `Dropped` lines in `roadmaps/*/directions.md`,
@@ -77,7 +75,7 @@ re-check, and drafts in `Exploration/` (AGENTS.md §2).
 Formats of `relations.toml` and `garden.md`: `catalogue/README.md`. Commit with a message
 `Garden: <what was examined>`. Summary (AGENTS.md §1): Results (each relation proved, in mathematics,
 with its Lean name), Frozen statements (None), Sources read, Not done (`Ask-owner:` lines), and
-Quality pass if you changed Lean.
+Quality pass only if task.md asks for it.
 
 ## Do not
 

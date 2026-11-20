@@ -22,7 +22,7 @@ pull request (AGENTS.md §2; task.md names it); on `main`, within the line `fix-
    failed.
 3. **Review**: address every defect of the latest `request_changes` review, most important first.
    If a defect is wrong, do not obey it: explain why in the summary, with the argument.
-   A **Lean pull request** (AGENTS.md §6.8) also has a report of each of Tau Ceti's rubrics
+   When Tau Ceti's rubrics run (AGENTS.md §6.8; off by default), a Lean pull request also has a report of each rubric
    (kind `rubric-<name>` in `reports.md`): answer the latest report of every one that did not
    approve the head, and of the Incognita review. A rubric's `block` (task.md says which) is
    answered first: fix the problem within the pull request's purpose; if it cannot be fixed there
@@ -43,7 +43,7 @@ pull request (AGENTS.md §2; task.md names it); on `main`, within the line `fix-
    request stopped before the end. Continue its work as `agents/roles/<that role>.md` says, from its
    commits and its description, within the same purpose.
 8. **Checks**, once, at the end: the CI commands of AGENTS.md §6.7 for the libraries you touched.
-9. **Quality pass** of a Lean pull request (AGENTS.md §1, §6.8; or a repair of `main` that changes
+9. **Quality pass**, only if task.md asks for it, of a Lean pull request (AGENTS.md §1, §6.8; or a repair of `main` that changes
    Lean): run the checks Q1–Q5 of `.agents/quality-pass.md` again over what you add or change, and
    write the whole `Quality pass:` block, as the pull request will stand, in the summary's section
    `## Quality pass`: the script replaces the section of the description with it.

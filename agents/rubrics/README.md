@@ -1,5 +1,9 @@
 # Tau Ceti's review rubrics, for the Lean pull requests
 
+**Off by default since 2026-11-20** (`INCOGNITA_RUBRICS` empty; owner: one review per pull request
+carries the criteria that matter, AGENTS.md §6.8). Kept for one-off audits of the library and in
+case the owner turns them back on; what follows describes how they run then.
+
 The owner's decision (2026-11-17): the Lean pull requests of Incognita are reviewed like those of
 LMLExplore, by the **11 rubrics of Tau Ceti**, each judged by an independent review session, and
 merged only when every rubric approves the current head (in addition to everything already

@@ -83,11 +83,11 @@ Lean names of the statements added under Statements/, each with its paper label.
 What remains, your doubts, and `Ask-owner: <question>` lines (one line each) for what only the
 owner can decide.
 ## Quality pass
-Only in a pull request that changes a .lean file under Incognita/ or Statements/ (section 6.8):
+Only when task.md asks for it (Tau Ceti's rubrics running, section 6.8; off by default):
 Tau Ceti's quality pass, as below.
 ```
 
-The section `## Quality pass` (a **Lean pull request**, section 6.8) is Tau Ceti's quality pass:
+The section `## Quality pass` (a **Lean pull request** while Tau Ceti's rubrics run, section 6.8) is Tau Ceti's quality pass:
 before the end, run the checks Q1–Q5 of `.agents/quality-pass.md` (Tau Ceti's pull request
 template, the comment at its end) over every declaration you add or change, and report them in
 its format, one line per check, starting `changed`, `checked`, `declined` or `n/a`, a dash, and a
@@ -179,8 +179,8 @@ and pull requests from forks, then takes the first available of:
    needed role: paper pull requests (the owner's too: branches `owner/*`, a new paper or a
    presentation revision, §5.6) get `referee-scope`, then `referee-proofs` once scope accepted
    that head; statements pull requests get `review-statements`; roadmap proposals get
-   `review-roadmap`; all others get `review-pr`; then a Lean pull request gets Tau Ceti's rubrics,
-   one session each, in order, on the same head (section 6.8);
+   `review-roadmap`; all others get `review-pr` (Tau Ceti's rubrics only when the owner turns them
+   on, section 6.8);
 5. every 6 agent tasks, one `garden` (once a proof marker exists) or `bibliographer` task,
    alternately (§8);
 6. `prove` for frozen statements still open (not superseded by a correction): first the papers
@@ -543,10 +543,9 @@ the figures and how to run it (criterion W16).
 ### 5.5 After acceptance
 
 Accepted paper (its accepted open questions become candidate directions, §4.1) →
-`formalize-statements` (statements pull request, reviewed by `review-statements` and by Tau Ceti's
-rubrics, section 6.8, merged by the loop once they all approve it, since 2026-11-17; by the owner
-before) → statements frozen → `prove` (proof pull requests, reviewed by `review-pr` and by Tau
-Ceti's rubrics) → verified when every frozen statement of the paper is proved → re-verified by
+`formalize-statements` (statements pull request, reviewed by `review-statements`, section 6.8,
+merged by the loop once it approves) → statements frozen → `prove` (proof pull requests, reviewed by
+`review-pr`) → verified when every frozen statement of the paper is proved → re-verified by
 gardening (§8). Its certification (§9) follows these steps.
 
 **An accepted `paper.tex` is never edited**, except by a new version (§5.6): after an erratum
@@ -614,8 +613,8 @@ in the docstring.
 **Small pull requests** (owner, 2026-11-19, as in LMLExplore, where a pull request is one result of
 the roadmap, a few hundred lines): a Lean pull request adds **at most about 800 lines of Lean**
 (`.lean` files under `Incognita/` and `Statements/`; `blueprint.md` and `formalisation.tex` do not
-count), **never more than 1,200**. Every rubric reads the whole diff and every fix round makes
-them all read it again: a pull request of 5,000 lines costs far more than six of 800, and waits
+count), **never more than 1,200**. The reviewer reads the whole diff and every fix round makes it
+read it again: a pull request of 5,000 lines costs far more than six of 800, and waits
 longer before it merges. When the work grows past the limit, stop at the last point that compiles,
 finish the checks and the summary (`Not done` says what remains): the next session continues from
 `main` once this pull request is merged.
@@ -762,8 +761,14 @@ renumbered, edited or deleted: later roles only add their line under them.
 
 ### 6.7 Building and searching
 
+- **Build on LMLExplore** (the owner, 2026-11-20): Incognita is a layer above LMLExplore and what
+  it builds on (LML, Statlib, TauCeti, Mathlib), never a parallel library. Before defining an
+  object or proving a general step, look there first, and use what exists, even under another
+  name or in a more general form; a duplicate is a defect (section 6.8). "The dependencies" means
+  these libraries throughout this contract.
 - Dependencies: `.lake/packages/LMLExplore`, `.lake/packages/LeanMachineLearning` (LML),
-  `.lake/packages/TauCeti`, `.lake/packages/mathlib/Mathlib`. Grep ignores `.lake` unless you give
+  `.lake/packages/Statlib` (once the pinned LMLExplore depends on it), `.lake/packages/TauCeti`,
+  `.lake/packages/mathlib/Mathlib`. Grep ignores `.lake` unless you give
   the path: search with `path` set to one of these directories.
 - Iterate with `lake env lean <file>` (one file) and `lake build <Module>`. Run the CI commands once,
   at the end: `scripts/check-build.sh Incognita --no-sorry`, `scripts/check-build.sh Statements`,
@@ -773,37 +778,24 @@ renumbered, edited or deleted: later roles only add their line under them.
 - The machine has 8 GB of RAM: one `lake` command at a time, never in parallel.
 - Never require Mathlib, LML or Tau Ceti directly: they come from LMLExplore, at its pins.
 
-### 6.8 Review of Lean pull requests: Tau Ceti's rubrics
+### 6.8 Review of Lean pull requests
 
-A **Lean pull request** is one of `prove` or `formalize-statements`, or any other one (`garden`,
-`fix-pr`…) that changes a `.lean` file under `Incognita/` or `Statements/`. It is reviewed like a
-pull request of LMLExplore (the owner, 2026-11-17), in addition to its Incognita review:
+**One review per pull request** (the owner, 2026-11-20): `review-statements` for a statements pull
+request, `review-pr` for any other. Incognita's goal is research verified in Lean, not a polished
+library (LMLExplore builds that): the review checks Incognita's rules (paths, frozen types, locks,
+proof markers, back-translation) and the few criteria of Tau Ceti's rubrics that bear on the truth
+and the reuse of the results: **correctness** (definitions and lemmas say what they claim),
+**reuse** (no duplicate of a definition or lemma of the library or of the dependencies: LMLExplore, LML, Statlib, TauCeti, Mathlib, section 6.7),
+**scope** (nothing the frozen statements do not use). Naming, documentation style, placement, API
+design, generality and proof style follow the conventions above, but are never a defect.
 
-- **Its Incognita review first**: `review-statements` (statements) or `review-pr` (all others), for
-  the rules of Incognita (paths, frozen types, locks, proof markers, back-translation).
-- **Then the 11 rubrics of Tau Ceti** ([agents/rubrics/](agents/rubrics/README.md), vendored from
-  TauCetiReview, with Incognita's adaptations in `agents/rubrics/_incognita.md`), each judged by
-  an independent session (role `rubric-<name>`), on the same head, in this order: `correctness`,
-  `reuse`, `scope`, `attribution` (these four may `block`), `api-design`, `generality`,
-  `placement`, `naming`, `documentation`, `proof-quality`, `quality-pass`. Each one judges only
-  its angle; its verdict is `approve`, `request_changes` or `block`, and its report a comment with
-  the status `Incognita rubric/<name>` on the head.
-- A `request_changes` (of the Incognita review or of a rubric) does not stop the round: once every
-  rubric has judged the head, one `fix-pr` round answers all the latest reports (contest a wrong
-  finding in the summary, with the argument: the rubric weighs it on the next head). A `block`
-  stops the round at once: a `fix-pr` round answers it (fix the problem within the purpose of the
-  pull request, or contest it, or ask the owner); a block on a second head sends the pull request
-  to the owner (`needs-human`).
-- **Merged** only when CI is green, the Incognita review approves the head, and **every rubric
-  approves the same head**: after a fix commit the rubrics run again, in proportion to the change
-  (code changed: all of them; comments only: `documentation`, `attribution`, `quality-pass`;
-  [agents/rubrics/README.md](agents/rubrics/README.md)).
-- **Quality pass**: the author reports Tau Ceti's quality pass in the section `## Quality pass` of
-  its summary, which becomes the description (section 1); the rubric `quality-pass` checks it
-  against the diff.
-- The rubrics never override this contract: frozen statements, no theorem lost, proof pull
-  requests that add only lemmas and theorems, the forbidden keywords and the names of section 6.2
-  stay as they are (`agents/rubrics/_incognita.md`).
+**Tau Ceti's 11 rubrics** ([agents/rubrics/](agents/rubrics/README.md), vendored from TauCetiReview)
+stay available for a one-off audit of the library (as on 2026-11-19), or if the owner turns them
+back on (`INCOGNITA_RUBRICS`, empty by default): then each judges the head in a session of its own
+(role `rubric-<name>`), after the Incognita review; a `block` stops the round; one `fix-pr` round
+answers all the reports; the pull request merges only when every rubric approves its head (rerun
+in proportion to the change: agents/rubrics/README.md); the authors report Tau Ceti's quality pass
+(section 1). The rubrics never override this contract (`agents/rubrics/_incognita.md`).
 
 ## 7. Literature and attribution
 
