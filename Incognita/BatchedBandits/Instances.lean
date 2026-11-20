@@ -92,6 +92,13 @@ lemma integrable_id_of_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) : In
   haveI := hP.1
   Integrable.of_mem_Icc 0 1 aemeasurable_id hP.2
 
+/-- A measurable function bounded on `[0, 1]` is integrable for a law on `[0, 1]`. -/
+lemma integrable_of_abs_le_of_mem_unitLaws {P : Measure ℝ} (hP : P ∈ unitLaws) {f : ℝ → ℝ}
+    (hf : Measurable f) (C : ℝ) (hC : ∀ x ∈ Set.Icc (0 : ℝ) 1, |f x| ≤ C) : Integrable f P := by
+  have := hP.1
+  exact Integrable.of_bound hf.aestronglyMeasurable C (hP.2.mono fun x hx ↦ by
+    rw [Real.norm_eq_abs]; exact hC x hx)
+
 /-- `𝓜` is convex: the mixture `a P + b Q` of two laws on `[0, 1]`, with weights `a + b = 1` in
 `ℝ≥0∞`, is a law on `[0, 1]` (Tau Ceti's `isProbabilityMeasure_smul_add_smul` for the total
 mass). -/

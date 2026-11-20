@@ -143,4 +143,27 @@ lemma log_div_card_le_index [Fintype β] [Nonempty β] {I : β → ℕ → EReal
     _ ≤ I c' (k + 1) := hAk ▸ hmin (k + 1) (by omega) (by omega) c'
     _ ≤ I c' (T + 1) := hmono c' (k + 1) (T + 1) (by omega) (by omega) le_rfl
 
+/-- If the count of `c` increases between the rounds `a` and `b`, then `c` is pulled at some round
+of `[a, b)`. -/
+lemma exists_action_eq_of_pullCount_lt {c : β} {a b : ℕ}
+    (h : pullCount A c a ω < pullCount A c b ω) : ∃ k, a ≤ k ∧ k < b ∧ A k ω = c := by
+  have hab : a ≤ b := le_of_not_gt fun hba ↦ (pullCount_mono (A := A) c hba.le ω).not_gt h
+  have hpos : 0 < ((Finset.Ico a b).filter fun u ↦ A u ω = c).card := by
+    rw [← pullCount_sub_eq_card hab]
+    omega
+  obtain ⟨k, hk⟩ := Finset.card_pos.mp hpos
+  simp only [Finset.mem_filter, Finset.mem_Ico] at hk
+  exact ⟨k, hk.1.1, hk.1.2, hk.2⟩
+
+/-- Pigeonhole on the counts: with `K` arms and `K U ≤ t`, some arm has at least `U` pulls among
+the first `t` rounds. -/
+lemma exists_le_pullCount_of_card_mul_le [Fintype β] [Nonempty β] {U t : ℕ}
+    (h : Fintype.card β * U ≤ t) : ∃ c, U ≤ pullCount A c t ω := by
+  by_contra hno
+  push Not at hno
+  have hsum : ∑ c, pullCount A c t ω < ∑ _c : β, U :=
+    Finset.sum_lt_sum_of_nonempty Finset.univ_nonempty fun c _ ↦ hno c
+  rw [sum_pullCount, Finset.sum_const, Finset.card_univ, smul_eq_mul] at hsum
+  omega
+
 end Incognita.BatchedBandits

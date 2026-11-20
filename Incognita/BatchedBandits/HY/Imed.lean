@@ -29,7 +29,9 @@ at the cutoff `r = t_ℓ`; the paper's round is `t = n + 1`, and its `N_c(t - 1)
 * `pullCount_le_max_of_forall`: the consequence (Step 3), for any sequence of actions: if every
   pull of `c` at a round `k ∈ [a, b)` has `N_c(k) D < g(k)` (`g` nondecreasing, `D > 0`), then
   `N_c(b) ≤ max(N_c(a), 1 + g(b - 1) / D)`; with `g(k) = y_ℓ log (k + 1)`, `a = t_ℓ` and `b = t'`
-  this is the paper's `N_c(t') ≤ max(N_c(t_ℓ), 1 + y_ℓ log t' / D)`.
+  this is the paper's `N_c(t') ≤ max(N_c(t_ℓ), 1 + y_ℓ log t' / D)`. It is the case
+  `g'(k) = 1 + g(k) / D` of `pullCount_le_max_of_forall_add_one` (`N_c(k) + 1 ≤ g'(k)` at every
+  pull; and `N_c(b) ≤ g'(b - 1)` when `c` is pulled in `[a, b)`, used by Lemma `lem:pullsC`).
 -/
 
 @[expose] public section
@@ -264,29 +266,44 @@ lemma target_le_pullCount'_of_pacedArm_eq {w₀ thr ω y logt : ℝ} {U Unext : 
 
 end HY
 
+/-- [INC-P000, proof of Lemma `lem:pullsC`, the last pull, general form] For a sequence of
+actions `A` and an arm `c`, if every pull of `c` at a round `k ∈ [a, b)` has `N_c(k) + 1 ≤ g(k)`
+with `g` nondecreasing, then `N_c(b) ≤ max(N_c(a), g(b - 1))`; if moreover `c` is pulled at some
+round of `[a, b)`, then `N_c(b) ≤ g(b - 1)` (at the last pull `k`, `N_c(b) = N_c(k) + 1`). -/
+lemma pullCount_le_max_of_forall_add_one {β Ω : Type*} [DecidableEq β] {A : ℕ → Ω → β} {c : β}
+    {ω : Ω} {g : ℕ → ℝ} (hg : Monotone g) {a b : ℕ} (hab : a ≤ b)
+    (hpull : ∀ k, a ≤ k → k < b → A k ω = c → (pullCount A c k ω : ℝ) + 1 ≤ g k) :
+    (pullCount A c b ω : ℝ) ≤ max (pullCount A c a ω : ℝ) (g (b - 1)) ∧
+      ((∃ k, a ≤ k ∧ k < b ∧ A k ω = c) → (pullCount A c b ω : ℝ) ≤ g (b - 1)) := by
+  induction b, hab using Nat.le_induction with
+  | base =>
+    exact ⟨le_max_left _ _, fun ⟨k, hk1, hk2, _⟩ ↦ absurd (hk1.trans_lt hk2) (lt_irrefl _)⟩
+  | succ b hb ih =>
+    obtain ⟨ih1, ih2⟩ := ih fun k hk1 hk2 hAk ↦ hpull k hk1 (by omega) hAk
+    have hgb : g (b - 1) ≤ g (b + 1 - 1) := hg (by omega)
+    rw [pullCount_add_one, show b + 1 - 1 = b by omega] at *
+    by_cases hA : A b ω = c
+    · rw [ite_eq_left hA]
+      have h1 := hpull b hb (by omega) hA
+      push_cast
+      exact ⟨le_max_of_le_right h1, fun _ ↦ h1⟩
+    · rw [ite_eq_right hA, add_zero]
+      refine ⟨ih1.trans (max_le_max le_rfl hgb), fun ⟨k, hk1, hk2, hAk⟩ ↦ ?_⟩
+      have hkb : k < b := lt_of_le_of_ne (by omega) fun h ↦ hA (h ▸ hAk)
+      exact (ih2 ⟨k, hk1, hkb, hAk⟩).trans hgb
+
 /-- [INC-P000, proof of Lemma `lem:imedround`, Step 3, general form] For a sequence of actions
 `A` and an arm `c`, if every pull of `c` at a round `k ∈ [a, b)` has `N_c(k) D < g(k)`, with
-`D > 0` and `g` nondecreasing, then `N_c(b) ≤ max(N_c(a), 1 + g(b - 1) / D)`: at the last pull
-`k`, `N_c(b) = N_c(k) + 1 < 1 + g(k) / D`. -/
+`D > 0` and `g` nondecreasing, then `N_c(b) ≤ max(N_c(a), 1 + g(b - 1) / D)`: the case
+`g'(k) = 1 + g(k) / D` of `pullCount_le_max_of_forall_add_one`. -/
 lemma pullCount_le_max_of_forall {β Ω : Type*} [DecidableEq β] {A : ℕ → Ω → β} {c : β}
     {ω : Ω} {D : ℝ} (hD : 0 < D) {g : ℕ → ℝ} (hg : Monotone g) {a b : ℕ} (hab : a ≤ b)
     (hpull : ∀ k, a ≤ k → k < b → A k ω = c → (pullCount A c k ω : ℝ) * D < g k) :
-    (pullCount A c b ω : ℝ) ≤ max (pullCount A c a ω : ℝ) (1 + g (b - 1) / D) := by
-  induction b, hab using Nat.le_induction with
-  | base => exact le_max_left _ _
-  | succ b hb ih =>
-    have ih := ih fun k hk hkb hA ↦ hpull k hk (by omega) hA
-    rw [pullCount_add_one]
-    split_ifs with hA
-    · have h1 := hpull b hb (by omega) hA
-      have : (pullCount A c b ω : ℝ) < g b / D := by rwa [lt_div_iff₀ hD]
-      refine le_max_of_le_right ?_
-      push_cast
-      linarith
-    · rw [add_zero]
-      refine ih.trans (max_le_max le_rfl ?_)
-      have : g (b - 1) ≤ g (b + 1 - 1) := hg (by omega)
-      have : g (b - 1) / D ≤ g (b + 1 - 1) / D := div_le_div_of_nonneg_right this hD.le
-      linarith
+    (pullCount A c b ω : ℝ) ≤ max (pullCount A c a ω : ℝ) (1 + g (b - 1) / D) :=
+  (pullCount_le_max_of_forall_add_one (g := fun k ↦ 1 + g k / D)
+    (fun _ _ h ↦ add_le_add_right (div_le_div_of_nonneg_right (hg h) hD.le) 1) hab
+    fun k hk hkb hA ↦ by
+      have := (lt_div_iff₀ hD).mpr (hpull k hk hkb hA)
+      linarith).1
 
 end Incognita.BatchedBandits

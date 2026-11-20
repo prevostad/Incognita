@@ -13,7 +13,8 @@ public import LMLExplore.Identification.Task.RealLaws
 /-! # `𝒦_inf` on the laws on `[0, 1]`
 
 Values and bounds of `𝒦_inf(P, μ) = dInf unitLaws P μ`, the infimum of `KL(P ‖ Q)` over the laws
-`Q` on `[0, 1]` with mean `> μ` [INC-P006, Proposition `prop:kinf`]. With `p = m(P)`:
+`Q` on `[0, 1]` with mean `> μ` [INC-P006, Proposition `prop:kinf`]. `dInf_anti` and `dInf_mono`:
+`dInf M P μ` is antitone in the class `M` and monotone in the level `μ`. With `p = m(P)`:
 
 * `dInf_unitLaws_eq_top_of_one_le`: `𝒦_inf(P, μ) = ∞` for `μ ≥ 1` (no law on `[0, 1]` has a mean
   above `1`);
@@ -43,6 +44,11 @@ variable {P : Measure ℝ} {μ : ℝ}
 lemma dInf_anti {M M' : Set (Measure ℝ)} (h : M ⊆ M') (P : Measure ℝ) (m : ℝ) :
     dInf M' P m ≤ dInf M P m :=
   le_dInf_iff.2 fun _ hQ hm ↦ dInf_le (h hQ) hm
+
+/-- `dInf M P` is monotone in the level: a competitor at a level is a competitor at every lower
+level. -/
+lemma dInf_mono (M : Set (Measure ℝ)) (P : Measure ℝ) : Monotone (dInf M P) :=
+  fun _ _ h ↦ le_dInf_iff.2 fun _ hQ hQm ↦ dInf_le hQ (h.trans_lt hQm)
 
 /-- [INC-P006, Proposition `prop:kinf`(i)] `𝒦_inf(P, μ) = ∞` for `μ ≥ 1`: no law on `[0, 1]` has a
 mean above `1`. No hypothesis on `P`. -/

@@ -8,6 +8,7 @@ module
 public import Incognita.BatchedBandits.Grid
 public import Mathlib.Analysis.SumIntegralComparisons
 public import Mathlib.MeasureTheory.Integral.Gamma
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 /-! # Elementary sums and sequences on a grid
 
@@ -23,6 +24,9 @@ every `L` (their partial sums), which is the form the proofs use.
 * `Grid.sum_mul_log_pow_four_le`, `Grid.sum_mul_rpow_le_one_add`: Lemma `lem:sums`(vi).
 * `sum_range_le_add_integral`, `integral_exp_neg_mul_rpow_inv`: Lemma `lem:sums`(iii), for the
   partial sums of the series.
+* `sum_Icc_mul_exp_neg_le`: `∑_(n ≥ 1) n e^(-ρn) ≤ 1/ρ²` (Lemma `lem:controlC`(d)).
+* `eventually_rpow_mul_exp_neg_le`, `exists_rpow_mul_exp_neg_le`: `y^A e^(-c y^a / (log y)^b)` is
+  eventually at most `y^(-2)`, and bounded on `[1, ∞)` (Step 7 of the proof of Lemma `lem:amb`).
 -/
 
 @[expose] public section
@@ -131,6 +135,110 @@ lemma integral_exp_neg_mul_rpow_inv {c p : ℝ} (hc : 0 < c) (hp : 0 < p) :
   rw [integral_exp_neg_mul_rpow (by positivity) hc]
   have : 1 / (1 / p) = p := by field_simp
   rw [this, show -1 / (1 / p) = -p by field_simp, mul_comm]
+
+/-- [INC-P000, proof of Lemma `lem:controlC`(d), the series] For `ρ > 0` and every `M`,
+`∑_(1 ≤ n ≤ M) n e^(-ρ n) ≤ e^(-ρ) / (1 - e^(-ρ))² ≤ 1 / ρ²`, since
+`(1 - e^(-ρ))² ≥ e^(-ρ) ρ²` (`e^(ρ/2) - e^(-ρ/2) = 2 sinh (ρ/2) ≥ ρ`). -/
+lemma sum_Icc_mul_exp_neg_le {ρ : ℝ} (hρ : 0 < ρ) (M : ℕ) :
+    ∑ n ∈ Finset.Icc 1 M, (n : ℝ) * Real.exp (-(ρ * n)) ≤ 1 / ρ ^ 2 := by
+  set q := Real.exp (-ρ) with hq
+  have hq0 : 0 < q := Real.exp_pos _
+  have hq1 : q < 1 := Real.exp_lt_one_iff.mpr (by linarith)
+  have hpow : ∀ n : ℕ, Real.exp (-(ρ * n)) = q ^ n := fun n ↦ by
+    rw [hq, ← Real.exp_nat_mul]
+    ring_nf
+  simp_rw [hpow]
+  have hnorm : ‖q‖ < 1 := by rw [Real.norm_of_nonneg hq0.le]; exact hq1
+  have hsum := hasSum_coe_mul_geometric_of_norm_lt_one hnorm
+  have h1 : ∑ n ∈ Finset.Icc 1 M, (n : ℝ) * q ^ n ≤ q / (1 - q) ^ 2 :=
+    sum_le_hasSum _ (fun n _ ↦ by positivity) hsum
+  refine h1.trans ?_
+  -- `(1 - q)² ≥ q ρ²`
+  set s := Real.exp (-(ρ / 2)) with hs
+  have hs0 : 0 < s := Real.exp_pos _
+  have hqs : q = s ^ 2 := by
+    rw [hq, hs, sq, ← Real.exp_add]
+    ring_nf
+  have hsinh : ρ ≤ Real.exp (ρ / 2) - s := by
+    have h := Real.self_le_sinh_iff.mpr (show 0 ≤ ρ / 2 by linarith)
+    rw [Real.sinh_eq] at h
+    rw [hs]
+    linarith
+  have hes : Real.exp (ρ / 2) * s = 1 := by
+    rw [hs, ← Real.exp_add]
+    simp
+  have h1q : 1 - q = s * (Real.exp (ρ / 2) - s) := by
+    rw [hqs]
+    nlinarith [hes]
+  have hpos : 0 < 1 - q := by linarith
+  rw [div_le_div_iff₀ (by positivity) (by positivity), one_mul, h1q]
+  have hρs : s * ρ ≤ s * (Real.exp (ρ / 2) - s) := mul_le_mul_of_nonneg_left hsinh hs0.le
+  have hρs0 : 0 ≤ s * ρ := by positivity
+  calc q * ρ ^ 2 = (s * ρ) ^ 2 := by rw [hqs]; ring
+    _ ≤ (s * (Real.exp (ρ / 2) - s)) ^ 2 := by gcongr
+
+open Filter in
+/-- [INC-P000, proof of Lemma `lem:amb`, Step 7, the decay] For `c, a > 0` and real `A`, `b`,
+eventually `y^A e^(-c y^a / (log y)^b) ≤ y^(-2)`: `(log y)^(b+1) = o(y^a)`. (The terms
+`2π`, `p_A`, `p̄_K` of the paper, multiplied by the polynomial cost `c(y)`, are of this form with
+`(a, b) = (1, 0)`, `(β - 1/2, 0)` and `(1/2, 2)`.) -/
+lemma eventually_rpow_mul_exp_neg_le {A c a b : ℝ} (hc : 0 < c) (ha : 0 < a) :
+    ∀ᶠ y in atTop, y ^ A * Real.exp (-(c * y ^ a / Real.log y ^ b)) ≤ y ^ (-2 : ℝ) := by
+  have hlo := (isLittleO_log_rpow_rpow_atTop (b + 1) ha).bound
+    (show 0 < c / (|A + 2| + 1) by positivity)
+  filter_upwards [hlo, eventually_gt_atTop (Real.exp 1)] with y hy hye
+  have hy0 : 0 < y := lt_trans (Real.exp_pos 1) hye
+  have hlog1 : 1 < Real.log y := by
+    rw [← Real.log_exp 1]
+    exact Real.log_lt_log (Real.exp_pos 1) hye
+  have hlog0 : 0 < Real.log y := by linarith
+  have hlb : 0 < Real.log y ^ b := Real.rpow_pos_of_pos hlog0 b
+  rw [Real.norm_of_nonneg (Real.rpow_nonneg hlog0.le _),
+    Real.norm_of_nonneg (Real.rpow_nonneg hy0.le _)] at hy
+  -- `(A + 2) log y ≤ c y^a / (log y)^b`
+  have hkey : (A + 2) * Real.log y ≤ c * y ^ a / Real.log y ^ b := by
+    rw [le_div_iff₀ hlb]
+    have h1 : Real.log y ^ (b + 1) = Real.log y ^ b * Real.log y := by
+      rw [Real.rpow_add hlog0, Real.rpow_one]
+    have hya : 0 ≤ y ^ a := Real.rpow_nonneg hy0.le a
+    have h2 : (|A + 2| + 1) * Real.log y ^ (b + 1) ≤ c * y ^ a := by
+      have := mul_le_mul_of_nonneg_left hy (by positivity : (0 : ℝ) ≤ |A + 2| + 1)
+      rwa [← mul_assoc, mul_div_cancel₀ _ (by positivity)] at this
+    have h3 : (A + 2) * Real.log y * Real.log y ^ b ≤ (|A + 2| + 1) * Real.log y ^ (b + 1) := by
+      rw [h1]
+      have : (A + 2) ≤ |A + 2| + 1 := by linarith [le_abs_self (A + 2)]
+      have hpos : 0 ≤ Real.log y ^ b * Real.log y := by positivity
+      nlinarith
+    linarith
+  rw [Real.rpow_def_of_pos hy0 A, Real.rpow_def_of_pos hy0 (-2), ← Real.exp_add, Real.exp_le_exp]
+  linarith
+
+/-- [INC-P000, proof of Lemma `lem:amb`, Step 7] For `A ≥ 0` and `c, a > 0`, the function
+`y^A exp(-c y^a / (log y)^b)` is bounded on `[1, ∞)` and at most `y^(-2)` from some `y₀` on
+(`eventually_rpow_mul_exp_neg_le`; the exponential is at most `1` on `[1, ∞)`). -/
+lemma exists_rpow_mul_exp_neg_le {A c a b : ℝ} (hA : 0 ≤ A) (hc : 0 < c) (ha : 0 < a) :
+    ∃ y₀ F : ℝ, (∀ y, y₀ ≤ y →
+        y ^ A * Real.exp (-(c * y ^ a / Real.log y ^ b)) ≤ y ^ (-2 : ℝ)) ∧
+      ∀ y, 1 ≤ y → y ^ A * Real.exp (-(c * y ^ a / Real.log y ^ b)) ≤ F := by
+  obtain ⟨y₁, hy₁⟩ :=
+    Filter.eventually_atTop.mp (eventually_rpow_mul_exp_neg_le (A := A) (b := b) hc ha)
+  refine ⟨max y₁ 1, max y₁ 1 ^ A + 1, fun y hy ↦ hy₁ y (le_of_max_le_left hy), fun y hy ↦ ?_⟩
+  have hy0 : 0 < y := by linarith
+  have hM0 : 0 ≤ max y₁ 1 ^ A := Real.rpow_nonneg (zero_le_one.trans (le_max_right _ _)) A
+  by_cases h : max y₁ 1 ≤ y
+  · have h1 : y ^ (-2 : ℝ) ≤ 1 := Real.rpow_le_one_of_one_le_of_nonpos hy (by norm_num)
+    have := hy₁ y (le_of_max_le_left h)
+    linarith
+  · push Not at h
+    have he : Real.exp (-(c * y ^ a / Real.log y ^ b)) ≤ 1 :=
+      Real.exp_le_one_iff.mpr (neg_nonpos.mpr (div_nonneg
+        (mul_nonneg hc.le (Real.rpow_nonneg hy0.le a))
+        (Real.rpow_nonneg (Real.log_nonneg hy) b)))
+    have hyA : y ^ A ≤ max y₁ 1 ^ A := Real.rpow_le_rpow hy0.le h.le hA
+    have hyA0 : 0 ≤ y ^ A := Real.rpow_nonneg hy0.le A
+    calc y ^ A * Real.exp (-(c * y ^ a / Real.log y ^ b)) ≤ y ^ A * 1 :=
+          mul_le_mul_of_nonneg_left he hyA0
+      _ ≤ max y₁ 1 ^ A + 1 := by linarith
 
 variable {K : ℕ}
 
