@@ -103,6 +103,34 @@ Statements copied from the text layer of the free PDF (session of 2026-11-16); f
   the book refers to Lattimore [2017].
 - **§16.4.** Classes with bounded kurtosis are "only understood up to constant factors" (citing Lattimore
   [2017]); "plenty of open questions" remain for non-parametric classes.
+- **Check of 2026-11-20 (Claude Opus 5.5, bibliographer).** The free online PDF (the edition statement on
+  its first page: "The content is the same as the print edition, published by Cambridge University
+  Press, except that minor typos are corrected here", and its page numbers "do not match between the
+  versions"), text layer of pp. 207–208: Definition 16.1 with (16.1), the sentence that recalls that
+  $\mathcal E$ is unstructured if $\mathcal E=\mathcal M_1\times\dots\times\mathcal M_k$, the definition of $d_{\inf}$ and Theorem 16.2
+  with (16.2) are on p. 207 of this edition, and they agree word for word with the quotations above;
+  the start of the proof (p. 208) uses Lemma 4.5, Lemma 15.1 and Theorem 14.2, as summarised. The
+  alternative $P_i'$ of the proof is chosen with $D(P_i,P_i')\le d_i+\varepsilon$, so the proof implicitly
+  takes $d_i<\infty$; when $d_i=\infty$ the term of arm $i$ in (16.2) is $0$ (our remark).
+- **Algorithm 6, §8.1 "Asymptotically Optimal UCB", p. 117 of the online edition (page image, read
+  2026-11-20, Claude Opus 5.5, bibliographer).** "1: Input $k$ 2: Choose each arm once 3: Subsequently
+  choose $A_t=\operatorname{argmax}_i\Big(\hat\mu_i(t-1)+\sqrt{\frac{2\log f(t)}{T_i(t-1)}}\Big)$ where $f(t)=1+t\log^2(t)$";
+  caption "Algorithm 6: Asymptotically optimal UCB." The text before it: it differs from Algorithm 3
+  "only by the choice of the confidence level". **Theorem 8.1** (pp. 117–118): "For any 1-subgaussian
+  bandit, the regret of Algorithm 6 satisfies
+  $R_n\le\sum_{i:\Delta_i>0}\inf_{\varepsilon\in(0,\Delta_i)}\Delta_i\Big(1+\frac5{\varepsilon^2}+\frac{2\big(\log f(n)+\sqrt{\pi\log f(n)}+1\big)}{(\Delta_i-\varepsilon)^2}\Big)$. (8.1)
+  Furthermore, $\limsup_{n\to\infty}\frac{R_n}{\log(n)}\le\sum_{i:\Delta_i>0}\frac2{\Delta_i}$. (8.2)" (The rest of the
+  theorem after (8.2) was not read.) Algorithm 6 has no variance parameter: it is written for
+  1-subgaussian rewards; a version with variance proxy $\sigma^2$ (index width multiplied by $\sigma$) is not
+  printed as Algorithm 6.
+- **Table 16.1, p. 209 (page image, read 2026-11-20, Claude Opus 5.5, bibliographer).** Caption "Expressions
+  for $d_{\inf}$ for different parametric families when the mean of $P$ is less than $\mu^*$." Rows
+  ($\mathcal M$; $P$; $d_{\inf}(P,\mu^*,\mathcal M)$): $\{\mathcal N(\mu,\sigma^2):\mu\in\mathbb R\}$; $\mathcal N(\mu,\sigma^2)$; $\frac{(\mu-\mu^*)^2}{2\sigma^2}$.
+  $\{\mathcal N(\mu,\sigma^2):\mu\in\mathbb R,\sigma^2\in(0,\infty)\}$; $\mathcal N(\mu,\sigma^2)$; $\frac12\log\Big(1+\frac{(\mu-\mu^*)^2}{\sigma^2}\Big)$.
+  $\{\mathcal B(\mu):\mu\in[0,1]\}$; $\mathcal B(\mu)$; $\mu\log\big(\frac{\mu}{\mu^*}\big)+(1-\mu)\log\big(\frac{1-\mu}{1-\mu^*}\big)$.
+  $\{\mathcal U(a,b):a,b\in\mathbb R\}$; $\mathcal U(a,b)$; $\log\Big(1+\frac{2((a+b)/2-\mu^*)^2}{b-a}\Big)$. The text before it (p. 208):
+  the calculations "are all straightforward (Exercise 16.1)"; UCB of Chapter 8 and KL-UCB of Chapter 10
+  are called asymptotically optimal for $\mathcal E^k_{\mathcal N}(1)$ and $\mathcal E^k_{\mathcal B}$, in the sense of (16.3).
 
 ## Techniques
 
@@ -121,3 +149,8 @@ Change of measure on one arm (Lemma 15.1, Theorem 14.2) for Theorem 16.2.
 - `papers/P005-bounded-kurtosis/`: node `cite:LS-16.2` (the lower bound paired with the main theorem); the
   maximal inequality (Theorem 3.9), used by name in the proof of the upper deviation.
 - `roadmaps/StochasticBandits/KNOWN.md`: K1, K43, K63.
+- `Incognita/P006/KnownCases.lean`: `[LS, Algorithm 6]` (the learner `ucbF (1 / 4)`) and `[LS, Table 16.1]`
+  (the Bernoulli constant $\mathrm{kl}(p_a,p^\star)$), both followed by "(to be checked)"; read on 2026-11-20
+  (above): the Bernoulli row of Table 16.1 is that constant; Algorithm 6 is the 1-subgaussian version,
+  of which `ucbF (1 / 4)` is the variant with variance proxy $1/4$. `catalogue/garden.md` cites Table 16.1
+  likewise.
