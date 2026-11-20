@@ -42,6 +42,7 @@ public import Statements.P003.drift_of_twoSided
 public import Statements.P003.drift_witness_exclusion
 public import Statements.P003.exists_isConsistent
 public import Statements.P003.followSource_not_isConsistent
+public import Statements.P003.followSource_not_isConsistent_v2
 public import Statements.P003.fundamental_inequality
 public import Statements.P003.isConsistent_anti
 public import Statements.P003.isConsistent_one

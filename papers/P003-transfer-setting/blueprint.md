@@ -24,7 +24,8 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 | prop:drift | frozen | (a) `Incognita.Statements.P003.drift_of_twoSided`; (b) `…drift_of_mem_meanBand`; (c) `…drift_meanBand_inclusions`; (d) `…drift_all_pairs`; (e) `…drift_witness_exclusion` | |
 | prop:classes | frozen | (a) `Incognita.Statements.P003.isConsistent_anti`; (b) `Incognita.Statements.P003.isConsistent_one` | |
 | prop:witness | frozen | `Incognita.Statements.P003.ofAlgorithm_isConsistent` (first sentence); `Incognita.Statements.P003.ucb_isConsistentOnUnit` (UCB); `Incognita.Statements.P003.exists_isConsistent` ("`𝒞_L ≠ ∅`") | UCB is LML's `Bandits.ucbAlgorithm K c` |
-| prop:exclusion | frozen | `Incognita.Statements.P003.followSource_not_isConsistent` | `π^tr` is `Incognita.TransferBandits.TransferAlgorithm.followSource` |
+| prop:exclusion | frozen | `Incognita.Statements.P003.followSource_not_isConsistent` | `π^tr` is `Incognita.TransferBandits.TransferAlgorithm.followSource`; superseded by `followSource_not_isConsistent_v2` (SC1: sizes `0` allowed) |
+| prop:exclusion (SC1) | frozen | `Incognita.Statements.P003.followSource_not_isConsistent_v2` | correction SC1: the sizes of the second claim are positive on every arm; witness `Incognita.P003.followSource_not_isConsistent_v2_satisfiable`; proof: (added by prove) |
 | cite:GMS19-Lemma1 | lemma | (added by prove): `Incognita.klDiv_bernoulliMeasure_integral_le` | `Incognita/ForLML/InformationTheory/KullbackLeibler/Bernoulli.lean`; from LMLExplore's `klBer_integral_le_klDiv` (data processing to the Bernoulli law of the mean) and Mathlib's `klDiv_map_le` |
 | lem:kl-neg | lemma | (added by prove): not used | the Lean proof of prop:source-kl uses instead the integrability of the log-likelihood ratio when `KL(ν'_k, ν₂'_k) < ∞` (Mathlib's `klDiv_ne_top_iff`) and treats `KL = ∞` separately (formalisation.tex, flem:source-kl-top) |
 | lem:source-law | lemma | (added by prove): `Incognita.TransferBandits.sourceLaw_eq_withDensity` | `Incognita/TransferBandits/SourceLaw.lean`, in density form: the law of the source data under `ν'` is its law under `ν₂'` with density `ℓ(s)`, the indicator that the sizes of the arms of `Z` vanish times `∏_k ∏_(j < n_k(s)) (dν'_k/dν₂'_k)(x_(k,j))`; `map_boxRestrict_sourceMeasure`, `pi_pi_eq_withDensity` (from Tau Ceti's `TauCeti.pi_withDensity`), `sourceMeasure_preimage_boxRestrict` (change of measure on the box), `sourceData_eq_of_eq`, `measurable_sourceDensity` |
@@ -201,7 +202,23 @@ Read from the Lean alone (definitions unfolded), then compared with the paper's 
   least two), the learner that always pulls the smallest arm maximising the source empirical means
   (when every arm has a source value; otherwise the smallest arm) is in no `𝒞_L`, and some
   `ν ∈ 𝒫^K`, constant sizes `n`, suboptimal arm `a` and `c > 0` give
-  `E[N_a(T)]/T^c ↛ 0` for the game with source `ν' = ν` and sizes `n`. Same.
+  `E[N_a(T)]/T^c ↛ 0` for the game with source `ν' = ν` and sizes `n`. Superseded (SC1): the
+  sizes `n` may be `0`, and then `π^tr` receives no source data and is the constant learner of the
+  smallest arm, which is not the paper's claim.
+- **`followSource_not_isConsistent_v2`** (prop:exclusion, correction SC1). On a finite linear
+  order `α` of arms with at least two elements (and measurable singletons), the learner
+  `followSource`, which at every round deterministically pulls the smallest arm maximising the
+  source empirical means when every arm has at least one source value, and the smallest arm
+  otherwise, satisfies: (1) for every `L : α → ℝ` with `L a > 0` for all `a`, it is not in
+  `IsConsistent L`; (2) there are a kernel `ν` with laws on `[0,1]`, sizes `n : α → ℕ` with
+  `n k ≥ 1` for every arm `k`, an arm `a` whose mean is below that of some arm `b`, and `c > 0`
+  such that `T ↦ E[N_a(T)] / T^c` does not tend to `0`, where the expectation is under the game
+  with source law `ν`, the constant size rule `n` at every horizon, target `ν` and learner
+  `followSource`. Differences with the paper's node: "deterministic source sizes" is read, as the
+  paper's proof uses it, as sizes known in advance and positive on every arm, so that `π^tr`
+  receives source data on every arm and follows it (with `n = 0` the claim would be about a
+  constant learner, SC1); a deterministic strategy is written as the constant size rule
+  `constSize n` at every horizon; arms and arm `1` as in decision 1. Otherwise the same.
 
 ## Open problems
 
