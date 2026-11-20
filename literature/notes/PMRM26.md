@@ -10,6 +10,12 @@
 The statements below are copied from the HTML rendering of v1, with the mathematics as written
 there (LaTeX of the rendering); the notation $\mathcal P([0,1])$ is the set of probability laws on
 $[0,1]$. KNOWN.md (K2, K7, K8 of `roadmaps/TransferBandits/`) summarises the same results.
+Bibliographer, 2026-11-20: the set $\mathcal P([0,1])_L$, the class $\mathcal C_L$ and Theorem 2
+below compared again with the text layer (`pdftotext -layout`) of the arXiv v1 PDF, pp. 8–9: they
+agree (the non-strict $\le L_k$ in $\mathcal P([0,1])_L$; the prior strategy "comes from a bandit
+game played over $T'=f(T)$ rounds"; in (i) the hypotheses $\mu'_a\le\mu_1-L_a$ and the finite
+$\limsup$, the positive part over the whole bracket, the denominator $\mathcal K_{inf}(\nu_a,\mu_1)$
+outside the $\liminf$; (ii) under $\mu'_a>\mu_1-L_a$).
 
 ## Definitions
 
