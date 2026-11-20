@@ -33,8 +33,13 @@ notions reduce to their sequential counterparts.
 
 Further relations, in the namespace `Relations`:
 
+* `Relations.exists_infoModel_zero_of_isBatched`, `Relations.isBatched_iff_exists_infoModel`: a
+  learner is batched on `g` iff it is the component at `g` of a family in `𝓜_k`, for every `k`
+  (the last claim of [INC-P006, Theorem `thm:main`(i)] is the case `k = ⊤`).
 * `Relations.kinf_bounds_of_gap_pos_of_kinf_bounds`: [INC-P006, Proposition `prop:kinf`], (iii)
   implies (v).
+* `Relations.dInf_unitLaws_eq_zero_iff_of_kinf`: [INC-P006, Proposition `prop:kinf`], (i)-(iii)
+  give `𝒦_inf(P, μ) = 0` iff `μ ≤ m(P)` and `μ < 1`.
 * `Relations.unitLaws_eq_image_unitIntervalLaws`: the laws on `[0, 1]` are LMLExplore's
   `unitIntervalLaws`.
 
@@ -202,6 +207,59 @@ variable {𝓐 𝓨 : Type*} [MeasurableSpace 𝓐] [MeasurableSpace 𝓨] {K : 
 @[deprecated (since := "2026-11-19")]
 alias isBatched_seesRewardsUpTo_zero_of_isBatched_sequential_iff := IsBatched.seesRewardsUpTo_zero
 
+/-- A learner batched on `g` is the component at `g` of a family in `𝓜_0`, the smallest
+information model [INC-P006, Definition `def:infomodel`]. On a grid `g'` the family copies the
+policy of `alg` at the round `n` when `n` is in the same batch `b` of `g` and of `g'` and the two
+grids have the same ends `t 1, …, t (b - 1)`, and samples a fixed arm `a` otherwise. Condition (b)
+of `𝓜_0` holds because two grids that agree up to `t ℓ`, with `n` in their batch `ℓ + 1`, satisfy
+the copying condition together or not at all. -/
+lemma exists_infoModel_zero_of_isBatched [Nonempty 𝓐] {alg : Algorithm Unit 𝓐 𝓨} {g : Grid K}
+    (h : IsBatched alg g) :
+    ∃ π : Grid K → Algorithm Unit 𝓐 𝓨, InfoModel 0 π ∧ π g = alg := by
+  classical
+  obtain ⟨a⟩ := ‹Nonempty 𝓐›
+  -- `C g' n`: the grid `g'` copies `alg` at the round `n`
+  let C : Grid K → ℕ → Prop := fun g' n ↦
+    g'.batchOf n = g.batchOf n ∧ ∀ j, 1 ≤ j → j < g.batchOf n → g'.t j = g.t j
+  let π : Grid K → Algorithm Unit 𝓐 𝓨 := fun g' ↦
+    { policy := fun n ↦
+        if C g' n then alg.policy n else (Algorithm.const (Measure.dirac a)).policy n
+      isMarkovKernel_policy := fun n ↦ by split <;> infer_instance }
+  have hπ : ∀ g' n, (π g').policy n =
+      if C g' n then alg.policy n else (Algorithm.const (Measure.dirac a)).policy n :=
+    fun _ _ ↦ rfl
+  refine ⟨π, ⟨fun g' n ↦ ?_, fun g' g'' ℓ n h' h'' ht ↦ ?_⟩, ?_⟩
+  · intro h₁ h₂ ha hy
+    rw [hπ]
+    split_ifs with hC
+    · refine h n h₁ h₂ ha fun i hi ↦ hy i (hi.trans_eq ?_)
+      rcases Nat.lt_or_ge (g.batchOf n - 1) 1 with hb | hb
+      · rw [show g.batchOf n - 1 = 0 by omega, hC.1, show g.batchOf n - 1 = 0 by omega,
+          g.t_zero, g'.t_zero]
+      · rw [hC.1, hC.2 _ hb (by have := g.one_le_batchOf n; omega)]
+    · rfl
+  · have hC : C g' n ↔ C g'' n := by
+      have ht' : ∀ j, 1 ≤ j → j ≤ ℓ → g'.t j = g''.t j :=
+        fun j hj hjℓ ↦ ht j hj (by simpa using (Nat.cast_le (α := ℕ∞)).2 hjℓ)
+      simp only [C, h', h'']
+      refine and_congr_right fun hb ↦ forall_congr' fun j ↦ imp_congr_right fun hj ↦
+        imp_congr_right fun hjb ↦ ?_
+      rw [ht' j hj (by omega)]
+    rw [hπ, hπ, if_congr hC rfl rfl]
+  · ext n : 2
+    simp [hπ, C]
+
+/-- **Implication** [INC-P006, Theorem `thm:main`(i), last claim, and the inclusions of (i)]: a
+learner is batched on `g` iff it is the component at `g` of a family in `𝓜_k`, for **every**
+`k : ℕ∞`, not only for `k = ⊤`. The information models differ as sets of families (strictly,
+`exists_infoModel_and_not_infoModel`), not by the learners they offer on a single grid. -/
+lemma isBatched_iff_exists_infoModel [Nonempty 𝓐] {alg : Algorithm Unit 𝓐 𝓨} {g : Grid K}
+    (k : ℕ∞) :
+    IsBatched alg g ↔ ∃ π : Grid K → Algorithm Unit 𝓐 𝓨, InfoModel k π ∧ π g = alg := by
+  refine ⟨fun h ↦ ?_, fun ⟨π, hπ, hg⟩ ↦ hg ▸ hπ.isBatched g⟩
+  obtain ⟨π, hπ, hg⟩ := exists_infoModel_zero_of_isBatched h
+  exact ⟨π, hπ.mono zero_le, hg⟩
+
 section KInf
 
 open LMLExplore LMLExplore.Identification
@@ -235,6 +293,44 @@ lemma kinf_bounds_of_gap_pos_of_kinf_bounds
     le_ciSup (Finite.bddAbove_range fun b ↦ ∫ x, id x ∂(ν b)) a
   obtain ⟨h1, h2, h3, h4⟩ := h3 (hν.1 a) hle hν.2
   exact ⟨ENNReal.ofReal_pos.2 (by positivity), h1.trans h2, h3, h4⟩
+
+/-- **Lower against upper bounds** [INC-P006, Proposition `prop:kinf`, (i)-(iii)]: items (i), (ii)
+and (iii), taken here as the hypotheses `h1`, `h2` and `h3` in the form of the frozen statements
+`Incognita.Statements.P006.kinf_eq_top_of_one_le`, `kinf_eq_zero_of_lt_mean` and `kinf_bounds`,
+together locate the zeros of `𝒦_inf`: for a law `P` on `[0, 1]` of mean `p` and `μ ∈ ℝ`,
+`𝒦_inf(P, μ) = 0` iff `μ ≤ p` and `μ < 1`. The value `0` at `μ = p < 1` comes from the upper bound
+`log ((1 - p) / (1 - p)) = 0` of (iii), and `𝒦_inf(P, μ) > 0` for `p < μ < 1` from its lower bound
+`2 (μ - p)² > 0`. This lemma does not show that (i)-(iii) are consistent: that follows from their
+proofs `Incognita.P006.kinf_eq_top_of_one_le`, `kinf_eq_zero_of_lt_mean` and `kinf_bounds`, which
+instantiate `h1`, `h2` and `h3`. -/
+lemma dInf_unitLaws_eq_zero_iff_of_kinf
+    (h1 : ∀ {P : Measure ℝ}, P ∈ unitLaws → ∀ {μ : ℝ}, 1 ≤ μ →
+      LMLExplore.Bandits.dInf unitLaws P μ = ⊤)
+    (h2 : ∀ {P : Measure ℝ}, P ∈ unitLaws → ∀ {μ : ℝ}, μ < ∫ x, id x ∂P →
+      LMLExplore.Bandits.dInf unitLaws P μ = 0)
+    (h3 : ∀ {P : Measure ℝ}, P ∈ unitLaws → ∀ {μ : ℝ}, ∫ x, id x ∂P ≤ μ → μ < 1 →
+      ENNReal.ofReal (2 * (μ - ∫ x, id x ∂P) ^ 2) ≤ klBer (∫ x, id x ∂P) μ ∧
+        klBer (∫ x, id x ∂P) μ ≤ LMLExplore.Bandits.dInf unitLaws P μ ∧
+        LMLExplore.Bandits.dInf unitLaws P μ ≤
+          ENNReal.ofReal (Real.log ((1 - ∫ x, id x ∂P) / (1 - μ))) ∧
+        LMLExplore.Bandits.dInf unitLaws P μ ≠ ⊤)
+    {P : Measure ℝ} (hP : P ∈ unitLaws) (μ : ℝ) :
+    LMLExplore.Bandits.dInf unitLaws P μ = 0 ↔ μ ≤ ∫ x, id x ∂P ∧ μ < 1 := by
+  constructor
+  · intro h0
+    by_contra hμ
+    rcases le_or_gt 1 μ with h1μ | h1μ
+    · simp [h1 hP h1μ] at h0
+    · have hpμ : ∫ x, id x ∂P < μ := lt_of_not_ge fun h ↦ hμ ⟨h, h1μ⟩
+      have hb := (h3 hP hpμ.le h1μ).1.trans ((h3 hP hpμ.le h1μ).2.1.trans h0.le)
+      rw [nonpos_iff_eq_zero, ENNReal.ofReal_eq_zero] at hb
+      nlinarith [sub_pos.2 hpμ]
+  · rintro ⟨hpμ, h1μ⟩
+    rcases hpμ.lt_or_eq with hlt | rfl
+    · exact h2 hP hlt
+    · have hb := (h3 hP le_rfl h1μ).2.2.1
+      rwa [div_self (sub_pos.2 h1μ).ne', Real.log_one, ENNReal.ofReal_zero,
+        nonpos_iff_eq_zero] at hb
 
 @[deprecated (since := "2026-11-19")]
 alias dInf_range_bernoulliMeasure_of_one_le_of_dInf_unitLaws_eq_top_of_one_le :=

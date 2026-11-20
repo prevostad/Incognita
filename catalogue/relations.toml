@@ -116,3 +116,12 @@ lean = "Incognita.TransferBandits.Relations.onlineCount_eq_pullCount'"
 justification = "P003 def:game, the number N_k(T) of pulls of arm k in an online history (Fin T -> alpha x R), is LML's pullCount' of the same history seen as an LML history with trivial observations (pairsHist): onlineCount a h = pullCount' T (pairsHist h) a. Migration left to the owner"
 date = "2026-11-20"
 by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.BatchedBandits.Relations.isBatched_iff_exists_infoModel"
+to = "Incognita.P006.isBatched_iff_exists_infoModel_top"
+lean = "Incognita.P006.isBatched_iff_exists_infoModel_top"
+justification = "P006 thm:main (i), last claim (a learner is batched on g iff it is the component at g of a family in M_infinity) holds in every information model M_k, k in N u {infinity}: from a learner batched on g, the family that, on a grid g', copies its policy at the round n when n is in the same batch b of g and g' and t_1, ..., t_(b-1) agree, and samples a fixed arm otherwise, is in M_0 (Relations.exists_infoModel_zero_of_isBatched), hence in every M_k (InfoModel.mono). At k = infinity, on a finite type of arms with 2 <= K (Nonempty from hK), it is the frozen statement, and the proof Incognita.P006.isBatched_iff_exists_infoModel_top is this corollary (Relations.isBatched_iff_exists_infoModel at k = top); hypotheses no stronger (any action and feedback types, any K); no constants. The library form Incognita.BatchedBandits.isBatched_iff_exists_infoModel_top is the same case k = top for any types and keeps its direct proof (the constant learner off g); this entry does not record it"
+date = "2026-11-20"
+by = "claude-opus-5-5"
