@@ -53,7 +53,9 @@ theorem infoModel_strict {α : Type*} [Fintype α] [MeasurableSpace α]
   exact exists_infoModel_and_not_infoModel hc hkk'
 
 /-- [INC-P006, Theorem `thm:main`(i), last claim] A learner is batched on `g` iff it is the
-component at `g` of a family in `𝓜_⊤`. The hypothesis `K ≥ 2` is used only to have an arm. -/
+component at `g` of a family in `𝓜_⊤`: the case `k = ⊤` of
+`Relations.isBatched_iff_exists_infoModel`, which holds in every `𝓜_k`. The hypothesis `K ≥ 2` is
+used only to have an arm. -/
 @[nolint unusedArguments]
 theorem isBatched_iff_exists_infoModel_top {α : Type*} [Fintype α]
     [MeasurableSpace α] [MeasurableSingletonClass α] (hK : 2 ≤ Fintype.card α)
@@ -62,7 +64,7 @@ theorem isBatched_iff_exists_infoModel_top {α : Type*} [Fintype α]
       ∃ π : Incognita.BatchedBandits.Grid (Fintype.card α) → Learning.Algorithm Unit α ℝ,
         Incognita.BatchedBandits.InfoModel ⊤ π ∧ π g = alg := by
   have : Nonempty α := Fintype.card_pos_iff.mp (by omega)
-  exact Incognita.BatchedBandits.isBatched_iff_exists_infoModel_top
+  exact Relations.isBatched_iff_exists_infoModel ⊤
 
 /-- [INC-P006, Theorem `thm:main`(ii), first claim] A learner batched on `g'` is batched on every
 grid `g` finer than `g'`. The hypothesis `K ≥ 2` is not used. -/
