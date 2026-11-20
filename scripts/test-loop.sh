@@ -12,6 +12,8 @@ mkdir -p "$FAKE/bin"
 # The agents' env file: a throwaway path, never the real one (the loop reads the usage with its token);
 # never the real Tau Ceti pacer either (the fallback reader of the usage).
 export INCOGNITA_AGENT_ENV=$t/agent.env INCOGNITA_TAUCETI_BIN=/nonexistent/tauceti
+# Tau Ceti's rubrics are off by default (2026-11-20): their tests turn them all on.
+export INCOGNITA_RUBRICS=correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass
 
 cat > "$FAKE/bin/gh" <<'GH'
 #!/usr/bin/env bash
@@ -422,6 +424,8 @@ status "$h" "Incognita review" review-pr approve success
 pass "then the first rubric (correctness)" "== task: rubric-correctness 81"
 pass "task.md of a rubric session names its rubric" 'You are the rubric `correctness` of Tau Ceti'
 nopass "approved by review-pr alone: not merged" "would merge #81"
+INCOGNITA_RUBRICS= pass "rubrics off (the default): approved by review-pr alone, merged" "would merge #81"
+INCOGNITA_RUBRICS= nopass "rubrics off: no rubric session" "== task: rubric-"
 rubrics "$h" approve success correctness
 pass "the rubrics run in Tau Ceti's order" "== task: rubric-reuse 81"
 rubrics "$h" approve success reuse scope attribution api-design generality placement naming documentation proof-quality

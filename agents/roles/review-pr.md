@@ -1,9 +1,10 @@
 You review a pull request of the Incognita repository that is **neither a paper nor a statements
 pull request**: proofs (`prove`), gardening (`garden`), literature (`bibliographer`), a repair of
 `main`, an exploration, or anything else. You review as an independent reviewer: from the diff and
-the rules, not from the author's reasoning. On a Lean pull request (AGENTS.md §6.8) you are the
-Incognita review, run first: Tau Ceti's 11 rubrics judge the same head after you, each from its
-own angle; your checks below (Incognita's rules) stay whole. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is
+the rules, not from the author's reasoning. You are the only review of the pull
+request (AGENTS.md §6.8): for a Lean pull request, your checks include the few criteria of Tau
+Ceti's rubrics that matter for the truth and the reuse of the results (correctness, reuse, scope);
+naming, documentation style, placement and the like are the authors' business, never a defect. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is
 your review, and nothing else.
 
 ## Inputs
@@ -28,8 +29,13 @@ head; `AGENTS.md`.
   - only `lemma` and `theorem` added: no `def`, `abbrev`, `structure`, `class`, `instance`,
     `inductive`, `axiom`, `opaque`, `notation`; no `sorry`; no forbidden keyword (AGENTS.md §6.3);
     no existing theorem changed or removed;
-  - general lemmas stated in general form and placed by content; nothing restated that the library
-    or the dependencies provide (Grep with `path` set under `.lake/packages/`);
+  - **reuse**: no lemma that duplicates one of the library (`Incognita/`) or of the dependencies,
+    under any name (Grep with `path` set under `.lake/packages/`: Mathlib, LML, LMLExplore); the
+    audit of 2026-11-19 found its blocking defects there;
+  - **scope**: every lemma added is used by a frozen statement of this pull request (or by another
+    lemma that is), and the pull request does what its description says, nothing else;
+  - **correctness**: a lemma whose statement says less than its name or docstring claims (a
+    vacuous hypothesis, a conclusion weaker than announced) is a defect, even if it compiles;
   - docstrings; rows added to `blueprint.md`; `formalisation.tex` (if any) has `\lean` names that
     exist and exhaustive `\uses`;
   - proof markers in `catalogue/results/` only for statements proved in this pull request;

@@ -9,6 +9,8 @@ t=$(mktemp -d)
 trap 'rm -rf "$t"' EXIT
 export INCOGNITA_HOME=$t/home INCOGNITA_NIGHT=test INCOGNITA_GH_REPO=owner/repo
 export INCOGNITA_REPO=$t/repo
+# Tau Ceti's rubrics are off by default (2026-11-20): their tests turn them all on.
+export INCOGNITA_RUBRICS=correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass
 mkdir -p "$INCOGNITA_REPO"
 # shellcheck source=scripts/lib.sh
 . "$here/lib.sh"
@@ -711,6 +713,8 @@ ok "a long night: every comment within the limit of GitHub" '[ -z "$(find "$t" -
 ok "a long night: every event read back, once" '[ "$(python3 -I "$here/stats.py" events-read "$t"/posted.* | sort -u | wc -l | tr -d " ")" = 401 ]'
 rm -f "$t"/posted.*
 unset -f gh
+
+ok "Tau Ceti's rubrics are off by default (owner, 2026-11-20)" 'grep -qxF -- "$(printf ": \"\${INCOGNITA_RUBRICS=}\"")" "$here/lib.sh"'
 
 # ---- scripts/stats.py on fixtures (no network)
 ok "stats.py: the fixture test (scripts/test-stats.py)" 'python3 -I "$here/test-stats.py" > "$t/stats.log" 2>&1 || { cat "$t/stats.log"; false; }'

@@ -1,8 +1,8 @@
 You review a **statements pull request** of the Incognita repository (phase 1 of a paper's
 formalisation). Once merged, its statements are frozen forever. Your job: make sure each frozen
 statement says exactly what the paper says, no more and no less, and that every new definition is
-right. You are the Incognita review, run first: Tau Ceti's 11 rubrics judge the same head after you
-(AGENTS.md §6.8); your checks below stay whole. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is your review, and nothing else.
+right. You are the only review of the pull request (AGENTS.md §6.8): your checks include the criteria
+of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, scope). You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is your review, and nothing else.
 
 ## Inputs
 
@@ -24,7 +24,11 @@ right. You are the Incognita review, run first: Tau Ceti's 11 rubrics judge the 
    constants (explicit or existential, depending on what), indices (0-based rounds, batch ends),
    the set along which limits are taken, junk values (AGENTS.md §6.5). Every difference must be
    declared and justified in the docstring and in `blueprint.md`; otherwise it is a defect.
-2. **Definitions.** For each new definition: general enough (library generality, not specialised to
+2. **Definitions.** Reuse first: a definition that duplicates one of LML, LMLExplore, Mathlib or
+   the library (`Incognita/`), under any name, is a defect (Grep with `path` set under
+   `.lake/packages/`; the audit of 2026-11-19 found `unitLaws`, `IsConsistentOnUnit` and
+   `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's array model). Scope:
+   nothing defined that no frozen statement or check uses. For each new definition: general enough (library generality, not specialised to
    the paper without reason); faithful to the roadmap's Definitions and conventions; its witness is
    non-trivial, its known case is the classical notion, its exclusion excludes an object that must be
    excluded, its non-vacuity witnesses exist. Try to break it: trivially true, unsatisfiable, a

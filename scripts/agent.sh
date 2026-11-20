@@ -492,7 +492,7 @@ if is_rubric_role "$role"; then
   add_situation "You are the rubric \`${role#rubric-}\` of Tau Ceti's review (one independent session per rubric; the other rubrics, the Incognita review \`$( [ "$kind" = statements ] && echo review-statements || echo review-pr )\` and CI cover the other angles). Runner-verified CI status: the check \"Build and check\" (workflow CI) succeeded on the head \`${H:0:12}\` (the loop schedules reviews only then)."
   [ "$role" = rubric-quality-pass ] && add_situation "The PR template whose \`Quality pass:\` block you check is \`.agents/quality-pass.md\` (Tau Ceti's \`.github/pull_request_template.md\`); the description is \`.agents/pr.txt\` (its section \`## Quality pass\`)."
 fi
-case "$role" in
+[ -n "$(rubrics_enabled)" ] && case "$role" in
   prove|formalize-statements)
     add_situation "Your pull request changes Lean: Tau Ceti's rubrics review it after the Incognita review. Run Tau Ceti's quality pass (\`.agents/quality-pass.md\`) over every declaration you add or change, and report it in \`.agents/summary.md\`, section \`## Quality pass\` (AGENTS.md section 1)." ;;
   garden)
