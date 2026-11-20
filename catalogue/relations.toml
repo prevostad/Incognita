@@ -71,3 +71,48 @@ lean = "Incognita.BatchedBandits.Relations.unitLaws_eq_image_unitIntervalLaws"
 justification = "P006 def:instance, the set M of laws on [0, 1] (a Set (Measure R) with an IsProbabilityMeasure field), is LMLExplore's unitIntervalLaws (a Set (ProbabilityMeasure R)) seen in Measure R: unitLaws = ProbabilityMeasure.toMeasure '' unitIntervalLaws"
 date = "2026-11-18"
 by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.P003.stoppedCounts_isSizeRule"
+to = "Incognita.P003.priorCounts_isSizeRule"
+lean = "Incognita.TransferBandits.Relations.priorCounts_isSizeRule_of_stoppedCounts_isSizeRule"
+justification = "P003 prop:stopped-games (a), taken as a hypothesis in the form of its frozen statement, gives lem:prior-game (b): the counts of a prior game over T' rounds are its stopped counts at tau = T' (PriorStrategy.isStoppingTime_const), and N'_k <= |N'| <= T'. Same hypotheses (2 <= K, any strategy); the bound of (a) on |N'| is at least as good as the bound N'_k <= T' of (b); no constants. The frozen proof of (b) already goes this way"
+date = "2026-11-20"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.P003.lookahead_divergence"
+to = "Incognita.P003.lookahead_not_isSizeRule"
+lean = "Incognita.TransferBandits.Relations.lookahead_not_isSizeRule_of_lookahead_divergence"
+justification = "P003 thm:main (b), taken as a hypothesis in the form of its frozen statement, contains lem:lookahead (the look-ahead map is measurable, bounded and not a size rule) as its first three conjuncts; its hypotheses hold on every finite type of arms with 2 <= K (p = 1/4, q = 1/2, the learner that always pulls a_1, T = 0, nu = delta_0, Bernoulli sources), so lem:lookahead follows with the same hypotheses (2 <= K, any arm a_1); no constants. The frozen proof of thm:main (b) uses lem:lookahead the other way"
+date = "2026-11-20"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.P003.divergence_decomposition"
+to = "Incognita.P003.fundamental_inequality"
+lean = "Incognita.TransferBandits.Relations.fundamental_inequality_of_divergence_decomposition"
+justification = "P003 thm:main (a) (the identity KL(P, P~) = sum_k E_P[N'_k] KL(nu'_k, nu~'_k) + sum_k E_P[N_k(T)] KL(nu_k, nu~_k)), taken as a hypothesis in the form of its frozen statement, with the data-processing inequality kl(E_P Z, E_P~ Z) <= KL(P, P~) for Z in [0, 1] (klDiv_bernoulliMeasure_integral_le) and E_P[N'_k] = E_nu'[N'_k] (lintegral_sourceCount_gameMeasure), gives cor:fundamental with the same terms (no constant lost) and the same hypotheses. The frozen proof of the corollary already goes this way"
+date = "2026-11-20"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "subsumes"
+from = "Incognita.P003.drift_all_pairs"
+to = "Incognita.P003.isConsistent_one"
+lean = "Incognita.TransferBandits.Relations.isConsistent_one_of_isConsistent_anti_of_drift_all_pairs"
+justification = "P003 prop:drift (d) first claim (P_L = P^K x P^K iff L >= 1), together with prop:classes (a) (Incognita.P003.isConsistent_anti, C_{L'} in C_L for L <= L'), both taken as hypotheses in the form of their frozen statements, give prop:classes (b): C_L depends on L only through P_L, so C_L = C_1 for L >= 1 and C_1 is the class over every pair; at L' = max L 1, the intersection of the C_L is C_1. Same hypotheses (2 <= K); no constants"
+date = "2026-11-20"
+by = "claude-opus-5-5"
+
+[[relation]]
+kind = "same-object"
+from = "Incognita.TransferBandits.onlineCount"
+to = "Learning.pullCount'"
+lean = "Incognita.TransferBandits.Relations.onlineCount_eq_pullCount'"
+justification = "P003 def:game, the number N_k(T) of pulls of arm k in an online history (Fin T -> alpha x R), is LML's pullCount' of the same history seen as an LML history with trivial observations (pairsHist): onlineCount a h = pullCount' T (pairsHist h) a. Migration left to the owner"
+date = "2026-11-20"
+by = "claude-opus-5-5"

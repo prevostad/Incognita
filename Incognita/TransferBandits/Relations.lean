@@ -8,6 +8,11 @@ module
 public import Incognita.BatchedBandits.Instances
 public import Incognita.BatchedBandits.Relations
 public import Incognita.TransferBandits.Consistency
+public import Incognita.TransferBandits.Checks
+public import Incognita.TransferBandits.SourceKL
+public import Incognita.TransferBandits.SizeRules
+public import Incognita.TransferBandits.LMLHistory
+public import Incognita.ForLML.InformationTheory.KullbackLeibler.Bernoulli
 
 /-! # Relations between the consistency notions of TransferBandits and BatchedBandits
 
@@ -39,13 +44,36 @@ consistency at the batch ends of [INC-P006, Definition `def:consistent`]
   of P003.
 * `Relations.isConsistentAtBatchEnds_of_isConsistentOnUnit`: a learner consistent on `𝒫^K` in the
   sense of P003 is consistent at the batch ends of every grid on `𝒫`.
+
+Implications between the nodes of [INC-P003], each from the frozen statement of the stronger node
+taken as a hypothesis:
+
+* `Relations.priorCounts_isSizeRule_of_stoppedCounts_isSizeRule`: `prop:stopped-games` (a) gives
+  `lem:prior-game` (b).
+* `Relations.lookahead_not_isSizeRule_of_lookahead_divergence`: `thm:main` (b) gives
+  `lem:lookahead`.
+* `Relations.fundamental_inequality_of_divergence_decomposition`: `thm:main` (a) gives
+  `cor:fundamental`.
+* `Relations.isConsistent_one_of_isConsistent_anti_of_drift_all_pairs`: `prop:drift` (d) and
+  `prop:classes` (a) give `prop:classes` (b).
+
+Same objects:
+
+* `Relations.onlineCount_eq_pullCount'`: the pull counts `N_a(T)` of an online history are LML's
+  `pullCount'`.
+* `Relations.exists_priorStrategy_state_eq_hist`,
+  `Relations.exists_priorStrategy_counts_eq_pullCount`: a bandit algorithm played in LML's array
+  model is a prior bandit game of [INC-P003, `def:prior-game`] (pointwise, the indices of the
+  stacks exchanged); the converse fails pointwise.
+* `Relations.isSizeRule_pullCount_arrayModel`: hence the pull counts of LML's array model after `T'`
+  rounds form a size rule.
 -/
 
 @[expose] public section
 
-open MeasureTheory ProbabilityTheory Learning Bandits Filter
+open MeasureTheory ProbabilityTheory InformationTheory Learning Bandits Filter
 
-open scoped Topology
+open scoped Topology ENNReal unitInterval
 
 namespace Incognita.TransferBandits.Relations
 
@@ -160,5 +188,222 @@ lemma isConsistentAtBatchEnds_of_isConsistentOnUnit [Finite α] [MeasurableSingl
       (Incognita.BatchedBandits.unitBandits α) :=
   ((isConsistentOnUnit_iff_bandits_isConsistent.mp h).isConsistentAtBatchEnds g).mono
     batchedBandits_unitBandits_subset
+
+/-! ### Implications between the nodes of P003
+
+Each lemma takes a frozen statement of [INC-P003] as a hypothesis, in the form of its frozen type
+at the arms `α` (the hypothesis `2 ≤ Fintype.card α` included), and derives another node, with the
+same hypotheses. -/
+
+/-- **Implication** [INC-P003, Proposition `prop:stopped-games` (a) ⇒ Lemma `lem:prior-game` (b)]:
+the stopped counts of a prior game form a size rule with `|N'| ≤ T'` (the frozen statement
+`Incognita.Statements.P003.stoppedCounts_isSizeRule`, hypothesis `h`); at the constant stopping
+time `τ ≡ T'` they are the counts of the prior game over `T'` rounds, so these form a size rule
+with `N'_k ≤ |N'| ≤ T'` (`Incognita.Statements.P003.priorCounts_isSizeRule`). -/
+lemma priorCounts_isSizeRule_of_stoppedCounts_isSizeRule [Fintype α]
+    (hK : 2 ≤ Fintype.card α)
+    (h : 2 ≤ Fintype.card α → ∀ (g : PriorStrategy α) {T' : ℕ} {τ : SourceSpace α → ℕ},
+      g.IsStoppingTime T' τ →
+        IsSizeRule (g.stoppedCounts τ) ∧ ∀ ω, ∑ a, g.stoppedCounts τ ω a ≤ T')
+    (g : PriorStrategy α) (T' : ℕ) :
+    IsSizeRule (g.counts T') ∧ ∀ ω a, g.counts T' ω a ≤ T' := by
+  have h' := h hK g (PriorStrategy.isStoppingTime_const g T')
+  refine ⟨h'.1, fun ω a ↦ ?_⟩
+  calc g.counts T' ω a ≤ ∑ b, g.counts T' ω b :=
+        Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) (Finset.mem_univ a)
+    _ ≤ T' := h'.2 ω
+
+/-- **Implication** [INC-P003, Theorem `thm:main` (b) ⇒ Lemma `lem:lookahead`]: the frozen
+statement `Incognita.Statements.P003.lookahead_divergence` (hypothesis `h`) contains the claim of
+`lem:lookahead` (`Incognita.Statements.P003.lookahead_not_isSizeRule`: the look-ahead map is a
+measurable, bounded size map and not a size rule) as its first three conjuncts; its hypotheses hold
+on every finite type of arms, at `p = 1/4`, `q = 1/2`, the learner that always pulls `a₁`, `T = 0`,
+`ν = δ_0` and the Bernoulli sources `ν' = Ber(1/4)^K`, `ν₂'` equal to `ν'` except
+`ν₂'_{a₁} = Ber(1/2)`. -/
+lemma lookahead_not_isSizeRule_of_lookahead_divergence [Fintype α]
+    [MeasurableSingletonClass α] (hK : 2 ≤ Fintype.card α) (a₁ : α)
+    (h : 2 ≤ Fintype.card α → ∀ (a₁ : α) {p q : I}, (p : ℝ) ∈ Set.Ioo 0 1 →
+      (q : ℝ) ∈ Set.Ioo 0 1 → p ≠ q → ∀ (π : TransferAlgorithm α) (T : ℕ) {ν ν' ν₂' : Kernel α ℝ},
+      ν ∈ unitBandits α → ν' ∈ unitBandits α → ν' a₁ = Ber((1 : ℝ), 0, p) →
+      ν₂' a₁ = Ber((1 : ℝ), 0, q) → (∀ a, a ≠ a₁ → ν₂' a = ν' a) →
+      Measurable (lookahead a₁) ∧ (∃ M : ℕ, ∀ ω a, lookahead a₁ ω a ≤ M) ∧
+        ¬ IsSizeRule (lookahead a₁) ∧
+        klDiv (gameMeasure ν' (lookahead a₁) ν π T) (gameMeasure ν₂' (lookahead a₁) ν π T) =
+          2 * klDiv (Ber((1 : ℝ), 0, p)) (Ber((1 : ℝ), 0, q)) ∧
+        ∑ a, (∫⁻ x, (sourceCount a x.1 : ℝ≥0∞) ∂(gameMeasure ν' (lookahead a₁) ν π T)) *
+            klDiv (ν' a) (ν₂' a) +
+          ∑ a, (∫⁻ x, (onlineCount a x.2 : ℝ≥0∞) ∂(gameMeasure ν' (lookahead a₁) ν π T)) *
+            klDiv (ν a) (ν a) =
+          ENNReal.ofReal (2 - p) * klDiv (Ber((1 : ℝ), 0, p)) (Ber((1 : ℝ), 0, q)) ∧
+        ENNReal.ofReal (2 - p) * klDiv (Ber((1 : ℝ), 0, p)) (Ber((1 : ℝ), 0, q)) <
+          2 * klDiv (Ber((1 : ℝ), 0, p)) (Ber((1 : ℝ), 0, q))) :
+    Measurable (lookahead a₁) ∧ (∃ M : ℕ, ∀ ω a, lookahead a₁ ω a ≤ M) ∧
+      ¬ IsSizeRule (lookahead a₁) := by
+  let p : I := ⟨1 / 4, by norm_num, by norm_num⟩
+  let q : I := ⟨1 / 2, by norm_num, by norm_num⟩
+  have hpq : p ≠ q := fun hpq ↦ by
+    have := congrArg Subtype.val hpq
+    norm_num [p, q] at this
+  obtain ⟨h1, h2, h3, -⟩ := h hK a₁ (p := p) (q := q) (by norm_num [p]) (by norm_num [q]) hpq
+    (TransferAlgorithm.constArm a₁) 0 (ν := Kernel.const α (Measure.dirac 0))
+    (ν' := LMLExplore.Bandits.bernoulliBandit fun _ ↦ p)
+    (ν₂' := LMLExplore.Bandits.bernoulliBandit fun a ↦ if a = a₁ then q else p)
+    (const_dirac_mem_unitBandits ⟨le_rfl, zero_le_one⟩) (bernoulliBandit_mem_unitBandits _)
+    (LMLExplore.Bandits.bernoulliBandit_apply _ _)
+    (by simp [LMLExplore.Bandits.bernoulliBandit_apply])
+    (fun a ha ↦ by simp [LMLExplore.Bandits.bernoulliBandit_apply, ha])
+  exact ⟨h1, h2, h3⟩
+
+omit [DecidableEq α] in
+/-- **Implication** [INC-P003, Theorem `thm:main` (a) ⇒ Corollary `cor:fundamental`]: the
+divergence decomposition (the frozen statement `Incognita.Statements.P003.divergence_decomposition`,
+hypothesis `h`), with the data-processing inequality `kl(E_P[Z], E_{P₂}[Z]) ≤ KL(P, P₂)` for `Z`
+with values in `[0, 1]` [GMS19, Lemma 1] and `E_P[N'_k] = E_{ν'}[N'_k]`, gives the fundamental
+inequality (`Incognita.Statements.P003.fundamental_inequality`), same hypotheses, same terms. -/
+lemma fundamental_inequality_of_divergence_decomposition [Fintype α]
+    (hK : 2 ≤ Fintype.card α)
+    (h : 2 ≤ Fintype.card α → ∀ {N : SourceSpace α → α → ℕ}, IsSizeRule N →
+      ∀ (π : TransferAlgorithm α) (T : ℕ) {ν ν' ν₂ ν₂' : Kernel α ℝ}, ν ∈ unitBandits α →
+      ν' ∈ unitBandits α → ν₂ ∈ unitBandits α → ν₂' ∈ unitBandits α →
+      (∀ a, ∫⁻ ω, (N ω a : ℝ≥0∞) ∂(sourceMeasure ν') < ∞) →
+      klDiv (gameMeasure ν' N ν π T) (gameMeasure ν₂' N ν₂ π T) =
+        ∑ a, (∫⁻ x, (sourceCount a x.1 : ℝ≥0∞) ∂(gameMeasure ν' N ν π T)) *
+            klDiv (ν' a) (ν₂' a) +
+          ∑ a, (∫⁻ x, (onlineCount a x.2 : ℝ≥0∞) ∂(gameMeasure ν' N ν π T)) *
+            klDiv (ν a) (ν₂ a))
+    {N : SourceSpace α → α → ℕ} (hN : IsSizeRule N) (π : TransferAlgorithm α) (T : ℕ)
+    {ν ν' ν₂ ν₂' : Kernel α ℝ} (hν : ν ∈ unitBandits α) (hν' : ν' ∈ unitBandits α)
+    (hν₂ : ν₂ ∈ unitBandits α) (hν₂' : ν₂' ∈ unitBandits α)
+    (hfin : ∀ a, ∫⁻ ω, (N ω a : ℝ≥0∞) ∂(sourceMeasure ν') < ∞)
+    {Z : Source α × (Fin T → α × ℝ) → ℝ} (hZ : Measurable Z) (hZ01 : ∀ x, Z x ∈ Set.Icc 0 1) :
+    klDiv (Ber((1 : ℝ), 0, Set.projIcc 0 1 zero_le_one (∫ x, Z x ∂(gameMeasure ν' N ν π T))))
+        (Ber((1 : ℝ), 0, Set.projIcc 0 1 zero_le_one (∫ x, Z x ∂(gameMeasure ν₂' N ν₂ π T)))) ≤
+      ∑ a, (∫⁻ ω, (N ω a : ℝ≥0∞) ∂(sourceMeasure ν')) * klDiv (ν' a) (ν₂' a) +
+      ∑ a, (∫⁻ x, (onlineCount a x.2 : ℝ≥0∞) ∂(gameMeasure ν' N ν π T)) * klDiv (ν a) (ν₂ a) := by
+  have : IsMarkovKernel ν := hν.1
+  have : IsMarkovKernel ν' := hν'.1
+  have : IsMarkovKernel ν₂ := hν₂.1
+  have : IsMarkovKernel ν₂' := hν₂'.1
+  refine (klDiv_bernoulliMeasure_integral_le _ _ hZ hZ01).trans (le_of_eq ?_)
+  rw [h hK hN π T hν hν' hν₂ hν₂' hfin]
+  congr 1
+  refine Finset.sum_congr rfl fun a _ ↦ ?_
+  rw [lintegral_sourceCount_gameMeasure hN.measurable ν' ν π T a]
+
+omit [DecidableEq α] in
+/-- **Implication** [INC-P003, Proposition `prop:drift` (d) and Proposition `prop:classes` (a) ⇒
+Proposition `prop:classes` (b)]: from `𝒫_L = 𝒫^K × 𝒫^K` for `L ≥ 𝟏` (first claim of the frozen
+statement `Incognita.Statements.P003.drift_all_pairs`, hypothesis `hall`), the class `𝒞_L`, which
+depends on `L` only through `𝒫_L`, is `𝒞_𝟏` for `L ≥ 𝟏` and is the class over every pair; with
+`𝒞_{L'} ⊂ 𝒞_L` for `L ≤ L'` (`Incognita.Statements.P003.isConsistent_anti`, hypothesis `hanti`)
+at `L' = max L 𝟏`, `⋂_L 𝒞_L = 𝒞_𝟏` (`Incognita.Statements.P003.isConsistent_one`). -/
+lemma isConsistent_one_of_isConsistent_anti_of_drift_all_pairs [Fintype α]
+    (hK : 2 ≤ Fintype.card α)
+    (hanti : 2 ≤ Fintype.card α → ∀ {L L' : α → ℝ}, (∀ a, 0 < L a) → (∀ a, 0 < L' a) →
+      (∀ a, L a ≤ L' a) → {π : TransferAlgorithm α | IsConsistent L' π} ⊆ {π | IsConsistent L π})
+    (hall : 2 ≤ Fintype.card α → ∀ {L : α → ℝ}, (∀ a, 0 < L a) →
+      (meanBand L = unitBandits α ×ˢ unitBandits α ↔ ∀ a, 1 ≤ L a) ∧
+        ((∀ ν ν' : Kernel α ℝ, ν ∈ unitBandits α → ν' ∈ unitBandits α → DriftBound L ν ν') ↔
+          ∀ a, 1 < L a))
+    (π : TransferAlgorithm α) :
+    (∀ L : α → ℝ, (∀ a, 1 ≤ L a) → (IsConsistent L π ↔ IsConsistent (fun _ ↦ 1) π)) ∧
+      ((∀ L : α → ℝ, (∀ a, 0 < L a) → IsConsistent L π) ↔ IsConsistent (fun _ ↦ 1) π) ∧
+      (IsConsistent (fun _ ↦ 1) π ↔
+        ∀ ν ν' : Kernel α ℝ, ν ∈ unitBandits α → ν' ∈ unitBandits α →
+          ∀ ρ : ℕ → SourceSpace α → α → ℕ, IsSourceStrategy ρ →
+            ∀ a, (∃ b, (ν a)[id] < (ν b)[id]) → ∀ c : ℝ, 0 < c →
+              Tendsto (fun T : ℕ ↦
+                  (∫ p, (onlineCount a p.2 : ℝ) ∂(gameMeasure ν' (ρ T) ν π T)) / (T : ℝ) ^ c)
+                atTop (𝓝 0)) := by
+  have hband : ∀ L : α → ℝ, (∀ a, 1 ≤ L a) → meanBand L = unitBandits α ×ˢ unitBandits α :=
+    fun L hL ↦ ((hall hK fun a ↦ one_pos.trans_le (hL a)).1).mpr hL
+  have h1 : ∀ L : α → ℝ, (∀ a, 1 ≤ L a) → (IsConsistent L π ↔ IsConsistent (fun _ ↦ 1) π) :=
+    fun L hL ↦ by simp only [IsConsistent, hband L hL, hband (fun _ ↦ 1) fun _ ↦ le_rfl]
+  refine ⟨h1, ⟨fun h ↦ h _ fun _ ↦ one_pos, fun h L hL ↦ ?_⟩, ?_⟩
+  · exact hanti hK hL (fun a ↦ one_pos.trans_le (le_max_right (L a) 1))
+      (fun a ↦ le_max_left (L a) 1) ((h1 (fun a ↦ max (L a) 1) fun a ↦ le_max_right _ _).mpr h)
+  · simp only [IsConsistent, hband (fun _ ↦ 1) fun _ ↦ le_rfl, Set.mem_prod, and_imp]
+
+omit [MeasurableSpace α] in
+/-- **Same object**: the number `N_a(T)` of pulls of `a` in an online history
+[INC-P003, Definition `def:game`] (`onlineCount`) is LML's `pullCount'` of the history seen as an
+LML history with trivial observations. -/
+lemma onlineCount_eq_pullCount' {T : ℕ} (a : α) (h : Fin T → α × ℝ) :
+    onlineCount a h = pullCount' T (pairsHist h) a := by
+  rw [onlineCount_eq_sum, pullCount'_eq_sum]
+  rfl
+
+/-! ### Prior games and LML's array model
+
+LML's array model `Bandits.ArrayModel` [LS, Section 4.6] plays a bandit algorithm on stacks of
+rewards: at round `n` the action is `algFunction alg n (history) (ω.1 n)`, the image of the
+history and of the `n`-th uniform variable, and its reward is the next unread value of the stack
+of the action. On the source space of [INC-P003, Definition `def:source-space`], with the indices
+of the stacks exchanged (the map of `sourceMeasure_eq_map_arrayMeasure`), this is a prior bandit
+game [INC-P003, Definition `def:prior-game`]. The converse fails pointwise: the strategy of a prior
+game may read the whole randomisation at every round, LML's array model reads `ω.1 n` at round
+`n` only. -/
+
+/-- LML's array model of a bandit algorithm `alg` is a prior bandit game
+[INC-P003, Definition `def:prior-game`]: some strategy `g` has, at every point `ω` of the source
+space and after every number `r` of rounds, the history of `alg` in the array model at the point
+`(ω.1, (j, b) ↦ ω.2 b j)`. -/
+lemma exists_priorStrategy_state_eq_hist [Nonempty α] [StandardBorelSpace α]
+    (alg : Algorithm Unit α ℝ) :
+    ∃ g : PriorStrategy α, ∀ (ω : SourceSpace α) (r : ℕ),
+      (g.state ω r).2 = histPairs (Bandits.ArrayModel.hist alg (ω.1, fun j b ↦ ω.2 b j) r) := by
+  let g : PriorStrategy α :=
+    ⟨fun r p ↦ Bandits.ArrayModel.algFunction alg r (pairsHist p.2) (p.1 r),
+      fun r ↦ (Bandits.ArrayModel.measurable_algFunction alg r).comp
+        (((measurable_pairsHist r).comp measurable_snd).prodMk
+          ((measurable_pi_apply r).comp measurable_fst))⟩
+  refine ⟨g, fun ω r ↦ ?_⟩
+  induction r with
+  | zero => funext i; exact i.elim0
+  | succ r ih =>
+    have hcount : ∀ a, (g.state ω r).1 a =
+        pullCount' r (Bandits.ArrayModel.hist alg (ω.1, fun j b ↦ ω.2 b j) r) a := fun a ↦ by
+      rw [PriorStrategy.state_fst_eq_card, ih]
+      rfl
+    have hact : g.act r (ω.1, (g.state ω r).2) = Bandits.ArrayModel.algFunction alg r
+        (Bandits.ArrayModel.hist alg (ω.1, fun j b ↦ ω.2 b j) r) (ω.1 r) := by
+      rw [ih]
+      rfl
+    rw [PriorStrategy.state_succ, Bandits.ArrayModel.hist_add_one]
+    simp only [MeasurableEquiv.finSuccProd_symm_apply]
+    rw [hact, hcount, ih]
+    funext i
+    refine Fin.lastCases ?_ (fun k ↦ ?_) i <;> simp [histPairs]
+
+/-- The pull counts of a bandit algorithm in LML's array model are the counts of a prior bandit
+game [INC-P003, Definition `def:prior-game`], at every point of the source space (with the indices
+of the stacks exchanged) and every horizon `T'`. -/
+lemma exists_priorStrategy_counts_eq_pullCount [Nonempty α]
+    [StandardBorelSpace α] (alg : Algorithm Unit α ℝ) :
+    ∃ g : PriorStrategy α, ∀ (T' : ℕ) (ω : SourceSpace α) (a : α),
+      g.counts T' ω a =
+        pullCount (Bandits.ArrayModel.action alg) a T' (ω.1, fun j b ↦ ω.2 b j) := by
+  obtain ⟨g, hg⟩ := exists_priorStrategy_state_eq_hist alg
+  refine ⟨g, fun T' ω a ↦ ?_⟩
+  rw [PriorStrategy.counts, PriorStrategy.state_fst_eq_card, hg,
+    Bandits.ArrayModel.pullCount_action_eq]
+  rfl
+
+/-- The pull counts after `T'` rounds of a bandit algorithm in LML's array model, read on the
+source space with the indices of the stacks exchanged, form a size rule
+[INC-P003, Definition `def:size-rule`]: by `exists_priorStrategy_counts_eq_pullCount`, they are
+the counts of a prior game, which are its stopped counts at `τ ≡ T'` and read only the values of
+the box of the counts (the argument of [INC-P003, Lemma `lem:prior-game` (b)]). -/
+lemma isSizeRule_pullCount_arrayModel [Finite α] [MeasurableSingletonClass α]
+    [Nonempty α] [StandardBorelSpace α] (alg : Algorithm Unit α ℝ) (T' : ℕ) :
+    IsSizeRule fun (ω : SourceSpace α) (a : α) ↦
+      pullCount (Bandits.ArrayModel.action alg) a T' (ω.1, fun j b ↦ ω.2 b j) := by
+  obtain ⟨g, hg⟩ := exists_priorStrategy_counts_eq_pullCount alg
+  have heq : (fun (ω : SourceSpace α) (a : α) ↦
+      pullCount (Bandits.ArrayModel.action alg) a T' (ω.1, fun j b ↦ ω.2 b j)) =
+        g.stoppedCounts fun _ ↦ T' := funext fun ω ↦ funext fun a ↦ (hg T' ω a).symm
+  rw [heq]
+  exact isSizeRule_of_eqOn_box (g.measurable_stoppedCounts (g.isStoppingTime_const T'))
+    fun _ _ _ h1 h2 h ↦ g.stoppedCounts_eq_of_eqOn_box (g.isStoppingTime_const T') h1 h2 h
 
 end Incognita.TransferBandits.Relations
