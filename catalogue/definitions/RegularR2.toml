@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.RegularR2"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:regular"
+meaning = "Condition (R2) of a regular class with variance sigma: for every sigma_0 in (0, sigma) there is a law nu_0 of the class with a finite mean and variance at least sigma_0^2 such that the class contains an exponential family through nu_0 (both sides or one side) or the bounded perturbations of nu_0."
+conventions = "sigma_0 ranges over (0, sigma); the variance is evariance (in [0, ∞]); the two cases are ContainsExpFamily and ContainsPerturbations."
+source = "[INC-P001, Definitions def:regular and def:lowR2]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isRegular_gaussian"]
+known_cases = ["Incognita.StochasticBandits.isRegular_unitLaws"]
+exclusion = ["Incognita.StochasticBandits.not_regularR2_dirac"]
+non_vacuity = []

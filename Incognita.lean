@@ -52,6 +52,7 @@ public import Incognita.ForMathlib.InformationTheory.KullbackLeibler.Basic
 public import Incognita.ForMathlib.Probability.Distributions.Bernoulli
 public import Incognita.ForMathlib.Probability.Moments.Hoeffding
 public import Incognita.ForMathlib.Probability.ProductMeasure
+public import Incognita.ForTauCeti.Probability.BrownianMotion.Martingale
 public import Incognita.P000.InfoModel
 public import Incognita.P000.LowerBound
 public import Incognita.P000.Witnesses
@@ -75,6 +76,9 @@ public import Incognita.P006.Main
 public import Incognita.P006.Witnesses
 public import Incognita.P007.Witnesses
 public import Incognita.StochasticBandits.GravesLai
+public import Incognita.StochasticBandits.LimitGame
+public import Incognita.StochasticBandits.LimitGameChecks
+public import Incognita.StochasticBandits.Minimax
 public import Incognita.StochasticBandits.UCB
 public import Incognita.TransferBandits.Checks
 public import Incognita.TransferBandits.Consistency

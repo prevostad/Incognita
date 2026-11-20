@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.allocations"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:alloc"
+meaning = "The allocations: continuous tau : [0, 1] -> ℝ^α with each tau_k nondecreasing, tau(0) = 0 and sum_k tau_k(t) = t."
+conventions = "Time is unitInterval; the values lie in [0, 1] (mem_Icc_of_mem_allocations)."
+source = "[INC-P001, Definition def:alloc]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.singleArm_mem_allocations"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.uniform_mem_allocations"]
+exclusion = ["Incognita.StochasticBandits.LimitGame.zero_not_mem_allocations"]
+non_vacuity = []

@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.bayesValue"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:risk"
+meaning = "The Bayes value B_K(Pi) = inf over limit policies Q of the integral of r(Q, h) against the prior Pi."
+conventions = "Valued in ℝ≥0∞ (a lower Lebesgue integral); the prior is any measure on ℝ^α (the statements take probabilities)."
+source = "[INC-P001, Definition def:risk]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.valueOn_singleton_zero"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.bayesValue_dirac"]
+exclusion = []
+non_vacuity = []
