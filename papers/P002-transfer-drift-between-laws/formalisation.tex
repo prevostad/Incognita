@@ -164,16 +164,167 @@ $m=x_{\min}$, $b=\xmax$, and use $\xmax-x_{\min}\le1$. The indicators of $(-\inf
 functions of $\TV$.
 \end{proof}
 
+\begin{lemma}[Mixing the first law into the second]\label{flem:mix}
+\lean{Incognita.TransferBandits.smul_add_smul_mem_probVecs,
+  Incognita.TransferBandits.vecMean_smul_add_smul,
+  Incognita.TransferBandits.vecKL_mix_le_mul, Incognita.TransferBandits.vecKL_mix_le,
+  Incognita.TransferBandits.vecMean_mix_eq,
+  Incognita.TransferBandits.exists_vecMean_eq_vecKL_le,
+  Incognita.TransferBandits.ofReal_mul_vecKs_le}
+\uses{def:laws}
+For vectors $r,q$ and $t\in[0,1]$, $\KL(r,(1-t)q+tr)\le(1-t)\KL(r,q)$. Hence, for $r,q\in\Simp$ with
+$\mean(r)\le\ell\le\mean(q)$, some $q_1\in\Simp$ has $\mean(q_1)=\ell$ and $\KL(r,q_1)\le\KL(r,q)$; and if
+$\mean(r)<\mu\le\mean(q)$, then $(\mean(q)-\mean(r))\Ks(r,\mu)\le(\mu-\mean(r))\KL(r,q)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws}
+If $\KL(r,q)<\infty$, for $r(y)>0$ the concavity of $\log$ gives
+$\log((1-t)q(y)+tr(y))\ge(1-t)\log q(y)+t\log r(y)$, so
+$r(y)\log\frac{r(y)}{(1-t)q(y)+tr(y)}\le(1-t)\,r(y)\log\frac{r(y)}{q(y)}$; sum over $y$. If
+$\KL(r,q)=\infty$ and $t<1$ the bound is trivial, and for $t=1$ both sides are $0$. For the
+second claim, if $\mean(q)>\mean(r)$ take $q_1=(1-s)q+sr$ with
+$s=(\mean(q)-\ell)/(\mean(q)-\mean(r))\in[0,1]$, which has mean $\ell$ (otherwise $q_1=q$). For the
+third, the same mixture at level $\mu$ has $1-s=(\mu-\mean(r))/(\mean(q)-\mean(r))$ and
+$\Ks(r,\mu)\le\KL(r,q_1)\le(1-s)\KL(r,q)$.
+\end{proof}
+
+\begin{lemma}[$\Ks<\infty$ below $\xmax$]\label{flem:ks-finite}
+\lean{Incognita.TransferBandits.vecKL_ne_top, Incognita.TransferBandits.vecKs_ne_top}
+\uses{def:laws}
+If $q(y)>0$ wherever $r(y)>0$, then $\KL(r,q)<\infty$. For $r\in\Simp$ and $\ell<\xmax$,
+$\Ks(r,\ell)<\infty$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws}
+The first claim is the definition. If $\ell\le\mean(r)$, $\Ks(r,\ell)=0$. Otherwise the mixture
+$(1-t)r+t\dirac$ with $t=(\ell-\mean(r))/(\xmax-\mean(r))\in(0,1)$ has mean $\ell$ and charges every
+point that $r$ charges.
+\end{proof}
+
+\begin{lemma}[The programme of the mean gap]\label{flem:programme-mean}
+\lean{Incognita.TransferBandits.nonempty_of_vecKs_ne_top,
+  Incognita.TransferBandits.mul_biInf_of_nonempty,
+  Incognita.TransferBandits.programme_meanClass,
+  Incognita.TransferBandits.ofReal_driftConstant_meanClass_eq_ofReal,
+  Incognita.TransferBandits.ofReal_driftConstant_meanClass}
+\uses{def:laws, def:ipm, def:constant, flem:mix, flem:ks-pos}
+Let $r,r'\in\Simp$, $l\ge0$, $\mean(r)\le\mu$, $\mean(r')\le\mu+l$, and $\Ks(r,\mu)$, $\Ks(r',\mu-l)$
+finite. For the mean gap, $J(x,c;\mu)=x\Ks(r,\mu)+c\Ks(r',\mu-l)$ for all $x,c$. If moreover
+$S\subset[0,1]$, $\mean(r)<\mu$ and $c\ge0$, then $D(c)=(1-c\Ks(r',\mu-l))_+/\Ks(r,\mu)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm, def:constant, flem:mix, flem:ks-pos}
+A pair of the mean gap has $\mean(q)\ge\mu$ and $\mean(q')\ge\mean(q)-l\ge\mu-l$, which gives $\ge$.
+Conversely, let $\mean(q)\ge\mu$ and $\mean(q')\ge\mu-l$. By Lemma~\ref{flem:mix} replace $q$ by a law
+of mean $\mu$, and, if $\mean(q')>\mu+l$, $q'$ by a law of mean $\mu+l$ (as $\mean(r')\le\mu+l$),
+without increasing the divergences; the new pair has $|\mean(q_1)-\mean(q'_1)|\le l$. Taking the
+infima over $q$ and $q'$ gives $\le$ (the two sets are nonempty since the $\Ks$ are finite). Then
+$J(x,c)\ge1$ if and only if $x\ge(1-c\Ks(r',\mu-l))/\Ks(r,\mu)$, as $\Ks(r,\mu)>0$
+(Lemma~\ref{flem:ks-pos}), and $D(c)$ is the positive part of this bound.
+\end{proof}
+
+\begin{lemma}[A source mean above the band]\label{flem:mean-high}
+\lean{Incognita.TransferBandits.ofReal_sq_div_two_le_vecKL,
+  Incognita.TransferBandits.ofReal_driftConstant_meanClass_lt}
+\uses{def:laws, def:ipm, def:constant, flem:mix, flem:ks-pos}
+Let $S\subset[0,1]$, $r,r'\in\Simp$, $\mean(r)<\mu$, $\Ks(r,\mu)<\infty$, $\mean(r')>\mu+l$ and $c>0$.
+Then, for the mean gap, $D(c)<1/\Ks(r,\mu)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm, def:constant, flem:mix, flem:ks-pos}
+Let $k=\Ks(r,\mu)$, $g=\mu-\mean(r)$, $\delta=(\mean(r')-\mu-l)/2$ and $\eta=\delta^2/2$. Pinsker's
+inequality (Lemma~\ref{flem:ks-pos}) gives $\KL(r',q')\ge\eta$ whenever
+$\mean(q')\le\mean(r')-\delta$. Let $x=\max\big(1/(k(1+\delta/g)),(1-c\eta)/k\big)<1/k$. A pair of the
+mean gap with $\mean(q)\ge\mu+\delta$ has $\KL(r,q)\ge k(1+\delta/g)$ by Lemma~\ref{flem:mix}, so its
+cost is at least $1$; a pair with $\mean(q)<\mu+\delta$ has $\mean(q')\le\mean(q)+l<\mean(r')-\delta$,
+so its cost is at least $xk+c\eta\ge1$. Hence $J(x,c)\ge1$ and $D(c)\le x<1/k$.
+\end{proof}
+
+\begin{lemma}[When the source helps the mean gap]\label{flem:criteria-mean}
+\lean{Incognita.TransferBandits.ofReal_driftConstant_meanClass_lt_iff}
+\uses{def:laws, def:ipm, def:constant, flem:programme-mean, flem:mean-high, flem:ks-pos}
+Let $S\subset[0,1]$, $r,r'\in\Simp$, $l\ge0$, $\mean(r)<\mu$, $\Ks(r,\mu)$ and $\Ks(r',\mu-l)$ finite,
+and $c>0$. For the mean gap, $D(c)<1/\Ks(r,\mu)$ if and only if $l<|\mean(r')-\mu|$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm, def:constant, flem:programme-mean, flem:mean-high, flem:ks-pos}
+If $\mean(r')>\mu+l$, both sides hold (Lemma~\ref{flem:mean-high}). Otherwise, by
+Lemma~\ref{flem:programme-mean}, $D(c)<1/\Ks(r,\mu)$ if and only if $c\Ks(r',\mu-l)>0$, that is
+$\Ks(r',\mu-l)>0$, that is $\mean(r')<\mu-l$ (Lemma~\ref{flem:ks-pos}, and $\Ks(r',\mu-l)=0$ when
+$\mean(r')\ge\mu-l$), which, as $\mean(r')\le\mu+l$, is $l<|\mean(r')-\mu|$.
+\end{proof}
+
+\begin{lemma}[A binding projection sits on its level]\label{flem:proj-level}
+\lean{Incognita.TransferBandits.vecMean_eq_of_isKLProj}
+\uses{def:laws, def:constant, flem:mix}
+Let $\rho\in\Simp$ and let $Q$ minimise $\KL(\rho,\cdot)$ on $\{q\in\Simp:\mean(q)\ge\ell\}$. If
+$0<\Ks(\rho,\ell)<\infty$, then $\mean(Q)=\ell$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:constant, flem:mix}
+As $\Ks(\rho,\ell)>0$, $\mean(\rho)<\ell$. If $\mean(Q)>\ell$, the mixture $(1-s)Q+s\rho$ of mean $\ell$
+has $s>0$ and, by Lemma~\ref{flem:mix}, divergence at most $(1-s)\Ks(\rho,\ell)<\Ks(\rho,\ell)$, a
+contradiction.
+\end{proof}
+
+\begin{lemma}[Total variation and the width of the support]\label{flem:tv-width}
+\lean{Incognita.TransferBandits.mul_ipm_tvClass_sub_vecMean_sub,
+  Incognita.TransferBandits.vecMean_sub_le_mul_ipm_tvClass,
+  Incognita.TransferBandits.eq_of_vecMean_sub_eq_mul_ipm_tvClass}
+\uses{def:laws, def:ipm, lem:ipm}
+Let $S\subset[b_0,b_1]$ and $q,q'\in\Simp$. Then
+$(b_1-b_0)\TV(q,q')-(\mean(q)-\mean(q'))=\sum_y\big((b_1-y)(q-q')_+(y)+(y-b_0)(q'-q)_+(y)\big)\ge0$; in
+case of equality, $q(y)=q'(y)$ for every $y\in S\cap(b_0,b_1)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm, lem:ipm}
+By Lemma~\ref{lem:ipm}(c), $\TV(q,q')=\sum_y(q-q')_+(y)=\sum_y(q'-q)_+(y)$, and
+$q-q'=(q-q')_+-(q'-q)_+$; expand. In case of equality every term vanishes, and for $y\in(b_0,b_1)$
+both factors $b_1-y$ and $y-b_0$ are positive.
+\end{proof}
+
 \section{New decompositions of the paper's proofs}
 
-\begin{proof}[Formal route to Proposition~\ref{prop:order}~(b) and~(c)]
+\begin{proof}[Formal route to Proposition~\ref{prop:order}]
 \proves{prop:order}
-\uses{flem:ks-pos, flem:order-mono, flem:abel, lem:ipm, lem:ipm-order}
-As in the paper, with Lemma~\ref{flem:order-mono} for the step ``$d_1\le d_2$ gives
-$D^{d_2}\le D^{d_1}$'', which needs the set defining $D^{d_1}$ to be nonempty: this is where
-$\Ks(\nu_a,\mu^\star)>0$ (Lemma~\ref{flem:ks-pos}) enters. The order
+\uses{flem:ks-pos, flem:ks-finite, flem:programme-mean, flem:order-mono, flem:abel, lem:ipm, lem:ipm-order}
+Part~(a) is Lemma~\ref{flem:programme-mean} with $r=\nu_a$, $r'=\nu'_a$, $\mu=\mu^\star$, $l=L_a$:
+both $\Ks$ are finite by Lemma~\ref{flem:ks-finite}, as $\mu^\star-L_a<\mu^\star<\xmax$. The paper's
+pair $(Q^\star,Q'^\star)$ is replaced by near-minimisers moved to the band
+$|\mean(q)-\mean(q')|\le L_a$, so neither the existence nor the uniqueness of the projections is
+needed. Parts~(b) and~(c) are as in the paper, with Lemma~\ref{flem:order-mono} for the step
+``$d_1\le d_2$ gives $D^{d_2}\le D^{d_1}$'', which needs the set defining $D^{d_1}$ to be nonempty:
+this is where $\Ks(\nu_a,\mu^\star)>0$ (Lemma~\ref{flem:ks-pos}) enters. The order
 $|\mean(q)-\mean(q')|\le\Wone\le\mathrm{KS}\le\TV$ is Lemma~\ref{flem:abel} and the test function
-$y\mapsto y$. Part~(a) is not covered by this route.
+$y\mapsto y$.
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:criteria}~(b) for the mean gap]
+\proves{prop:criteria}
+\uses{flem:ks-finite, flem:criteria-mean}
+Lemma~\ref{flem:criteria-mean} with $r=\nu_a$, $r'=\nu'_a$, $\mu=\mu^\star$, $l=L_a$ (finite $\Ks$ by
+Lemma~\ref{flem:ks-finite}); when $\mean(\nu'_a)\le\mu^\star+L_a$, $L_a<|\mean(\nu'_a)-\mu^\star|$ reads
+$\mean(\nu'_a)<\mu^\star-L_a$. The paper's route (Lemma~\ref{lem:criterion-point} at $x_0=1/\Ks$, with
+$d(Q^\star,\nu'_a)=|\mu^\star-\mean(\nu'_a)|$) is replaced by Lemmas~\ref{flem:programme-mean}
+and~\ref{flem:mean-high}. Part~(a) and the first sentence of~(b) are not covered.
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:tv}~(a)]
+\proves{prop:tv}
+\uses{flem:ks-finite, flem:proj-level, flem:tv-width}
+As $\mathcal K'_0=\Ks(\nu'_a,\mu^\star-L_a)>0$ and $\mathcal K'_0<\infty$
+(Lemma~\ref{flem:ks-finite}), $\mean(Q'^\star)=\mu^\star-L_a$
+(Lemma~\ref{flem:proj-level}), so $\mean(Q^\star)-\mean(Q'^\star)\ge L_a$. Lemma~\ref{flem:tv-width} with
+$b_0=x_{\min}<b_1=\xmax$ (as $|S|\ge2$) gives $L_a\le(\xmax-x_{\min})\TV(Q^\star,Q'^\star)$, and in case
+of equality in the bound of~(a), equality in Lemma~\ref{flem:tv-width}. Parts~(b) and~(c) are not
+covered.
 \end{proof}
 
 \begin{proof}[Formal route to Proposition~\ref{prop:threshold}~(b) and~(c)]
