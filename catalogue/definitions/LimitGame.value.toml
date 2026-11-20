@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.value"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:risk"
+meaning = "The value V_K = inf over limit policies Q of sup over h in ℝ^α of r(Q, h)."
+conventions = "Valued in ℝ≥0∞; arms a finite type α, K = |α|."
+source = "[INC-P001, Definition def:risk]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.valueOn_singleton_zero"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.value_eq_valueOn_univ", "Incognita.StochasticBandits.LimitGame.localValue_le_value"]
+exclusion = []
+non_vacuity = []

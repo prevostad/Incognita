@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.loss"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:risk"
+meaning = "The regret sum_k (max_i h_i - h_k) tau_k(1) of the allocation in the local instance h."
+conventions = "max_i h_i is ⨆ i, h i (α finite)."
+source = "[INC-P001, Definition def:risk]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.risk_singleArmPolicy"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.risk_zero"]
+exclusion = ["Incognita.StochasticBandits.LimitGame.risk_singleArmPolicy"]
+non_vacuity = []

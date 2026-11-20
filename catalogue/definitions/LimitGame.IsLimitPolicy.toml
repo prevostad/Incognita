@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.IsLimitPolicy"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:limit"
+meaning = "A limit policy: a probability Q on the canonical space, carried by C_0 × A, under which each X_k and each X_k X_j - 1{k = j} tau_k is an (F_t, Q)-martingale, that is X is a continuous martingale with brackets <X_k, X_j> = 1{k = j} tau_k."
+conventions = "The brackets are written by the martingales that define them, the characterization of the paper's Lemma lem:g-compact(i); martingales are Mathlib's Martingale for the natural filtration."
+source = "[INC-P001, Definition def:limit, Lemma lem:g-compact(i)]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.isLimitPolicy_singleArmPolicy"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.IsLimitPolicy.integral_sq_eq"]
+exclusion = ["Incognita.StochasticBandits.LimitGame.not_isLimitPolicy_dirac"]
+non_vacuity = []

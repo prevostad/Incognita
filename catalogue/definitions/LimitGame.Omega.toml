@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.Omega"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:alloc"
+meaning = "The canonical space of the limit game: the pairs (X, tau) of continuous paths [0, 1] -> ℝ^α."
+conventions = "Product of the Borel σ-algebras of the compact-open topology (Mathlib's ContinuousMap.measurableSpace); the paper's C_0 × A is the closed subset where X(0) = 0 and tau is an allocation, which carries every limit policy."
+source = "[INC-P001, Definition def:alloc]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.isLimitPolicy_singleArmPolicy"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.measurableSet_setOf_mem_allocations"]
+exclusion = ["Incognita.StochasticBandits.LimitGame.not_isLimitPolicy_dirac"]
+non_vacuity = []

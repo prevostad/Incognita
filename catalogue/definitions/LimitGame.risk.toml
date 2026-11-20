@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.risk"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:risk"
+meaning = "The risk r(Q, h) = E_Q[l_h sum_k (max_i h_i - h_k) tau_k(1)] of a limit policy Q in the local instance h."
+conventions = "Valued in ℝ≥0∞: the lower Lebesgue integral of ENNReal.ofReal of the integrand, nonnegative on the allocations."
+source = "[INC-P001, Definition def:risk]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.risk_singleArmPolicy"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.risk_zero"]
+exclusion = ["Incognita.StochasticBandits.LimitGame.risk_singleArmPolicy"]
+non_vacuity = []
