@@ -701,7 +701,7 @@ printf '# Night report test\n\nBody of the report.\n' > "$t/report.md"
 post_night_report 21 0123456789012345678901234567890123456789 "$t/report.md" 2>/dev/null; rc=$?
 p0=$(cat "$t/posted.0" 2>/dev/null)
 ok "report: one comment, the events appended to it" '[ "$rc" = 0 ] && [ "$(posted_n)" = 1 ] && [[ "$p0" == "<!-- incognita:night-report:0123456789012345678901234567890123456789 -->"*"Body of the report."*"<!-- incognita:events v1 night=test part=1/1 lines=3 -->"* ]]'
-ok "report: the events in a collapsed fenced block" '[[ "$p0" == *"<details><summary>Raw events of the night of test"*$'"'"'\n~~~tsv\n'"'"'*$'"'"'\n2026-11-19 22:00:00\ttask\tprove\tP001-x\tok pr #7'"'"'*$'"'"'\n~~~\n\n</details>'"'"'* ]]'
+ok "report: the events in a collapsed fenced block" '[[ "$p0" == *"<details><summary>Raw events of the night of test"*$'"'"'\n~~~tsv\n'"'"'*$'"'"'2026-11-19 22:00:00\ttask\tprove\tP001-x\tok pr #7'"'"'*$'"'"'\n~~~\n\n</details>'"'"'* ]]'
 ok "report: a line that looks like a secret is left out" '[[ "$p0" != *sk-ant* && "$p0" == *"1 line left out"* ]]'
 ok "report: event texts cleaned like agent text (<!--, @)" '[[ "$p0" == *"&lt;!-- here"* && "$p0" == *$'"'"'@\xe2\x80\x8bbob'"'"'* ]]'
 ok "report: stats.py reads the events back (usage reading included)" '[ "$(python3 -I "$here/stats.py" events-read "$t/posted.0" | cut -f3 | sort | tr "\n" " ")" = "ask-owner task usage " ]'
