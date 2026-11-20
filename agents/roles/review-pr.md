@@ -30,7 +30,7 @@ head; `AGENTS.md`.
     `inductive`, `axiom`, `opaque`, `notation`; no `sorry`; no forbidden keyword (AGENTS.md §6.3);
     no existing theorem changed or removed;
   - **reuse**: no lemma that duplicates one of the library (`Incognita/`) or of the dependencies,
-    under any name (Grep with `path` set under `.lake/packages/`: Mathlib, LML, LMLExplore); the
+    under any name (Grep with `path` set under `.lake/packages/`: LMLExplore, LML, Statlib, TauCeti, Mathlib); the
     audit of 2026-11-19 found its blocking defects there;
   - **scope**: every lemma added is used by a frozen statement of this pull request (or by another
     lemma that is), and the pull request does what its description says, nothing else;

@@ -24,8 +24,8 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
    constants (explicit or existential, depending on what), indices (0-based rounds, batch ends),
    the set along which limits are taken, junk values (AGENTS.md §6.5). Every difference must be
    declared and justified in the docstring and in `blueprint.md`; otherwise it is a defect.
-2. **Definitions.** Reuse first: a definition that duplicates one of LML, LMLExplore, Mathlib or
-   the library (`Incognita/`), under any name, is a defect (Grep with `path` set under
+2. **Definitions.** Reuse first: a definition that duplicates one of the dependencies (LMLExplore, LML, Statlib,
+   TauCeti, Mathlib: AGENTS.md §6.7) or of the library (`Incognita/`), under any name, is a defect (Grep with `path` set under
    `.lake/packages/`; the audit of 2026-11-19 found `unitLaws`, `IsConsistentOnUnit` and
    `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's array model). Scope:
    nothing defined that no frozen statement or check uses. For each new definition: general enough (library generality, not specialised to

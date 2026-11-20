@@ -74,8 +74,8 @@ runs `formalize-statements` again on the paper once this one is merged.
 9. **Checks**, once, at the end: `scripts/check-build.sh Incognita --no-sorry`,
    `scripts/check-build.sh Statements`, `lake exe audit --check`, `lake lint`,
    `lake exe mk_all --check --lib Incognita`, `lake exe mk_all --check --lib Statements`.
-10. **Self-check** before the end: no definition or lemma that LML, LMLExplore, Mathlib or the
-    library already provide under another name; every definition used by a frozen statement or
+10. **Self-check** before the end: no definition or lemma that the library or its dependencies
+    (LMLExplore, LML, Statlib, TauCeti, Mathlib: AGENTS.md §6.7) already provide under another name; every definition used by a frozen statement or
     by its checks. If task.md asks for Tau Ceti's quality pass, run it too.
 
 If a node cannot be formalised faithfully (ambiguous, ill-typed) or seems false, do not guess: freeze

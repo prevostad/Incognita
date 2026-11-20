@@ -61,7 +61,8 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
    `lake exe audit --check`, `lake lint`, `lake exe mk_all --check --lib Incognita`, and
    `scripts/build.sh Exploration` if you touched it.
 9. **Self-check** before the end: no lemma that the library or its dependencies already provide
-   (search `Incognita/`, Mathlib, LML and LMLExplore before proving a general step); no lemma
+   (search `Incognita/` and the dependencies, LMLExplore, LML, Statlib, TauCeti, Mathlib, before
+   proving a general step: AGENTS.md §6.7); no lemma
    that no frozen statement of this pull request uses. Your pull request is reviewed by
    `review-pr` (AGENTS.md §6.8); if task.md asks for Tau Ceti's quality pass, run it too.
 

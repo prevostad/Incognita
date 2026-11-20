@@ -761,8 +761,14 @@ renumbered, edited or deleted: later roles only add their line under them.
 
 ### 6.7 Building and searching
 
+- **Build on LMLExplore** (the owner, 2026-11-20): Incognita is a layer above LMLExplore and what
+  it builds on (LML, Statlib, TauCeti, Mathlib), never a parallel library. Before defining an
+  object or proving a general step, look there first, and use what exists, even under another
+  name or in a more general form; a duplicate is a defect (section 6.8). "The dependencies" means
+  these libraries throughout this contract.
 - Dependencies: `.lake/packages/LMLExplore`, `.lake/packages/LeanMachineLearning` (LML),
-  `.lake/packages/TauCeti`, `.lake/packages/mathlib/Mathlib`. Grep ignores `.lake` unless you give
+  `.lake/packages/Statlib` (once the pinned LMLExplore depends on it), `.lake/packages/TauCeti`,
+  `.lake/packages/mathlib/Mathlib`. Grep ignores `.lake` unless you give
   the path: search with `path` set to one of these directories.
 - Iterate with `lake env lean <file>` (one file) and `lake build <Module>`. Run the CI commands once,
   at the end: `scripts/check-build.sh Incognita --no-sorry`, `scripts/check-build.sh Statements`,
@@ -779,7 +785,7 @@ request, `review-pr` for any other. Incognita's goal is research verified in Lea
 library (LMLExplore builds that): the review checks Incognita's rules (paths, frozen types, locks,
 proof markers, back-translation) and the few criteria of Tau Ceti's rubrics that bear on the truth
 and the reuse of the results: **correctness** (definitions and lemmas say what they claim),
-**reuse** (no duplicate of a definition or lemma of the library, Mathlib, LML or LMLExplore),
+**reuse** (no duplicate of a definition or lemma of the library or of the dependencies: LMLExplore, LML, Statlib, TauCeti, Mathlib, section 6.7),
 **scope** (nothing the frozen statements do not use). Naming, documentation style, placement, API
 design, generality and proof style follow the conventions above, but are never a defect.
 
