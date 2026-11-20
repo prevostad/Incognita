@@ -2917,6 +2917,8 @@
         }
       ],
       "container-title": "Advances in Neural Information Processing Systems 33 (NeurIPS 2020)",
+      "volume": "33",
+      "page": "6366-6376",
       "issued": {
         "date-parts": [
           [
@@ -3526,7 +3528,8 @@
           ]
         ]
       },
-      "volume": "34"
+      "volume": "34",
+      "page": "8807-8819"
     },
     "identifiers": {
       "arxiv": "2106.02126"
