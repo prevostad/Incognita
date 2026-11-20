@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.klucbLawTransfer"
+module = "Incognita.TransferBandits.LawTransferAlgorithm"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:algo"
+meaning = "KL-UCB-d-Transfer: the first K rounds pull each arm once; at every later round t it pulls an arm drawn uniformly among the maximisers of the index U_k(t) = max {m(q) : (q, q') in P_S^2, d_F(q, q') <= L_k, N_k(t) KL(hat nu_k(t), q) + N'_k KL(hat nu'_k, q') <= delta_t}, delta_t = log(t v 3) + log log(t v 3)."
+conventions = "A TransferAlgorithm of [INC-P003]; rounds from 0; the first K rounds follow Fintype.equivFin; the index is a supremum in EReal (sup of the empty set = bottom); the kernels factor through the counts of the values of S (lawStat), so they are measurable."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:algo]"
+
+[checks]
+witness = ["Incognita.TransferBandits.klucbLawTransfer_policy_of_le"]
+known_cases = ["Incognita.TransferBandits.klucbLawTransfer_policy_of_lt", "Incognita.TransferBandits.statIndex_of_eq_zero", "Incognita.TransferBandits.lawIndex_zero"]
+exclusion = ["Incognita.TransferBandits.klucbLawTransfer_ne_constArm"]
+non_vacuity = ["Incognita.P002.upper_bound_klucb_satisfiable", "Incognita.P002.upper_bound_transfer_satisfiable", "Incognita.P002.optimal_isLawConsistent_satisfiable", "Incognita.P002.optimal_tendsto_pulls_satisfiable", "Incognita.P002.optimal_tendsto_regret_satisfiable"]

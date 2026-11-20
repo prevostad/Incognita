@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.IsKLProj"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:constant"
+meaning = "Q is a Kullback-Leibler projection of rho on {q in P_S : m(q) >= l}: a minimiser of KL(rho, .) on this set (the paper's Q* and Q'*)."
+conventions = "The structure statements quantify over every such minimiser (unique by lem:projection)."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:constant]"
+
+[checks]
+witness = ["Incognita.TransferBandits.isKLProj_self", "Incognita.TransferBandits.isKLProj_single_zero"]
+known_cases = ["Incognita.TransferBandits.vecKs_eq_of_isKLProj"]
+exclusion = ["Incognita.TransferBandits.not_isKLProj_zero"]
+non_vacuity = ["Incognita.P002.criteria_gain_over_mean_satisfiable", "Incognita.P002.criteria_source_helps_satisfiable", "Incognita.P002.tv_projections_satisfiable", "Incognita.P002.tv_strict_gain_satisfiable"]

@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.vecKL"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:laws"
+meaning = "The Kullback-Leibler divergence KL(r, q) = sum over y with r(y) > 0 of r(y) log(r(y)/q(y)) of two vectors on S, infinite when q(y) = 0 < r(y)."
+conventions = "Values in [0, infinity] (ENNReal.ofReal of the real sum, which is nonnegative on probability vectors)."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:laws]"
+
+[checks]
+witness = ["Incognita.TransferBandits.vecKL_self"]
+known_cases = ["Incognita.TransferBandits.vecKL_single"]
+exclusion = ["Incognita.TransferBandits.vecKL_eq_top"]
+non_vacuity = ["Incognita.P002.upper_bound_klucb_satisfiable", "Incognita.P002.upper_bound_transfer_satisfiable", "Incognita.P002.lower_bound_satisfiable", "Incognita.P002.optimal_isLawConsistent_satisfiable", "Incognita.P002.optimal_tendsto_pulls_satisfiable", "Incognita.P002.optimal_tendsto_regret_satisfiable", "Incognita.P002.optimal_regret_lower_satisfiable", "Incognita.P002.order_mean_satisfiable", "Incognita.P002.order_le_mean_satisfiable", "Incognita.P002.order_chain_satisfiable", "Incognita.P002.criteria_gain_over_mean_satisfiable", "Incognita.P002.criteria_source_helps_satisfiable", "Incognita.P002.criteria_source_helps_mean_satisfiable", "Incognita.P002.threshold_iff_satisfiable", "Incognita.P002.threshold_mean_w1_satisfiable", "Incognita.P002.threshold_tv_satisfiable", "Incognita.P002.bernoulli_no_gain_satisfiable", "Incognita.P002.w1_no_gain_satisfiable", "Incognita.P002.tv_projections_satisfiable", "Incognita.P002.tv_strict_gain_satisfiable", "Incognita.P002.tv_strict_gain_self_satisfiable"]

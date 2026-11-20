@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.reachGain"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "prop:threshold"
+meaning = "omega_d(q') = max {m(q) - m(q') : q in P_S, d_F(q, q') <= l}, the largest increase of the mean allowed by the drift bound from q'."
+conventions = "Real supremum (the paper's maximum)."
+source = "roadmap TransferBandits, direction D8; [INC-P002, prop:threshold]"
+
+[checks]
+witness = ["Incognita.TransferBandits.reachGain_nonneg"]
+known_cases = ["Incognita.TransferBandits.reachGain_meanClass"]
+exclusion = ["Incognita.TransferBandits.reachGain_single_max"]
+non_vacuity = ["Incognita.P002.threshold_iff_satisfiable", "Incognita.P002.threshold_mean_w1_satisfiable", "Incognita.P002.threshold_tv_satisfiable"]

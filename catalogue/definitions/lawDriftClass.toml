@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.lawDriftClass"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:class"
+meaning = "The class Theta: pairs (nu, nu') of instances on S with d_F(nu_k, nu'_k) < L_k for every arm."
+conventions = "Strict inequality; vectors of the laws by lawVec S."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:class]"
+
+[checks]
+witness = ["Incognita.TransferBandits.self_mem_lawDriftClass"]
+known_cases = ["Incognita.TransferBandits.mem_lawDriftClass_meanClass_iff"]
+exclusion = ["Incognita.TransferBandits.lawDriftClass_eq_empty"]
+non_vacuity = ["Incognita.P002.lower_bound_satisfiable", "Incognita.P002.optimal_isLawConsistent_satisfiable", "Incognita.P002.optimal_tendsto_pulls_satisfiable", "Incognita.P002.optimal_tendsto_regret_satisfiable", "Incognita.P002.optimal_regret_lower_satisfiable"]

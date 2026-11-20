@@ -1,0 +1,19 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P002.threshold_iff
+sha256 7db22d6fba6def2a2895fc6cbe01e57d5a9d754088c9d22fd1c8445a54f92223
+constant def Incognita.TransferBandits.IsTestClass
+constant def Incognita.TransferBandits.altPairs
+constant def Incognita.TransferBandits.armConstant
+constant def Incognita.TransferBandits.bestMean
+constant def Incognita.TransferBandits.driftConstant
+constant def Incognita.TransferBandits.ipm
+constant def Incognita.TransferBandits.lawVec
+constant def Incognita.TransferBandits.probVecs
+constant def Incognita.TransferBandits.programme
+constant def Incognita.TransferBandits.reachGain
+constant def Incognita.TransferBandits.supportBandits
+constant def Incognita.TransferBandits.thresholdKL
+constant def Incognita.TransferBandits.vecKL
+constant def Incognita.TransferBandits.vecMean
+constant theorem Incognita.Statements.P002.threshold_iff

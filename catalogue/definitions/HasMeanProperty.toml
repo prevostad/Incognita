@@ -1,0 +1,14 @@
+lean = "Incognita.TransferBandits.HasMeanProperty"
+module = "Incognita.TransferBandits.LawDrift"
+roadmap = "TransferBandits"
+paper = "P002-transfer-drift-between-laws"
+label = "def:ipm"
+meaning = "The mean property (M) of a set of test functions: |m(q) - m(q')| <= d_F(q, q') for all probability vectors q, q' on S."
+conventions = "Quantified over probVecs S."
+source = "roadmap TransferBandits, direction D8; [INC-P002, def:ipm]"
+
+[checks]
+witness = ["Incognita.TransferBandits.hasMeanProperty_meanClass"]
+known_cases = ["Incognita.TransferBandits.hasMeanProperty_tvClass"]
+exclusion = ["Incognita.TransferBandits.not_hasMeanProperty_zero"]
+non_vacuity = ["Incognita.P002.order_le_mean_satisfiable", "Incognita.P002.criteria_gain_over_mean_satisfiable", "Incognita.P002.bernoulli_no_gain_satisfiable"]
