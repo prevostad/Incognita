@@ -177,6 +177,12 @@ lemma followSource_not_isConsistent_satisfiable :
     2 ≤ Fintype.card Bool ∧ Nonempty Bool :=
   ⟨by simp, ⟨true⟩⟩
 
+/-- Hypotheses of `followSource_not_isConsistent_v2` (prop:exclusion, correction SC1): the arms
+`Bool`, a finite linear order with two elements and measurable singletons. -/
+lemma followSource_not_isConsistent_v2_satisfiable :
+    2 ≤ Fintype.card Bool ∧ Nonempty Bool ∧ MeasurableSingletonClass Bool :=
+  ⟨by simp, ⟨true⟩, inferInstance⟩
+
 @[deprecated (since := "2026-11-19")]
 alias isConsistentOnUnit_of_isConsistent := LMLExplore.Bandits.IsConsistent.isConsistentOnUnit
 
