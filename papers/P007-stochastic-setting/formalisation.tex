@@ -1,0 +1,250 @@
+% formalisation.tex: blueprint extension of an accepted paper (AGENTS.md, section 6.6, case c).
+% Not refereed: Lean checks every node. paper.tex is never edited.
+% Nodes of paper.tex are referred to by their labels: xr-hyper reads paper.aux, so compile
+% paper.tex first (CI does). New labels start with f (flem:, fprop:, fdef:) and are never reused.
+% Every node has \lean{...} with its Lean name and an exhaustive \uses{...}; never write \leanok.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+\externaldocument{paper}
+\counterwithout{theorem}{section}
+\renewcommand{\thetheorem}{F\arabic{theorem}}
+
+% Notation of the paper, written out.
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\Kinf}{\mathcal{K}_{\inf}}
+\newcommand{\as}{a^{\star}}
+\newcommand{\ms}{m^{\star}}
+\newcommand{\Alt}{\mathrm{Alt}}
+\newcommand{\GL}{C}
+\newcommand{\mean}{m}
+\newcommand{\gap}{\Delta}
+
+\title{Formalisation notes for P007-stochastic-setting}
+\author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
+  are this file's; other numbers refer to the paper.}}
+\date{2026-11-20}
+
+\begin{document}
+\maketitle
+
+The Lean proofs of Theorem~\ref{thm:main} and Proposition~\ref{prop:gl-zero} do not go through the
+reduction of Lemma~\ref{lem:gl-reduction}: they work with the weights $w\in[0,\infty]^\alpha$ of
+Definition~\ref{def:gl} directly, and put the weight $\infty$ on the optimal arm where the paper's
+Step~1 of the proof of Lemma~\ref{lem:gl-reduction} does. The upper bound of Theorem~\ref{thm:main}
+uses the weights $1/\Kinf+\delta$ with a margin $\delta>0$, then lets $\delta\to0$; the margin is
+needed by the case discussed in the remark after Lemma~\ref{flem:feasible-margin}. Every lemma
+below uses only that the laws are finite measures; the hypotheses $\nu_a\in\mathcal P_1$ of the
+frozen statements are not used. All computations are in $[0,\infty]$ with $0\cdot\infty=0$.
+
+\section{Extra lemmas}
+
+\begin{lemma}[the optimal arm has the largest mean]\label{flem:opt-mean}
+\lean{Incognita.StochasticBandits.iSup_integral_eq_of_unique}
+\uses{def:instance}
+If $\nu$ has a unique optimal arm $\as$, then $\ms=\max_b\mean(\nu_b)=\mean(\nu_{\as})$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:instance}
+$\gap_{\as}=0$, since otherwise an arm of largest mean would be an optimal arm other than $\as$.
+\end{proof}
+
+\begin{lemma}[an infinite weight on the optimal arm is free]\label{flem:top-cost}
+\lean{Incognita.StochasticBandits.sum_update_top_mul_ofReal_gap}
+\uses{def:instance}
+If $\gap_{\as}=0$ and $w'$ is $w$ with $w_{\as}$ replaced by $\infty$, then
+$\sum_aw'_a\gap_a=\sum_aw_a\gap_a$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:instance}
+The term of $\as$ is $\infty\cdot0=0$ on the left and $w_{\as}\cdot0=0$ on the right; the other
+terms are equal.
+\end{proof}
+
+\begin{lemma}[an infinite weight on $\as$ meets the moved constraints]\label{flem:top-constraint}
+\lean{Incognita.StochasticBandits.one_le_sum_mul_klDiv_of_ne}
+\uses{def:laws}
+Let $w\in[0,\infty]^\alpha$ with $w_{\as}=\infty$, and let $\nu,\nu'$ be instances whose laws at
+$\as$ are finite measures with $\nu'_{\as}\ne\nu_{\as}$. Then $\sum_aw_a\KL(\nu_a,\nu'_a)\ge1$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws}
+By Gibbs' inequality, $\KL(\nu_{\as},\nu'_{\as})>0$, so the term of $\as$ is $\infty$, and the
+other terms are nonnegative.
+\end{proof}
+
+\begin{lemma}[the constant vanishes, general form]\label{flem:gl-zero}
+\lean{Incognita.StochasticBandits.gravesLai_eq_zero_of_identifies}
+\uses{def:gl}
+Proposition~\ref{prop:gl-zero} holds when only the laws $\nu_{\as}$ and $\nu'_{\as}$,
+$\nu'\in\mathcal E$, are assumed to be finite measures.
+\end{lemma}
+
+\begin{proof}
+\uses{def:gl, flem:top-cost, flem:top-constraint}
+Let $w_{\as}:=\infty$ and $w_a:=0$ for $a\ne\as$. Let $\nu'\in\Alt(\nu;\mathcal E)$. If
+$\nu'_{\as}=\nu_{\as}$ then $\nu'=\nu$ by hypothesis, but $\nu$ is not an alternative to itself
+(its optimal arm is optimal in it); so $\nu'_{\as}\ne\nu_{\as}$ and the constraint of $\nu'$ holds
+by Lemma~\ref{flem:top-constraint}. So $w$ is feasible, and its cost is
+$\sum_a0\cdot\gap_a=0$ by Lemma~\ref{flem:top-cost}. Hence $\GL(\nu;\mathcal E)\le0$.
+\end{proof}
+
+\begin{lemma}[lower bound on the feasible weights]\label{flem:weight-lower}
+\lean{Incognita.StochasticBandits.inv_dInf_le_of_feasible}
+\uses{def:gl, def:product, def:kinf}
+Let $(\mathcal D_a)_a$ be models of finite measures, $\nu\in\prod_a\mathcal D_a$ with a unique
+optimal arm $\as$, and $w\in[0,\infty]^\alpha$ feasible for $\GL(\nu;\prod_a\mathcal D_a)$. Then
+$w_a\ge1/\Kinf(\nu_a,\ms;\mathcal D_a)$ for every arm $a$ with $\gap_a>0$ (with $1/0=\infty$,
+$1/\infty=0$).
+\end{lemma}
+
+\begin{proof}
+\uses{def:gl, def:product, def:kinf, flem:opt-mean}
+Equivalently, $1/w_a\le\KL(\nu_a,Q)$ for every $Q\in\mathcal D_a$ with $\mean(Q)>\ms$. Fix such a
+$Q$ and let $\nu'$ be $\nu$ with the law of the arm $a$ replaced by $Q$. Then
+$\nu'\in\prod_a\mathcal D_a$, and $a\ne\as$, so $\nu'_{\as}=\nu_{\as}$ and
+$\max_b\mean(\nu'_b)\ge\mean(Q)>\ms=\mean(\nu'_{\as})$ by Lemma~\ref{flem:opt-mean}: $\as$ is not
+optimal in $\nu'$, which is an alternative. Its constraint has the single term
+$w_a\KL(\nu_a,Q)\ge1$, since $\KL(\nu_b,\nu_b)=0$ for $b\ne a$. So $w_a\ne0$, and $\KL(\nu_a,Q)\ne0$
+if $w_a=\infty$; in every case $1/w_a\le\KL(\nu_a,Q)$.
+\end{proof}
+
+\begin{lemma}[lower bound of the main theorem]\label{flem:main-lower}
+\lean{Incognita.StochasticBandits.le_gravesLai_productClass}
+\uses{def:gl, def:product, def:kinf}
+Under the hypotheses of Lemma~\ref{flem:weight-lower},
+$\sum_{a:\gap_a>0}\gap_a/\Kinf(\nu_a,\ms;\mathcal D_a)\le\GL(\nu;\prod_a\mathcal D_a)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:gl, flem:weight-lower}
+For a feasible $w$, $\gap_a/\Kinf(\nu_a,\ms;\mathcal D_a)\le w_a\gap_a$ for every $a$ with
+$\gap_a>0$ by Lemma~\ref{flem:weight-lower}; sum over these arms, bound the sum by the sum over
+all arms, and take the infimum over $w$.
+\end{proof}
+
+\begin{lemma}[feasible weights with a margin]\label{flem:feasible-margin}
+\lean{Incognita.StochasticBandits.feasible_update_inv_dInf_add}
+\uses{def:gl, def:product, def:kinf}
+Under the hypotheses of Lemma~\ref{flem:weight-lower}, write
+$\mathcal K_a:=\Kinf(\nu_a,\ms;\mathcal D_a)$ and assume $\mathcal K_a>0$ for every $a$ with
+$\gap_a>0$. For every $\delta\in(0,\infty]$, the weights $w_{\as}:=\infty$ and
+$w_a:=1/\mathcal K_a+\delta$ for $a\ne\as$ are feasible.
+\end{lemma}
+
+\begin{proof}
+\uses{def:gl, def:product, def:kinf, flem:opt-mean, flem:top-constraint}
+Let $\nu'$ be an alternative. If $\nu'_{\as}\ne\nu_{\as}$, apply
+Lemma~\ref{flem:top-constraint}. Otherwise $\as$ is not optimal in $\nu'$, so some arm $b$ has
+$\mean(\nu'_b)>\mean(\nu'_{\as})=\mean(\nu_{\as})=\ms$ (Lemma~\ref{flem:opt-mean}); then $b\ne\as$,
+and $\nu'_b\in\mathcal D_b$ gives $\mathcal K_b\le\KL(\nu_b,\nu'_b)$. If $\mathcal K_b=\infty$, then
+$\KL(\nu_b,\nu'_b)=\infty$ and $w_b\ge\delta>0$, so $w_b\KL(\nu_b,\nu'_b)=\infty$. Otherwise
+$0<\mathcal K_b<\infty$ (as $\gap_b>0$) and
+$w_b\KL(\nu_b,\nu'_b)\ge\mathcal K_b^{-1}\mathcal K_b=1$. The other terms are nonnegative.
+\end{proof}
+
+\paragraph{Remark (Step 3 of the paper's proof of Theorem~\ref{thm:main})} The paper takes
+$\delta=0$ and states that $\mathcal K_b<\infty$ because the set defining $\mathcal K_b$ contains
+$\nu'_b$. This fails when $\KL(\nu_b,\nu'_b)=\infty$ and every law of $\mathcal D_b$ with a mean
+above $\ms$ is at infinite divergence from $\nu_b$: then $\mathcal K_b=\infty$, $w_b=1/\mathcal
+K_b=0$ and $w_b\KL(\nu_b,\nu'_b)=0\cdot\infty=0<1$. For instance, two arms, $\nu=(\delta_1,\delta_0)$,
+$\mathcal D_1=\{\delta_1\}$, $\mathcal D_2=\{\delta_0,\delta_2\}$: $\KL(\delta_0,\delta_2)=\infty$,
+so $\mathcal K_2=\infty$ and $w=(\infty,0)$ is not feasible. The infimum is still the paper's value,
+and is not attained: the weights $(\infty,\delta)$ are feasible for every $\delta>0$, at cost
+$\delta\gap_2\to0$. The statement of Theorem~\ref{thm:main} is unchanged; the margin $\delta$ of
+Lemma~\ref{flem:feasible-margin} and the limit of Lemma~\ref{flem:main-upper} repair the step.
+
+\begin{lemma}[upper bound of the main theorem]\label{flem:main-upper}
+\lean{Incognita.StochasticBandits.gravesLai_productClass_le}
+\uses{def:gl, def:product, def:kinf}
+Under the hypotheses of Lemma~\ref{flem:weight-lower},
+$\GL(\nu;\prod_a\mathcal D_a)\le\sum_{a:\gap_a>0}\gap_a/\Kinf(\nu_a,\ms;\mathcal D_a)=:S$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:gl, flem:feasible-margin, flem:top-cost}
+If $S=\infty$ there is nothing to prove. Otherwise $\mathcal K_a>0$ for every $a$ with $\gap_a>0$,
+since $\gap_a/0=\infty$. For $\delta=1/n$, $n\in\mathbb N$ (with $1/0=\infty$), the weights of
+Lemma~\ref{flem:feasible-margin} are feasible; by Lemma~\ref{flem:top-cost} their cost is
+$\sum_a(1/\mathcal K_a+\delta)\gap_a\le S+\delta c$, with $c:=\sum_a\gap_a<\infty$ (the terms with
+$\gap_a=0$ vanish). So $\GL\le S+c/n$ for every $n$, and $S+c/n\to S$.
+\end{proof}
+
+\begin{lemma}[the main theorem, general form]\label{flem:main}
+\lean{Incognita.StochasticBandits.gravesLai_productClass}
+\uses{def:gl, def:product, def:kinf}
+Theorem~\ref{thm:main} holds for models of finite measures.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:main-lower, flem:main-upper}
+Lemmas~\ref{flem:main-lower} and~\ref{flem:main-upper}.
+\end{proof}
+
+\begin{lemma}[the constant learner is not consistent]\label{flem:const-consistent}
+\lean{Incognita.StochasticBandits.not_isConsistent_const}
+\uses{def:consistent, def:regret}
+On a class $\mathcal E$ that contains an instance $\nu$ (Markov, with finitely many arms) in which
+$b$ is suboptimal, the learner $\pi^b$ that always pulls $b$ is not consistent.
+\end{lemma}
+
+\begin{proof}
+\uses{def:consistent, def:regret}
+The learner $\pi^b$ pulls $b$ at every round, so $N_b(T)=T$ almost surely and $\E[N_b(T)]=T$
+(\texttt{Incognita.StochasticBandits.integral\_pullCount\_const\_self}). Moreover
+$\gap_b\E[N_b(T)]\le R_T(\pi^b,\nu)$
+(\texttt{Incognita.BatchedBandits.gap\_mul\_integral\_pullCount\_le\_integral\_regret}), so $R_T(\pi^b,\nu)/T\ge\gap_b>0$ for $T\ge1$, which does not tend to $0$: consistency fails with the
+exponent $p=1$.
+\end{proof}
+
+\section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Theorem~\ref{thm:main}]
+\proves{thm:main}
+\uses{flem:main}
+Lemma~\ref{flem:main}, since the models are subsets of $\mathcal P_1$, whose laws are finite
+measures. Lemma~\ref{lem:gl-reduction} is not used.
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:gl-zero}]
+\proves{prop:gl-zero}
+\uses{flem:gl-zero}
+Lemma~\ref{flem:gl-zero}, since the laws of the instances are in $\mathcal P_1$.
+Lemma~\ref{lem:gl-reduction} is not used.
+\end{proof}
+
+\begin{proof}[Formal route to Corollary~\ref{cor:lower}]
+\proves{cor:lower}
+\uses{thm:main, cite:GMS19-thm1, def:consistent, def:gl}
+By Theorem~\ref{thm:main}, $\GL(\nu;\mathcal D^\alpha)=\sum_{a:\gap_a>0}\gap_a/\Kinf(\nu_a,\ms;\mathcal D)$,
+the constant of the Lai--Robbins bound for consistent learners on the unstructured class
+$\mathcal D^\alpha$ (LMLExplore's
+\texttt{eventually\_mul\_log\_le\_integral\_regret\_of\_isConsistent}, the consistent form of
+Theorem~\ref{cite:GMS19-thm1} summed over the arms). The detour through uniform fast convergence
+(Lemma~\ref{lem:classes}(iii)) is not needed.
+\end{proof}
+
+\begin{proof}[Formal route to the consequence of Lemma~\ref{lem:constant} on $\pi^b$]
+\proves{lem:constant}
+\uses{flem:const-consistent, def:ufc}
+Not consistent: Lemma~\ref{flem:const-consistent}. Not uniformly fast convergent: the expected
+count of $b$ is $T$, so $\E[N_b(T)]/T^1\to1\ne0$ (\texttt{Incognita.StochasticBandits.not\_isUniformlyFastConvergent\_const}).
+Not uniformly super-fast convergent with any constant $C\in\mathbb R$: such a learner would be
+uniformly fast convergent, since $\log T/T^p\to0$
+(\texttt{Incognita.StochasticBandits.not\_isUniformlySuperFastConvergent\_const}). Items (i)--(ii),
+the uniform learner and $\gamma$-consistency for $\gamma>0$ are not frozen.
+\end{proof}
+
+\end{document}
