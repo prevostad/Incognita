@@ -131,6 +131,26 @@ lemma not_isUniformlyFastConvergent_const {E : Set (Kernel α ℝ)} {ν : Kernel
       rw [div_self (by exact_mod_cast (by omega : T ≠ 0))])
   exact one_ne_zero (tendsto_nhds_unique h1 hlim)
 
+omit [DecidableEq α] in
+/-- **Exclusion** for consistency [INC-P007, Lemma `lem:constant`]: on a class that contains an
+instance where `b` is suboptimal, the learner that always pulls `b` is not consistent (its expected
+regret is `T Δ_b`, which is not `o(T)`). -/
+lemma not_isConsistent_const [Finite α] {E : Set (Kernel α ℝ)} {ν : Kernel α ℝ}
+    [IsMarkovKernel ν] (hν : ν ∈ E) {b : α} (hb : 0 < gap ν b) :
+    ¬ LMLExplore.Bandits.IsConsistent (Algorithm.const (Measure.dirac b)) E := by
+  classical
+  intro h
+  have hlim := (LMLExplore.Bandits.isConsistent_def _ _).mp h ν hν 1 one_pos
+  simp_rw [Real.rpow_one] at hlim
+  have hge : ∀ᶠ T : ℕ in atTop, gap ν b ≤ (∫ ω, regret ν IT.action T ω
+      ∂(trajMeasure (Algorithm.const (Measure.dirac b)) (Environment.bandit ν))) / T := by
+    filter_upwards [eventually_ge_atTop 1] with T hT
+    rw [le_div_iff₀ (by exact_mod_cast hT)]
+    have := BatchedBandits.gap_mul_integral_pullCount_le_integral_regret
+      (Algorithm.const (Measure.dirac b)) ν b T
+    rwa [integral_pullCount_const_self] at this
+  exact absurd (ge_of_tendsto hlim hge) (not_le.mpr hb)
+
 end Const
 
 /-- **Known case**: a uniformly super-fast convergent learner is uniformly fast convergent, the
