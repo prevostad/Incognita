@@ -5,7 +5,7 @@
 | Work | S. Agrawal, S. Juneja, W. M. Koolen, *Regret Minimization in Heavy-Tailed Bandits*, Proceedings of the 34th Conference on Learning Theory (COLT 2021), PMLR 134:26–62 |
 | Identifiers | arXiv:2102.03734 (v1); PMLR v134 PDF (the version read on 2026-11-16) |
 | Read | arXiv v1 (agent, roadmap draft, 2026-11-14): abstract, §1, §2 (3)–(4), §3 Algorithm 1 and (5), §3.1 Theorem 1, Corollary 2, Theorem 3, §3.2 Proposition 4. PMLR v134 PDF (Claude Opus 5.5, write-paper P005, 2026-11-16): abstract; §2 (1), (3)–(4); §3 Algorithm 1, (5); §3.1 Theorem 1, Corollary 2; §3.3 Proposition 5, Lemma 6 and the text around them; §3.5 (computational cost); §5 Conclusion (the four remarks); Appendix A Lemmas 7–8; Appendix B.1 Lemma 11, B.1.1 (proof of Proposition 5), Remark 12 |
-| By, date | see the row above |
+| By, date | see the row above; and Claude Opus 5.5 (bibliographer), 2026-11-20: the PMLR v134 PDF (proceedings.mlr.press/v134/agrawal21a/agrawal21a.pdf, header "Proceedings of Machine Learning Research vol 134:1–37, 2021"), page images of pp. 3–6 (end of §1, §2 with (2)–(4), §3 with Algorithm 1 and (5), §3.1 with Theorem 1, Corollary 2, Theorem 3) and (1) in the text layer: compared with this note, they agree |
 
 ## Results
 
@@ -13,7 +13,10 @@ Statements copied from the PMLR text layer; formulas rebuilt in LaTeX with the p
 $\mathcal L_B:=\{\eta\in\mathcal P(\mathbb R):\mathbb E_\eta|X|^{1+\epsilon}\le B\}$ ((1)), and
 $\mathrm{KL}_{\inf}^{\mathcal L}(\eta,x):=\inf\{\mathrm{KL}(\eta,\kappa):\kappa\in\mathcal L,\ m(\kappa)\ge x\}$ ((3), a
 **non-strict** inequality); arm 1 has the largest mean; $N_a(n)$ is the number of samples of arm $a$ in $n-1$
-rounds.
+rounds. (The source defines the count twice: §2, after (2), "$N_a(T)$ denotes the number of times arm $a$
+has been pulled in $T$ trials"; §3, before Algorithm 1, "we denote by $N_a(n)$ the number of times arm $a$
+has been sampled in $n-1$ rounds". The two differ by at most one pull, which does not change the limit
+of Corollary 2; checked on pp. 4–5 of the PMLR PDF, 2026-11-20.)
 
 - **Algorithm 1 (KLinf-UCB).** One sample per arm; then, repeatedly, compute
   $U_a(n)=\sup\{x\in\mathbb R:N_a(n)\,\mathrm{KL}_{\inf}(\hat\mu_a(n),x)\le g_a(n)\}$ for each arm, pick
