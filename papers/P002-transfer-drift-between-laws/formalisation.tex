@@ -1,0 +1,188 @@
+% formalisation.tex: blueprint extension of an accepted paper (AGENTS.md, section 6.6, case c).
+% Not refereed: Lean checks every node. paper.tex is never edited.
+% Nodes of paper.tex are referred to by their labels: xr-hyper reads paper.aux, so compile
+% paper.tex first (CI does). New labels start with f (flem:, fprop:, fdef:) and are never reused.
+% Every node has \lean{...} with its Lean name and an exhaustive \uses{...}; never write \leanok.
+% Compile: latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/formalisation.tex
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{xr-hyper}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{../../templates/paper/blueprint-macros}
+\externaldocument{paper}
+\counterwithout{theorem}{section}
+\renewcommand{\thetheorem}{F\arabic{theorem}}
+
+% The paper's macros, copied from paper.tex (without the notation links).
+\newcommand{\xmax}{x_{\max}}
+\newcommand{\Simp}{\mathcal{P}_{S}}
+\newcommand{\mean}{m}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\Ks}{\mathcal{K}_{S}}
+\newcommand{\dirac}{\mathbf{1}_{\{x_{\max}\}}}
+\newcommand{\Wone}{W_{1}}
+\newcommand{\dF}{d_{\mathcal F}}
+\newcommand{\om}{\omega}
+\newcommand{\Gd}{G}
+
+\title{Formalisation notes for P002-transfer-drift-between-laws}
+\author{Incognita agents\thanks{Not refereed: every node is checked in Lean. Numbers F1, F2, \dots{}
+  are this file's; other numbers refer to the paper.}}
+\date{2026-11-20}
+
+\begin{document}
+\maketitle
+
+Throughout, $S\subset[0,1]$ is finite, $\xmax=\max S$, $l\ge0$ is a drift budget (the paper's
+$L_a$), $\om_d(q')=\sup\{\mean(q)-\mean(q'):q\in\Simp,\ d(q,q')\le l\}$ and
+$\Gd^d=\inf\{\KL(r',q'):q'\in\Simp,\ \mean(q')+\om_d(q')\ge\mu\}$ (Proposition~\ref{prop:threshold}).
+
+\section{Extra lemmas}
+
+\begin{lemma}[The reach of a distance between the mean gap and the mixture bound]\label{flem:reach-min}
+\lean{Incognita.TransferBandits.reachGain_eq_min,
+  Incognita.TransferBandits.mix_single_mem_probVecs}
+\uses{def:laws, def:ipm}
+Let $q'\in\Simp$, and let $d=\dF$ satisfy $\mean(q)-\mean(q')\le d(q,q')$ for every $q\in\Simp$ and
+$d((1-t)q'+t\dirac,q')\le t(\xmax-\mean(q'))$ for every $t\in[0,1]$. Then
+$\om_d(q')=\min(l,\xmax-\mean(q'))$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm}
+Every admissible $q$ has $\mean(q)-\mean(q')\le d(q,q')\le l$ and $\mean(q)\le\xmax$. Conversely,
+with $g=\min(l,\xmax-\mean(q'))$ and $t=g/(\xmax-\mean(q'))\in[0,1]$ ($t=0$ if $\mean(q')=\xmax$),
+the mixture $q_t=(1-t)q'+t\dirac$ is in $\Simp$, has $\mean(q_t)-\mean(q')=t(\xmax-\mean(q'))=g$ and
+$d(q_t,q')\le g\le l$.
+\end{proof}
+
+\begin{lemma}[$\Wone$ satisfies the hypotheses of Lemma~\ref{flem:reach-min}]\label{flem:reach-w1}
+\lean{Incognita.TransferBandits.abs_vecMean_sub_le_ipm_w1Class,
+  Incognita.TransferBandits.ipm_w1Class_mix_single_le,
+  Incognita.TransferBandits.reachGain_w1Class}
+\uses{def:laws, def:ipm, flem:reach-min}
+For $q,q'\in\Simp$ and $t\ge0$, $|\mean(q)-\mean(q')|\le\Wone(q,q')$ and
+$\Wone((1-t)q'+t\dirac,q')\le t(\xmax-\mean(q'))$; hence $\om_{\Wone}(q')=\min(l,\xmax-\mean(q'))$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm, flem:reach-min}
+The function $y\mapsto y$ is a $1$-Lipschitz test function with values in $[0,1]$. For a
+$1$-Lipschitz $f$, $\sum_yf(y)\big((1-t)q'+t\dirac-q'\big)(y)=t\sum_yq'(y)(f(\xmax)-f(y))$, of
+absolute value at most $t\sum_yq'(y)(\xmax-y)=t(\xmax-\mean(q'))$. Conclude with
+Lemma~\ref{flem:reach-min}.
+\end{proof}
+
+\begin{lemma}[The threshold from the reach]\label{flem:threshold-ks}
+\lean{Incognita.TransferBandits.thresholdKL_eq_vecKs}
+\uses{def:laws, def:ipm}
+If $\om_d(q')=\min(l,\xmax-\mean(q'))$ for every $q'\in\Simp$ and $\mu\le\xmax$, then
+$\Gd^d=\Ks(r',\mu-l)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm}
+$\mean(q')+\min(l,\xmax-\mean(q'))=\min(\mean(q')+l,\xmax)\ge\mu$ if and only if
+$\mean(q')\ge\mu-l$, as $\mu\le\xmax$: the two infima run over the same set.
+\end{proof}
+
+\begin{lemma}[The reach of total variation]\label{flem:reach-tv}
+\lean{Incognita.TransferBandits.reachGain_tvClass}
+\uses{def:laws, def:ipm}
+For $q'\in\Simp$ and every real $l$, $\om_{\TV}(q')=\sup\{\sum_yw(y)(\xmax-y):0\le w\le q',\
+\sum_yw(y)\le l\}$ (both suprema of the empty set, $0$, when $l<0$).
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws, def:ipm, lem:ipm}
+By Lemma~\ref{lem:ipm}(c), $\TV(q,q')=\sum_y(q-q')_+(y)=\sum_y(q'-q)_+(y)$. Given an admissible $q$,
+$w=(q'-q)_+$ satisfies $0\le w\le q'$, $\sum w=\TV(q,q')\le l$ and
+$\mean(q)-\mean(q')=\sum_yy\big((q-q')_+-w\big)(y)\le\xmax\sum w-\sum_yyw(y)=\sum_yw(y)(\xmax-y)$.
+Given $w$, $q=q'-w+(\sum w)\dirac$ is in $\Simp$, has $\TV(q,q')\le\sum w\le l$ and
+$\mean(q)-\mean(q')=\sum_yw(y)(\xmax-y)$. Both sets are bounded above and their suprema are
+nonnegative, so each supremum is at most the other.
+\end{proof}
+
+\begin{lemma}[$\Ks>0$ below the level]\label{flem:ks-pos}
+\lean{Incognita.TransferBandits.ofReal_sq_sum_abs_sub_div_two_le_vecKL,
+  Incognita.TransferBandits.ofReal_sq_sub_vecMean_div_two_le_vecKs,
+  Incognita.TransferBandits.vecKs_pos, Incognita.TransferBandits.vecKs_lawVec_pos}
+\uses{def:laws}
+For $r,q\in\Simp$, $\KL(r,q)\ge\frac12\big(\sum_y|r(y)-q(y)|\big)^2$. Hence, if $\mean(r)<\ell$,
+$\Ks(r,\ell)\ge(\ell-\mean(r))^2/2>0$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:laws}
+The first inequality is Pinsker's inequality for probability vectors (when $\KL(r,q)<\infty$; it is
+trivial otherwise). If $\mean(q)\ge\ell$, then
+$\ell-\mean(r)\le\sum_yy(q(y)-r(y))\le\sum_y|q(y)-r(y)|$ as $S\subset[0,1]$.
+\end{proof}
+
+\begin{lemma}[A larger distance gives a smaller constant]\label{flem:order-mono}
+\lean{Incognita.TransferBandits.mul_vecKs_le_programme,
+  Incognita.TransferBandits.exists_one_le_programme,
+  Incognita.TransferBandits.driftConstant_le_of_ipm_le}
+\uses{def:ipm, def:constant}
+For every pseudo-distance, $J_a(x,c;\mu)\ge x\Ks(\nu_a,\mu)$; if $\Ks(\nu_a,\mu)>0$, the set
+$\{x>0:J_a(x,c;\mu)\ge1\}$ is nonempty. If $d_1\le d_2$ on $\Simp^2$ and $\Ks(\nu_a,\mu)>0$, then
+$D^{d_2}_a(c)\le D^{d_1}_a(c)$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:ipm, def:constant}
+The first law of a pair of $\Gamma_a(\mu)$ has mean at least $\mu$. The value $x=1/\Ks(\nu_a,\mu)$
+(any $x>0$ if $\Ks=\infty$) is in the set. A pair feasible for $d_2$ is feasible for $d_1$, so
+$J^{d_2}\ge J^{d_1}$ and the set defining $D^{d_1}_a(c)$ is contained in that of $D^{d_2}_a(c)$; it
+is nonempty, and both are bounded below by $0$.
+\end{proof}
+
+\begin{lemma}[Abel summation bound]\label{flem:abel}
+\lean{Incognita.TransferBandits.abs_sum_mul_sub_le,
+  Incognita.TransferBandits.ipm_w1Class_le_ipm_ksClass,
+  Incognita.TransferBandits.ipm_mono, Incognita.TransferBandits.ipm_ksClass_le_ipm_tvClass}
+\uses{def:ipm}
+Let $T\subset[m,b]$ be finite with $b\in T$, $f$ $1$-Lipschitz on $T$, and $D:T\to\mathbb R$ with
+$|\sum_{y\in T,\,y\le s}D(y)|\le K$ for every $s\in\mathbb R$. Then
+$|\sum_{y\in T}f(y)D(y)-f(b)\sum_{y\in T}D(y)|\le(b-m)K$. Consequently
+$\Wone(q,q')\le\mathrm{KS}(q,q')\le\TV(q,q')$ for $q,q'\in\Simp$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:ipm}
+Induction on the maximum: for $T'=T\cup\{b\}$ with $T<b$ and $b'=\max T$, the partial sums of $T$
+are those of $T'$ at $\min(s,b')$, and
+$\sum_{T'}fD-f(b)\sum_{T'}D=\big(\sum_TfD-f(b')\sum_TD\big)+(f(b')-f(b))\sum_TD$, bounded by
+$(b'-m)K+(b-b')K$. For $\Wone$, apply it to $T=S$, $D=q-q'$ (so $\sum D=0$), $K=\mathrm{KS}(q,q')$,
+$m=x_{\min}$, $b=\xmax$, and use $\xmax-x_{\min}\le1$. The indicators of $(-\infty,s]$ are test
+functions of $\TV$.
+\end{proof}
+
+\section{New decompositions of the paper's proofs}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:order}~(b) and~(c)]
+\proves{prop:order}
+\uses{flem:ks-pos, flem:order-mono, flem:abel, lem:ipm, lem:ipm-order}
+As in the paper, with Lemma~\ref{flem:order-mono} for the step ``$d_1\le d_2$ gives
+$D^{d_2}\le D^{d_1}$'', which needs the set defining $D^{d_1}$ to be nonempty: this is where
+$\Ks(\nu_a,\mu^\star)>0$ (Lemma~\ref{flem:ks-pos}) enters. The order
+$|\mean(q)-\mean(q')|\le\Wone\le\mathrm{KS}\le\TV$ is Lemma~\ref{flem:abel} and the test function
+$y\mapsto y$. Part~(a) is not covered by this route.
+\end{proof}
+
+\begin{proof}[Formal route to Proposition~\ref{prop:threshold}~(b) and~(c)]
+\proves{prop:threshold}
+\uses{flem:reach-min, flem:reach-w1, flem:threshold-ks, flem:reach-tv}
+Part~(b) for the mean gap is \texttt{reachGain\_meanClass} (already in the library) and for $\Wone$
+Lemma~\ref{flem:reach-w1}; the identity $\Gd^d=\Ks(\nu'_a,\mu^\star-L_a)$ follows for both by
+Lemma~\ref{flem:threshold-ks}, as $\mu^\star<\xmax$. Part~(c) is Lemma~\ref{flem:reach-tv}. Part~(a)
+is not covered by this route.
+\end{proof}
+
+\end{document}
