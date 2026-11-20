@@ -478,6 +478,110 @@ Cases~2 and~3 and the induction of the paper's proof of Lemma~\ref{lem:decompA},
 of the nets in place of their running maximum.
 \end{proof}
 
+\begin{lemma}[a good batch when $x>1$, from the good event on a run]\label{flem:goodA-good}
+\lean{Incognita.BatchedBandits.hyAlg_ae_pullCount_le_max_of_good}
+\uses{flem:leaderA-run, flem:goodA-run, lem:countsA, def:hy, def:model, def:constA, def:ranksA,
+  def:evA}
+Let $\ell\ge4$ be such that (R2) holds at $\ell-2,\dots,\ell+1$, with $\omega\ge0$ there and
+$\gamma_\ell\ge0$; let $a^\star$ be optimal, $a$ sub-optimal, $\bar m$ a bound of the sub-optimal
+means and $\varepsilon>0$ with the conditions of Lemma~\ref{lem:constA}(a); let $2w_0\le\varepsilon
+U_\ell$, $z+w_0\kappa(\mathbf m^\star+\varepsilon)\le(1-\gamma_{\ell-1})y_{\ell-2}\mathsf
+L_{\ell-1}$, (T1) $\kappa_\varepsilon\mathsf L_j^{\beta-1}\ge1$ for $j=\ell-2,\ell-1$, a count
+threshold $u\le\mathsf L_{\ell-2}/\kappa_\varepsilon$ with $w_0\kappa_\varepsilon\le\varepsilon u$,
+and $D>0$, $K^+\ge0$, $x_+$ with $K^++2\varepsilon\le(1+\omega_{\ell-1})D$,
+$D\mathsf L_{\ell-1}^{\beta-1}\ge2x_+^3$, $x_{\ell-1},x_\ell\le x_+$. Along almost every run of HY
+on $\nu\in\cP$, assume the trace of $\mathcal G_\ell(\varepsilon)$ on the run: (A) at
+$t_{\ell-2},t_{\ell-1},t_\ell$; (V) and (P) of Lemma~\ref{flem:leaderA-run} at the test $t_\ell$;
+not ($N_a(t_\ell)\ge u$ and $\Kinf(\hat\nu_a(t_\ell),\mathbf m^\star-2\varepsilon)<D$); not
+($N_a(t_{\ell-1})\ge u$ and $\Kinf(\hat\nu_a(t_{\ell-1}),\mathbf m^\star+\varepsilon)>K^++
+\varepsilon$). Then every round $t\in(t_\ell,t_{\ell+1}]$ has
+$N_a(t)\le\max(N_a(t_\ell),K+(1+\omega_\ell)y_\ell\log t/D)$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:leaderA-run, flem:goodA-run, lem:countsA, lem:constA, def:evA}
+Step~1 of the paper's proof of Lemma~\ref{lem:goodA}: Lemma~\ref{flem:leaderA-run} at the test
+$t_\ell$ gives the optimal leader and the test levels; Lemma~\ref{lem:countsA} (along a run) at
+$t_{\ell-1}$ and $t_\ell$ gives $N_a(t_{\ell-1}),N_a(t_\ell)\ge\mathsf
+L_{\ell-2}/\kappa_\varepsilon\ge u$, so the traces of $\mathcal L_\ell^c$, $\mathcal U_\ell^c$
+apply, and (T3) holds at the count $N_a(t_{\ell-1})$; $\mathbf m^\star-2\varepsilon>\bar m+
+\varepsilon\ge\mathbf m_a\ge0$. Steps~2--4 are Lemma~\ref{flem:goodA-run}. The events
+$\mathcal V_{\ell-1}^c$, $\Pi_{\ell-1}^c$ of $\mathcal G_\ell$ serve only the claim that
+$\hat c_{\ell-1}$ is optimal, which the bound does not use: they are not assumed.
+\end{proof}
+
+\begin{lemma}[the inequality (eq:DA) on a run]\label{flem:decompA-DA}
+\lean{Incognita.BatchedBandits.hyAlg_ae_pullCount_le_max_add}
+\uses{flem:goodA-good, flem:leaderA-run, flem:decompA-run, def:hy, def:model, def:constA,
+  def:ranksA, def:evA}
+Under the assumptions of Lemma~\ref{flem:goodA-good} at the accuracy $\varepsilon$, let
+$\varepsilon'>0$ satisfy the conditions of Lemma~\ref{lem:constA}(a), $2w_0\le\varepsilon'U_\ell$,
+$z+w_0\kappa(\mathbf m^\star+\varepsilon')\le(1-\gamma_{\ell-1})y_{\ell-2}\mathsf L_{\ell-1}$ and
+(T4) $K+1+8x_+^2\mathsf L_{\ell+1}/\varepsilon'^2\le U_{\ell+1}$. Let $G$ be the trace of
+$\mathcal G_\ell(\varepsilon)$ on the run (the assumptions on the run of
+Lemma~\ref{flem:goodA-good}) and $F^c$ that of $\mathcal F_\ell(\varepsilon')^c$ ((A) at
+$t_{\ell-1},t_\ell$, (V) and (P) at the test $t_\ell$, at the accuracy $\varepsilon'$). Along almost
+every run of HY on $\nu\in\cP$, every round $t\in(t_\ell,t_{\ell+1}]$ has
+\[
+N_a(t)\le\max\Big(N_a(t_\ell),\ K+\frac{(1+\omega_\ell)y_\ell\log t}{D},\ 2U_{\ell+1}\mathbf
+1(G^c)\Big)+(t-t_\ell)\mathbf 1(F).
+\]
+\end{lemma}
+
+\begin{proof}
+\uses{flem:goodA-good, flem:leaderA-run, flem:decompA-run}
+The three cases of the paper's proof of Lemma~\ref{lem:decompA}(a): on $G$,
+Lemma~\ref{flem:goodA-good}; on $G^c\cap F^c$, Lemma~\ref{flem:leaderA-run} at the accuracy
+$\varepsilon'$ gives an optimal leader and $\tilde K_\ell(a)\ge\hat K_\ell(a)\ge\varepsilon'^2/8$,
+and Case~2 of Lemma~\ref{flem:decompA-run} gives $N_a(t)\le\max(N_a(t_\ell),2U_{\ell+1})$; on $F$,
+Case~3.
+\end{proof}
+
+\begin{lemma}[the failure event when $x>1$, on a run]\label{flem:failA}
+\lean{Incognita.BatchedBandits.measure_not_accurate_and_not_rejected_le}
+\uses{lem:probasA, lem:constA, def:evA, def:model, def:hy}
+For every learner on $\nu\in\cP$, a test at $t_\ell$, $\varepsilon>0$ with $\mathbf
+m^\star+\varepsilon<1$, an optimal $a^\star$, $\bar m$ with $\bar m+\varepsilon\ge0$ and
+$2\eta(\bar m+\varepsilon)\le\mathbf m^\star-(\bar m+\varepsilon)$ ($\eta\ge0$), tilts
+$\theta_c\ge0$ of the sub-optimal arms with the moment conditions of Lemma~\ref{lem:pair} at the
+level $\mathbf m^\star+\varepsilon$ and the mean level $\mathbf m^\star-3\varepsilon$, and $z>0$: the
+probability of the trace $F$ of $\mathcal F_\ell(\varepsilon)$ on the run
+(Lemma~\ref{flem:decompA-DA}) is at most
+$Kp_{\mathcal A}(U_{\ell-1})+Kp_{\mathcal A}(U_\ell)+C(\bar m+\varepsilon)U_\ell^3e^{-(1+2\eta)z}+
+KC(\mathbf m^\star+\varepsilon)U_\ell^4e^{-(1+2\eta)z}$, with
+$p_{\mathcal A}(U)=2e^{-\varepsilon^2U}/(1-e^{-2\varepsilon^2})$ and
+$C(r)=(4+2\kappa(r))e^{2(1+2\eta)}$.
+\end{lemma}
+
+\begin{proof}
+\uses{lem:probasA, def:evA}
+$F$ is contained in the union of the traces of $\mathcal A_{\ell-1}^c$, $\mathcal A_\ell^c$,
+$\mathcal V_\ell$ and of the $\Pi_\ell$ of each sub-optimal arm; Lemma~\ref{lem:probasA}(a)--(b)
+(for the traces, every learner) bounds each, and a union bound over at most $K$ sub-optimal arms.
+\end{proof}
+
+\begin{lemma}[the lost batches are summable, on a run]\label{flem:failA-sum}
+\lean{Incognita.BatchedBandits.sum_batch_mul_measure_not_accurate_and_not_rejected_le}
+\uses{flem:failA, lem:sumsA, lem:ranksA, def:evA, def:ranksA, def:grid}
+Under the assumptions of Lemma~\ref{flem:failA} with $\eta>0$ and $\beta\ge1$, let levels $z_\ell>0$
+satisfy (R3) $(1+2\eta)z_\ell\ge(1+\eta)\mathsf L_{\ell+1}$ and $\mathsf L_{\ell+1}\le x_+^3\mathsf
+L_{\ell-2}$ for $\ell\in[k_0,L)$ ($k_0\ge3$), and $S\ge2x_+^3y-\varepsilon^2y^\beta$ for every
+$y\ge0$. Then
+$\sum_{k_0\le\ell<L}B_{\ell+1}\PP(F_\ell)\le\frac c2e^S+(1+K)C(\mathbf
+m^\star+\varepsilon)\sigma_{4\beta}(\eta)$ with $c=4K/(1-e^{-2\varepsilon^2})$, where $F_\ell$ is
+the trace of Lemma~\ref{flem:failA} at the level $z_\ell$.
+\end{lemma}
+
+\begin{proof}
+\uses{flem:failA, lem:sumsA}
+Lemma~\ref{flem:failA} gives $\PP(F_\ell)\le a_\ell+v_\ell$ with
+$a_\ell=ce^{-\varepsilon^2\mathsf L_{\ell-2}^\beta}$ ($U_{\ell-1}\ge\mathsf L_{\ell-2}^\beta$,
+$U_\ell\ge\mathsf L_{\ell-1}^\beta\ge\mathsf L_{\ell-2}^\beta$) and $v_\ell=(1+K)C(\mathbf
+m^\star+\varepsilon)U_\ell^4t_{\ell+1}^{-(1+\eta)}$ ($\kappa(\bar m+\varepsilon)\le\kappa(\mathbf
+m^\star+\varepsilon)$, $U^3\le U^4$, and $e^{-(1+2\eta)z_\ell}\le t_{\ell+1}^{-(1+\eta)}$ by (R3));
+Lemma~\ref{lem:sumsA}(b) in its general form sums them.
+\end{proof}
+
 \begin{lemma}[good high batches when $x=1$, on a run]\label{flem:goodhigh-run}
 \lean{Incognita.BatchedBandits.hyAlg_ae_le_log_pullCount_leader, Incognita.BatchedBandits.hyAlg_ae_card_le_card_filter_le_pullCount_leader_add, Incognita.BatchedBandits.card_filter_lt_le_card}
 \uses{def:hy, def:high, def:water, def:model, def:learner, def:grid}
