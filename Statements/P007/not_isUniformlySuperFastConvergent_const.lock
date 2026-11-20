@@ -1,0 +1,6 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P007.not_isUniformlySuperFastConvergent_const
+sha256 c93fcf20efaeaf4c3d932deb57bb1dc82c91472d8574d80956129dbda4bcb4db
+constant def Incognita.StochasticBandits.IsUniformlySuperFastConvergent
+constant theorem Incognita.Statements.P007.not_isUniformlySuperFastConvergent_const

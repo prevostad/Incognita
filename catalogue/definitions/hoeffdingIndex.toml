@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.hoeffdingIndex"
+module = "Incognita.StochasticBandits.UCB"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:ucb"
+meaning = "The UCB index at round n after a history h: the empirical mean of arm a plus sqrt(2 log(n + 1) / N_a), and +∞ if a has not been pulled."
+conventions = "In EReal; rounds from 0; N_a = pullCount' n h a, the empirical mean empMean' n h a (LML)."
+source = "[INC-P007, (eq:ucb)]; [ACF02, Theorem 1] (UCB1)"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isHoeffdingUCB_hoeffdingUCB"]
+known_cases = ["Incognita.StochasticBandits.hoeffdingIndex_eq_empMean'_add_ucbWidth'"]
+exclusion = ["Incognita.StochasticBandits.not_isHoeffdingUCB_const"]
+non_vacuity = ["Incognita.P007.ucb_pullCount_le_satisfiable", "Incognita.P007.ucb_isUniformlySuperFastConvergent_satisfiable", "Incognita.P007.ucb_isConsistent_satisfiable", "Incognita.P007.ucb_isUniformlyFastConvergent_satisfiable", "Incognita.P007.ucb_tail_pullCount_satisfiable"]

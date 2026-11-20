@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.gravesLai"
+module = "Incognita.StochasticBandits.GravesLai"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:gl"
+meaning = "The Graves-Lai constant C(ν; E): the infimum of sum_a w_a Δ_a over the weights w in [0, ∞]^α with sum_a w_a KL(ν_a, ν'_a) ≥ 1 for every alternative ν' to ν in E."
+conventions = "Valued in ℝ≥0∞ with 0 * ∞ = 0 and inf ∅ = ∞; KL is Mathlib's klDiv; Δ_a is ENNReal.ofReal (gap ν a); all alternatives (not only those that keep the law of the optimal arm), infinite weights allowed."
+source = "roadmap StochasticBandits, Definitions; [INC-P007]; [CMP17, Theorem 1]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.gravesLai_eq_zero_of_alt_eq_empty", "Incognita.P007.gravesLai_unitLaws_exampleInst_pos"]
+known_cases = ["Incognita.StochasticBandits.div_klDiv_le_gravesLai"]
+exclusion = ["Incognita.StochasticBandits.gravesLai_example_ne_zero"]
+non_vacuity = ["Incognita.P007.gravesLai_productClass_satisfiable", "Incognita.P007.gravesLai_eq_zero_of_identifies_satisfiable", "Incognita.P007.lower_bound_gravesLai_satisfiable"]

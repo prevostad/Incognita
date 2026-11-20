@@ -1,0 +1,5 @@
+# Lock of a frozen statement, written by `lake exe audit --new-locks`. Never edit or delete it.
+format 1
+statement Incognita.Statements.P007.not_isConsistent_const
+sha256 fbc8109d91f7badb6d414fdaf7265e3bf839bb8cfab199b6b20f5a7ab566717b
+constant theorem Incognita.Statements.P007.not_isConsistent_const

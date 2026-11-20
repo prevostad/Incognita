@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.alt"
+module = "Incognita.StochasticBandits.GravesLai"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:gl"
+meaning = "The alternatives to an instance ν in a class E: the instances of E in which no optimal arm of ν is optimal; for ν with a unique optimal arm a*, the instances of E in which a* is not optimal."
+conventions = "Optimality through LML's gap (largest Bochner mean minus the mean of the arm); defined for every ν, and equal to the paper's Alt(ν; E) when ν has a unique optimal arm (mem_alt_iff_of_unique)."
+source = "roadmap StochasticBandits, Definitions; [INC-P007]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.mem_alt_example", "Incognita.P007.exampleAlt_mem_alt"]
+known_cases = ["Incognita.StochasticBandits.mem_alt_iff_of_unique"]
+exclusion = ["Incognita.StochasticBandits.not_mem_alt_self"]
+non_vacuity = ["Incognita.P007.gravesLai_productClass_satisfiable", "Incognita.P007.gravesLai_eq_zero_of_identifies_satisfiable", "Incognita.P007.lower_bound_gravesLai_satisfiable"]

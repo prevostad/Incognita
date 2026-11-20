@@ -65,3 +65,14 @@ public import Statements.P006.kinf_bounds
 public import Statements.P006.kinf_bounds_of_gap_pos
 public import Statements.P006.kinf_eq_top_of_one_le
 public import Statements.P006.kinf_eq_zero_of_lt_mean
+public import Statements.P007.gravesLai_eq_zero_of_identifies
+public import Statements.P007.gravesLai_productClass
+public import Statements.P007.lower_bound_gravesLai
+public import Statements.P007.not_isConsistent_const
+public import Statements.P007.not_isUniformlyFastConvergent_const
+public import Statements.P007.not_isUniformlySuperFastConvergent_const
+public import Statements.P007.ucb_isConsistent
+public import Statements.P007.ucb_isUniformlyFastConvergent
+public import Statements.P007.ucb_isUniformlySuperFastConvergent
+public import Statements.P007.ucb_pullCount_le
+public import Statements.P007.ucb_tail_pullCount

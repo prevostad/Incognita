@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.IsHoeffdingUCB"
+module = "Incognita.StochasticBandits.UCB"
+roadmap = "StochasticBandits"
+paper = "P007-stochastic-setting"
+label = "def:ucb"
+meaning = "The learner UCB with a Hoeffding bonus and some tie rule: at every round and after every history, its policy gives mass 1 to the arms of maximal hoeffdingIndex."
+conventions = "The tie rule is the policy itself (any law on the argmax set, possibly depending on the history)."
+source = "[INC-P007, Definition def:ucb]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isHoeffdingUCB_hoeffdingUCB"]
+known_cases = ["Incognita.StochasticBandits.hoeffdingIndex_le_hoeffdingIndex_nextArm"]
+exclusion = ["Incognita.StochasticBandits.not_isHoeffdingUCB_const"]
+non_vacuity = ["Incognita.P007.ucb_pullCount_le_satisfiable", "Incognita.P007.ucb_isUniformlySuperFastConvergent_satisfiable", "Incognita.P007.ucb_isConsistent_satisfiable", "Incognita.P007.ucb_isUniformlyFastConvergent_satisfiable", "Incognita.P007.ucb_tail_pullCount_satisfiable"]
