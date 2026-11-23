@@ -450,6 +450,7 @@ def quality(prs, tc):
             "fix_rounds_mean": mean([x["fix_rounds"] for x in lean if x["state"] == "merged"])}
 
 
+PREDICTED_RE = re.compile(r"^\|\s*Predicted interest\s*\|\s*(\d+)\s*/\s*10\b", re.M)
 INTEREST_RE = re.compile(r"^\|\s*Interest\s*\|\s*(\d+)\s*/\s*(10|5)\b[^|]*\|\s*([^|\n]*)", re.M)
 
 
@@ -475,15 +476,30 @@ def interest_from(tcs):
     return score, reason or "", url
 
 
+def predicted_from(tcs):
+    """The authors' predicted interest (out of 10) copied by the last scope report that gives one
+    (owner, 2026-11-23), or None."""
+    for c in reversed(tcs or []):
+        if c["kind"] == "referee-scope":
+            m = PREDICTED_RE.search(c["body"])
+            if m:
+                return int(m.group(1))
+    return None
+
+
 def interest(prs, tc):
     rows = []
     for r in prs:
         if r["role"] == "write-paper" and r["paper"]:
             s, _reason, url = interest_from(tc.get(r["number"], []))
-            rows.append({"paper": r["paper"], "pr": r["number"], "state": r["state"], "score": s, "url": url})
+            p = predicted_from(tc.get(r["number"], []))
+            rows.append({"paper": r["paper"], "pr": r["number"], "state": r["state"], "score": s, "url": url,
+                         "predicted": p})
     scores = [x["score"] for x in rows if x["score"] is not None]
+    gaps = [x["predicted"] - x["score"] for x in rows if x["score"] is not None and x["predicted"] is not None]
     return {"papers": sorted(rows, key=lambda x: x["paper"]), "median": median(scores), "mean": mean(scores),
-            "distribution": {str(k): scores.count(k) for k in range(1, 11)}}
+            "distribution": {str(k): scores.count(k) for k in range(1, 11)},
+            "overestimate_mean": mean(gaps), "overestimate_n": len(gaps)}
 
 
 PR_KINDS = {"write-paper": "paper", "revise": "paper", "formalize-statements": "statements", "prove": "proofs",
@@ -1373,15 +1389,17 @@ def html_more(d):
     i = d.get("interest")
     if i:
         out.append('<section><h2 id="interest">Interest</h2><p>The score out of 10 of the scope referee, on the pull '
-                   "request that added the paper (its last report that gives one): median %s, mean %s.</p>"
-                   % (fmt(i["median"]), fmt(i["mean"])))
+                   "request that added the paper (its last report that gives one): median %s, mean %s. The authors' "
+                   "predicted score minus the referee's, on average: %s (%s papers).</p>"
+                   % (fmt(i["median"]), fmt(i["mean"]), fmt(i.get("overestimate_mean")), fmt(i.get("overestimate_n", 0))))
         top = max(i["distribution"].values(), default=0)
         out.append(table(["Score", "Papers", ""], [[e(s), fmt(n), bar(n, top)] for s, n in i["distribution"].items()],
                          num=(1,)))
-        out.append(table(["Paper", "Pull request", "State", "Score"],
+        out.append(table(["Paper", "Pull request", "State", "Score", "Predicted"],
                          [[e(x["paper"]), pr_link(x["pr"]), e(x["state"]),
-                           ('<a href="%s">%d/10</a>' % (e(x["url"]), x["score"])) if x["score"] is not None else "–"]
-                          for x in i["papers"]], num=(3,)))
+                           ('<a href="%s">%d/10</a>' % (e(x["url"]), x["score"])) if x["score"] is not None else "–",
+                           ("%d/10" % x["predicted"]) if x.get("predicted") is not None else "–"]
+                          for x in i["papers"]], num=(3, 4)))
         out.append("</section>")
     lean = d.get("lean")
     if lean and lean["series"]:

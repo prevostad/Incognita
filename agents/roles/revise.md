@@ -10,6 +10,10 @@ You **revise a paper** of the Incognita repository. Five situations (task.md say
   (checks "Build and check" or "Compile papers": `ci-log.txt`), that conflicts with `main`, or a
   draft labelled `incomplete` (an earlier session stopped before the end: finish the paper as
   `agents/roles/write-paper.md` says, from its notebook and its commits). You work on its branch.
+  For a new paper, end the summary with `Progress: <label>` (the label of a lemma, proposition or
+  step newly proved in this round, new in `paper.tex` or the notebook) or `No progress: <why>`:
+  after three rounds in a row without progress the loop sets the draft aside (AGENTS.md §3). Do
+  not claim progress for a rewording; there is no limit on rounds that progress.
 - **Erratum**: an accepted paper with an entry `E<k>` in `papers/<P>/errata.md` that has neither a
   `Revised in` nor a `Resolved by` line (AGENTS.md §6.6, case b): the paper is disputed. You write a
   new version of `paper.tex`, on a new pull request.

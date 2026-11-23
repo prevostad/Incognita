@@ -1031,7 +1031,7 @@ def items(tree, r):
                               "" if status == "approved" else "extension X%d %s" % (k, status)))
     for k, lines in direction_entries(tree.read("roadmaps/%s/directions.md" % r) or "").items():
         dropped = any(x.startswith("Dropped (") for x in lines)
-        found.append((k, "dropped" if dropped else "open", ""))
+        found.append((k, "dropped" if dropped else "open", "" if dropped else candidate_interest(lines)))
     served = {}
     for p in papers(tree):
         if p.roadmap == r:
@@ -1044,6 +1044,15 @@ def items(tree, r):
         else:
             out.append((i, s, d))
     return out
+
+
+def candidate_interest(lines):
+    """"interest <rating>" of a candidate entry, from its line "- Rating: interest <rating>; ..."."""
+    for x in lines:
+        m = re.match(r"^- Rating: interest ([^;]+);", x)
+        if m:
+            return "interest %s" % m.group(1).strip()
+    return ""
 
 
 def cmd_items(args, tree):
@@ -1100,6 +1109,9 @@ it), dropped.
 """
 
 
+CANDIDATE_MIN_INTEREST = 4   # owner, 2026-11-23: an open question rated below 4/10 is not a candidate
+
+
 def scope_ratings(report):
     """{label: (interest, novelty, fit, candidate)} from the table "## Open questions" of a scope
     report: | Question | Interest | Novelty | Fit | Candidate | ... |."""
@@ -1130,6 +1142,10 @@ def cmd_add_candidates(args, tree):
     today = args.date or datetime.date.today().isoformat()
     for label, title, statement, ext in p.open_questions():
         if not label or label not in ratings or not ratings[label][3]:
+            continue
+        # Interest rated n/10 (since 2026-11-23): below CANDIDATE_MIN_INTEREST, never a candidate.
+        m = re.match(r"^(\d+)\s*/\s*10$", ratings[label][0])
+        if m and int(m.group(1)) < CANDIDATE_MIN_INTEREST:
             continue
         src = "%sv%d %s" % (p.prefix, p.version, label)
         # Once per question: a later version of the paper does not add it again.

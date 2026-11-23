@@ -335,6 +335,19 @@ rejected_prs() {
   fi
   cat "$tmp/rejected.txt"
 }
+# set_aside_prs: "<number> <head>" of the paper drafts closed with the label set-aside (too hard for
+# now, owner 2026-11-23): their items count as covered, like those of rejected papers.
+set_aside_prs() {
+  if [ ! -f "$tmp/set-aside.txt" ]; then
+    ghr pr list --state closed --label set-aside --limit 200 --json number,headRefOid \
+      --jq '.[] | "\(.number) \(.headRefOid)"' 2>/dev/null | while read -r n h; do
+        repo_git cat-file -e "$h^{commit}" 2>/dev/null \
+          || repo_git fetch -q origin "+refs/pull/$n/head:refs/incognita/pr/$n" 2>/dev/null || continue
+        echo "$n $h"
+      done > "$tmp/set-aside.txt"
+  fi
+  cat "$tmp/set-aside.txt"
+}
 # rejected_reports <roadmap>: the trusted reports on the rejected papers of the roadmap (D2: their
 # D and C items count as covered; writers and scope referees read why they failed).
 rejected_reports() {
@@ -373,6 +386,16 @@ if [ "$role" = write-paper ]; then
         repo_git ls-tree --name-only "$h:papers" 2>/dev/null | grep -E '^P[0-9]+-' >> "$tmp/taken"
         meta_lines_at "$h" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 " (" $3 "): " $2}'
       done
+    echo
+    echo "## Set aside (closed with the label set-aside)"
+    echo
+    echo "Drafts still incomplete after their attempts: the question looked too hard for now. Their D and"
+    echo "C items count as covered, unless the owner reopens the pull request."
+    echo
+    set_aside_prs | while read -r n h; do
+        repo_git ls-tree --name-only "$h:papers" 2>/dev/null | grep -E '^P[0-9]+-' >> "$tmp/taken"
+        meta_lines_at "$h" "$roadmap" | awk -F'\t' -v n="$n" '{print "- #" n " " $1 " (" $3 "): " $2}'
+      done
   } > "$ctx/papers.md" 2>/dev/null
   files="$files papers.md"
   # The number of the new paper: one more than every number on main, in open PRs and rejected.
@@ -386,7 +409,8 @@ if { [ "$role" = write-paper ] || [ "$role" = propose-roadmap ]; } && [ -n "$roa
     echo
     echo "One line per item: open (no paper on main serves it: check papers.md for open and rejected"
     echo "pull requests), closed (pending owner decision, on hold, closed, or in a proposed extension),"
-    echo "covered (the papers on main that serve it), dropped (a candidate direction)."
+    echo "covered (the papers on main that serve it), dropped (a candidate direction). A candidate shows"
+    echo "the referee's interest rating (n/10 since 2026-11-23; high, medium or low before)."
     echo
     certify_py items "$roadmap" 2>&1 | sed 's/^/- /'
   } > "$ctx/items.md"
@@ -456,6 +480,21 @@ qn=$(ghr issue list --state open --limit 200 --author "$OWNER" --json number,tit
 if [ -n "$qn" ] && raw=$(ghr api --paginate "repos/$GH_REPO/issues/$qn/comments?per_page=100" 2>/dev/null); then
   owner_answers_md "$raw" | tail -c 200000 > "$ctx/owner-answers.md"
   if [ -s "$ctx/owner-answers.md" ]; then files="$files owner-answers.md"; else rm -f "$ctx/owner-answers.md"; fi
+  # The candidates that writers re-rated below 4/10 (owner, 2026-11-23): writers skip them, garden
+  # drops them, unless the owner answered to keep one (owner-answers.md).
+  case "$role" in
+    write-paper|garden|review-pr)
+      printf '%s' "$raw" | jq -rs 'add // [] | sort_by(.created_at) | .[] | .body // ""' 2>/dev/null         | grep -E '^(- )?Ask-owner: [A-Za-z0-9]+ [DC][0-9]+ re-rated [0-9]+/10' | sed -E 's/^- //' | tail -n 200 > "$tmp/rr" || true
+      if [ -s "$tmp/rr" ]; then
+        { echo "# Items re-rated below 4/10 by writers"
+          echo
+          echo "Forwarded to the pinned issue \"Questions for the owner\", oldest first. A writer does not judge"
+          echo "these items again unless the owner answered to keep one (owner-answers.md); garden drops them."
+          echo
+          sed 's/^/- /' "$tmp/rr"; } > "$ctx/re-ratings.md"
+        files="$files re-ratings.md"
+      fi ;;
+  esac
 fi
 
 situation=""
@@ -886,6 +925,29 @@ ckind=$role
 [ "$role" = revise ] && [ "$referee_round" != 1 ] && ckind=revise-fix
 # A round cut by a quota is not counted as a repair round.
 is_fix_round() { [ "$quota_cut" != true ] && { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }; }
+# A continuation round of a new paper still incomplete (owner, 2026-11-23): no limit on the rounds,
+# but a draft that makes no progress in INCOGNITA_SET_ASIDE_AFTER rounds in a row is set aside by
+# the loop. Progress: a line "Progress: <label>" in the summary naming a label (lem:..., prop:...)
+# found under the paper's directory at the new head and not at the old one. A round without a
+# commit, refused, or without such a line counts as no progress; a cut by the quota does not count.
+is_draft_round() {
+  [ "$quota_cut" != true ] && [ "$ckind" = revise-fix ] && [ "$pr_role" = write-paper ] \
+    && [[ ",$pr_labels," == *",incomplete,"* ]]
+}
+note_progress() {  # [new head]: updates the counter "stall <pr>" of a draft round
+  is_draft_round || return 0
+  local l d
+  d=$(paper_of_ref "$H" | head -n 1)
+  l=$(sed -n -E 's/^(- )?Progress: *`?([a-z]+:[A-Za-z0-9_.:-]+)`?.*/\2/p' "$summary" | head -n 1)
+  if [ -n "${1:-}" ] && [ -n "$l" ] && [ -n "$d" ] \
+      && repo_git grep -q -F -e "$l" "$1" -- "papers/$d" 2>/dev/null \
+      && ! repo_git grep -q -F -e "$l" "$H" -- "papers/$d" 2>/dev/null; then
+    counter_set "stall $pr" 0
+    record_event progress "$role" "$pr" "$l"
+  else
+    counter_inc "stall $pr" >/dev/null
+  fi
+}
 
 if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
   # A writer that found no open item says so (line "No open item in <Roadmap>."): the roadmap is
@@ -899,6 +961,7 @@ if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
     { printf '%s round: no change (%s).\n\n' "$( [ "$ckind" = revise ] && echo Revision || echo Fix )" "$subtype"; cat "$summary"; footer "$H"; } > "$tmp/body.md"
     post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
     is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
+    note_progress
   fi
   # A session that ended normally without a commit is not a failure of its target (never parked).
   [ "$failed_session" = true ] && finish fail "no-commit ($subtype)"
@@ -934,6 +997,7 @@ if ! paths_ok 2> "$tmp/paths.log"; then
     { echo "The script refused this session's commits (not pushed):"; echo; sed 's/^/    /' "$tmp/paths.log" | sanitize 10000; footer "$H"; } > "$tmp/body.md"
     post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
     is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
+    note_progress
   fi
   finish fail "refused-paths (kept as refs/incognita/refused/$task)"
 fi
@@ -961,6 +1025,7 @@ if [ -n "$pr" ]; then
   else
     title="Fix round: pushed \`${sq:0:12}\`."
     is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
+    note_progress "$sq"
   fi
   [ "$failed_session" = true ] && title="$title The session stopped before the end ($subtype): the pull request is marked \`incomplete\`."
   { printf '%s\n\n' "$title"; cat "$summary"; footer "$sq"; } > "$tmp/body.md"

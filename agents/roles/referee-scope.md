@@ -106,7 +106,13 @@ scope is **G** (to be undone). New citations are checked as below.
   example): **G**. A criterion that names a former section of a paper ("Closest known", "Sanity
   checks") refers to the matching section of `DOSSIER.md`.
 - Pinned conventions used, or every change declared and justified (an undeclared change: **G**).
-- Interest, against the roadmap's "What would be an important result": a known bound with worse
+- Interest, against the roadmap's "What would be an important result" and **against the item as
+  posed** (owner, 2026-11-23): a paper that answers an easier special case of its direction or
+  candidate must say exactly which part it answers (Roadmap correspondence of `DOSSIER.md`, Scope
+  remark); a narrowing it does not declare is **G**, and the interest score rates what the paper
+  proves, not the question it started from. The dossier gives the authors' predicted interest
+  score: when yours is 3 or more points below it, say why in one sentence (the loop compares the
+  two in its statistics). A known bound with worse
   constants, or a lemma nothing uses, is out of scope for a direction (**F**). So is a result whose
   proof is a routine exercise (a few lines of a standard argument), even if it is not a corollary of
   a specific entry of KNOWN.md or of the literature (**F**). For an F item, fidelity to its source
@@ -160,13 +166,15 @@ the questions you accept become candidate directions `C<n>` of `roadmaps/<Roadma
 when the paper is accepted (the loop copies them, with your ratings, from your **latest** report).
 Rate each question:
 
-- **Interest**: `high`, `medium` or `low`, against the roadmap's "What would be an important
-  result";
+- **Interest**: a score `<n>/10` on the scale of the paper's interest score (below), for the
+  paper that would answer the question as stated (owner, 2026-11-23: writers take the best rated
+  candidate first, so do not inflate; a question that a few lines of a standard argument answer is
+  at most 2/10);
 - **Novelty**: `open` (your searches, at least two queries per question, found no answer: record
   them), or `known: [KEY, part]`, or `follows from <KNOWN entry, paper, label>`;
 - **Fit**: the roadmap item it extends (`D3`, `F2`, `C4`; compare with its `\extends{…}`), or
   `out of scope`;
-- **Candidate**: `yes` only if interest is `high` or `medium`, novelty is `open`, it fits the
+- **Candidate**: `yes` only if interest is at least 4/10, novelty is `open`, it fits the
   roadmap, and it is stated precisely enough to be the main result of a paper (quantifiers, class,
   criterion); otherwise `no`, with the reason.
 
@@ -198,6 +206,7 @@ Verdict: accept | major | reject
 | Novelty | ✅/⚠️/❌ | <is the main result new, against KNOWN.md, the literature and the library> |
 | Roadmap fit | ✅/⚠️/❌ | <items served, acceptance criteria> |
 | Interest | <n>/10 | <why this score> |
+| Predicted interest | <n>/10 or none | <the authors' prediction, copied from DOSSIER.md; if yours is 3 or more points below it, why> |
 | Bibliography | ✅/⚠️/❌ | <references, notes, keys> |
 | Attribution | ✅/⚠️/❌ | <earliest source of each technique> |
 | Presentation | ✅/⚠️/❌ | <the criteria W1–W17 that fail, by number (R or P), and the reader test> |
@@ -230,7 +239,7 @@ prior work), or where you got lost; then W1–W17, one line each: met, or the de
 ## Open questions
 | Question | Interest | Novelty | Fit | Candidate | Reason |
 |---|---|---|---|---|---|
-| oq:<name> | high, medium or low | open, known: [KEY, part], follows from … | D<n>, F<n>, C<n> or out of scope | yes or no | … |
+| oq:<name> | <n>/10 | open, known: [KEY, part], follows from … | D<n>, F<n>, C<n> or out of scope | yes or no | … |
 
 ## Previous defects G, L and R (revisions only)
 | ID | Resolved | Why |

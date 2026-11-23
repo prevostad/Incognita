@@ -174,7 +174,14 @@ and pull requests from forks, then takes the first available of:
    6.8), a failed build
    (after one automatic rerun), a conflict the mechanical rebase could not resolve, or it is a draft
    labelled `incomplete`. For a paper, only an answer to a referee's `major` is a revision round;
-   the other repairs are fix rounds;
+   the other repairs are fix rounds. A new paper still `incomplete` is continued **as long as it
+   progresses**, with no limit on the rounds (owner, 2026-11-23: a hard question needs many). Each
+   continuation round ends its summary with `Progress: <label>` (a lemma, proposition or step
+   newly proved, whose label is new under the paper's directory) or `No progress: <why>`. After
+   `INCOGNITA_SET_ASIDE_AFTER` (3) rounds **in a row** without progress (no such label, no commit,
+   or refused), the draft is **set aside**: closed with the label `set-aside`, its branch and
+   notebook kept, its items counted as covered until the owner reopens it (cuts by the quota are
+   not counted);
 4. reviews of agent pull requests with a green build and no trusted verdict on their head for the
    needed role: paper pull requests (the owner's too: branches `owner/*`, a new paper or a
    presentation revision, §5.6) get `referee-scope`, then `referee-proofs` once scope accepted
@@ -238,6 +245,28 @@ latest rating of each question in its reports) become entries `C1`, `C2`, … of
 request of its own (role `loop`, one scripted commit on top of `main`, merged after CI; never
 reviewed or repaired by an agent). Each entry gives the question as stated in the paper, its
 source (paper, version, label `oq:…`) and the referee's rating (interest, novelty, fit).
+
+**Interest drives the choice** (owner, 2026-11-23), so that the agents do not spend the nights on
+easy or minor questions:
+
+- the scope referee rates the interest of each open question **out of 10**, on the scale of the
+  paper's interest score (§5.4); only a question at 4/10 or more becomes a candidate (the script
+  refuses the others); entries rated before that date keep `high`, `medium` or `low`, counted as
+  7, 5 and 3;
+- writers take the candidates **best rated first** (after the F items and the D items, which the
+  owner chose and which stay in order);
+- the writer **judges the interest itself** before working on a D or C item: it writes in its
+  notebook the theorem it aims at and its predicted score, taking into account the papers accepted
+  since the item was rated (an item can lose its interest: nobody re-rates the whole list, only
+  the item a writer is about to take). Below 4/10 it aims at a stronger version or takes the next
+  item, and forwards `Ask-owner: <Roadmap> <item> re-rated <n>/10: <reason>. Drop it?`; later
+  writers skip that item (`re-ratings.md`) unless the owner answers to keep it, and `garden` adds
+  its `Dropped` line. At 4/10 or more the prediction goes into `DOSSIER.md`, and the statistics
+  compare it with the referee's score;
+- a paper may answer a declared part of a hard question; it is rated for what it proves, and a
+  narrowing it does not declare is a defect (§5.4). A draft is continued while it progresses and
+  set aside only after three rounds in a row without progress (§3), so a hard question gets the
+  time it needs, but a stuck one never holds the loop.
 **Append-only**: entries are never edited, renumbered or deleted; `garden` (or the owner) adds a
 line `Dropped (<date>, <role>, <model>): <reason>` under a candidate that a paper answers or that
 is known. A writer takes a candidate like a direction (`directions = ["C3"]` in META.toml). The

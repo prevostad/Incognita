@@ -757,6 +757,13 @@ choose_task() {
         escalate "$n" "still incomplete after $fixes rounds"
         continue
       fi
+      # A new paper is continued as long as it progresses (owner, 2026-11-23: no limit on the rounds,
+      # a hard question needs many); after INCOGNITA_SET_ASIDE_AFTER rounds in a row without progress
+      # (scripts/agent.sh, note_progress) it is set aside. Cuts by the quota do not count.
+      if [ "$role" = write-paper ] && [ "$(counter_get "stall $n")" -ge "$INCOGNITA_SET_ASIDE_AFTER" ]; then
+        close_set_aside "$n" "$H" "$(counter_get "stall $n") continuation rounds in a row without progress" "$(pr_title_of "$n")"
+        continue
+      fi
       fixes_list="$fixes_list $fixer:$n:$H:incomplete"
       continue
     fi
@@ -861,7 +868,7 @@ choose_task() {
     case "$why" in
       build) note="The build failed on the head (after one automatic rerun)." ;;
       conflict) note="The branch conflicts with main and the mechanical rebase failed: rebase it (\`git rebase origin/main\`)." ;;
-      incomplete) note="Continue the incomplete work of this draft." ;;
+      incomplete) note="Continue the incomplete work of this draft. A new paper: end the summary with \`Progress: <label>\` (a result newly proved, its label new in the paper or the notebook) or \`No progress: <why>\` (AGENTS.md section 3)." ;;
       review) note="The reviewers requested changes on the head: address the latest report of each (for a Lean pull request, its Incognita review and every rubric, \`rubric-<name>\`, in \`reports.md\`)." ;;
       block-*) note="The rubric \`${why#block-}\` (Tau Ceti's review) blocked the head: answer its latest report (\`reports.md\`, kind \`rubric-${why#block-}\`). Fix the problem within the purpose of the pull request; if it cannot be fixed there, or the finding is wrong, change nothing it concerns and say why in the summary (an \`Ask-owner:\` line if the owner must decide)." ;;
       referees) note="The referees found gaps on the head: address their latest reports." ;;

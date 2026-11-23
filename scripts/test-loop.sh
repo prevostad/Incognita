@@ -214,6 +214,11 @@ pass "an incomplete draft is continued" "== task: fix-pr 10"
 world "Reviewed by owner: 2026-11-14"
 h=$(pr 11 write-paper BB true)
 pass "an incomplete paper draft is continued by revise" "== task: revise 11"
+mkdir -p "$t/home/state/lifetime"; echo 2 > "$t/home/state/lifetime/stall_11"
+pass "a draft two rounds without progress is still continued" "== task: revise 11"
+echo 3 > "$t/home/state/lifetime/stall_11"
+pass "a draft three rounds in a row without progress is set aside" "would set #11 aside"
+rm -f "$t/home/state/lifetime/stall_11"
 world "Reviewed by owner: 2026-11-14"
 h=$(pr 12 write-paper BB)
 check 12 "Build and check" FAILURE

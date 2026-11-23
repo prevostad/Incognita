@@ -30,15 +30,44 @@ results), and leave precise open questions for the next papers.
 
 ## Choose the item
 
-If task.md names an item, take it. Otherwise take the first open item not covered, in this order:
-the known results to formalise F0, F1, …, then the directions D1, D2, … (those of `ROADMAP.md` and
-of its approved extensions), then the candidate directions C1, C2, … of `directions.md` (open
-questions of accepted papers that a referee rated). An item is not open if it is marked `pending
+If task.md names an item, take it. Otherwise take an open item not covered, in this order: the
+known results to formalise F0, F1, … (in order), then the directions D1, D2, … (those of
+`ROADMAP.md` and of its approved extensions, in order: the owner chose them), then the candidate
+directions of `directions.md` (open questions of accepted papers that a referee rated), **the
+best rated first** (owner, 2026-11-23: the interest shown in `items.md`; `high` counts as 7/10,
+`medium` as 5/10, `low` as 3/10; ties: the oldest first). An item is not open if it is marked `pending
 owner decision`, `on hold` or `closed`, belongs to an extension that is not `approved`, or is a
 candidate with a `Dropped` line. It is covered if a paper on `main`, an open pull request or a
 rejected paper serves it (`items.md`, `papers.md`). A direction can take several papers only for
 parts that no paper covers: then say which part. A candidate you find answered (known, or implied
-by a paper of the library) is not taken: say why under Not done, and take the next item. If nothing
+by a paper of the library) is not taken: say why under Not done, and take the next item. Items of
+papers set aside (`papers.md`: drafts still incomplete after their attempts) count as covered.
+
+**Judge the interest yourself before you start** (owner, 2026-11-23), for a D or C item (not for
+an F item, whose interest is its fidelity): in `notebook/NOTEBOOK.md`, write the theorem you aim
+at, precisely, and your predicted interest score for the paper that would prove it, on the
+scale of `referee-scope` (1–2 a correct but minor result; 3–4 a useful technical result
+specialists would reuse; 5–6 the level of a good specialized journal or conference; 7–8 the best
+venues; 9–10 beyond the field), with one sentence on what it would change in the literature. Take
+the results accepted since the item was rated into account: an item can lose its interest.
+
+- **Below 4/10, do not write that paper.** Aim at a stronger version of the question (the
+  general case, the exact constant, the matching lower bound) if you see one at 4/10 or more;
+  otherwise take the next item, and write in the summary the line
+  `Ask-owner: <Roadmap> <item> re-rated <n>/10: <reason, with the paper and label that lowered it, if any>. Drop it?`
+  The script forwards it to the pinned issue; later writers and `garden` get these lines in
+  `re-ratings.md`: a later writer does not judge that item again (unless the owner answered to
+  keep it, `owner-answers.md`), and `garden` adds its `Dropped` line.
+- At 4/10 or more, go on, and copy the prediction into the Roadmap correspondence of `DOSSIER.md`
+  (`Predicted interest: <n>/10, because …`). Do not inflate it: the scope referee gives its own
+  score, and the statistics compare the two.
+- A hard question is welcome: if the full answer resists, a paper may answer a part of it, said
+  exactly (which part, what is missing), rated for what it proves. An incomplete draft is
+  continued as long as it progresses, with no limit on the rounds; it is set aside after three
+  rounds in a row without progress (AGENTS.md §3). Commit your notebook (attempts, dead ends) as
+  you go: a later attempt starts from it.
+
+If nothing
 is open, commit nothing and write the line `No open item in <Roadmap>.` in the summary: the loop
 then proposes an extension of the roadmap.
 
