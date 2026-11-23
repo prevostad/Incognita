@@ -26,7 +26,7 @@ them.
 ## Size
 
 At most about 800 added lines of Lean, never more than 1,200 (AGENTS.md §6.1). When the
-definitions, their checks (witness, known case, exclusion) and the frozen statements do not fit,
+definitions, their checks (non-vacuity, and the optional ones) and the frozen statements do not fit,
 split the work across pull requests, each one coherent, in this order: first the definitions with
 their checks and `catalogue/definitions/` entries (no frozen statement yet), then the frozen
 statements and `blueprint.md`. Say in `Not done` what the next pull request will contain: the loop
@@ -43,8 +43,10 @@ runs `formalize-statements` again on the paper once this one is merged.
    the library or a dependency already uses for another object (two `unitBandits` exist today).
    Write the decisions in `papers/<P>/blueprint.md` (format below) and commit.
 2. **Definitions** not in the library: in `Incognita/<Roadmap>/<File>.lean`, in library generality,
-   with docstrings and the roadmap's planned names; prove in the same pull request a witness, a known
-   case and an exclusion for each (AGENTS.md §6.4), and write `catalogue/definitions/<Name>.toml`.
+   with docstrings and the roadmap's planned names, and write `catalogue/definitions/<Name>.toml`.
+   The non-vacuity of the statements that use them is required (step 4); a witness, a known case
+   and an exclusion are optional (AGENTS.md §6.4): add them when they are cheap or the definition
+   is unusual.
 3. **Frozen statements**: one file per statement, `Statements/<prefix>/<name>.lean`: the header,
    `module`, the imports, a docstring (paper id, label, the statement in words, every difference of
    form from the paper and why: 0-based rounds, a liminf written as `∀ c < L, ∀ᶠ …`, existential

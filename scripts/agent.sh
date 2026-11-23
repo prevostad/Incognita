@@ -191,6 +191,11 @@ case "$role:$target" in
     fi
     [ "$role" = revise ] && eff_role=revise
     [ "$kind" = paper ] && [ "$pr_role" = write-paper ] && roadmap=$pr_target
+    # A proof PR: Lean already checks the frozen type, so its review is a search for duplicates and
+    # unused lemmas (AGENTS.md 6.8), on a cheaper model unless the role's own model is set.
+    if [ "$role" = review-pr ] && [ "$pr_role" = prove ] && [ -z "${INCOGNITA_MODEL_REVIEW_PR:-}" ]; then
+      model=$INCOGNITA_MODEL_REVIEW_PROOFS
+    fi
     ;;
   revise:*)   # a disputed paper on main: a new version in a new PR
     [[ "$target" =~ ^P[0-9]+-[A-Za-z0-9-]+$ ]] || { echo "revise needs a PR number or a paper" >&2; exit 2; }

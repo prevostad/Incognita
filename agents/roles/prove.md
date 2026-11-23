@@ -25,8 +25,9 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
    more than 1,200. Pick a branch that fits; when you reach the limit, stop at the last lemma that
    compiles, run the checks and write the summary: the next `prove` session continues from `main`.
 2. **Prove**, in modules under `Incognita/`: paper-specific material in `Incognita/<prefix>/`,
-   general lemmas in general form in `Incognita/ForMathlib/`, `Incognita/ForLML/` or
-   `Incognita/<Roadmap>/`. The final theorem `Incognita.<prefix>.<name>` has **exactly** the frozen
+   general lemmas in `Incognita/ForMathlib/`, `Incognita/ForLML/` or `Incognita/<Roadmap>/`. Prove
+   the paper's statement directly (AGENTS.md §6.1): generalise a lemma only when it costs nothing or
+   a second use is in sight; never spend the session on generality. The final theorem `Incognita.<prefix>.<name>` has **exactly** the frozen
    type: copy it verbatim from the `Statements/` file. Drafts with `sorry` go in
    `Exploration/<prefix>/`.
    A result of a library paper this paper depends on (`depends_on` in META.toml) is used through
@@ -41,7 +42,8 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
    `lake exe mk_all --lib Incognita`.
 5. **Record.** Add a row to `blueprint.md` for each paper lemma you prove (label, Lean name). If the
    Lean proof needs lemmas the paper does not state, or another decomposition (AGENTS.md §6.6,
-   case c), write them in `papers/<P>/formalisation.tex` (from `templates/paper/formalisation.tex`):
+   case c), the Lean and its docstrings are enough; **optionally**, when a reader of the paper needs
+   the decomposition, write them in `papers/<P>/formalisation.tex` (from `templates/paper/formalisation.tex`):
    labels `flem:…`, with `\lean{…}` and an exhaustive `\uses{…}`. Compile it after the paper
    (`latexmk -pdf -interaction=nonstopmode -halt-on-error -cd papers/<P>/paper.tex`, then the same
    for `formalisation.tex`; no error, no `undefined`), then remove the generated files

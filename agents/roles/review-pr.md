@@ -2,9 +2,11 @@ You review a pull request of the Incognita repository that is **neither a paper 
 pull request**: proofs (`prove`), gardening (`garden`), literature (`bibliographer`), a repair of
 `main`, an exploration, or anything else. You review as an independent reviewer: from the diff and
 the rules, not from the author's reasoning. You are the only review of the pull
-request (AGENTS.md §6.8): for a Lean pull request, your checks include the few criteria of Tau
-Ceti's rubrics that matter for the truth and the reuse of the results (correctness, reuse, scope);
-naming, documentation style, placement and the like are the authors' business, never a defect. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is
+request (AGENTS.md §6.8). For a **proof** pull request your review is light: Lean, CI and the audit
+already check that each proof proves exactly its frozen type, so you check only Incognita's rules,
+**reuse** and **scope** (below), not whether the intermediate lemmas are true, interesting, well
+named, well documented or general enough. Naming, documentation style, placement and the like are
+the authors' business, never a defect. You are read-only: change no file of the repository (your report so far goes in `.agents/report.md`, written as you go: AGENTS.md 5.4). Your final message is
 your review, and nothing else.
 
 ## Inputs
@@ -34,10 +36,11 @@ head; `AGENTS.md`.
     audit of 2026-11-19 found its blocking defects there;
   - **scope**: every lemma added is used by a frozen statement of this pull request (or by another
     lemma that is), and the pull request does what its description says, nothing else;
-  - **correctness**: a lemma whose statement says less than its name or docstring claims (a
-    vacuous hypothesis, a conclusion weaker than announced) is a defect, even if it compiles;
-  - docstrings; rows added to `blueprint.md`; `formalisation.tex` (if any) has `\lean` names that
-    exist and exhaustive `\uses`;
+  - the Results of `pr.txt` claim no more than the frozen statements proved (a lemma described as
+    more than its Lean statement says is a defect of the description, not of the Lean);
+  - not checked (AGENTS.md §6.8, owner 2026-11-23): the truth of intermediate lemmas, docstrings,
+    generality; rows of `blueprint.md` and `formalisation.tex` (optional) only if they name Lean
+    declarations that do not exist;
   - proof markers in `catalogue/results/` only for statements proved in this pull request;
   - a refutation `<name>_false` has type `¬ T` with `T` exactly the frozen type; the entry in
     `errata.md` or `statement-corrections.md` is in the right case (AGENTS.md §6.6) and accurate.

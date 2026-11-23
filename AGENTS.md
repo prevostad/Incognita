@@ -605,8 +605,10 @@ any paper after the fact (`withdrawn.md`).
 
 Rémy Degenne's `formalize-paper` method: the paper is the blueprint; phase 1 freezes the headline
 statements (with `sorry`), phase 2 proves them lemma by lemma following the `\uses` graph, one
-coherent area per pull request. Prove the general statement first (Mathlib- or LML-shaped), and
-derive the paper's statement as a one-line specialisation. `theorem` only for frozen statements and
+coherent area per pull request. Prove the paper's statement directly (owner, 2026-11-23: the
+research before the library): state a lemma more generally only when it costs nothing, or when a
+second use is in sight; a lemma that already exists in a general form in the dependencies is used,
+not re-proved (§6.7). `theorem` only for frozen statements and
 big classical results, `lemma` for everything else. Drop hypotheses a proof does not use and say so
 in the docstring.
 
@@ -694,14 +696,19 @@ Definitions are where a new library goes wrong silently. Before defining anythin
 dependencies at their pinned versions (§6.7) and reuse: LMLExplore's `LMLExplore.Bandits` (`dInf`,
 `IsConsistent`, its lower bounds), LML (`Algorithm`, `IsAlgEnvSeq`, `trajMeasure`, `pullCount`,
 `regret`, `gap`), Mathlib. Follow the roadmap's Definitions section (planned names, conventions).
-Write each definition in library generality, with a docstring, and prove in the same pull request:
+Write each definition in library generality, with a docstring, and prove in the same pull request
+its **non-vacuity**: for every frozen statement using it, a Lean witness that its hypotheses hold
+together. This one is required: a statement whose hypotheses cannot hold is proved by Lean and says
+nothing.
+
+The other checks are **optional** (owner, 2026-11-23): add them when they are cheap, or when
+`review-statements` asks for one because the definition looks suspicious (it may be trivially true,
+or differ from the classical notion):
 
 - **witness**: a non-trivial object satisfying it;
 - **known case**: it agrees with the classical notion on a known special case;
 - **exclusion**: an object that must not satisfy it, proved not to (catches definitions that are
-  trivially true);
-- **non-vacuity**: for every frozen statement using it, a Lean witness that its hypotheses hold
-  together.
+  trivially true).
 
 Record them in `catalogue/definitions/<Name>.toml`
 ([catalogue/definitions/README.md](catalogue/definitions/README.md)).
@@ -735,7 +742,9 @@ Decide which case you are in, and say it in your summary. Never weaken a stateme
   statements under new names and adds the line `Resolved by …` under the entry (or
   `Resolved by the version of <date>: no frozen statement changes` when none does). The old frozen
   statements stay (the audit marks the refuted ones).
-- **(c) The statement is true but its proof needs another decomposition or extra lemmas**: write
+- **(c) The statement is true but its proof needs another decomposition or extra lemmas**: the
+  Lean, its docstrings and the rows of `blueprint.md` are enough. **Optionally** (owner,
+  2026-11-23), when the decomposition is long enough that a reader of the paper needs it, write
   them in `papers/<P>/formalisation.tex` (from `templates/paper/formalisation.tex`): new labelled
   lemmas with `\lean{…}` and exhaustive `\uses{…}`, referring to the nodes of `paper.tex` by their
   labels. It is not refereed, because Lean checks it; `paper.tex` is not edited.
@@ -782,12 +791,20 @@ renumbered, edited or deleted: later roles only add their line under them.
 
 **One review per pull request** (the owner, 2026-11-20): `review-statements` for a statements pull
 request, `review-pr` for any other. Incognita's goal is research verified in Lean, not a polished
-library (LMLExplore builds that): the review checks Incognita's rules (paths, frozen types, locks,
-proof markers, back-translation) and the few criteria of Tau Ceti's rubrics that bear on the truth
-and the reuse of the results: **correctness** (definitions and lemmas say what they claim),
-**reuse** (no duplicate of a definition or lemma of the library or of the dependencies: LMLExplore, LML, Statlib, TauCeti, Mathlib, section 6.7),
-**scope** (nothing the frozen statements do not use). Naming, documentation style, placement, API
-design, generality and proof style follow the conventions above, but are never a defect.
+library (LMLExplore builds that). Naming, documentation style, placement, API design, generality and
+proof style follow the conventions above, but are never a defect.
+
+**Where the truth is checked** (the owner, 2026-11-23). The correspondence between the paper and
+Lean is checked once, when the statements are frozen: `review-statements` checks the
+back-translation of each frozen statement, its definitions (correctness, and reuse of the
+dependencies: LMLExplore, LML, Statlib, TauCeti, Mathlib, section 6.7) and their non-vacuity. After
+that, CI and the audit check mechanically that a proof proves exactly the frozen type, with no
+`sorry` and only the standard axioms; the truth of the intermediate lemmas is Lean's business.
+So the review of a **proof** pull request is light (`review-pr`, on a cheaper model:
+`INCOGNITA_MODEL_REVIEW_PROOFS`): Incognita's rules (paths, frozen types, proof markers, only
+`lemma` and `theorem`), **reuse** (no duplicate of a lemma of the library or of the dependencies)
+and **scope** (nothing the frozen statements do not use). It does not judge whether a lemma is
+interesting, well named, well documented or general enough.
 
 **Tau Ceti's 11 rubrics** ([agents/rubrics/](agents/rubrics/README.md), vendored from TauCetiReview)
 stay available for a one-off audit of the library (as on 2026-11-19), or if the owner turns them
@@ -883,7 +900,7 @@ trailers of the loop's merge commits), the gardening log and the human audits. L
 | `revise` | author | answers referee reports, an erratum or a dependency check, and revises a presentation revision: new version of the paper |
 | `formalize-statements` | author | phase 1: definitions, frozen statements, witnesses, `blueprint.md` |
 | `review-statements` | reviewer | fidelity of phase 1: back-translation, definitions, witnesses |
-| `prove` | author | phase 2: proofs of frozen statements, one coherent area per pull request; `formalisation.tex`; errata |
+| `prove` | author | phase 2: proofs of frozen statements, one coherent area per pull request; `formalisation.tex` (optional); errata |
 | `review-pr` | reviewer | every other pull request (proofs, garden, literature, exploration, fixes) |
 | `rubric-<name>` | reviewer | one of Tau Ceti's 11 rubrics, on a Lean pull request (section 6.8) |
 | `fix-pr` | author | rebases, repairs builds, answers `review-pr`, `review-statements` and the rubrics, repairs `main` |

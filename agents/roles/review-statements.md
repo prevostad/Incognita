@@ -29,9 +29,11 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
    `.lake/packages/`; the audit of 2026-11-19 found `unitLaws`, `IsConsistentOnUnit` and
    `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's array model). Scope:
    nothing defined that no frozen statement or check uses. For each new definition: general enough (library generality, not specialised to
-   the paper without reason); faithful to the roadmap's Definitions and conventions; its witness is
-   non-trivial, its known case is the classical notion, its exclusion excludes an object that must be
-   excluded, its non-vacuity witnesses exist. Try to break it: trivially true, unsatisfiable, a
+   the paper without reason); faithful to the roadmap's Definitions and conventions; its non-vacuity
+   witnesses exist (required). A witness, a known case and an exclusion are optional (AGENTS.md
+   §6.4, owner 2026-11-23): their absence is not a defect, but ask for one when the definition looks
+   suspicious (possibly trivially true, or far from the classical notion); when present, check them.
+   Try to break it: trivially true, unsatisfiable, a
    σ-algebra too large (the information model leaks the future), wrong measurability,
    natural-number subtraction, division by zero, `ENNReal.toReal`, a real liminf of an unbounded
    sequence.
@@ -70,7 +72,7 @@ Verdict: approve | request_changes | reject
 From the Lean: … Paper: … Differences: …
 
 ## Definitions
-| Definition | Witness | Known case | Exclusion | Non-vacuity | Assessment |
+| Definition | Non-vacuity | Witness, known case, exclusion (optional) | Assessment |
 
 ## Checks run
 ```
