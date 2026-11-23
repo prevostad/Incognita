@@ -48,7 +48,8 @@ head; `AGENTS.md`.
   `double-formalisation`, `known-cases`) logged `confirmed` was really done (its Lean or its
   back-translation is in the pull request or its description) and brings something new for that
   paper (AGENTS.md §9); a `failed` one comes with its erratum or statement correction. A `Dropped`
-  line in `directions.md` gives a checkable reason (a paper and label, or `[KEY, part]` you check);
+  line in `directions.md` gives a checkable reason (a paper and label, or `[KEY, part]` you check, or a
+  writer's re-rating below 4/10 listed in `re-ratings.md`, that the owner did not answer to keep);
   `garden.md` and `directions.md` only gain lines.
 - **Literature** (`bibliographer`): check at least two notes or metadata entries against the source
   on the web (statements exactly as in the source, parts read honestly marked); for an attribution

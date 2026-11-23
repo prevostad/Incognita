@@ -532,13 +532,14 @@ Verdict: accept
 | Question | Interest | Novelty | Fit | Candidate | Reason |
 |---|---|---|---|---|---|
 | oq:rate | high | open | D1 | yes | |
-| `oq:other` | low | open | D1 | no | |
+| `oq:other` | 3/10 | open | D1 | yes | |
 EOF
 ok "certify: accepted open questions become candidate directions" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789 --date 2026-11-26)" = 1 ]'
 ok "certify: the entry" 'grep -q "^## C1 (2026-11-26, from P002v1 oq:rate)" roadmaps/BB/directions.md && grep -q "^- Rating: interest high; novelty open; fit D1 (referee-scope, pull request #7, head abcdef012345)" roadmaps/BB/directions.md'
 ok "certify: the items of \\extends go to their own line, not into the statement" 'grep -qx -- "- Statement: Is the rate optimal on every grid?" roadmaps/BB/directions.md && grep -qx -- "- Extends: D1" roadmaps/BB/directions.md'
 ok "certify: candidates are added once" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789)" = 0 ] && C check >/dev/null'
-ok "certify: a candidate is an item" 'C items BB --free | grep -qx "C1 open"'
+ok "certify: a candidate is an item, with its interest" 'C items BB --free | grep -qx "C1 open interest high"'
+ok "certify: a question rated below 4/10 is never a candidate" '! grep -q "oq:other" roadmaps/BB/directions.md'
 git add -A; git commit -qm "directions"; base=$(git rev-parse HEAD)
 printf 'Dropped (2026-11-27, garden, m): answered by P001.\n' >> roadmaps/BB/directions.md
 ok "certify: a Dropped line may be added" 'C check --base "$base" >/dev/null && C items BB | grep -qx "C1 dropped"'

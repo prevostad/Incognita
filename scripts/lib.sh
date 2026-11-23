@@ -54,6 +54,7 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_RUBRIC_CARRY:=proportionate}"
 : "${INCOGNITA_BLOCK_LIMIT:=2}"             # heads of a Lean PR blocked by a rubric, then needs-human (1: the first block)
 : "${INCOGNITA_PARK_AFTER:=4}"              # failed attempts on a target (all nights), then parked
+: "${INCOGNITA_SET_ASIDE_AFTER:=3}"         # continuation rounds in a row without progress of a paper draft, then set aside (owner, 2026-11-23)
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task
 : "${INCOGNITA_IDLE_SLEEP:=1200}"
 : "${INCOGNITA_VETO_NIGHTS:=2}"             # nights of veto before a roadmap proposal is approved
@@ -549,6 +550,7 @@ ensure_label() {  # name color description
 ensure_labels() {
   ensure_label incomplete FBCA04 "A session stopped before the end: its work is kept, an agent continues it"
   ensure_label rejected B60205 "Paper rejected by the referees (reports kept); the owner may reopen it"
+  ensure_label set-aside C5DEF5 "Paper draft still incomplete after its attempts: too hard for now; the owner may reopen it"
   ensure_label needs-human B60205 "The agents cannot go further: the owner decides"
   ensure_label veto B60205 "The owner vetoes this roadmap proposal (or comments: veto)"
 }
@@ -735,6 +737,25 @@ pinned_issue() {
     gh issue pin "$n" >/dev/null 2>&1 || log "could not pin issue #$n"
   fi
   echo "$n"
+}
+
+# close_set_aside <pr> <sha> <reason> [title]: a paper draft closed with the label `set-aside` (owner,
+# 2026-11-23): a question too hard for now must not hold the loop. Its items count as covered, like
+# those of a rejected paper; the branch and the notebook stay for a later attempt; the owner reopens it.
+pr_title_of() { gh pr view "$1" --json title -q .title 2>/dev/null | head -c 200; }
+close_set_aside() {
+  local n=$1 sha=$2 why=$3 title=${4:-} f
+  if is_dry; then log "dry run: would set #$n aside ($why)"; return 0; fi
+  ensure_labels
+  f=$(mktemp)
+  printf 'Set aside by the script: %s. The question looks too hard for now: its items count as covered, and the branch and its notebook stay for a later attempt. The owner may reopen the pull request (its count of rounds without progress then starts again).\n' "$why" > "$f"
+  post_comment "$n" set-aside "$sha" "$f" >/dev/null
+  rm -f "$f"
+  gh pr edit "$n" --add-label set-aside >/dev/null 2>&1
+  gh pr close "$n" >/dev/null 2>&1 || return 1
+  counter_set "fix-rounds $n" 0; counter_set "review-fail $n" 0; counter_set "stall $n" 0
+  record_event set-aside - "$n" "$title — $why"
+  log "set #$n aside: $why"
 }
 
 # close_rejected <pr> <sha> <reason> [title]: a paper PR closed with the label `rejected` (D2).
