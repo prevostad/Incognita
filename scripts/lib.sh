@@ -18,6 +18,9 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_AGENT_MEMORY:=6G}"
 : "${INCOGNITA_MODEL_AUTHOR:=opus}"
 : "${INCOGNITA_MODEL_REVIEWER:=sonnet}"
+# review-pr of a proof PR (role prove): Lean checks the frozen statement, the review only looks for
+# duplicates and scope (owner, 2026-11-23); INCOGNITA_MODEL_REVIEW_PR, when set, wins.
+: "${INCOGNITA_MODEL_REVIEW_PROOFS:=sonnet}"
 : "${INCOGNITA_EFFORT:=high}"
 : "${INCOGNITA_MAX_TURNS:=1000}"
 # Time per task (seconds): long on purpose (owner, 2026-11-14), capped by the night's end; the

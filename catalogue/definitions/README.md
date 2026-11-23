@@ -3,7 +3,8 @@
 One file per definition of the library, `<Name>.toml`, named after the Lean declaration (without
 its namespace). Written by `formalize-statements` in the pull request that adds the definition;
 reviewed by `review-statements`. Definitions are where a new library goes wrong silently, so each one
-carries the Lean checks of AGENTS.md §6.4.
+carries the Lean checks of AGENTS.md §6.4: `non_vacuity` is required, the other three are optional
+(an empty list).
 
 Not stored (computed by the audit and shown in reports): which frozen statements use the definition,
 and whether it is locked.

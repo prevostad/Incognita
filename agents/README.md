@@ -416,6 +416,7 @@ report in `scripts/test-lib.sh` (fake `gh`).
 | `INCOGNITA_USAGE_URL`, `INCOGNITA_TAUCETI_BIN`, `INCOGNITA_TAUCETI_CONF` | the endpoint of the Tau Ceti pacer, `tauceti` in PATH, LMLExplore's `tauceti.toml` | where the usage is read (tests point them at fakes) |
 | `INCOGNITA_PACE` | unset | `0:100` (always, the owner's rule; start-night.sh sets it): no pacing; `off`; else a Tau Ceti pace curve |
 | `INCOGNITA_MODEL_AUTHOR` / `_REVIEWER` | `opus` / `sonnet` | models; per role: `INCOGNITA_MODEL_<ROLE>` (e.g. `INCOGNITA_MODEL_REFEREE_PROOFS`) |
+| `INCOGNITA_MODEL_REVIEW_PROOFS` | `sonnet` | model of `review-pr` on a proof PR (role `prove`), whatever `INCOGNITA_MODEL_REVIEWER` says: the review only looks for duplicates and unused lemmas (AGENTS.md 6.8); `INCOGNITA_MODEL_REVIEW_PR`, when set, wins |
 | `INCOGNITA_EFFORT`, `INCOGNITA_MAX_TURNS` | `high`, `1000` | for every session |
 | `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `3600` / `14400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` (for example `INCOGNITA_TIMEOUT_WRITE_PAPER`); `INCOGNITA_TIMEOUT_REFEREE_SCOPE` is `7200`, `_REFEREE_PROOFS` `14400`; always capped by the night's end |
 | `INCOGNITA_CAP_WATCH` | `600` s | during a session, the weekly usage is read this often; at the cap the session is stopped (its commits kept as an `incomplete` draft); `0`: never |
