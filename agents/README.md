@@ -158,9 +158,36 @@ propose-roadmap: the roadmap's items D, F, C and their state, `scripts/certify.p
 `roadmaps.md` (propose-roadmap: every roadmap, its status, domain, KNOWN.md, extensions, free
 items, and the existing domains), `quality-pass.md` (prove, formalize-statements, garden, fix-pr and
 the rubric quality-pass: Tau Ceti's PR template, `agents/rubrics/tauceti/pull_request_template.md`
-of main). The prompt is the role file (for a rubric: Tau Ceti's prompt, [rubrics/README.md](rubrics/README.md))
+of main), `library-index.md` (formalize-statements, review-statements, prove, garden, and
+review-pr on a Lean PR: the library index, below). The prompt is the role file (for a rubric: Tau Ceti's prompt, [rubrics/README.md](rubrics/README.md))
 verbatim (no substitution), followed by a pointer to `task.md`. Writing roles write
 `.agents/summary.md`.
+
+**The library index** (`scripts/library-index.py`, owner request of 2026-11-25: papers should become
+easier to formalise as the library grows, which needs a library that is read and reused). For the
+roles above, agent.sh writes `.agents/library-index.md` from the loop's clone, without compiling and
+without a checkout: `Incognita/` and `Statements/` at `main` (`--ref $M`, read with `git cat-file`;
+reviewers compare a PR's new declarations with what `main` already has), and the packages
+LMLExplore, LeanMachineLearning, TauCeti and Statlib of `$INCOGNITA_REPO/.lake/packages` (never
+Mathlib, too large: agents Grep it with `path` set to `.lake/packages/mathlib/Mathlib`). One
+Markdown line per declaration, grouped by module: kind (`frozen` for a frozen statement, whose proof
+is never read; `private`, `deprecated` marked), full name with its namespaces, a one-line signature
+(truncated), the first sentence of the docstring, `file:line`; fields of structures and
+constructors of inductives in braces. The parser is a heuristic over the source text (comments,
+docstrings and strings masked; declarations at column 0; `namespace`, `section`, `mutual`, `end`
+tracked; attributes and modifiers skipped): it does not see section `variable`s, `where`
+auxiliaries, generated names (anonymous instances, projections, `to_additive`, `simps`). Size cap
+`INCOGNITA_LIBRARY_INDEX_BYTES` (default 1 000 000 bytes): signatures are shortened, then dropped
+(packages first), then docstrings of package lemmas, and only then is the file cut (said in the
+file). A section **Possible duplicates** (warnings only, never a CI failure) lists declarations of
+`Incognita/` that share their last name component with a declaration of another module (generic
+tails, the API of two different types `A.foo`/`B.foo`, and the proof of a frozen statement
+excepted), or whose one-line statement is identical to another lemma's (witnesses `_satisfiable`
+excepted); `garden` starts its duplicate checks from it (on main on 2026-11-25: the two
+`unitBandits`, and `integrable_id_of_mem_unitLaws` proved twice). If the script fails, the session
+runs without the file (a warning in the log). Test: `python3 scripts/test-library-index.py` (fixture
+snippets, run by CI). By hand: `python3 scripts/library-index.py --repo . --out index.md` (working
+tree), `--ref origin/main`, `--no-packages`.
 
 Paper verdicts: `Verdict: accept|major|reject`, computed by the referee from its defect table
 (`reject` if any F, `major` if any G or L, `accept` if only P: an accepted paper keeps no error;
@@ -443,6 +470,7 @@ report in `scripts/test-lib.sh` (fake `gh`).
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |
 | `INCOGNITA_DRY_RUN` | `0` | `1`: one pass, prints the task, changes nothing |
+| `INCOGNITA_LIBRARY_INDEX_BYTES` | `1000000` | size cap of `.agents/library-index.md` (the library index, above) |
 | `INCOGNITA_PRIVATE_KNOWN` | unset | a directory outside the repository with `<Roadmap>.md` files of private KNOWN entries, given to the sessions of that roadmap as `.agents/known-private.md` |
 | `INCOGNITA_CHECK_LOGIN` | `1` | night.sh tries one tiny session at startup |
 | `INCOGNITA_AGENT_MEMORY` | `6G` | `MemoryMax` of a session |

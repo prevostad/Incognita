@@ -44,6 +44,7 @@ example the errata entries to resolve), and the list of context files the script
 | `known-private.md` | the roadmap's private KNOWN entries, when the owner gives them (never quote them) |
 | `ci-log.txt` | the end of the failing CI logs (workflows CI and Papers) |
 | `owner-answers.md` | the owner's answers on the pinned issue "Questions for the owner", after the questions they answer: never ask again what is answered there |
+| `library-index.md` | for `formalize-statements`, `review-statements`, `prove`, `garden`, and `review-pr` on a Lean pull request: one line per declaration of `Incognita/`, `Statements/` and the dependencies except Mathlib (kind, name, signature, docstring, `file:line`), at `main`, and its "Possible duplicates" (section 6.7) |
 | `quality-pass.md` | for `prove`, `formalize-statements`, `garden`, `fix-pr` and the rubric `quality-pass`: Tau Ceti's pull request template, its `Quality pass:` block and the checks Q1–Q5 (section 6.8) |
 
 Only the files listed in task.md exist. The working tree is a clone of the repository, at `main` or
@@ -798,6 +799,18 @@ renumbered, edited or deleted: later roles only add their line under them.
   `.lake/packages/Statlib` (once the pinned LMLExplore depends on it), `.lake/packages/TauCeti`,
   `.lake/packages/mathlib/Mathlib`. Grep ignores `.lake` unless you give
   the path: search with `path` set to one of these directories.
+- **The library index** `.agents/library-index.md` (owner, 2026-11-25: papers should become easier
+  to formalise as the library grows) lists every declaration of `Incognita/`, `Statements/`,
+  LMLExplore, LML, TauCeti and Statlib, one line each, with its `file:line`, and, in a section of
+  its own, what LMLExplore's newest `main` has that the pinned version lacks. Search it first
+  (`grep -n -i <word> .agents/library-index.md`, several words and synonyms), then the file it
+  points to, and only then Mathlib (Grep with `path` set to `.lake/packages/mathlib/Mathlib`, not
+  the whole of `.lake/packages`). It is built from the source text without compiling: what it does
+  not list (section variables, generated names) may still exist. **LMLExplore comes first**
+  (owner, 2026-11-25): what you need may already be there. If it is only in LMLExplore's newest
+  `main` (not pinned), do not reprove it under another name: say so in the summary ("Upstream:
+  <name>, not pinned"), and if you need it now, copy it with the same name and a comment
+  `-- upstream: LMLExplore <name>`, so that `garden` replaces the copy once the pin is updated.
 - Iterate with `lake env lean <file>` (one file) and `lake build <Module>`. Run the CI commands once,
   at the end: `scripts/check-build.sh Incognita --no-sorry`, `scripts/check-build.sh Statements`,
   `scripts/build.sh Exploration` (if you touched it), `lake exe audit --check`, `lake lint`,

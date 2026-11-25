@@ -10,8 +10,9 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
 - `papers/<P>/paper.tex`: **the reference**. `blueprint.md`, `META.toml`; the notebook may help you
   understand, but it is not a reference. For `kind = "external"`: `literature/notes/<KEY>.md` is the
   reference, with `paper.tex`.
-- The roadmap's Definitions section; `catalogue/definitions/`; the dependencies under
-  `.lake/packages/` (Grep with `path` set there).
+- The roadmap's Definitions section; `catalogue/definitions/`; `.agents/library-index.md` (every
+  declaration of `Incognita/`, `Statements/` and the dependencies except Mathlib, at `main`); the
+  dependencies under `.lake/packages/` (Grep with `path` set there).
 - `.agents/reports.md`: previous reviews of this pull request.
 - `AGENTS.md` §6.
 
@@ -27,7 +28,11 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
 2. **Definitions.** Reuse first: a definition that duplicates one of the dependencies (LMLExplore, LML, Statlib,
    TauCeti, Mathlib: AGENTS.md §6.7) or of the library (`Incognita/`), under any name, is a defect (Grep with `path` set under
    `.lake/packages/`; the audit of 2026-11-19 found `unitLaws`, `IsConsistentOnUnit` and
-   `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's array model). Scope:
+   `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's array model). Compare
+   each new definition with `.agents/library-index.md` (and the summary's "New general
+   declarations"): the same object under another name or form is reused; when the closest notion
+   there is related but different (a special case, another formulation), the pull request proves a
+   lemma relating them (equivalence, or inclusion where they differ), or it is a defect. Scope:
    nothing defined that no frozen statement or check uses. For each new definition: general enough (library generality, not specialised to
    the paper without reason); faithful to the roadmap's Definitions and conventions; its non-vacuity
    witnesses exist (required). A witness, a known case and an exclusion are optional (AGENTS.md
