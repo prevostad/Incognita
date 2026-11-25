@@ -54,11 +54,7 @@ material is re-read, not only stored.
    caps every paper that depends on it.
 4. **Candidate directions** (`roadmaps/<Roadmap>/directions.md`): a candidate that a paper of the
    library now answers, or that is known in the literature, gets a line under its entry
-   `Dropped (<date>, garden, <model>): <reason, with the paper and label or [KEY, part]>`. So does
-   a candidate that a writer re-rated below 4/10 (a line `Ask-owner: <Roadmap> <item> re-rated
-   <n>/10: …`, listed in `re-ratings.md`) when the owner has not answered to keep it
-   (`owner-answers.md`):
-   `Dropped (<date>, garden, <model>): re-rated <n>/10 by a writer on <date>: <its reason>`. Never
+   `Dropped (<date>, garden, <model>): <reason, with the paper and label or [KEY, part]>`. Never
    edit or delete an entry.
 5. **No theorem lost**: `lake exe audit --check` passes (every proof marker still proved).
 6. **Log the pass** in `catalogue/garden.md`, always, even when nothing was found: one row per item,

@@ -1118,9 +1118,17 @@ role_allows() {
 
 # human_authors_kept <old> <new>: every paper of the owner in <old> (META.toml with a line
 # `human_authors = [...]`) keeps that line and the first `\author` line of its paper.tex in <new>
-# (AGENTS.md 5.1: agents never change who wrote a paper). Reasons on stderr.
+# (AGENTS.md 5.1: agents never change who wrote a paper), and no paper without that line in <old>
+# (a new paper, or a paper of the agents) gains it in <new>: an agent never attributes a paper to
+# the owner (audit of 2026-11-25). Reasons on stderr.
 human_authors_kept() {
   local old=$1 new=$2 d a b bad=0
+  for d in $(repo_git ls-tree --name-only "$new" papers/ 2>/dev/null | sed 's#^papers/##'); do
+    repo_git show "$old:papers/$d/META.toml" 2>/dev/null | grep -qE '^[[:space:]]*human_authors[[:space:]]*=' && continue
+    if repo_git show "$new:papers/$d/META.toml" 2>/dev/null | grep -qE '^[[:space:]]*human_authors[[:space:]]*='; then
+      log "refused: papers/$d/META.toml: an agent may not add human_authors"; bad=1
+    fi
+  done
   for d in $(repo_git ls-tree --name-only "$old" papers/ 2>/dev/null | sed 's#^papers/##'); do
     a=$(repo_git show "$old:papers/$d/META.toml" 2>/dev/null | grep -E '^[[:space:]]*human_authors[[:space:]]*=') || continue
     b=$(repo_git show "$new:papers/$d/META.toml" 2>/dev/null | grep -E '^[[:space:]]*human_authors[[:space:]]*=' || true)

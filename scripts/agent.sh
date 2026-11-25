@@ -409,8 +409,7 @@ if { [ "$role" = write-paper ] || [ "$role" = propose-roadmap ]; } && [ -n "$roa
     echo
     echo "One line per item: open (no paper on main serves it: check papers.md for open and rejected"
     echo "pull requests), closed (pending owner decision, on hold, closed, or in a proposed extension),"
-    echo "covered (the papers on main that serve it), dropped (a candidate direction). A candidate shows"
-    echo "the referee's interest rating (n/10 since 2026-11-23; high, medium or low before)."
+    echo "covered (the papers on main that serve it), dropped (a candidate direction)."
     echo
     certify_py items "$roadmap" 2>&1 | sed 's/^/- /'
   } > "$ctx/items.md"
@@ -480,21 +479,6 @@ qn=$(ghr issue list --state open --limit 200 --author "$OWNER" --json number,tit
 if [ -n "$qn" ] && raw=$(ghr api --paginate "repos/$GH_REPO/issues/$qn/comments?per_page=100" 2>/dev/null); then
   owner_answers_md "$raw" | tail -c 200000 > "$ctx/owner-answers.md"
   if [ -s "$ctx/owner-answers.md" ]; then files="$files owner-answers.md"; else rm -f "$ctx/owner-answers.md"; fi
-  # The candidates that writers re-rated below 4/10 (owner, 2026-11-23): writers skip them, garden
-  # drops them, unless the owner answered to keep one (owner-answers.md).
-  case "$role" in
-    write-paper|garden|review-pr)
-      printf '%s' "$raw" | jq -rs 'add // [] | sort_by(.created_at) | .[] | .body // ""' 2>/dev/null         | grep -E '^(- )?Ask-owner: [A-Za-z0-9]+ [DC][0-9]+ re-rated [0-9]+/10' | sed -E 's/^- //' | tail -n 200 > "$tmp/rr" || true
-      if [ -s "$tmp/rr" ]; then
-        { echo "# Items re-rated below 4/10 by writers"
-          echo
-          echo "Forwarded to the pinned issue \"Questions for the owner\", oldest first. A writer does not judge"
-          echo "these items again unless the owner answered to keep one (owner-answers.md); garden drops them."
-          echo
-          sed 's/^/- /' "$tmp/rr"; } > "$ctx/re-ratings.md"
-        files="$files re-ratings.md"
-      fi ;;
-  esac
 fi
 
 situation=""
