@@ -38,7 +38,8 @@ runs `formalize-statements` again on the paper once this one is merged.
 
 1. **Model first.** Decide the Lean shape of every object the frozen statements use. **Search
    `.agents/library-index.md` before writing any definition or general lemma** (several words and
-   synonyms), then Mathlib (Grep with `path` set to `.lake/packages/mathlib/Mathlib`). **Reuse the definitions
+   synonyms), LMLExplore first, including the section of its newest `main` (AGENTS.md section
+   6.7), then Mathlib (Grep with `path` set to `.lake/packages/mathlib/Mathlib`). **Reuse the definitions
    of LML and LMLExplore** when they exist (owner, 2026-11-19: the audit found `unitLaws`,
    `IsConsistentOnUnit` and `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's
    array model): define a new object only when the dependencies have none, never under a name that

@@ -801,11 +801,16 @@ renumbered, edited or deleted: later roles only add their line under them.
   the path: search with `path` set to one of these directories.
 - **The library index** `.agents/library-index.md` (owner, 2026-11-25: papers should become easier
   to formalise as the library grows) lists every declaration of `Incognita/`, `Statements/`,
-  LMLExplore, LML, TauCeti and Statlib, one line each, with its `file:line`. Search it first
+  LMLExplore, LML, TauCeti and Statlib, one line each, with its `file:line`, and, in a section of
+  its own, what LMLExplore's newest `main` has that the pinned version lacks. Search it first
   (`grep -n -i <word> .agents/library-index.md`, several words and synonyms), then the file it
   points to, and only then Mathlib (Grep with `path` set to `.lake/packages/mathlib/Mathlib`, not
   the whole of `.lake/packages`). It is built from the source text without compiling: what it does
-  not list (section variables, generated names) may still exist.
+  not list (section variables, generated names) may still exist. **LMLExplore comes first**
+  (owner, 2026-11-25): what you need may already be there. If it is only in LMLExplore's newest
+  `main` (not pinned), do not reprove it under another name: say so in the summary ("Upstream:
+  <name>, not pinned"), and if you need it now, copy it with the same name and a comment
+  `-- upstream: LMLExplore <name>`, so that `garden` replaces the copy once the pin is updated.
 - Iterate with `lake env lean <file>` (one file) and `lake build <Module>`. Run the CI commands once,
   at the end: `scripts/check-build.sh Incognita --no-sorry`, `scripts/check-build.sh Statements`,
   `scripts/build.sh Exploration` (if you touched it), `lake exe audit --check`, `lake lint`,

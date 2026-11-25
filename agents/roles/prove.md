@@ -18,7 +18,9 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
 
 1. **Plan.** From the `\uses` graph of the target, list the lemmas it needs; mark those already in
    `blueprint.md` or in the library; for each standard step, **search `.agents/library-index.md`
-   before writing any general lemma** (several words and synonyms), then Mathlib. **Close one
+   before writing any general lemma** (several words and synonyms), LMLExplore first, including the
+   section of its newest `main` (AGENTS.md section 6.7: never reprove under another name what is
+   only there), then Mathlib. **Close one
    branch at a time** (owner, 2026-11-19): choose one frozen statement, or one node it needs, and
    prove it **end to end** before starting another branch; never add lemmas that no frozen
    statement of this pull request reaches. Prefer the statements that make another one non-vacuous

@@ -251,5 +251,24 @@ with tempfile.TemporaryDirectory() as t:
     ok("working tree and --no-packages", rc == 0 and "not_committed" in wt
        and "LMLExplore.Bandits" not in wt)
 
+    # LMLExplore's newest main: only what the pinned version lacks, next to the pinned LMLExplore.
+    up = os.path.join(t, "upstream")
+    write(os.path.join(up, "LMLExplore/Bandits/More.lean"),
+          "".join(x + chr(10) for x in ["namespace LMLExplore.Bandits", "", "/-- Already pinned. -/",
+                  "lemma pkg_thm : True := trivial", "", "/-- Only upstream. -/",
+                  "lemma upstream_only : True := trivial", "", "end LMLExplore.Bandits"]))
+    for cmd in (["init", "-q"], ["add", "LMLExplore"], ["commit", "-q", "-m", "up"]):
+        subprocess.run(["git", "-C", up] + cmd, check=True, env=env, capture_output=True)
+    rc = L.main(["--repo", repo, "--ref", "HEAD", "--upstream-lmlexplore", up + ":HEAD", "--out", out])
+    with open(out, encoding="utf-8") as f:
+        withup = f.read()
+    sec = withup.find("LMLExplore (main, not in the pinned version)")
+    ok("--upstream-lmlexplore lists what the pin lacks", rc == 0 and sec >= 0
+       and "LMLExplore.Bandits.upstream_only" in withup[sec:]
+       and withup.count("LMLExplore.Bandits.pkg_thm") == at_ref.count("LMLExplore.Bandits.pkg_thm"))
+    rc = L.main(["--repo", repo, "--ref", "HEAD", "--upstream-lmlexplore", os.path.join(t, "nope") + ":HEAD",
+                 "--out", out])
+    ok("an unreadable upstream is skipped", rc == 0)
+
 print(f"{fails} failure(s)")
 sys.exit(1 if fails else 0)

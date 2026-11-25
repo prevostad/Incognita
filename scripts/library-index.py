@@ -415,6 +415,25 @@ def collect(repo, ref, packages_dir, use_packages=True):
     return groups, found, missing
 
 
+def upstream_group(spec, groups):
+    """The declarations of LMLExplore's newest main (spec "<git dir>:<ref>", a clone the loop
+    fetched) that the pinned LMLExplore does not have: what a newer pin would bring (owner,
+    2026-11-25: search LMLExplore first, also beyond the pinned version)."""
+    gitdir, _, ref = spec.rpartition(":")
+    if not gitdir or not ref:
+        return None
+    top = subprocess.run(["git", "-C", gitdir, "ls-tree", "--name-only", ref],
+                         capture_output=True, text=True, check=True).stdout.splitlines()
+    roots = [x for x in top if x and x not in SKIP_DIRS and not x.startswith(".")
+             and x != "lakefile.lean"]
+    pinned = {d["name"] for label, ds in groups if label == "LMLExplore" for d in ds if d["name"]}
+    decls = []
+    for rel, src in git_files(gitdir, ref, roots):
+        decls += [dict(x, path=f"LMLExplore@main/{rel}")
+                  for x in parse_file(src, module_of(rel), rel) if x["name"] not in pinned]
+    return ("LMLExplore (main, not in the pinned version)", decls)
+
+
 # ---------------------------------------------------------------- duplicates
 GENERIC_TAILS = {"ext", "mk", "of", "map", "comp", "id", "refl", "symm", "trans", "le", "lt",
                  "measurable", "continuous", "integrable", "pos", "nonneg", "def", "eq", "iff",
@@ -595,9 +614,21 @@ def main(argv=None):
     ap.add_argument("--out", default="-")
     ap.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
     ap.add_argument("--no-packages", action="store_true")
+    ap.add_argument("--upstream-lmlexplore", default="",
+                    help="<git dir>:<ref> of LMLExplore's newest main: list what the pin lacks")
     a = ap.parse_args(argv)
     pk = a.packages or os.path.join(a.repo, ".lake", "packages")
     groups, found, missing = collect(a.repo, a.ref, pk, not a.no_packages)
+    if a.upstream_lmlexplore:
+        try:
+            g = upstream_group(a.upstream_lmlexplore, groups)
+        except (subprocess.CalledProcessError, OSError, ValueError):
+            g = None
+        if g:
+            # next to the pinned LMLExplore, before LML and TauCeti (AGENTS.md section 6.7)
+            labels = [x[0] for x in groups]
+            groups.insert(labels.index("LMLExplore") + 1 if "LMLExplore" in labels else 1, g)
+            found.append(g[0])
     text = build(groups, found, missing, a.ref, a.max_bytes)
     if a.out == "-":
         sys.stdout.buffer.write(text.encode("utf-8"))

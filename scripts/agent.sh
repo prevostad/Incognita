@@ -314,8 +314,16 @@ case "$role" in
   review-pr) [ "$lean_pr" = 1 ] && idx=1 ;;
 esac
 if [ "$idx" = 1 ]; then
+  # LMLExplore's newest main too (owner, 2026-11-25: search LMLExplore first, also what a newer pin
+  # would bring): its main is fetched into a remote-tracking ref of the package's clone (the
+  # checked-out, pinned version is untouched); without network, the index has the pinned one only.
+  up=() lx=$INCOGNITA_REPO/.lake/packages/LMLExplore
+  if [ -d "$lx/.git" ] && timeout -k 5 60 git -C "$lx" fetch -q --no-tags origin \
+      '+refs/heads/main:refs/remotes/incognita-upstream/main' 2>/dev/null; then
+    up=(--upstream-lmlexplore "$lx:refs/remotes/incognita-upstream/main")
+  fi
   if timeout -k 10 300 python3 -I "$INCOGNITA_SCRIPTS/library-index.py" --repo "$INCOGNITA_REPO" \
-      --ref "$M" --packages "$INCOGNITA_REPO/.lake/packages" \
+      --ref "$M" --packages "$INCOGNITA_REPO/.lake/packages" "${up[@]}" \
       --max-bytes "${INCOGNITA_LIBRARY_INDEX_BYTES:-1000000}" --out "$ctx/library-index.md" 2>/dev/null; then
     files="$files library-index.md"
   else

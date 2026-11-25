@@ -64,6 +64,9 @@ duplicates"), `papers/*/` (Main results, `blueprint.md`,
    library now answers, or that is known in the literature, gets a line under its entry
    `Dropped (<date>, garden, <model>): <reason, with the paper and label or [KEY, part]>`. Never
    edit or delete an entry.
+4b. **Upstream copies**: a declaration marked `-- upstream: LMLExplore <name>` whose original is
+   now in the pinned LMLExplore (the library index lists it outside the section of LMLExplore's
+   newest `main`) becomes a deprecated alias of it.
 5. **No theorem lost**: `lake exe audit --check` passes (every proof marker still proved).
 6. **Log the pass** in `catalogue/garden.md`, always, even when nothing was found: one row per item,
    `| Date | Model | Item | Check | Outcome | Main |` (format in `catalogue/README.md`): `Item` is a
