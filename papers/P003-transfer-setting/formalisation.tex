@@ -194,6 +194,27 @@ that depends on $s$ only. With sizes $\mathbf 0$ the source data are $(\mathbf 0
 no arm has a source value, and $\pi^{\mathrm{tr}}$ pulls $a_0$.
 \end{proof}
 
+\begin{lemma}[The learner that follows the source, with sizes $\mathbf 1$]\label{flem:followSource-one}
+\lean{Incognita.P003.integral_onlineCount_followSource,
+  Incognita.P003.followSourceArm_sourceData_one,
+  Incognita.P003.measure_zero_le_sourceLaw_followSourceArm}
+\uses{def:learner, def:source-data, def:source-space, def:game, flem:followSource-pulls}
+For every size map $N'$, every $\nu,\nu'$, every arm $a$ and every $T$,
+$\E_{\mathbb P^T_{\nu',N',\nu,\pi^{\mathrm{tr}}}}[N_a(T)]=T\,\mathbb P^D_{\nu',N'}(\pi^{\mathrm{tr}}
+\text{ chooses } a)$. With the deterministic sizes $\mathbf 1$, if $\nu'_k=\delta_0$ for every arm
+$k\ne b$, then $\pi^{\mathrm{tr}}$ chooses the smallest arm $a_0$ with probability at least
+$\nu'_b(\{0\})$.
+\end{lemma}
+
+\begin{proof}
+\uses{def:learner, def:source-data, def:source-space, def:game, flem:followSource-pulls}
+By Lemma~\ref{flem:followSource-pulls}, almost surely $N_a(T)=T\,\mathbf 1\{\pi^{\mathrm{tr}}
+\text{ chooses } a \text{ from } D\}$, and the first marginal of the law of the game is
+$\mathbb P^D_{\nu',N'}$. With sizes $\mathbf 1$, almost surely $X'_{k,1}=0$ for every $k\ne b$;
+on the event $\{X'_{b,1}=0\}$, of probability $\nu'_b(\{0\})$, every source empirical mean is
+$0$, so the smallest maximiser is $a_0$.
+\end{proof}
+
 \begin{lemma}[The source data of the look-ahead map]\label{flem:lookahead-data}
 \lean{Incognita.infinitePi_map_zero_one, Incognita.P003.map_sourceMeasure_pair,
   Incognita.P003.exists_sourceData_lookahead, Incognita.P003.klDiv_sourceLaw_lookahead,
@@ -333,14 +354,20 @@ well.
 
 \begin{proof}[Formal route to Proposition~\ref{prop:exclusion}]
 \proves{prop:exclusion}
-\uses{def:consistency, def:learner, def:source-data, def:drift, def:game, def:instance, def:laws, lem:prior-game, flem:followSource-pulls}
-By Lemma~\ref{flem:followSource-pulls}, the Lean proof can take deterministic sizes $\mathbf 0$ (a size rule by
-Lemma~\ref{lem:prior-game}~(a)) instead of the sizes $\mathbf 1$ of the paper: no arm then has a
-source value, so $\pi^{\mathrm{tr}}$ pulls the smallest arm $a_0$ at every round and
-$\E[N_{a_0}(T)]=T$. On the pair $(\nu,\nu)$ with $\nu_{a_0}=\delta_0$ and $\nu_k=\delta_1$ for
-$k\ne a_0$ (a pair of $\mathcal P_L$ for every $L$, with $a_0$ suboptimal),
-$\E[N_{a_0}(T)]/T=1\not\to0$. Both routes give a pair $(\nu,\nu)$ of $\mathcal P^K$ with
-deterministic sizes, as the statement asks.
+\uses{def:consistency, def:learner, def:source-data, def:drift, def:game, def:instance, def:laws, lem:prior-game, flem:followSource-pulls, flem:followSource-one}
+The first frozen statement (\texttt{followSource\_not\_isConsistent}, superseded by the correction
+SC1): by Lemma~\ref{flem:followSource-pulls}, the Lean proof takes deterministic sizes $\mathbf 0$
+(a size rule by Lemma~\ref{lem:prior-game}~(a)): no arm then has a source value, so
+$\pi^{\mathrm{tr}}$ pulls the smallest arm $a_0$ at every round and $\E[N_{a_0}(T)]=T$. On the
+pair $(\nu,\nu)$ with $\nu_{a_0}=\delta_0$ and $\nu_k=\delta_1$ for $k\ne a_0$ (a pair of
+$\mathcal P_L$ for every $L$, with $a_0$ suboptimal), $\E[N_{a_0}(T)]/T=1\not\to0$.
+
+The corrected statement (\texttt{followSource\_not\_isConsistent\_v2}, sizes positive on every
+arm) takes the sizes $\mathbf 1$ of the paper, and, instead of the paper's two Bernoulli arms, one
+arm $b\ne a_0$ with $\nu_b=\nu'_b=\mathrm{Ber}(1/2)$ and $\nu_k=\nu'_k=\delta_0$ for $k\ne b$: then
+$a_0$ is suboptimal ($0<1/2$), and by Lemma~\ref{flem:followSource-one}
+$\E[N_{a_0}(T)]\ge T\,\nu_b(\{0\})=T/2$, so $\E[N_{a_0}(T)]/T\ge1/2$ does not tend to $0$ ($c=1$).
+The first claim ($\pi^{\mathrm{tr}}\notin\mathcal C_L$) follows from either pair.
 \end{proof}
 
 \begin{proof}[Formal route to Theorem~\ref{thm:main}]
