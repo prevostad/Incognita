@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.ContainsPerturbations"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:lowR2"
+meaning = "Second case of (R2): for every bounded Borel g with integral 0 under nu_0 there is t_g > 0 with (1 + t g) nu_0 in the class for every |t| <= t_g."
+conventions = "(1 + t g) nu_0 is nu_0.withDensity (ENNReal.ofReal (1 + t g)); for |t| <= t_g <= 1 / sup |g| it is the paper's probability measure, and t_g can always be shrunk."
+source = "[INC-P001, Definitions def:regular and def:lowR2(b)]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.containsPerturbations_univ"]
+known_cases = []
+exclusion = ["Incognita.StochasticBandits.not_regularR2_dirac"]
+non_vacuity = []

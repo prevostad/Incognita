@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.RegularR1"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:regular"
+meaning = "Condition (R1) of a regular class with variance sigma: 0 < sigma and C is contained in C(a, b, sigma, sigma_p) for some a < b and sigma_p >= sigma."
+conventions = "0 < sigma comes from Definition def:class of C(a, b, sigma, sigma_p)."
+source = "[INC-P001, Definition def:regular]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isRegular_gaussian"]
+known_cases = ["Incognita.StochasticBandits.regularR1_subGaussClass"]
+exclusion = ["Incognita.StochasticBandits.not_regularR1_dirac"]
+non_vacuity = []

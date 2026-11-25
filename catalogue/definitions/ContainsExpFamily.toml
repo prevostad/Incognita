@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.ContainsExpFamily"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:lowR2"
+meaning = "First case of (R2): the class contains a natural exponential family through nu_0 (the tilts nu_0.expFamily id theta) for theta in (-beta_0, beta_0), (-beta_0, 0] or [0, beta_0), and the natural parameter space of nu_0 contains a neighbourhood of 0."
+conventions = "LMLExplore's Measure.expFamily with the statistic id; the paper's parametrization from another base measure is the same family shifted by theta_0."
+source = "[INC-P001, Definitions def:regular and def:lowR2(a)]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isRegular_gaussian"]
+known_cases = ["Incognita.StochasticBandits.isRegular_unitLaws"]
+exclusion = ["Incognita.StochasticBandits.not_regularR2_dirac"]
+non_vacuity = []

@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.localValue"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:batched"
+meaning = "The local value V_K^loc = sup over M > 0 of V_K([-M, M]^α)."
+conventions = "Valued in ℝ≥0∞; the box is Set.univ.pi fun _ ↦ Set.Icc (-M) M."
+source = "[INC-P001, Definition def:batched]"
+
+[checks]
+witness = []
+known_cases = ["Incognita.StochasticBandits.LimitGame.localValue_le_value"]
+exclusion = []
+non_vacuity = []

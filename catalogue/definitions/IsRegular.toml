@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.IsRegular"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:regular"
+meaning = "A regular class with variance sigma: (R1) and (R2)."
+conventions = "RegularR1 C sigma and RegularR2 C sigma."
+source = "[INC-P001, Definition def:regular]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.isRegular_gaussian"]
+known_cases = ["Incognita.StochasticBandits.isRegular_unitLaws"]
+exclusion = ["Incognita.StochasticBandits.not_regularR2_dirac", "Incognita.StochasticBandits.not_regularR1_dirac"]
+non_vacuity = []

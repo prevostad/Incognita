@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.minimaxRegret"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:regret"
+meaning = "The minimax regret R*(T) = inf over learners of sup over the instances nu of the class E of the expected regret at horizon T."
+conventions = "Valued in ℝ≥0∞; the infimum runs over LML's Algorithm Unit α ℝ (a horizon-dependent policy at horizon T is one learner; per-round kernels of the history cover an external randomization); the regret is ENNReal.ofReal of the expectation of LML's regret ν IT.action T under trajMeasure alg (Environment.bandit ν), rounds 0, ..., T - 1; the supremum runs over the Markov kernels of E."
+source = "[INC-P001, Definition def:regret]; roadmap StochasticBandits, D19"
+
+[checks]
+witness = ["Incognita.StochasticBandits.minimaxRegret_singleton"]
+known_cases = ["Incognita.StochasticBandits.ofReal_le_minimaxRegret_gaussian"]
+exclusion = ["Incognita.StochasticBandits.minimaxRegret_gaussian_ne_zero"]
+non_vacuity = []

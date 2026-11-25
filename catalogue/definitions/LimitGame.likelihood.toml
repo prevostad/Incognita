@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.likelihood"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:risk"
+meaning = "The likelihood l_h = exp(<h, X(1)> - (1/2) sum_k h_k^2 tau_k(1)) of the local instance h."
+conventions = "A real function on the canonical space."
+source = "[INC-P001, Definition def:risk]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.risk_singleArmPolicy"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.risk_singleArmPolicy"]
+exclusion = ["Incognita.StochasticBandits.LimitGame.risk_zero"]
+non_vacuity = []

@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.subGaussClass"
+module = "Incognita.StochasticBandits.Minimax"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:class"
+meaning = "The class C(a, b, sigma, sigma_p): the probability measures on ℝ with mean in [a, b], variance at most sigma^2 and E exp(lambda (X - mean)) <= exp(lambda^2 sigma_p^2 / 2) for every real lambda."
+conventions = "The variance is evariance (in [0, ∞]); the sub-Gaussian condition is Mathlib's HasSubgaussianMGF with parameter (sigma_p^2).toNNReal, which includes the integrability; the set is defined for all parameters, the statements assume a < b and 0 < sigma <= sigma_p."
+source = "[INC-P001, Definition def:class]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.gaussianReal_mem_subGaussClass"]
+known_cases = ["Incognita.StochasticBandits.unitLaws_subset_subGaussClass"]
+exclusion = ["Incognita.StochasticBandits.dirac_not_mem_subGaussClass"]
+non_vacuity = []

@@ -1,0 +1,14 @@
+lean = "Incognita.StochasticBandits.LimitGame.valueOn"
+module = "Incognita.StochasticBandits.LimitGame"
+roadmap = "StochasticBandits"
+paper = "P001-minimax-constant"
+label = "def:batched"
+meaning = "The value V_K(H) = inf over limit policies Q of sup over h in H of r(Q, h)."
+conventions = "Valued in ℝ≥0∞; defined for every set H (the paper uses compact sets)."
+source = "[INC-P001, Definition def:batched]"
+
+[checks]
+witness = ["Incognita.StochasticBandits.LimitGame.valueOn_singleton_zero"]
+known_cases = ["Incognita.StochasticBandits.LimitGame.value_eq_valueOn_univ", "Incognita.StochasticBandits.LimitGame.valueOn_mono"]
+exclusion = []
+non_vacuity = []
