@@ -75,8 +75,11 @@ public import Incognita.P006.KInf
 public import Incognita.P006.KnownCases
 public import Incognita.P006.Main
 public import Incognita.P006.Witnesses
+public import Incognita.P007.Constant
+public import Incognita.P007.GravesLai
 public import Incognita.P007.Witnesses
 public import Incognita.StochasticBandits.GravesLai
+public import Incognita.StochasticBandits.GravesLaiProduct
 public import Incognita.StochasticBandits.UCB
 public import Incognita.TransferBandits.Checks
 public import Incognita.TransferBandits.Consistency
