@@ -59,7 +59,9 @@ of its statements and the way its proofs are written (section 2a below). In this
    then algorithm, then upper bound, then extensions). Each section recalls the classical result
    first (a theorem with its reference), then states the new one. `thm:main` carries every
    quantifier, within the first 5 pages when possible, every symbol defined before it. A theorem
-   is followed by "(see the proof in Appendix …)" and by discussion paragraphs with run-in titles
+   is followed by "(see proof in Subsection~\ref{…})", a hyperlink to the subsection of its proof
+   (every lemma, proposition and corollary too, whenever its proof does not follow it; criterion
+   W15), and by discussion paragraphs with run-in titles
    (`\paragraph{Comparison with KL-UCB}`, `\paragraph{Comparison with the lower bound}`,
    `\paragraph{Tightness}`, `\paragraph{Necessary and sufficient condition}`): the nature of the
    constants, the **scope** in plain words (no item ids), an interpretation. An algorithm section
@@ -255,11 +257,15 @@ is P, and a failure of a P criterion that hides or distorts what is claimed is R
   quantifiers first and explicit bounds; regret proofs as a decomposition lemma, one lemma per term,
   then one subsection per lemma, written as aligned chains on indicators with linking sentences;
   every defined quantity defined with `:=` and every later use of it a link to its definition;
-  every result used cited by a link at the place where it is used. *Test*: put the PDF next to
+  every result used cited by a link at the place where it is used; every statement (theorem,
+  proposition, lemma, corollary) whose proof does not follow it immediately is followed by
+  `\noindent(see proof in Subsection~\ref{sec:pf-…}.)`, a hyperlink to the subsection that proves
+  it (as in P000). *Test*: put the PDF next to
   arXiv:2610.21582 and compare the organisation of the sections, one main-text page and one
   appendix proof; in the source, pick ten symbols used in the proofs and check that each is typed
   with its link macro and defined with `:=`; pick five places where a result is used and check the
-  `\ref`. A failure that makes a proof hard to follow (a dense paragraph of relations, a chain
+  `\ref`; pick five statements whose proof is elsewhere and check that each is followed by its
+  "(see proof in …)" link, and that the link reaches its proof. A failure that makes a proof hard to follow (a dense paragraph of relations, a chain
   without its steps, a result used without saying which) is R.
 - **W16 (R) Numerical experiments, compared with the literature** (owner, 2026-11-16, reinforced
   2026-11-17). Every paper has a section "Numerical experiments" (as in arXiv:2610.21582), not only
