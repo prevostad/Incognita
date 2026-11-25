@@ -303,7 +303,7 @@ ok "whitelist: nothing under papers/ is deleted" '! check_paths revise P001-test
 # ---- merge categories, definitions in proof PRs
 ok "category papers" '[ "$(path_category paper papers/P001-a/paper.tex M)" = papers ]'
 ok "papers/ in a proof PR: blueprint.md, formalisation.tex ok; errata, paper.tex for the owner" '[ "$(path_category generic papers/P001-a/blueprint.md M)" = proofs ] && [ "$(path_category generic papers/P001-a/formalisation.tex A)" = proofs ] && [ "$(path_category generic papers/P001-a/errata.md A)" = other ] && [ "$(path_category generic papers/P001-a/paper.tex M)" = other ]'
-ok "statement corrections go to the owner (category corrections), errata too in a statements PR" '[ "$(path_category generic papers/P001-a/statement-corrections.md A)" = corrections ] && [ "$(path_category statements papers/P001-a/statement-corrections.md M)" = corrections ] && [ "$(path_category statements papers/P001-a/errata.md M)" = corrections ] && [ "$(path_category statements papers/P001-a/blueprint.md M)" = statements ] && [ "$(path_category paper papers/P001-a/errata.md M)" = papers ] && ! automerge_enabled corrections'
+ok "statement corrections have their own category (corrections, auto-merged after review-statements), errata too in a statements PR" '[ "$(path_category generic papers/P001-a/statement-corrections.md A)" = corrections ] && [ "$(path_category statements papers/P001-a/statement-corrections.md M)" = corrections ] && [ "$(path_category statements papers/P001-a/errata.md M)" = corrections ] && [ "$(path_category statements papers/P001-a/blueprint.md M)" = statements ] && [ "$(path_category paper papers/P001-a/errata.md M)" = papers ] && automerge_enabled corrections'
 ok "refs.bib fixed by the bibliographer: literature" '[ "$(path_category generic papers/P001-a/refs.bib M)" = literature ]'
 ok "category statements" '[ "$(path_category generic Statements/P/x.lean A)" = statements ]'
 ok "results markers: additions are proofs" '[ "$(path_category generic catalogue/results/x.toml A)" = proofs ] && [ "$(path_category generic catalogue/results/x.toml M)" = literature ]'
@@ -426,7 +426,6 @@ git add -A; git commit -qm errata; git update-ref refs/remotes/origin/main HEAD
 ok "disputed: an erratum neither revised nor resolved" '[ "$(disputed_entries P001-test)" = E1 ]'
 ok "to freeze: errata revised, corrections not resolved" '[ "$(freeze_entries P001-test | tr "\n" " ")" = "E2 SC1 " ]'
 ok "superseded: frozen statements of resolved entries naming another frozen statement of the paper (not itself, not another paper's, not an unfrozen one, not a cycle)" '[ "$(superseded P001-test | tr "\n" " ")" = "a c " ]'
-ok "adds_resolutions: a Resolved by line goes to the owner" 'adds_resolutions "$base" HEAD && ! adds_resolutions HEAD HEAD'
 ok "no errata file: nothing" '[ -z "$(disputed_entries P009-none)$(freeze_entries P009-none)" ]'
 git update-ref refs/remotes/origin/main "$base"
 

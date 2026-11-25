@@ -419,11 +419,6 @@ try_merge() {
         record_event owner-merge - "$n" "categories:$bad"; }
       continue
     fi
-    if adds_resolutions "$mb" "$ah"; then
-      mark_has "owner-merge $H" || { log "#$n resolves an erratum or a statement correction: waits for the owner"
-        mark_set "owner-merge $H"; record_event owner-merge - "$n" "resolves a correction"; }
-      continue
-    fi
     if in_list proofs "$cats" && ! adds_only_theorems "$mb" "$ah"; then
       mark_has "owner-merge $H" || { log "#$n adds definitions: waits for the owner"; mark_set "owner-merge $H"
         record_event owner-merge - "$n" "adds definitions"; }

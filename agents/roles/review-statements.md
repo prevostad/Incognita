@@ -56,7 +56,14 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
    ask for a split (`request_changes`) unless the summary explains why the work cannot be cut
    (pull requests opened before 2026-11-20 are exempt: they were written before the limit).
 7. **Corrections** (`SC<n>` or `E<k>`): the new statement fixes the recorded problem, the old files
-   and locks are untouched, the resolution line is added.
+   and locks are untouched, the resolution line is added. A correction is merged without the owner
+   after your approval, so check that it is **justified**: the entry records why the old statement
+   is wrong or does not say what the paper says (a counterexample, a degenerate case, a
+   mistranslation), and the new statement is the paper's claim correctly translated, not a weaker
+   statement chosen because the old one was hard to prove. If the new statement is weaker than the
+   paper's claim, the entry must say so and the paper needs an erratum (`errata.md`); otherwise
+   `request_changes`. Say in your report, for each correction: justified or not, and weaker than
+   the paper or not.
 
 ## Verdict and report
 

@@ -781,8 +781,10 @@ An `E<k>` without a `Revised in` or `Resolved by` line makes the paper disputed;
 but not resolved, or an `SC<n>` not resolved, waits for a statements pull request. The line
 `- Frozen statement:` names the frozen statement the entry replaces: once the entry is resolved,
 that statement is superseded (it no longer counts for `prove` nor for "verified") when the
-`Resolved by` line names the frozen statement that replaces it, of the same paper; the owner merges
-every pull request that adds such a line or a statement correction. Entries are never
+`Resolved by` line names the frozen statement that replaces it, of the same paper. Such a pull
+request merges like a statements pull request, after `review-statements` (owner, 2026-11-25), which
+checks that the correction is justified; the certification line lists the superseded statements, so
+nothing is replaced silently. Entries are never
 renumbered, edited or deleted: later roles only add their line under them.
 
 ### 6.7 Building and searching

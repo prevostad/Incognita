@@ -199,9 +199,10 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    theorems only, no `def`/`structure`/`instance`/`notation3`/`irreducible_def`/… even after a
    docstring, `@[…]` groups, `open … in` or `local`/`scoped` (`adds_only_theorems`); `exploration`;
    `directions`; `statements` — once `review-statements` approved, enabled by the owner on
-   2026-11-17); never `corrections` (`statement-corrections.md`, and `errata.md` in a statements PR)
-   nor a PR that adds a line `Resolved by …` or an entry `## SC<n>` (`adds_resolutions`): the owner
-   merges what supersedes a frozen statement (2026-11-25); for a Lean PR, `approve` of
+   2026-11-17); `corrections` (`statement-corrections.md`, and `errata.md` in a statements PR: what
+   supersedes a frozen statement) once `review-statements` approved it, which checks that the
+   correction is justified and says whether it weakens the paper's claim (owner, 2026-11-25: no
+   owner in the loop; the certification line lists every superseded statement); for a Lean PR, `approve` of
    every rubric of `INCOGNITA_RUBRICS` on `H` itself (a verdict on an older head is stale; the
    trailer `Incognita-Reviews` lists them, `rubrics=<name>:<verdict>,…`); the whitelist of the role checked again; for `.lean`/`.lock` changes,
    `main` an ancestor of `H`. Anything else waits for the owner (listed in the night report).
@@ -427,7 +428,7 @@ report in `scripts/test-lib.sh` (fake `gh`).
 | `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `3600` / `14400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` (for example `INCOGNITA_TIMEOUT_WRITE_PAPER`); `INCOGNITA_TIMEOUT_REFEREE_SCOPE` is `7200`, `_REFEREE_PROOFS` `14400`; always capped by the night's end |
 | `INCOGNITA_CAP_WATCH` | `600` s | during a session, the weekly usage is read this often; at the cap the session is stopped (its commits kept as an `incomplete` draft); `0`: never |
 | `INCOGNITA_MIN_REVIEW` / `_MIN_WRITE` | `900` / `2400` s | a task starts only with this much time left |
-| `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions,statements` | merge categories (D15; `statements` since 2026-11-17); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval; `corrections` (statement corrections, and errata in a statements PR) is not in the default, so the owner merges them (2026-11-25) |
+| `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions,statements,corrections` | merge categories (D15; `statements` since 2026-11-17; `corrections`, statement corrections and errata in a statements PR, since 2026-11-25, after `review-statements`); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
 | `INCOGNITA_VETO_NIGHTS` | `2` | nights of veto window before a proposal inside an existing domain is approved |
 | `INCOGNITA_PROPOSE_EVERY` | `0` | nights between two periodic roadmap proposals; `0` (the default for the first nights): never (proposals of exhausted roadmaps still happen) |
 | `INCOGNITA_ROADMAPS_WAITING_MAX` | `2` | approved roadmaps whose KNOWN.md the owner has not reviewed, beyond which only extensions are proposed |

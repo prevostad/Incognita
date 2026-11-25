@@ -39,7 +39,7 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_BUNDLE_MAX:=50000000}"       # bytes: the largest output bundle of a session
 : "${INCOGNITA_MIN_REVIEW:=900}"            # a task is started only with at least this much time...
 : "${INCOGNITA_MIN_WRITE:=2400}"            # ...left before the deadline (seconds)
-: "${INCOGNITA_AUTOMERGE=papers,literature,proofs,exploration,directions,statements}"   # D15; statements since 2026-11-17 (owner)
+: "${INCOGNITA_AUTOMERGE=papers,literature,proofs,exploration,directions,statements,corrections}"   # D15; statements since 2026-11-17, corrections since 2026-11-25 (owner)
 : "${INCOGNITA_PAPERS_IN_REVIEW:=3}"
 : "${INCOGNITA_PAPERS_MAX:=6}"
 : "${INCOGNITA_ACCEPTED_UNVERIFIED_MAX:=1}"   # 1: formalise what is accepted before writing more (owner, 2026-11-17)
@@ -1320,7 +1320,8 @@ diff_signature() {
 # corrections roadmap other. `roadmap` is never in INCOGNITA_AUTOMERGE: a proposal merges only through
 # the scripted approval of the loop (AGENTS.md section 4). `corrections` (statement-corrections.md
 # anywhere, errata.md in a statements pull request, where the line `Resolved by` supersedes a frozen
-# statement) is not in INCOGNITA_AUTOMERGE by default: the owner merges them (2026-11-25).
+# statement) is auto-merged once review-statements approved (owner, 2026-11-25: no owner in the
+# loop); its own category lets the owner turn that off alone.
 path_category() {  # kind path status
   local kind=$1 path=$2 st=$3
   case "$path" in
@@ -1361,13 +1362,6 @@ pr_kind() {
     loop) echo scripted ;;
     *) echo generic ;;
   esac
-}
-# adds_resolutions <base> <new>: the pull request adds a line `Resolved by …` under an entry of a
-# papers/*/errata.md or papers/*/statement-corrections.md (it supersedes a frozen statement), or a new
-# statement correction `## SC<n>`: whatever its categories, the owner merges it (2026-11-25).
-adds_resolutions() {
-  repo_git diff --no-renames -U0 "$1" "$2" -- 'papers/*/errata.md' 'papers/*/statement-corrections.md' \
-    | grep -vE '^\+\+\+ ' | grep -qE '^\+((- )?Resolved by |## SC[0-9])'
 }
 automerge_enabled() { case ",$INCOGNITA_AUTOMERGE," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 
