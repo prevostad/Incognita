@@ -303,6 +303,7 @@ ok "whitelist: nothing under papers/ is deleted" '! check_paths revise P001-test
 # ---- merge categories, definitions in proof PRs
 ok "category papers" '[ "$(path_category paper papers/P001-a/paper.tex M)" = papers ]'
 ok "papers/ in a proof PR: blueprint.md, formalisation.tex ok; errata, paper.tex for the owner" '[ "$(path_category generic papers/P001-a/blueprint.md M)" = proofs ] && [ "$(path_category generic papers/P001-a/formalisation.tex A)" = proofs ] && [ "$(path_category generic papers/P001-a/errata.md A)" = other ] && [ "$(path_category generic papers/P001-a/paper.tex M)" = other ]'
+ok "statement corrections have their own category (corrections, auto-merged after review-statements), errata too in a statements PR" '[ "$(path_category generic papers/P001-a/statement-corrections.md A)" = corrections ] && [ "$(path_category statements papers/P001-a/statement-corrections.md M)" = corrections ] && [ "$(path_category statements papers/P001-a/errata.md M)" = corrections ] && [ "$(path_category statements papers/P001-a/blueprint.md M)" = statements ] && [ "$(path_category paper papers/P001-a/errata.md M)" = papers ] && automerge_enabled corrections'
 ok "refs.bib fixed by the bibliographer: literature" '[ "$(path_category generic papers/P001-a/refs.bib M)" = literature ]'
 ok "category statements" '[ "$(path_category generic Statements/P/x.lean A)" = statements ]'
 ok "results markers: additions are proofs" '[ "$(path_category generic catalogue/results/x.toml A)" = proofs ] && [ "$(path_category generic catalogue/results/x.toml M)" = literature ]'
@@ -314,6 +315,24 @@ git checkout -q -f "$base"; mkdir -p Incognita/P; printf 'theorem a : True := tr
 ok "a theorem is a proof" 'adds_only_theorems "$base" HEAD'
 printf 'noncomputable def f : Nat := 0\n' >> Incognita/P/A.lean; git add -A; git commit -qm def
 ok "a def is not" '! adds_only_theorems "$base" HEAD'
+# aot <name> <expected 0|1> <lines>: a proof PR adding these lines to a new file.
+aot() {
+  git checkout -q -f "$base"; mkdir -p Incognita/P; printf '%s\n' "$3" > Incognita/P/B.lean
+  git add -A; git commit -qm aot
+  if [ "$2" = 0 ]; then ok "adds_only_theorems: $1" 'adds_only_theorems "$base" HEAD 2>/dev/null'
+  else ok "adds_only_theorems: $1" '! adds_only_theorems "$base" HEAD 2>/dev/null'; fi
+}
+aot "a docstring, attributes and open in before a theorem" 0 $'/-- A def in words: `def`. -/\n@[simp] @[norm_cast] theorem t : True := trivial\nopen Classical in theorem u : True := by classical; trivial\n-- def f := 0\n/- instance : X := y\n   def g := 1 -/\nopen scoped ENNReal\nlemma v : ∑ i ∈ Finset.range 2, i = 1 := rfl'
+aot "local notation" 1 'local notation "𝔼" => id'
+aot "scoped instance" 1 'scoped[Foo] instance : Inhabited Nat := ⟨0⟩'
+aot "irreducible_def" 1 'irreducible_def f : Nat := 0'
+aot "notation3" 1 'notation3 "Sum " x => x'
+aot "a docstring on the same line" 1 '/-- doc -/ noncomputable def f : Nat := 0'
+aot "open in on the same line" 1 'open Classical in def f : Nat := 0'
+aot "several attribute groups" 1 '@[simp] @[reducible] private def f : Nat := 0'
+aot "an attribute group over two lines" 1 $'@[simp,\n  reducible] def f : Nat := 0'
+aot "unsafe" 1 'unsafe def f : Nat := 0'
+aot "a word that only contains a keyword" 0 $'theorem classical_instances (instance_count : Nat) : True := by\n  exact trivial'
 # Lean pull requests (Tau Ceti's rubrics review them too; owner, 2026-11-17)
 ok "a garden PR changing Incognita/*.lean is a Lean PR" 'is_lean_pr garden "$base" HEAD'
 ok "prove and formalize-statements always are" 'is_lean_pr prove x y && is_lean_pr formalize-statements x y'
@@ -397,14 +416,16 @@ Revised in the version of 2026-11-22: hypothesis added.
 Resolved by nothing: not an entry.
 EOF
 )
-ok "entry_flags" '[ "$flags" = "$(printf "E1 1 0 Incognita.Statements.P001.lower_bound\nE2 0 0 -\nE3 1 1 Incognita.Statements.P001.upper_bound")" ]'
+ok "entry_flags" '[ "$flags" = "$(printf "E1 1 0 Incognita.Statements.P001.lower_bound -\nE2 0 0 - -\nE3 1 1 Incognita.Statements.P001.upper_bound Incognita.Statements.P001.upper_bound_v2")" ]'
 git checkout -q -f "$base"; mkdir -p papers/P001-test
 printf '## E1 (d)\n- Node: thm:main\n\n## E2 (d)\nRevised in the version of d: x\n\n## E3 (d)\n- Frozen statement: Incognita.Statements.P001.a\nRevised in v\nResolved by Incognita.Statements.P001.a_v2\n' > papers/P001-test/errata.md
-printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.b\n\n## SC2 (d)\n- Frozen statement: Incognita.Statements.P001.c\nResolved by Incognita.Statements.P001.c_v2\n' > papers/P001-test/statement-corrections.md
+printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.b\n\n## SC2 (d)\n- Frozen statement: Incognita.Statements.P001.c\nResolved by Incognita.Statements.P001.c_v2\n\n## SC3 (d)\n- Frozen statement: Incognita.Statements.P001.d\nResolved by Incognita.Statements.P001.d (itself)\n\n## SC4 (d)\n- Frozen statement: Incognita.Statements.P001.e\nResolved by Incognita.Statements.P002.e_v2 (another paper)\n\n## SC5 (d)\n- Frozen statement: Incognita.Statements.P001.f\nResolved by Incognita.Statements.P001.f_v2 (never frozen)\n\n## SC6 (d)\n- Frozen statement: Incognita.Statements.P001.g\nResolved by `Incognita.Statements.P001.h`.\n\n## SC7 (d)\n- Frozen statement: Incognita.Statements.P001.h\nResolved by Incognita.Statements.P001.g\n' > papers/P001-test/statement-corrections.md
+mkdir -p Statements/P001 Statements/P002
+for s in a a_v2 b c c_v2 d e f g h; do : > "Statements/P001/$s.lock"; done; : > Statements/P002/e_v2.lock
 git add -A; git commit -qm errata; git update-ref refs/remotes/origin/main HEAD
 ok "disputed: an erratum neither revised nor resolved" '[ "$(disputed_entries P001-test)" = E1 ]'
 ok "to freeze: errata revised, corrections not resolved" '[ "$(freeze_entries P001-test | tr "\n" " ")" = "E2 SC1 " ]'
-ok "superseded: frozen statements of resolved entries" '[ "$(superseded P001-test | tr "\n" " ")" = "a c " ]'
+ok "superseded: frozen statements of resolved entries naming another frozen statement of the paper (not itself, not another paper's, not an unfrozen one, not a cycle)" '[ "$(superseded P001-test | tr "\n" " ")" = "a c " ]'
 ok "no errata file: nothing" '[ -z "$(disputed_entries P009-none)$(freeze_entries P009-none)" ]'
 git update-ref refs/remotes/origin/main "$base"
 
@@ -500,13 +521,15 @@ lv() { C report | awk -F'|' -v p="$1" 'index($2, "[" p "]") { print $5 }' | sed 
 ok "certify: a paper.tex last merged outside the loop is accepted by the owner" '[ "$(lv P001)" = "1 accepted (by the owner)" ]'
 # Certification: frozen statements (locks), proof markers, garden log, human audits.
 mkdir -p Statements/P001 Statements/P002 catalogue/results
-: > Statements/P001/main.lock
+# stmt <prefix> <name> <citation>: a frozen statement whose docstring starts with the citation.
+stmt() { : > "Statements/$1/$2.lock"; printf '/-! # %s, x -/\n\n/-- %s The statement. -/\ntheorem Incognita.Statements.%s.%s : True := by\n  sorry\n' "$1" "$3" "$1" "$2" > "Statements/$1/$2.lean"; }
+stmt P001 main '[INC-P001, Theorem `thm:main`]'
 printf 'paper = "P001-first"\nlabel = "thm:main"\nstatement = "Incognita.Statements.P001.main"\nproof = "Incognita.P001.main"\nstatus = "proved"\n' > catalogue/results/P001-main.toml
 git add -A; git commit -qm "P001 proved"
 ok "certify: level 2 when every frozen statement is proved" '[[ "$(lv P001)" == "2 Lean-verified" ]]'
 ok "certify: level 1 without frozen statements (accepted by both referees)" '[ "$(lv P002)" = "1 accepted" ]'
-: > Statements/P002/main.lock
-printf 'paper = "P002-second"\nlabel = "thm:main"\nstatus = "proved"\n' > catalogue/results/P002-main.toml
+stmt P002 main '[INC-P002, Theorem (thm:main), item (a)]'
+printf 'paper = "P002-second"\nlabel = "thm:main (a)"\nstatus = "proved"\n' > catalogue/results/P002-main.toml
 m1=$(git rev-parse HEAD)
 printf '| Date | Model | Item | Check | Outcome | Main |\n|---|---|---|---|---|---|\n| 2026-11-21 | m1 | P001 | back-translation | confirmed: the Lean says the statement | %s |\n| 2026-11-22 | m1 | P001 thm:main | back-translation | confirmed | %s |\n' "$m1" "$m1" > catalogue/garden.md
 ok "certify: level 3 after a re-check (documented format \"confirmed: ...\"); a repeated pass brings nothing new" '[[ "$(lv P001)" == "3 re-verified" ]] && C report | grep -q "| 1 (back-translation by m1) |"'
@@ -517,7 +540,25 @@ printf -- '- A. Owner, 2026-11-25, v1: read thm:main.\n' > papers/P001-first/hum
 ok "certify: audited by a human (of an older version)" 'C report | grep -F "[P001]" | grep -q "audited by a human: A. Owner, 2026-11-25, v1 (current: v2)"'
 C leanok >/dev/null
 ok "certify: the PDF gets the verified node" 'grep -qF "\\incognitaverified{thm:main}{Incognita.P001.main}" papers/P001-first/certification.tex'
-ok "certify: the certification line in plain words, badges only when there are some" 'grep -qF "{Incognita library, P001 version 2. Accepted by the owner; Lean-verified (its frozen statement proved); re-verified 2 times by gardening. Used by 1 Lean-verified paper (P002). Audited by a human: A. Owner, 2026-11-25, version 1 (now version 2).}" papers/P001-first/certification.tex && grep -qF "{Incognita library, P002 version 1. Refereed and accepted by two AI referees; Lean-verified (its frozen statement proved).}" papers/P002-second/certification.tex'
+ok "certify: a part of a node (label \"thm:main (a)\" in the marker) is found from the docstring" 'grep -qF "\\incognitaverified{thm:main}{Incognita.P002.main}" papers/P002-second/certification.tex'
+ok "certify: the certification line in plain words, with the coverage, badges only when there are some" 'grep -qF "{Incognita library, P001 version 2. Accepted by the owner; Lean-verified (its frozen statement proved; frozen: 1 of 1 theorem, proposition or corollary, 0 of 0 lemmas); re-verified 2 times by gardening. Used by 1 Lean-verified paper (P002). Audited by a human: A. Owner, 2026-11-25, version 1 (now version 2).}" papers/P001-first/certification.tex && grep -qF "{Incognita library, P002 version 1. Refereed and accepted by two AI referees; Lean-verified (its frozen statement proved; frozen: 1 of 1 theorem, proposition or corollary, 0 of 0 lemmas).}" papers/P002-second/certification.tex'
+# A node with two frozen statements, one proved: the grey mark, never the green box; a statement
+# whose docstring names no result is listed; a superseded statement is listed, not counted.
+stmt P001 extra '[INC-P001, Theorem `thm:main`(b)]'
+stmt P001 loose '[INC-P001, Lemma `lem:gone`]'
+stmt P001 old '[INC-P001, Theorem `thm:main`(a)]'
+printf '## SC1 (d)\n- Frozen statement: Incognita.Statements.P001.old\nResolved by Incognita.Statements.P001.main (statements pull request).\n' > papers/P001-first/statement-corrections.md
+C leanok >/dev/null
+ok "certify: a node with only some frozen statements proved gets the mark k of n, not the box" 'grep -qF "\\incognitapartial{thm:main}{1}{2}{Incognita.P001.main}" papers/P001-first/certification.tex && ! grep -qF "\\incognitaverified{thm:main}" papers/P001-first/certification.tex'
+ok "certify: unattached and superseded statements are named in the line" 'grep -qF "being formalised in Lean (1 of 3 frozen statements proved; frozen: 1 of 1 theorem, proposition or corollary, 0 of 0 lemmas); re-verified 2 times by gardening. Frozen statement attached to no result of the paper: loose. Superseded after a correction: old (by main)." papers/P001-first/certification.tex'
+printf '%s\n' '\incognitaverified{thm:main}{x}' >> papers/P001-first/formalisation.tex
+ok "certify: a hand-made box in any .tex of a paper fails" '[[ "$(C check 2>&1)" == *"papers/P001-first/formalisation.tex: \\incognitaverified"* ]]'
+printf '%s\n' '\makeatletter\incognita@leanoktrue\makeatother' > papers/P001-first/formalisation.tex
+ok "certify: so does a macro incognita@ (only \\ifincognita@blueprint is read)" '! C check >/dev/null 2>&1'
+printf '%s\n' '\makeatletter\ifincognita@blueprint x\fi\makeatother' > papers/P001-first/formalisation.tex
+ok "certify: \\ifincognita@blueprint may be read" 'C check >/dev/null'
+rm -f papers/P001-first/formalisation.tex papers/P001-first/statement-corrections.md Statements/P001/extra.* Statements/P001/loose.* Statements/P001/old.*
+C leanok >/dev/null
 C leanok --base "$base" >/dev/null
 ok "certify: in a pull request, a changed paper is submitted" 'grep -qF "{Incognita library, P001 version 2. Submitted: under refereeing by AI agents, not accepted yet.}" papers/P001-first/certification.tex && grep -qF "P002 version 1. Refereed and accepted" papers/P002-second/certification.tex'
 mkpaper P003-third 1 '["P002v1:thm:main"]' 'From \cite{INC-P002}.'

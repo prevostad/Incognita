@@ -5,9 +5,12 @@
         Certification of every paper on the tree (catalogue/certification.md format): level 0-3,
         conditional, re-check passes, badges "used by N" and "audited by a human".
     certify.py [--repo DIR] leanok [--audit FILE] [--base REF]
-        papers/<P>/certification.tex for each paper (never committed): the labels whose frozen
-        statement is proved (green "LEAN APPROVED" box) and the certification line of the PDF, in
-        plain words. --base (a pull request): a paper whose paper.tex differs from REF is "submitted".
+        papers/<P>/certification.tex for each paper (never committed): the results of paper.tex
+        whose frozen statements (attached to them at the freeze, by the first citation of the paper
+        in each statement's docstring) are all proved (green "LEAN APPROVED" box), those with only
+        some proved ("k of n" mark), and the certification line of the PDF, in plain words, with
+        the coverage (results with frozen statements) and the superseded statements. --base (a
+        pull request): a paper whose paper.tex differs from REF is "submitted".
     certify.py [--repo DIR] bib [--check]
         papers/library.bib (keys INC-P<nnn>, with the version): generated, never committed
         (.gitignore); written before compiling a paper. --check: fail if out of date.
@@ -73,6 +76,16 @@ CLOSED_RE = re.compile(r"(?i)\b(pending owner decision|on hold)\b|(?<![\w-])clos
 ENTRY_RE = re.compile(r"^## (E|SC|C)(\d+)\b")
 STATUS_LINE = re.compile(r"^\| Status \| \*\*([a-z]+)\*\*")
 ROADMAP_NAME = re.compile(r"^[A-Z][A-Za-z0-9]+$")
+# A frozen statement named in an errata or correction entry: (prefix, short name).
+STATEMENT_NAME = re.compile(r"\bIncognita\.Statements\.(P\d{3})\.([^\s`(),;]+)")
+# Nodes of a paper cited in the docstring of a frozen statement, with an optional part:
+# `thm:main`(b); (prop:order), item (c); thm:main (ii).
+NODE_LABEL = re.compile(r"\b((?:thm|prop|cor|lem|def|ass):[A-Za-z0-9_.:-]*[A-Za-z0-9_])")
+NODE_PART = re.compile(r"^[`)]*\s*(?:,\s*(?:item|part)\s*)?\(([a-z]|[ivx]+)\)")
+# The results of a paper (coverage, AGENTS.md 9); the first three are its main results.
+RESULT_ENVS = ("theorem", "proposition", "corollary", "lemma")
+TEX_LABEL = re.compile(r"^[A-Za-z0-9_.:-]+$")
+LEAN_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_.']*$")
 INC_CITE = re.compile(r"\\cite[pt]?\*?(?:\[[^\]]*\])*\{([^}]*)\}")
 
 
@@ -117,6 +130,17 @@ class Tree:
 
     def exists(self, path):
         return self.read(path) is not None
+
+    def files(self, path):
+        """Every file under the directory path, recursively, as paths from the repository root."""
+        if self.ref is None:
+            out = []
+            for root, _dirs, fs in os.walk(os.path.join(self.repo, path)):
+                rel = os.path.relpath(root, self.repo).replace(os.sep, "/")
+                out += ["%s/%s" % (rel, f) for f in fs]
+            return sorted(out)
+        out = self.git("ls-tree", "-r", "--name-only", self.ref, "--", path, check=False)
+        return sorted(x for x in out.splitlines() if x)
 
 
 def toml(text, where):
@@ -250,6 +274,16 @@ class Paper:
     def labels(self):
         return set(re.findall(r"\\label\{([^}]*)\}", strip_comments(self.tex)))
 
+    def results(self):
+        """[(environment, label or None)] of the results of paper.tex: its theorem, proposition,
+        corollary and lemma environments, each with its first label."""
+        out = []
+        t = strip_comments(self.tex)
+        for m in re.finditer(r"\\begin\{(%s)\}(.*?)\\end\{\1\}" % "|".join(RESULT_ENVS), t, re.S):
+            lab = re.search(r"\\label\{([^}]*)\}", m.group(2))
+            out.append((m.group(1), lab.group(1).strip() if lab else None))
+        return out
+
     def deps(self):
         """[(prefix, version, label)] of depends_on, bad entries skipped."""
         out = []
@@ -292,7 +326,8 @@ def by_prefix(ps):
 
 # ---------------------------------------------------------------- errata and corrections
 def entries(text, kinds=("E", "SC")):
-    """[(id, revised, resolved, frozen statement or None, lines)] of a file of entries."""
+    """[(id, revised, resolved, frozen statement or None, lines, statements named on the `Resolved
+    by` lines as (prefix, short name))] of a file of entries."""
     out, cur = [], None
     for line in text.splitlines():
         m = ENTRY_RE.match(line)
@@ -301,7 +336,7 @@ def entries(text, kinds=("E", "SC")):
                 out.append(cur)
             cur = None
             if m and m.group(1) in kinds:
-                cur = [m.group(1) + m.group(2), False, False, None, [line]]
+                cur = [m.group(1) + m.group(2), False, False, None, [line], []]
             continue
         if cur is None:
             continue
@@ -311,6 +346,8 @@ def entries(text, kinds=("E", "SC")):
             cur[1] = True
         elif s.startswith("Resolved by "):
             cur[2] = True
+            cur[5] += [(m2.group(1), m2.group(2).rstrip("."))
+                       for m2 in STATEMENT_NAME.finditer(s.replace("`", ""))]
         elif line.startswith("- Frozen statement:"):
             v = line.split(":", 1)[1].strip().replace("`", "").split()
             cur[3] = v[0] if v else None
@@ -319,12 +356,54 @@ def entries(text, kinds=("E", "SC")):
     return out
 
 
-def superseded(p):
-    names = set()
+def resolutions(p, locked):
+    """{old: (entry, [replacements])} for the resolved entries of the paper that name a frozen
+    statement (`- Frozen statement:`). locked: the short names of the paper's frozen statements
+    (lock files). Only the replacements named on the `Resolved by` line that are frozen statements
+    of the same paper, other than the old one, are kept."""
+    out = {}
     for e in entries(p.errata) + entries(p.corrections):
-        if e[2] and e[3]:
-            names.add(re.sub(r"^Incognita\.Statements\.[^.]*\.", "", e[3]))
-    return names
+        if not (e[2] and e[3]):
+            continue
+        old = re.sub(r"^Incognita\.Statements\.[^.]*\.", "", e[3])
+        if old not in locked:
+            continue
+        new = [n for (pp, n) in e[5] if pp == p.prefix and n in locked and n != old]
+        prev = out.get(old, (e[0], []))
+        out[old] = (prev[0], prev[1] + [n for n in new if n not in prev[1]])
+    return out
+
+
+def superseded(p, locked):
+    """{old: new}: the frozen statements of the paper replaced after a resolved entry, each with the
+    frozen statement that finally replaces it (papers/README.md). A resolved entry supersedes its
+    `- Frozen statement:` only when its `Resolved by` line names another frozen statement of the
+    same paper (lock file); chains are followed (v1 -> v2 -> v3) and a cycle supersedes nothing."""
+    res = resolutions(p, locked)
+
+    def final(n, seen):
+        if n not in res:
+            return n
+        for r in res[n][1]:
+            if r not in seen:
+                f = final(r, seen | {n})
+                if f:
+                    return f
+        return None
+
+    out = {}
+    for old in res:
+        f = final(old, frozenset())
+        if f and f != old:
+            out[old] = f
+    return out
+
+
+def bad_resolutions(p, locked):
+    """[(entry, old)]: resolved entries naming a frozen statement that they do not supersede (their
+    `Resolved by` line names no other frozen statement of the paper): that statement still counts."""
+    sup = superseded(p, locked)
+    return sorted((e, old) for old, (e, _new) in resolutions(p, locked).items() if old not in sup)
 
 
 def open_errata(p):
@@ -357,6 +436,57 @@ def lean_status(tree, audit_file):
             if (m.group(1), m.group(2)) in st:
                 st[(m.group(1), m.group(2))] = "refuted" if data.get("status") == "refuted" else "proved"
     return st
+
+
+def bracket(text, i):
+    """The content of the balanced brackets opening at text[i] == '['."""
+    depth = 0
+    for j in range(i, len(text)):
+        if text[j] == "[":
+            depth += 1
+        elif text[j] == "]":
+            depth -= 1
+            if depth == 0:
+                return text[i + 1:j]
+    return text[i + 1:]
+
+
+def statement_nodes(tree, prefix, name):
+    """[(label, part or None)]: the nodes of the paper that the frozen statement
+    Incognita.Statements.<prefix>.<name> belongs to, read from its file Statements/<prefix>/<name>.lean
+    (added once, reviewed by review-statements at the freeze, never changed after): the labels of the
+    first citation of the paper, [INC-<prefix>, ...], in the docstring of the theorem (for example
+    "[INC-P000, Theorem `thm:upper`, consistency; Theorem `thm:main`(b)]"), or, without one, in the
+    title of the module docstring ("/-! # P000, `thm:upper`: ..."). [] when there is none: the
+    statement is then attached to no node (never guessed from the `label` of a proof marker, which
+    `prove` writes)."""
+    text = tree.read("Statements/%s/%s.lean" % (prefix, name))
+    if text is None:
+        return []
+    out = []
+
+    def take(s):
+        for m in NODE_LABEL.finditer(s):
+            pm = NODE_PART.match(s[m.end():])
+            item = (m.group(1), pm.group(1) if pm else None)
+            if item not in out:
+                out.append(item)
+
+    m = re.search(r"\b(?:theorem|lemma)\s+(?:Incognita\.Statements\.%s\.)?%s(?![\w'.])"
+                  % (prefix, re.escape(name)), text)
+    if m:
+        k = text.rfind("/--", 0, m.start())
+        e = text.find("-/", k) if k >= 0 else -1
+        if 0 <= k and 0 <= e < m.start():
+            doc = text[k:e]
+            c = re.search(r"\[INC-%s\b" % prefix, doc)
+            if c:
+                take(bracket(doc, c.start()))
+    if not out:
+        t = re.search(r"/-!\s*#\s*%s\b([^\n]*)" % prefix, text)
+        if t:
+            take(t.group(1))
+    return out
 
 
 def markers(tree):
@@ -446,10 +576,23 @@ def certify(tree, audit_file=None):
     for p in ps:
         c = Cert()
         c.paper = p
-        sup = superseded(p)
-        frozen = {n: s for (pp, n), s in st.items() if pp == p.prefix and n not in sup}
+        locked = {n for (pp, n) in st if pp == p.prefix}
+        c.superseded = superseded(p, locked)
+        c.bad_resolutions = bad_resolutions(p, locked)
+        frozen = {n: s for (pp, n), s in st.items() if pp == p.prefix and n not in c.superseded}
         c.frozen = frozen
         c.verified = bool(frozen) and all(s == "proved" for s in frozen.values())
+        # Nodes (AGENTS.md 9): each result of paper.tex with the frozen statements attached to it
+        # at the freeze (statement_nodes); a statement attached to no result is listed apart.
+        c.results = p.results()
+        result_labels = {lab for _e, lab in c.results if lab}
+        c.nodes, c.unattached = {}, []
+        for n in sorted(frozen):
+            labs = [(lab, part) for lab, part in statement_nodes(tree, p.prefix, n) if lab in result_labels]
+            for lab, part in labs:
+                c.nodes.setdefault(lab, []).append((n, part))
+            if not labs:
+                c.unattached.append(n)
         prows = [r for r in rows if r[2] == p.prefix]
         c.rechecks = counted_rechecks(tree, prows)
         last = prows[-1] if prows else None
@@ -536,9 +679,31 @@ def notes(c):
     if c.frozen:
         k = sum(1 for s in c.frozen.values() if s == "proved")
         n.append("%d/%d frozen statements proved" % (k, len(c.frozen)))
+        n.append("frozen: " + coverage(c))
+        if c.unattached:
+            n.append("attached to no result: " + ", ".join(c.unattached))
     elif c.status != "withdrawn":
         n.append("no frozen statement yet")
+    if c.superseded:
+        n.append("superseded: " + ", ".join("%s by %s" % (o, r) for o, r in sorted(c.superseded.items())))
+    if c.bad_resolutions:
+        n.append("resolved without a replacement (still counted): " +
+                 ", ".join("%s %s" % (e, o) for e, o in c.bad_resolutions))
     return "; ".join(n) or "-"
+
+
+def coverage(c):
+    """How much of the paper is frozen: "3 of 4 theorems, propositions and corollaries, 1 of 51
+    lemmas" (results of paper.tex with at least one frozen statement attached, superseded ones
+    excluded)."""
+    def count(envs):
+        rs = [lab for e, lab in c.results if e in envs]
+        return sum(1 for lab in rs if lab in c.nodes), len(rs)
+    k, m = count(RESULT_ENVS[:3])
+    j, l = count(RESULT_ENVS[3:])
+    return "%d of %d %s, %d of %d %s" % (k, m, "theorem, proposition or corollary" if m == 1
+                                         else "theorems, propositions and corollaries",
+                                         j, l, "lemma" if l == 1 else "lemmas")
 
 
 def cmd_report(args, tree):
@@ -578,6 +743,19 @@ def tex_escape(s):
     return re.sub(r"([#$%&_{}])", r"\\\1", s).replace("~", r"\textasciitilde{}")
 
 
+def frozen_notes(c):
+    """Sentences of the certification line on the frozen statements that no node shows: those
+    attached to no result of the paper, and those superseded after a correction."""
+    text = ""
+    if c.unattached:
+        text += " Frozen %s attached to no result of the paper: %s." % (
+            "statement" if len(c.unattached) == 1 else "statements", ", ".join(c.unattached))
+    if c.superseded:
+        text += " Superseded after a correction: %s." % ", ".join(
+            "%s (by %s)" % (o, r) for o, r in sorted(c.superseded.items()))
+    return text
+
+
 def plain_certification(c, certs, submitted=False):
     """The certification line of the PDF, in plain words (AGENTS.md 9): "Incognita library, P002
     version 2. Refereed and accepted by two AI referees; not yet formalised in Lean." Badges only
@@ -589,23 +767,26 @@ def plain_certification(c, certs, submitted=False):
     if c.status == "withdrawn":
         return head + " Withdrawn by the owner: do not rely on it."
     if c.status == "disputed":
-        return head + " Disputed (%s): it is being corrected; do not rely on it." % "; ".join(c.disputed_why)
+        return head + " Disputed (%s): it is being corrected; do not rely on it.%s" % (
+            "; ".join(c.disputed_why), frozen_notes(c))
     review = {"both referees": "Refereed and accepted by two AI referees",
               "the owner": "Accepted by the owner"}.get(c.referees, "Accepted")
     n = len(c.frozen)
     k = sum(1 for s in c.frozen.values() if s == "proved")
+    # The coverage says how much of the paper the frozen statements cover: "Lean-verified" means
+    # every frozen statement proved, never that every result of the paper is frozen.
     if c.verified:
-        lean = "Lean-verified (%s)" % ("its frozen statement proved" if n == 1
-                                       else "all %d frozen statements proved" % n)
+        lean = "Lean-verified (%s; frozen: %s)" % ("its frozen statement proved" if n == 1
+                                                   else "all %d frozen statements proved" % n, coverage(c))
     elif n:
-        lean = "being formalised in Lean (%d of %d frozen statements proved)" % (k, n)
+        lean = "being formalised in Lean (%d of %d frozen statements proved; frozen: %s)" % (k, n, coverage(c))
     else:
         lean = "not yet formalised in Lean"
     parts = [review, lean]
     if c.rechecks:
         r = len(c.rechecks)
         parts.append("re-verified %s by gardening" % ("once" if r == 1 else "%d times" % r))
-    text = "%s %s." % (head, "; ".join(parts))
+    text = "%s %s.%s" % (head, "; ".join(parts), frozen_notes(c))
     if c.conditional:
         deps = []
         for dp in sorted({d[0] for d in c.conditional}):
@@ -632,14 +813,26 @@ def cmd_leanok(args, tree):
         c = certs[p.prefix]
         out = ["% Generated by scripts/certify.py leanok for the PDF; never committed (.gitignore).",
                "% Never write \\leanok by hand: it comes from here (proof markers checked by the audit)."]
-        sup = superseded(p)
-        for (pp, name), m in sorted(mk.items()):
-            if pp != p.prefix or name in sup or c.frozen.get(name) != "proved":
+        # A node gets the green box only when every frozen statement attached to it (not
+        # superseded) is proved; a node with some proved gets the grey mark "k of n" instead.
+        for label, sts in sorted(c.nodes.items()):
+            if not TEX_LABEL.match(label):
                 continue
-            label = m.get("label")
-            proof = m.get("proof", "Incognita.%s.%s" % (pp, name))
-            if isinstance(label, str) and re.match(r"^[A-Za-z0-9_.:-]+$", label):
-                out.append("\\incognitaverified{%s}{%s}" % (label, proof))
+            proved = [(n, part) for n, part in sts if c.frozen.get(n) == "proved"]
+            if not proved:
+                continue
+            names = []
+            for n, part in proved:
+                proof = mk.get((p.prefix, n), {}).get("proof")
+                if not (isinstance(proof, str) and LEAN_NAME.match(proof)):
+                    proof = "Incognita.%s.%s" % (p.prefix, n)
+                if not LEAN_NAME.match(proof):
+                    continue
+                names.append(("(%s) " % part if part and len(proved) < len(sts) else "") + proof)
+            if len(proved) == len(sts):
+                out.append("\\incognitaverified{%s}{%s}" % (label, ", ".join(names)))
+            else:
+                out.append("\\incognitapartial{%s}{%d}{%d}{%s}" % (label, len(proved), len(sts), ", ".join(names)))
         submitted = bidx is not None and (p.prefix not in bidx or bidx[p.prefix].tex != p.tex)
         line = plain_certification(c, certs, submitted)
         out.append("\\incognitacertification{%s}" % tex_escape(line))
@@ -782,6 +975,18 @@ def check_tree(tree, base=None):
                     break
         if re.search(r"\\(leanok|mathlibok)\b", t):
             errors.append("papers/%s/paper.tex: \\leanok and \\mathlibok come from the audit, never from the paper" % p.dir)
+    # Boxes come only from certification.tex (generated): no .tex file of a paper may set them, nor
+    # touch the internals of blueprint-macros.sty (only the switch \ifincognita@blueprint is read).
+    for d in tree.ls("papers"):
+        for f in [x for x in tree.files("papers/" + d) if x.endswith(".tex")]:
+            if f.endswith("/certification.tex"):
+                continue
+            t = strip_comments(tree.read(f) or "")
+            if re.search(r"\\incognita(verified|partial|certification)\b", t) or \
+                    "incognita@" in t.replace("\\ifincognita@blueprint", ""):
+                errors.append("%s: \\incognitaverified, \\incognitapartial, \\incognitacertification and the "
+                              "macros incognita@... come from scripts/certify.py (certification.tex), never "
+                              "from a paper (only \\ifincognita@blueprint may be read)" % f)
     for n, ds in nums.items():
         if len(ds) > 1:
             errors.append("papers: number %s used by %s" % (n, ", ".join(ds)))

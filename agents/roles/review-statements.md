@@ -44,7 +44,9 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
    with the others?
 5. **Form.** One theorem per file, in `Incognita.Statements.<prefix>`, proof `sorry`; under
    `Statements/`, only added files (`pr.diff`) and added `import` lines in `Statements.lean`; one
-   `.lock` per statement; docstrings citing the paper and the label; no forbidden keyword
+   `.lock` per statement; docstrings citing the paper and the label (the first citation of the
+   paper in the theorem's docstring names every result the statement is part of, and only those:
+   it decides which results get the green box); no forbidden keyword
    (AGENTS.md §6.3); `blueprint.md` complete; `catalogue/definitions/` entries; `paper.tex`
    unchanged.
 6. **Split work** (AGENTS.md §6.1, small pull requests): a pull request may carry only the
@@ -54,7 +56,14 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
    ask for a split (`request_changes`) unless the summary explains why the work cannot be cut
    (pull requests opened before 2026-11-20 are exempt: they were written before the limit).
 7. **Corrections** (`SC<n>` or `E<k>`): the new statement fixes the recorded problem, the old files
-   and locks are untouched, the resolution line is added.
+   and locks are untouched, the resolution line is added. A correction is merged without the owner
+   after your approval, so check that it is **justified**: the entry records why the old statement
+   is wrong or does not say what the paper says (a counterexample, a degenerate case, a
+   mistranslation), and the new statement is the paper's claim correctly translated, not a weaker
+   statement chosen because the old one was hard to prove. If the new statement is weaker than the
+   paper's claim, the entry must say so and the paper needs an erratum (`errata.md`); otherwise
+   `request_changes`. Say in your report, for each correction: justified or not, and weaker than
+   the paper or not.
 
 ## Verdict and report
 

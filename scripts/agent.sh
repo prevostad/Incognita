@@ -49,7 +49,10 @@ fi
 
 # ---------------------------------------------------------------- parameters of the role
 upper=$(printf '%s' "$role" | tr 'a-z-' 'A-Z_')
-if is_review_role "$role"; then
+if [ "$role" = review-statements ]; then
+  # The freeze: the statements Lean will hold the paper to (INCOGNITA_MODEL_FREEZE, opus by default).
+  model=$INCOGNITA_MODEL_FREEZE timeout_s=$INCOGNITA_TIMEOUT_REVIEW
+elif is_review_role "$role"; then
   model=$INCOGNITA_MODEL_REVIEWER timeout_s=$INCOGNITA_TIMEOUT_REVIEW
 else
   model=$INCOGNITA_MODEL_AUTHOR timeout_s=$INCOGNITA_TIMEOUT_WRITE

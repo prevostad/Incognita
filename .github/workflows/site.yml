@@ -7,21 +7,18 @@ name: Site
 # verification (refereeing, Lean, gardening) and the interest score of the scope referee; and
 # stats.html, the statistics of the loop (scripts/stats.py: pull requests, their reports, the raw
 # events of the nights on the issue "Night reports"; reading issues and pull requests is enough).
-# Rebuilt at every change of the papers or of their verification on main, and every day (an interest
-# score lives in a pull request comment, the events of a night in an issue comment). Nothing is committed.
+# The Lean status comes from the audit, never from the proof markers alone: the site is built from
+# the commit of the last green run of the workflow CI on a push to main, with the statuses that run
+# computed (`lake exe audit --status`, its artifact `certification`), passed as --audit to
+# certify.py and site.py. Rebuilt after every green CI run on main, and every day (an interest
+# score lives in a pull request comment, the events of a night in an issue comment). Without a green
+# CI run on main, nothing is deployed (the previous site stays). Nothing is committed.
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'papers/**'
-      - 'catalogue/**'
-      - 'Statements/**'
-      - 'templates/paper/**'
-      - 'scripts/certify.py'
-      - 'scripts/site.py'
-      - 'scripts/stats.py'
-      - '.github/workflows/site.yml'
   schedule:
     - cron: '17 6 * * *'
   workflow_dispatch:
@@ -37,20 +34,58 @@ permissions:
   pull-requests: read
   issues: read
   checks: read   # scripts/stats.py: the duration of "Build and check" per pull request
+  actions: read  # the runs of CI and their artifact `certification` (the audit's statuses)
 
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Build the site
+    # After CI: only a green run of a push to main of this repository.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     steps:
+      - name: The last green CI run on main
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_RUN: ${{ github.event.workflow_run.id }}
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$EVENT_RUN" ]; then run=$EVENT_RUN sha=$EVENT_SHA
+          else
+            read -r run sha < <(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+              --event push --status success --limit 1 --json databaseId,headSha \
+              --jq '.[0] | "\(.databaseId) \(.headSha)"') || true
+          fi
+          if ! [[ "${run:-}" =~ ^[0-9]+$ && "${sha:-}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::no green CI run of a push to main: nothing to deploy"; exit 1
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ steps.ci.outputs.sha }}
           fetch-depth: 0   # certify.py reads the merge trailers and the garden log
+
+      - name: The audit's statuses of that run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ steps.ci.outputs.run }}
+          SHA: ${{ steps.ci.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+          gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n certification -D "$RUNNER_TEMP/certification"
+          test -f "$RUNNER_TEMP/certification/audit-status.txt"
 
       - name: Certification and bibliography
         run: |
-          python3 scripts/certify.py leanok
+          python3 scripts/certify.py leanok --audit "$RUNNER_TEMP/certification/audit-status.txt"
           python3 scripts/certify.py bib
 
       - name: Install LaTeX
@@ -85,7 +120,7 @@ jobs:
       - name: Page
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/site.py --out site --pdfs pdfs
+        run: python3 scripts/site.py --out site --pdfs pdfs --audit "$RUNNER_TEMP/certification/audit-status.txt"
 
       - uses: actions/upload-pages-artifact@v3
         with:
