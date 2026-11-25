@@ -73,6 +73,7 @@ jobs:
           bash scripts/test-lib.sh
           bash scripts/test-loop.sh
           bash scripts/test-start.sh
+          python3 scripts/test-library-index.py
 
       - name: Install elan
         run: |

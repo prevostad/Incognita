@@ -10,13 +10,15 @@ lift the certification of every paper built on them (AGENTS.md sections 5.6 and 
 - `papers/<P>/paper.tex` (the blueprint), `formalisation.tex`, `blueprint.md` (Lean names already
   chosen), `notebook/` (hints, dead ends; read only: your notes go in `blueprint.md`, in
   `formalisation.tex` and in your summary), `errata.md`, `statement-corrections.md`.
-- `Incognita/` and the dependencies under `.lake/packages/` (Grep with `path` set there);
-  `AGENTS.md` §6.
+- `.agents/library-index.md`: every declaration of `Incognita/`, `Statements/` and the
+  dependencies except Mathlib, one line each (AGENTS.md §6.7); then the files it points to, and
+  Mathlib (Grep with `path` set to `.lake/packages/mathlib/Mathlib`); `AGENTS.md` §6.
 
 ## Steps
 
 1. **Plan.** From the `\uses` graph of the target, list the lemmas it needs; mark those already in
-   `blueprint.md` or in the library; for each standard step, search the dependencies. **Close one
+   `blueprint.md` or in the library; for each standard step, **search `.agents/library-index.md`
+   before writing any general lemma** (several words and synonyms), then Mathlib. **Close one
    branch at a time** (owner, 2026-11-19): choose one frozen statement, or one node it needs, and
    prove it **end to end** before starting another branch; never add lemmas that no frozen
    statement of this pull request reaches. Prefer the statements that make another one non-vacuous
@@ -74,6 +76,11 @@ waits: stop at the size limit even with time left.
 
 Summary (AGENTS.md §1): Results (each statement or lemma proved, in mathematics, with its Lean name),
 Frozen statements (None), Sources read, Not done (and Quality pass if task.md asks for it).
+Then, last (before `## Quality pass` if task.md asks for it), a section
+`## Reused / New general declarations`: **Reused**, the declarations of the library and of the
+dependencies you used for a general step (Lean names); **New general declarations**, each new
+definition, and each new lemma outside `Incognita/<prefix>/`, with the closest declaration of
+`.agents/library-index.md` and why it does not do (or "none: searched <words>").
 
 ## Do not
 

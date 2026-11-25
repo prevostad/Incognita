@@ -12,6 +12,8 @@ than speed.
 - For `kind = "external"`: `literature/notes/<KEY>.md` is the fixed reference. Formalise from it,
   and check that `paper.tex` agrees with it. If it lacks a statement you need, stop: the summary says
   that the bibliographer must write it first.
+- `.agents/library-index.md`: every declaration of `Incognita/`, `Statements/` and the
+  dependencies except Mathlib, one line each (AGENTS.md §6.7).
 - The roadmap's Definitions section (conventions, planned Lean names); `catalogue/definitions/`;
   `Incognita/<Roadmap>/`; `Statements/`; `AGENTS.md` §6.
 - The library papers this paper depends on (`depends_on` in META.toml): reuse their definitions
@@ -34,9 +36,9 @@ runs `formalize-statements` again on the paper once this one is merged.
 
 ## Steps
 
-1. **Model first.** Decide the Lean shape of every object the frozen statements use. Search the
-   dependencies before defining anything (Grep with `path` set to `.lake/packages/LMLExplore`,
-   `.lake/packages/LeanMachineLearning`, `.lake/packages/mathlib/Mathlib`). **Reuse the definitions
+1. **Model first.** Decide the Lean shape of every object the frozen statements use. **Search
+   `.agents/library-index.md` before writing any definition or general lemma** (several words and
+   synonyms), then Mathlib (Grep with `path` set to `.lake/packages/mathlib/Mathlib`). **Reuse the definitions
    of LML and LMLExplore** when they exist (owner, 2026-11-19: the audit found `unitLaws`,
    `IsConsistentOnUnit` and `sourceMeasure` duplicating `unitIntervalLaws`, `IsConsistent` and LML's
    array model): define a new object only when the dependencies have none, never under a name that
@@ -108,6 +110,11 @@ Lean names of the paper's nodes. Statuses are computed by the audit, not stored 
 
 Summary (AGENTS.md §1): Results (definitions and their checks, with Lean names), Frozen statements
 (each Lean name with its label), Sources read, Not done (and Quality pass if task.md asks for it).
+Then, last (before `## Quality pass` if task.md asks for it), a section
+`## Reused / New general declarations`: **Reused**, the declarations of the library and of the
+dependencies you used for a general step (Lean names); **New general declarations**, each new
+definition, and each new lemma outside `Incognita/<prefix>/`, with the closest declaration of
+`.agents/library-index.md` and why it does not do (or "none: searched <words>").
 
 ## Do not
 

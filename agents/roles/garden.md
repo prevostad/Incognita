@@ -8,7 +8,9 @@ material is re-read, not only stored.
 
 `.agents/task.md` (possibly the items to revisit; `origin/main` is the commit you record),
 `catalogue/garden.md` (the log of previous passes), `catalogue/results/`,
-`catalogue/relations.toml`, `catalogue/definitions/`, `papers/*/` (Main results, `blueprint.md`,
+`catalogue/relations.toml`, `catalogue/definitions/`, `.agents/library-index.md` (every
+declaration of the library and of the dependencies except Mathlib, and its "Possible
+duplicates"), `papers/*/` (Main results, `blueprint.md`,
 `META.toml`), `roadmaps/*/directions.md`, `Incognita/`, `Statements/`; the certification
 (`python3 scripts/certify.py report`); `AGENTS.md` §6, §8 and §9.
 
@@ -30,12 +32,18 @@ material is re-read, not only stored.
       If they contradict each other, prove `False` from them and a witness in Lean when you can: a
       definition is wrong. Stop there, record a relation `contradiction`, and write an `Ask-owner:`
       line.
-   3. **Duplicates**: the same lemma twice in the library, or a lemma the dependencies now provide
-      (Grep with `path` set under `.lake/packages/`). **Never add a new copy**: re-prove the existing
+   3. **Duplicates**: the same lemma twice in the library, or a lemma the dependencies now provide.
+      Start from the section "Possible duplicates" of `.agents/library-index.md` (heuristic
+      warnings: same last name component, or same one-line signature; check each in the source)
+      for the items you examine, then search the index for their lemmas. **Never add a new copy**: re-prove the existing
       one from the other (or from the dependency) and turn the copy into a deprecated alias
       (AGENTS.md §6.3); record a relation `duplicate`.
    4. **Definitions** of the same object: prove the equivalence if you can, and record
-      `same-object`.
+      `same-object`. Two different objects under one name (the index flags the two
+      `unitBandits`: `Incognita.BatchedBandits.unitBandits` requires `m⋆ < 1`,
+      `Incognita.TransferBandits.unitBandits` does not) get a lemma relating them (here the
+      inclusion), and an `Ask-owner:` line to rename one: a definition is never renamed in a
+      gardening pull request.
 3. **Re-verification** of one Lean-verified paper (level 2 or 3), preferring the papers with the
    fewest re-checks and the most dependants. Choose a check that brings something new for it (a
    check type or a model not yet in `garden.md` for this paper, or a library changed since its last

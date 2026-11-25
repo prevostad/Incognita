@@ -304,6 +304,24 @@ case "$role" in
       files="$files quality-pass.md"
     else rm -f "$ctx/quality-pass.md"; fi ;;
 esac
+# The library index (scripts/library-index.py, without compiling): the declarations of Incognita/
+# and Statements/ at main and of LMLExplore, LML, TauCeti (and Statlib) in the loop's
+# .lake/packages, with its "Possible duplicates", for the roles that write or review Lean: they
+# search it before defining or proving anything general (AGENTS.md section 6.7).
+idx=0
+case "$role" in
+  formalize-statements|review-statements|prove|garden) idx=1 ;;
+  review-pr) [ "$lean_pr" = 1 ] && idx=1 ;;
+esac
+if [ "$idx" = 1 ]; then
+  if timeout -k 10 300 python3 -I "$INCOGNITA_SCRIPTS/library-index.py" --repo "$INCOGNITA_REPO" \
+      --ref "$M" --packages "$INCOGNITA_REPO/.lake/packages" \
+      --max-bytes "${INCOGNITA_LIBRARY_INDEX_BYTES:-1000000}" --out "$ctx/library-index.md" 2>/dev/null; then
+    files="$files library-index.md"
+  else
+    rm -f "$ctx/library-index.md"; log "warning: the library index could not be written"
+  fi
+fi
 # revise on a paper PR: a revision round answers a referee's `major` on the head (it counts towards
 # INCOGNITA_REVISION_ROUNDS, comment kind `revise`); otherwise it is a repair (failed build,
 # conflict, incomplete draft: kind `revise-fix`, counted as a fix round). A `reject` on the head
