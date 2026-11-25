@@ -59,6 +59,7 @@ else
 fi
 v=INCOGNITA_MODEL_$upper; [ -n "${!v:-}" ] && model=${!v}
 v=INCOGNITA_TIMEOUT_$upper; [ -n "${!v:-}" ] && timeout_s=${!v}
+nominal_s=$timeout_s   # the role's own time; a session given less (the deadline is near) is "short"
 [ -n "${INCOGNITA_TASK_TIMEOUT:-}" ] && [ "$INCOGNITA_TASK_TIMEOUT" -lt "$timeout_s" ] && timeout_s=$INCOGNITA_TASK_TIMEOUT
 effort=$INCOGNITA_EFFORT
 turns=$INCOGNITA_MAX_TURNS
@@ -116,15 +117,23 @@ trap 'log "interrupted"; exit 130' INT TERM
 
 finish() {  # ok|fail|skip <outcome...>: record and exit 0 (4 after a quota cut)
   local kind=$1; shift
-  # A session cut by a quota is never a failure of its target (see quota_cut below).
-  if [ "${quota_cut:-false}" = true ] && [ "$kind" != ok ]; then kind=skip; set -- quota-cut "$@"; fi
+  # A session cut by a quota, the weekly cap or the deadline is never a failure of its target (owner;
+  # see cut_reason below): `skip quota-cut ...` or `skip deadline-cut ...`.
+  if [ -n "${cut_reason:-}" ] && [ "$kind" != ok ]; then
+    kind=skip
+    case "$cut_reason" in
+      quota) set -- quota-cut "$@" ;;
+      cap) set -- quota-cut weekly-cap "$@" ;;
+      *) set -- deadline-cut "$@" ;;
+    esac
+  fi
   record_attempt "$role" "$target" "$kind" "$@"
   record_event task "$role" "$target" "$kind $* ${session_info:-}"
   log "== $role $target: $kind $*"
   [ "${quota_cut:-false}" = true ] && exit 4
   exit 0
 }
-session_info=""
+session_info="" cut_reason="" quota_cut=false
 
 # ---------------------------------------------------------------- what the task works on
 M=$(sync_main) || die "cannot update the loop's clone of main"
@@ -619,7 +628,12 @@ fi
 # The session ends at task_end: the role's timeout from now, and never later than 2 minutes before
 # the deadline; the preparation below eats into it, so that task.md stays true.
 task_end=$(( $(now) + timeout_s ))
-[ "$DEADLINE" != 0 ] && [ "$task_end" -gt $(( DEADLINE - 120 )) ] && task_end=$(( DEADLINE - 120 ))
+# short_budget: the session has less than its role's own timeout (the night's deadline is near): if
+# it runs out of time, the deadline cut it (cut_reason, below), and no draft round without progress
+# is counted.
+short_budget=false
+[ "$timeout_s" -lt "$nominal_s" ] && short_budget=true
+[ "$DEADLINE" != 0 ] && [ "$task_end" -gt $(( DEADLINE - 120 )) ] && { task_end=$(( DEADLINE - 120 )); short_budget=true; }
 end_local=$(date -d "@$task_end" '+%H:%M' 2>/dev/null || echo "?")
 {
   echo "# Task (written by scripts/agent.sh)"
@@ -761,47 +775,73 @@ else
   session_info="(exit $rc, ${elapsed}s, model $model_tag)"
 fi
 log "session ended: is_error=$is_error subtype=$subtype $session_info"
-errtext=$( { head -c 4000 "$tmp/result.txt"; tail -c 4000 "$tmp/session.err"; } 2>/dev/null)
+sturns=$(jq -r '.num_turns // 0' "$tmp/result.json" 2>/dev/null || echo 0)
+[[ "$sturns" =~ ^[0-9]+$ ]] || sturns=0
+refused_at_start=false
+[ "$is_error" = true ] && [ "$sturns" -le 1 ] && [ "$elapsed" -lt 60 ] && refused_at_start=true
+# Limits and logouts are read from the CLI's standard error and its own error message only, never
+# from the agent's words (session_error_text, scripts/lib.sh).
+errtext=$(session_error_text "$tmp/result.txt" "$tmp/session.err" "$is_error" "$refused_at_start")
 
-# quota_cut: the session was stopped by a quota (five-hour window, weekly limit, rate limit) or refused
-# at its start. Not a failure of the target: no failed attempt, no repair round counted, and the loop
-# waits (exit 4). The commits of a session cut in the middle are still kept (an `incomplete` draft).
-# (2026-11-15: such sessions ended in 1 s with a text the old pattern missed; they were counted as
-# failures, and the loop stayed idle for four hours with quota left.)
+# cut_reason: the session was cut, not failed (owner: a cut is never a failure of its target): no
+# failed attempt, no repair round, no review without a verdict, no draft round without progress is
+# counted. `quota`: a quota stopped it or refused it (five-hour window, weekly or scoped limit, rate
+# limit; the loop waits for the reset: exit 4); `cap`: the watcher of INCOGNITA_WEEKLY_CAP stopped it
+# (the loop then ends the night); `deadline`: it ran out of time with less than its role's own
+# timeout (the night's deadline was near). The commits of a cut session are still kept (an
+# `incomplete` draft). (2026-11-15: such sessions ended in 1 s with a text the old pattern missed;
+# they were counted as failures, and the loop stayed idle for four hours with quota left.)
 quota_cut=false
-if [ "$is_error" = true ]; then
+[ -e "$tmp/cap-stop" ] && cut_reason=cap
+if [ "$is_error" = true ] && [ -z "$cut_reason" ]; then
   log "session error text: $(printf '%s' "$errtext" | one_line 300)"
-  if printf '%s' "$errtext" | grep -qiE 'invalid api key|not logged in|please run /login|oauth token (has )?expired|authentication_error|401 unauthorized|invalid bearer token|credit balance'; then
+  if printf '%s' "$errtext" | grep -qiE "$LOGOUT_RE"; then
     record_event stop "$role" "$target" "claude logged out"
     log "Claude is logged out (or the token in $INCOGNITA_AGENT_ENV is invalid)"
     record_attempt "$role" "$target" skip logged-out
     exit 3
   fi
-  turns=$(jq -r '.num_turns // 0' "$tmp/result.json" 2>/dev/null || echo 0)
-  [[ "$turns" =~ ^[0-9]+$ ]] || turns=0
-  refused_at_start=false
-  [ "$turns" -le 1 ] && [ "$elapsed" -lt 60 ] && refused_at_start=true
-  if printf '%s' "$errtext" | grep -qiE 'usage limit|rate.?limit|limit reached|hit your|session limit|weekly limit|5-hour|five-hour|resets? (at )?[0-9]|too many requests|\b429\b|overloaded|\b529\b' \
-      || [ "$refused_at_start" = true ]; then
-    reset=$(printf '%s' "$errtext" | grep -oE '\|[0-9]{10}' | head -n 1 | tr -d '|')
-    printf '%s' "$errtext" | grep -qiE 'overloaded|\b529\b' && [ -z "$reset" ] && reset=$(( $(now) + 600 ))
-    if [ -z "$reset" ]; then
-      when=$(printf '%s' "$errtext" | grep -oiE 'resets? (at )?[0-9]{1,2}(:[0-9]{2})? ?(am|pm)?' | head -n 1 | sed -E 's/^[Rr]esets? (at )?//')
-      [ -n "$when" ] && reset=$(date -d "$when" +%s 2>/dev/null)
-      [ -n "$reset" ] && [ "$reset" -le "$(now)" ] && reset=$(( reset + 86400 ))
+  limited=false reset=""
+  if printf '%s' "$errtext" | grep -qiE "$LIMIT_RE"; then
+    limited=true reset=$(limit_reset "$errtext")
+  elif [ "$refused_at_start" = true ]; then
+    # Refused at the start without a recognised message: a scoped limit at 100 % (one model's weekly
+    # limit, usage_scoped) is a limit; otherwise the first refusal in a row waits 10 min, and from
+    # the second the refusal is a failure (an invalid model or option would loop all night).
+    usage_now 0 >/dev/null 2>&1
+    if read -r sp srs sn 2>/dev/null < "$INCOGNITA_STATE/usage-scoped" && [[ "$sp" =~ ^[0-9.]+$ ]] \
+        && awk -v s="$sp" 'BEGIN { exit !(s + 0 >= 100) }'; then
+      limited=true
+      [[ "$srs" =~ ^[0-9]+$ ]] && reset=$srs
+      log "refused at the start: the scoped limit $sn is at $sp %"
+    elif [ "$(counter_inc refused-start)" -lt 2 ]; then
+      limited=true reset=$(( $(now) + 600 ))
+    else
+      log "refused at the start again, without a recognised limit (an invalid model or option?): counted as a failure"
+      record_event refused-start "$role" "$target" "$(printf '%s' "$errtext" | one_line 300)"
+      finish fail "refused-at-start ($(counter_get refused-start) in a row, $subtype)"
     fi
-    # A refusal at the start without a recognised message: wait 10 min, then the usage is read again.
-    [ -n "$reset" ] || { [ "$refused_at_start" = true ] && reset=$(( $(now) + 600 )); }
+  fi
+  if [ "$limited" = true ]; then
     [ -n "$reset" ] || reset=$(( $(now) + 1800 ))
+    [ "$reset" -gt $(( $(now) + INCOGNITA_RESET_MAX )) ] && reset=$(( $(now) + INCOGNITA_RESET_MAX ))
     printf '%s\n' "$reset" > "$INCOGNITA_STATE/rate-limit-until"
     record_event quota "$role" "$target" "rate limited until $(date -d "@$reset" '+%H:%M')"
     log "rate limited until $(date -d "@$reset" '+%F %T')"
-    quota_cut=true
+    quota_cut=true cut_reason=quota
     if [ "$refused_at_start" = true ]; then
       record_attempt "$role" "$target" skip rate-limited
       exit 4
     fi
   fi
+fi
+[ "$refused_at_start" = true ] || counter_set refused-start 0
+# Out of time with less than the role's own timeout: the deadline cut it (not a failure; see above).
+[ -z "$cut_reason" ] && [ "$subtype" = timeout ] && [ "$short_budget" = true ] && cut_reason=deadline
+# A repair of a paper pull request's failed build (not a referee's round): counted, in a row, for
+# INCOGNITA_PAPER_BUILD_REPAIRS (the loop resets it when the build is green; scripts/loop.sh).
+if [ -z "$cut_reason" ] && [ "$role" = revise ] && [ -n "$pr" ] && [ "$referee_round" != 1 ]; then
+  case "$ci_state" in FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR) counter_inc "build-repairs $pr" >/dev/null ;; esac
 fi
 
 # forward_questions <file> <origin> <sha>: the lines "Ask-owner: ..." of a report or summary go to the
@@ -840,19 +880,22 @@ if is_review_role "$role"; then
         out_read "$out/report.md" 200000 | sanitize 60000 > "$tmp/partial.md"
         grep -q '[^[:space:]]' "$tmp/partial.md" 2>/dev/null && partial=yes
       fi
+      # A cut session (cut_reason) counts towards neither limit: its report so far is still posted.
       if [ -n "$partial" ]; then
-        n=$(counter_inc "review-partial $pr")
+        if [ -z "$cut_reason" ]; then n=$(counter_inc "review-partial $pr"); else n=$(counter_get "review-partial $pr"); fi
         { printf 'Partial report: this `%s` session stopped before its verdict (%s). The next `%s` session on this head continues from it; this is not a verdict.\n\n' \
-            "$role" "$subtype" "$role"
+            "$role" "$subtype${cut_reason:+, cut: $cut_reason}" "$role"
           cat "$tmp/partial.md"; footer "$H"; } > "$tmp/body.md"
         post_comment "$pr" "$role-partial" "$H" "$tmp/body.md" >/dev/null || finish fail "comment-failed"
-        log "no verdict ($subtype); report so far posted ($n stopped sessions on #$pr)"
-        [ "$n" -ge "$INCOGNITA_REVIEW_PARTIAL_LIMIT" ] && escalate "$pr" "$n review sessions stopped before their verdict"
+        log "no verdict ($subtype${cut_reason:+, cut: $cut_reason}); report so far posted ($n stopped sessions on #$pr)"
+        [ -z "$cut_reason" ] && [ "$n" -ge "$INCOGNITA_REVIEW_PARTIAL_LIMIT" ] && escalate "$pr" "$n review sessions stopped before their verdict"
         finish skip "partial ($subtype)"
       fi
-      n=$(counter_inc "review-fail $pr")
-      log "no valid verdict (\"$verdict\"; $subtype); $n reviews of #$pr without a verdict"
-      [ "$n" -ge "$INCOGNITA_REVIEW_FAIL_LIMIT" ] && escalate "$pr" "$n reviews without a verdict"
+      if [ -z "$cut_reason" ]; then
+        n=$(counter_inc "review-fail $pr")
+        log "no valid verdict (\"$verdict\"; $subtype); $n reviews of #$pr without a verdict"
+        [ "$n" -ge "$INCOGNITA_REVIEW_FAIL_LIMIT" ] && escalate "$pr" "$n reviews without a verdict"
+      fi
       finish fail "no-verdict ($subtype)" ;;
   esac
   sanitize 60000 < "$report" > "$tmp/body.md"
@@ -936,16 +979,17 @@ failed_session=false
 # (a repair of a paper PR) or `fix-pr`; `<kind>-nochange` when nothing was pushed.
 ckind=$role
 [ "$role" = revise ] && [ "$referee_round" != 1 ] && ckind=revise-fix
-# A round cut by a quota is not counted as a repair round.
-is_fix_round() { [ "$quota_cut" != true ] && { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }; }
+# A cut round (quota, weekly cap, deadline: cut_reason) is not counted as a repair round.
+is_fix_round() { [ -z "$cut_reason" ] && { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; }; }
 # A continuation round of a new paper still incomplete (owner, 2026-11-23): no limit on the rounds,
 # but a draft that makes no progress in INCOGNITA_SET_ASIDE_AFTER rounds in a row is set aside by
-# the loop. Progress: a line "Progress: <label>" in the summary naming a label (lem:..., prop:...)
-# found under the paper's directory at the new head and not at the old one. A round without a
-# commit, refused, or without such a line counts as no progress; a cut by the quota does not count.
+# the loop. Progress: a line "Progress: <label>" in the summary naming the label of a result
+# (theorem, proposition, lemma, corollary) of the paper's paper.tex that is new at the pushed head
+# (result_labels: a `\label` inside a result environment, not the string anywhere in the directory,
+# notebook included: 2026-11-25 audit). A round without a commit, refused, or without such a line
+# counts as no progress, unless it was cut or given less than its role's timeout (short_budget).
 is_draft_round() {
-  [ "$quota_cut" != true ] && [ "$ckind" = revise-fix ] && [ "$pr_role" = write-paper ] \
-    && [[ ",$pr_labels," == *",incomplete,"* ]]
+  [ "$ckind" = revise-fix ] && [ "$pr_role" = write-paper ] && [[ ",$pr_labels," == *",incomplete,"* ]]
 }
 note_progress() {  # [new head]: updates the counter "stall <pr>" of a draft round
   is_draft_round || return 0
@@ -953,11 +997,11 @@ note_progress() {  # [new head]: updates the counter "stall <pr>" of a draft rou
   d=$(paper_of_ref "$H" | head -n 1)
   l=$(sed -n -E 's/^(- )?Progress: *`?([a-z]+:[A-Za-z0-9_.:-]+)`?.*/\2/p' "$summary" | head -n 1)
   if [ -n "${1:-}" ] && [ -n "$l" ] && [ -n "$d" ] \
-      && repo_git grep -q -F -e "$l" "$1" -- "papers/$d" 2>/dev/null \
-      && ! repo_git grep -q -F -e "$l" "$H" -- "papers/$d" 2>/dev/null; then
+      && result_labels "$1" "$d" | grep -qxF -e "$l" \
+      && ! result_labels "$H" "$d" | grep -qxF -e "$l"; then
     counter_set "stall $pr" 0
     record_event progress "$role" "$pr" "$l"
-  else
+  elif [ -z "$cut_reason" ] && [ "$short_budget" != true ]; then
     counter_inc "stall $pr" >/dev/null
   fi
 }
@@ -976,8 +1020,10 @@ if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
     is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
     note_progress
   fi
-  # A session that ended normally without a commit is not a failure of its target (never parked).
+  # A session that ended normally without a commit is not a failure of its target (never parked);
+  # repeated on the same state, the target waits for a change (nocommit_note, scripts/lib.sh).
   [ "$failed_session" = true ] && finish fail "no-commit ($subtype)"
+  nocommit_note "$role" "$target" "${H:-$M}"
   finish skip no-commit "($subtype)"
 fi
 
@@ -1057,7 +1103,9 @@ if [ -n "$pr" ]; then
     ensure_labels
     gh pr edit "$pr" --add-label incomplete >/dev/null 2>&1
     [ "$pr_draft" = true ] || gh pr ready "$pr" --undo >/dev/null 2>&1
-    finish fail "pushed-incomplete #$pr ($subtype)"
+    # Its work is kept and continued (as a new draft is): not a failure of the pull request (it
+    # counts for tonight's limit, never for parking; a cut one counts for nothing).
+    finish skip pushed-incomplete "#$pr ($subtype)"
   fi
   case ",$pr_labels," in
     *,incomplete,*) gh pr edit "$pr" --remove-label incomplete >/dev/null 2>&1; gh pr ready "$pr" >/dev/null 2>&1 ;;

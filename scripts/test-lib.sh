@@ -725,6 +725,49 @@ ok "a roadmap or - is never parked (L3)" '! is_parked bibliographer - && ! is_pa
 record_attempt garden - skip no-commit "(success)"; record_attempt garden - skip rate-limited
 ok "a session without a commit counts for tonight, not for parking" '[ "$(night_fails garden -)" = 1 ] && [ "$(counter_get "fail garden -")" = 0 ]'
 ok "the parked targets are listed" '[ "$(parked_list)" = "prove_P001-x" ]'
+# A cut is never a failure of its target (owner); a session stopped after pushing is not one either.
+record_attempt revise 41 skip quota-cut no-verdict; record_attempt revise 41 skip deadline-cut pushed-incomplete "#41"
+record_attempt revise 41 skip pushed-incomplete "#41 (timeout)"; record_attempt revise 41 ok pushed
+ok "cuts count for nothing; a session stopped after pushing counts for tonight, never for parking" \
+  '[ "$(night_fails revise 41)" = 1 ] && [ "$(counter_get "fail revise 41")" = 0 ]'
+ok "the rounds of a draft tonight: sessions that ran, cuts aside" '[ "$(night_rounds revise 41)" = 2 ]'
+# Sessions without a commit: the target waits for a new state (L6 of the 2026-11-25 audit).
+nocommit_note write-paper BB m1
+ok "one session without a commit: no wait" '! nocommit_waits write-paper BB m1'
+nocommit_note write-paper BB m1
+ok "two in a row on the same state: the target waits" 'nocommit_waits write-paper BB m1 && [ "$(nocommit_list)" = "write-paper BB 2 m1 test" ]'
+ok "a new state (new head, new main): no wait" '! nocommit_waits write-paper BB m2'
+ok "after INCOGNITA_NOCOMMIT_NIGHTS nights: no wait" '( INCOGNITA_NIGHT=2026-11-01; nocommit_note r T s; nocommit_note r T s; INCOGNITA_NIGHT=2026-11-04; ! nocommit_waits r T s )'
+nocommit_note write-paper BB m2
+ok "the count starts again on a new state" '! nocommit_waits write-paper BB m2'
+record_attempt write-paper BB ok pr; nocommit_note write-paper BB m2
+ok "a session that succeeds clears it" '! nocommit_waits write-paper BB m2'
+# The end of a session: limits and logouts never read from the agent's words; resets bounded.
+printf 'Claude AI usage limit reached|1795000000\n' > "$t/res-cli.txt"
+awk 'BEGIN { for (i = 0; i < 40; i++) print "The rate limit of this bandit; 401 unauthorized in the logs; resets at 5 pm." }' > "$t/res-agent.txt"
+printf 'API Error: 429\n' > "$t/err.txt"
+ok "session_error_text: the CLI's short error message and its standard error" '[ "$(session_error_text "$t/res-cli.txt" "$t/err.txt" true false | tr -s "\n" " ")" = "Claude AI usage limit reached|1795000000 API Error: 429 " ]'
+ok "session_error_text: never a long result (the agent's words)" '[ "$(session_error_text "$t/res-agent.txt" "$t/err.txt" true false)" = "API Error: 429" ]'
+ok "session_error_text: never the result of a session without error" '[ "$(session_error_text "$t/res-cli.txt" "$t/err.txt" false false)" = "API Error: 429" ]'
+ok "session_error_text: the result of a session refused at its start" '[[ "$(session_error_text "$t/res-agent.txt" /nonexistent true true)" == *"rate limit"* ]]'
+ok "the agent's words do not look logged out" '! session_error_text "$t/res-agent.txt" /dev/null true false | grep -qiE "$LOGOUT_RE"'
+n0=1795000000
+ok "limit_reset: the CLI's |epoch" '[ "$(limit_reset "usage limit reached|$(( n0 + 3600 ))" "$n0")" = $(( n0 + 3600 )) ]'
+ok "limit_reset: never later than now + 6 h" '[ "$(limit_reset "usage limit reached|$(( n0 + 900000 ))" "$n0")" = $(( n0 + 21600 )) ]'
+ok "limit_reset: a time of day, bounded too" 'r=$(limit_reset "Your limit resets 5pm" "$n0") && [ "$r" -gt "$n0" ] && [ "$r" -le $(( n0 + 21600 )) ]'
+ok "limit_reset: overloaded waits 10 min; nothing otherwise" '[ "$(limit_reset "API Error: overloaded" "$n0")" = $(( n0 + 600 )) ] && [ -z "$(limit_reset "something else" "$n0")" ]'
+ok "usage_scoped: the most used scoped limit (one model's weekly limit)" '[ "$(printf "%s" "{\"limits\":[{\"kind\":\"weekly_all\",\"percent\":39,\"scope\":null},{\"kind\":\"weekly_scoped\",\"percent\":100,\"resets_at\":\"2026-11-16T02:00:00+00:00\",\"scope\":{\"model\":{\"id\":null,\"display_name\":\"Fable\"}}}]}" | usage_scoped)" = "100 1794794400 Fable" ]'
+ok "usage_scoped: nothing without a scoped limit" '[ -z "$(printf "%s" "{\"limits\":[{\"kind\":\"weekly_all\",\"percent\":39,\"scope\":null}]}" | usage_scoped)" ] && [ -z "$(echo "<html>" | usage_scoped)" ]'
+# Progress of a paper draft: the label of a result of paper.tex, not a string anywhere (2026-11-25).
+git checkout -q -f -B progress "$wbase"; mkdir -p papers/P009-d/notebook
+printf '%s\n' '\begin{theorem}\label{thm:main} T. \end{theorem}' '\section{S}\label{sec:s}' > papers/P009-d/paper.tex
+echo "Tried lem:new and lem:other: dead end." > papers/P009-d/notebook/NOTEBOOK.md
+git add -A; git commit -qm draft; pg0=$(git rev-parse HEAD)
+printf '%s\n' '\begin{lemma}' '  A step.\label{lem:new}' '\end{lemma}' '% \begin{lemma}\label{lem:commented}\end{lemma}' '\begin{remark}\label{rem:r}\end{remark}' >> papers/P009-d/paper.tex
+git commit -qam round; pg1=$(git rev-parse HEAD)
+ok "result_labels: the labels inside theorem, proposition, lemma, corollary only" '[ "$(result_labels "$pg1" P009-d | tr "\n" " ")" = "lem:new thm:main " ]'
+ok "result_labels: a label only in the notebook is not a result" '! result_labels "$pg0" P009-d | grep -qx "lem:other"'
+git checkout -q -f "$wbase"
 d=$(INCOGNITA_DEADLINE=02:45 deadline_epoch)
 ok "deadline in the next 24 h" '[ "$d" -gt "$(now)" ] && [ "$d" -le $(( $(now) + 86400 )) ]'
 

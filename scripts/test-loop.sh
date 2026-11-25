@@ -29,7 +29,9 @@ case "$1" in
       "") [[ " $* " == *" user "* ]] && echo '{"login": "owner"}' | out ;;
       */statuses*) sha=${path#*/commits/}; sha=${sha%%/*}; cat "$FAKE/statuses-$sha.json" 2>/dev/null || echo '[]' ;;
       */comments*) n=${path#*/issues/}; n=${n%%/*}; cat "$FAKE/comments-$n.json" 2>/dev/null || echo '[]' ;;
-      */actions/runs*) echo '{"workflow_runs": []}' | out ;;
+      */actions/runs*) sha=$(printf '%s' "$path" | sed -n 's/.*head_sha=\([0-9a-f]*\).*/\1/p')
+                       if [ -n "$sha" ] && [ -f "$FAKE/runs-$sha.json" ]; then out < "$FAKE/runs-$sha.json"
+                       else echo '{"workflow_runs": []}' | out; fi ;;
       *) echo '{}' | out ;;
     esac ;;
   pr)
@@ -524,6 +526,44 @@ h=$(prx 90 prove P001-x "$LEAN")
 status "$h" "Incognita review" review-pr approve success
 pass "an empty INCOGNITA_RUBRICS: merged on the Incognita review" "would merge #90"
 unset INCOGNITA_RUBRICS
+
+# main is red (2026-11-25 audit): no build repair and no writing task, but the fix of main.
+world "Reviewed by owner: 2026-11-14"
+echo '{"workflow_runs": [{"id": 9, "name": "CI", "conclusion": "failure", "run_attempt": 2, "created_at": "2026-11-25T01:00:00Z", "updated_at": "2026-11-25T01:00:00Z"}]}' \
+  > "$FAKE/runs-$(git -C "$t/w" rev-parse main).json"
+h=$(pr 70 bibliographer -)
+check 70 "Build and check" FAILURE
+pass "main red: the fix of main first" "== task: fix-pr main"
+h=$(pr 71 fix-pr main)
+nopass "main red: no build repair of another pull request" "== task: fix-pr 70"
+nopass "main red: no writing task" "== task: write-paper BB"
+pass "main red: the pull request that fixes main is reviewed" "== task: review-pr 71"
+check 71 "Build and check" FAILURE
+pass "main red: the pull request that fixes main is repaired" "== task: fix-pr 71"
+# A paper's build that stays red: repaired, then to the owner after 3 rounds in a row, never closed.
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 72 write-paper BB)
+check 72 "Build and check" FAILURE
+mkdir -p "$t/home/state/lifetime"; echo 2 > "$t/home/state/lifetime/build-repairs_72"
+pass "a paper's build red after 2 repair rounds: repaired again" "== task: revise 72"
+echo 3 > "$t/home/state/lifetime/build-repairs_72"
+pass "after 3 repair rounds in a row: to the owner" "would label #72 needs-human"
+nopass "after 3 repair rounds in a row: never closed" "would close #72"
+# At most INCOGNITA_DRAFT_ROUNDS_NIGHT rounds of one paper draft per night, cut rounds aside.
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 73 write-paper BB true)
+mkdir -p "$t/home/state/nights/$(date +%F)/attempts"
+printf '1 ok pushed #73\n2 skip no-commit (success)\n' > "$t/home/state/nights/$(date +%F)/attempts/revise_73"
+nopass "two rounds of a draft tonight: no third" "== task: revise 73"
+printf '1 ok pushed #73\n2 skip quota-cut no-commit\n' > "$t/home/state/nights/$(date +%F)/attempts/revise_73"
+pass "a cut round is not a round" "== task: revise 73"
+# Sessions without a commit on the same state: the target waits for a change.
+world "Reviewed by owner: 2026-11-14"
+mkdir -p "$t/home/state/nocommit"
+printf '%s 2 %s write-paper BB\n' "$(git -C "$t/w" rev-parse main)" "$(date +%F)" > "$t/home/state/nocommit/write-paper_BB"
+nopass "two sessions without a commit on this main: write-paper waits" "== task: write-paper BB"
+on_main literature/new.md x
+pass "a new main: it is tried again" "== task: write-paper BB"
 
 # The weekly cap (INCOGNITA_WEEKLY_CAP), read before every task, a dry run included: a fake sudo
 # reads the throwaway env file, a fake curl answers the usage endpoint with $FAKE/weekly percent.

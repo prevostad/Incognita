@@ -155,9 +155,11 @@ carry_rubrics() {
 is_busy() {  # role target (target "*" = any)
   if [ "$2" = "*" ]; then grep -q "^$1 " "$BUSY"; else grep -qxF "$1 $2" "$BUSY"; fi
 }
-can_try() {  # role target: not parked, fewer than INCOGNITA_MAX_FAILS failures tonight
+can_try() {  # role target [head]: not parked, fewer than INCOGNITA_MAX_FAILS failures tonight, not
+             # waiting after sessions without a commit on this state (its head, or main: nocommit_waits)
   is_parked "$1" "$2" && return 1
-  [ "$(night_fails "$1" "$2")" -lt "$INCOGNITA_MAX_FAILS" ]
+  [ "$(night_fails "$1" "$2")" -lt "$INCOGNITA_MAX_FAILS" ] || return 1
+  ! nocommit_waits "$1" "$2" "${3:-$MAIN_SHA}"
 }
 task_budget() {  # role: seconds a task of this role may take now (0 if it does not fit)
   local b max min v
@@ -175,7 +177,7 @@ pick() {  # role target head note: select this task if allowed and it fits befor
   local b
   # Near the weekly cap (usage_gate), only short tasks: reviews, referees, bibliographer, garden.
   [ "$CAP_SHORT_ONLY" = 1 ] && ! short_role "$1" && return 1
-  can_try "$1" "$2" || return 1
+  can_try "$1" "$2" "$3" || return 1
   b=$(task_budget "$1")
   [ "$b" -gt 0 ] || return 1
   T_ROLE=$1 T_TARGET=$2 T_HEAD=$3 T_NOTE=$4 T_BUDGET=$b
@@ -735,13 +737,16 @@ choose_task() {
   T_ROLE="" T_TARGET="" T_HEAD="" T_NOTE="" T_BUDGET=0
   local n H br draft mg role target labels ci kind cie sc pv rv rounds fixes fixer reopened lean rb lr bh
   local fixes_list="" reviews_list=""
-  # 1. main is red: one fix-main task.
+  # 1. main is red: one fix-main task. Until it is green again, no other task starts but the work on
+  #    the pull request that fixes main (its repairs, its review): a red main would make every
+  #    other build fail, and every writing task start from a broken base.
   if [ "$MAIN_RED" = 1 ] && ! is_busy fix-pr main; then
     pick fix-pr main "" "The build of main is red." && return 0
   fi
   # 2-3. Agents' PRs: fixes and revisions first, then reviews (oldest PR first).
   while IFS=$'\t' read -r n H br draft mg role target labels ci; do
     has_label "$labels" needs-human || has_label "$labels" rejected && continue
+    if [ "$MAIN_RED" = 1 ] && ! { [ "$role" = fix-pr ] && [ "$target" = main ]; }; then continue; fi
     kind=$(pr_kind "$role")
     [ "$kind" = scripted ] && continue   # the loop's own pull requests: candidates_pass, try_merge
     fixes=$(counter_get "fix-rounds $n")
@@ -764,13 +769,30 @@ choose_task() {
         close_set_aside "$n" "$H" "$(counter_get "stall $n") continuation rounds in a row without progress" "$(pr_title_of "$n")"
         continue
       fi
+      # At most INCOGNITA_DRAFT_ROUNDS_NIGHT rounds of one paper draft per night (cut rounds aside).
+      if [ "$role" = write-paper ] && [ "$(night_rounds "$fixer" "$n")" -ge "$INCOGNITA_DRAFT_ROUNDS_NIGHT" ]; then
+        continue
+      fi
       fixes_list="$fixes_list $fixer:$n:$H:incomplete"
       continue
     fi
     cie=$(ci_effective "$H" "$ci")
+    # Repairs of a paper's failed build, in a row: reset by a green build.
+    if [ "$cie" = success ] && [ "$kind" = paper ] && ! is_dry && [ "$(counter_get "build-repairs $n")" != 0 ]; then
+      counter_set "build-repairs $n" 0
+    fi
     if [ "$cie" = failed ] || { [ "$mg" = CONFLICTING ] && mark_has "rebase-failed $H"; }; then
       if [ "$kind" != paper ] && [ "$fixes" -ge "$INCOGNITA_FIX_LIMIT" ]; then
         escalate "$n" "$fixes fix rounds without success"
+        continue
+      fi
+      # A paper is never closed for repairs, but a build that stays red after
+      # INCOGNITA_PAPER_BUILD_REPAIRS repair rounds in a row (an external cause, a broken tool) goes
+      # to the owner: needs-human, its count starting again when he removes the label.
+      if [ "$kind" = paper ] && [ "$cie" = failed ] \
+          && [ "$(counter_get "build-repairs $n")" -ge "$INCOGNITA_PAPER_BUILD_REPAIRS" ]; then
+        escalate "$n" "the build is still red after $(counter_get "build-repairs $n") repair rounds in a row" \
+          && { is_dry || counter_set "build-repairs $n" 0; }
         continue
       fi
       fixes_list="$fixes_list $fixer:$n:$H:$([ "$cie" = failed ] && echo build || echo conflict)"
@@ -868,7 +890,7 @@ choose_task() {
     case "$why" in
       build) note="The build failed on the head (after one automatic rerun)." ;;
       conflict) note="The branch conflicts with main and the mechanical rebase failed: rebase it (\`git rebase origin/main\`)." ;;
-      incomplete) note="Continue the incomplete work of this draft. A new paper: end the summary with \`Progress: <label>\` (a result newly proved, its label new in the paper or the notebook) or \`No progress: <why>\` (AGENTS.md section 3)." ;;
+      incomplete) note="Continue the incomplete work of this draft. A new paper: end the summary with \`Progress: <label>\` (a result newly proved: the \`\\label\` of a theorem, proposition, lemma or corollary new in \`paper.tex\`) or \`No progress: <why>\` (AGENTS.md section 3)." ;;
       review) note="The reviewers requested changes on the head: address the latest report of each (for a Lean pull request, its Incognita review and every rubric, \`rubric-<name>\`, in \`reports.md\`)." ;;
       block-*) note="The rubric \`${why#block-}\` (Tau Ceti's review) blocked the head: answer its latest report (\`reports.md\`, kind \`rubric-${why#block-}\`). Fix the problem within the purpose of the pull request; if it cannot be fixed there, or the finding is wrong, change nothing it concerns and say why in the summary (an \`Ask-owner:\` line if the owner must decide)." ;;
       referees) note="The referees found gaps on the head: address their latest reports." ;;
@@ -876,6 +898,8 @@ choose_task() {
     esac
     pick "$r" "$t" "$h" "$note" && return 0
   done
+  # main is red: no writing task (see 1).
+  [ "$MAIN_RED" = 1 ] && return 1
   # 4. Rotation: garden and bibliographer, regularly (D6, D7).
   if [ "$(counter_get since-rotation)" -ge "$INCOGNITA_ROTATION_EVERY" ]; then
     pick_rotation && return 0
@@ -942,18 +966,19 @@ choose_task() {
 }
 
 # ---------------------------------------------------------------- one pass
-MAIN_RED=0 AUDIT="" AUDIT_OK=0
+MAIN_RED=0 AUDIT="" AUDIT_OK=0 MAIN_SHA=""
 one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure failure, 3 logged out, 6 weekly cap
   STS=() LEAN=()
   NEEDS_REBASE=""
   set_activity "pass: reading GitHub"
   local M rc did=0 n H br draft mg role target labels ci k
   M=$(sync_main) || return 11
+  MAIN_SHA=$M
   fetch_open_prs > "$PRS" || return 11
   agent_rows "$PRS" | sort -n > "$ROWS" || return 11
   busy_pairs "$PRS" > "$BUSY" || return 11
   if main_red "$M"; then
-    [ "$MAIN_RED" = 1 ] || { log "== main is red (${M:0:12}): no reviews, no merges but fix-main"; record_event main-red - - "${M:0:12}"; }
+    [ "$MAIN_RED" = 1 ] || { log "== main is red (${M:0:12}): no task, no review, no merge but those of fix-main"; record_event main-red - - "${M:0:12}"; }
     MAIN_RED=1
   else MAIN_RED=0; fi
   if AUDIT=$(audit_status); then AUDIT_OK=1; else AUDIT_OK=0; log "audit status of main unknown"; fi
@@ -965,7 +990,7 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure f
   [ "$MAIN_RED" = 1 ] || { candidates_pass && did=1; }
   # Mechanical rebases: conflicting agent PRs, and ready Lean PRs behind main (at most 2 per pass).
   k=0
-  while IFS=$'\t' read -r n H br draft mg role target labels ci; do
+  while IFS=$'	' read -r n H br draft mg role target labels ci; do
     [ "$k" -lt 2 ] || break
     has_label "$labels" needs-human || has_label "$labels" rejected && continue
     [ "$role" = loop ] && continue   # never rebased: closed and made again (candidates_pass)

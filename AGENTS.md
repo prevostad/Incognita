@@ -162,27 +162,33 @@ other than an addition. The script refuses a pull request that breaks these. App
 
 The loop (`scripts/loop.sh`) chooses every task; you never choose your role. For reference, it skips
 busy targets (`open-prs.md`), targets attempted twice tonight, `needs-human` and `parked` targets,
-and pull requests from forks, then takes the first available of:
+targets whose sessions ended twice in a row without a commit on the same state (until a new head,
+a new `main`, or 3 nights), and pull requests from forks, then takes the first available of:
 
 1. (no agent) at most one merge, then mechanical rebases of agent pull requests that conflict
    with `main`. After the merge of an accepted paper, a pull request of the loop itself (role
    `loop`) adds its accepted open questions to `directions.md` (§4.1, §5.5); a roadmap proposal is
    merged only after the scripted commit that approves it (§4);
-2. `fix-pr` on `main` when the CI of `main` is red (then no review and no merge until it is fixed);
+2. `fix-pr` on `main` when the CI of `main` is red (then no other task, review or merge until it is
+   fixed, except those of the pull request that fixes it);
 3. repairs, oldest pull request first: `revise` for a paper pull request, `fix-pr` for any other,
    when its head has a trusted `major` (papers) or `request_changes` (others; for a Lean pull
    request, once every rubric has judged the head, or at once after a rubric's `block`, section
    6.8), a failed build
    (after one automatic rerun), a conflict the mechanical rebase could not resolve, or it is a draft
    labelled `incomplete`. For a paper, only an answer to a referee's `major` is a revision round;
-   the other repairs are fix rounds. A new paper still `incomplete` is continued **as long as it
-   progresses**, with no limit on the rounds (owner, 2026-11-23: a hard question needs many). Each
-   continuation round ends its summary with `Progress: <label>` (a lemma, proposition or step
-   newly proved, whose label is new under the paper's directory) or `No progress: <why>`. After
+   the other repairs are fix rounds; a paper whose build is still red after
+   `INCOGNITA_PAPER_BUILD_REPAIRS` (3) repair rounds in a row goes to the owner (`needs-human`; a
+   paper is never closed for repairs). A new paper still `incomplete` is continued **as long as it
+   progresses**, with no limit on the rounds (owner, 2026-11-23: a hard question needs many), but
+   at most `INCOGNITA_DRAFT_ROUNDS_NIGHT` (2) rounds of one draft per night. Each
+   continuation round ends its summary with `Progress: <label>` (a theorem, proposition, lemma or
+   corollary newly proved: the `\label` of its environment, new in the paper's `paper.tex`) or
+   `No progress: <why>`. After
    `INCOGNITA_SET_ASIDE_AFTER` (3) rounds **in a row** without progress (no such label, no commit,
    or refused), the draft is **set aside**: closed with the label `set-aside`, its branch and
-   notebook kept, its items counted as covered until the owner reopens it (cuts by the quota are
-   not counted);
+   notebook kept, its items counted as covered until the owner reopens it (rounds cut by a quota,
+   the weekly cap or the deadline, and rounds given less than their role's time, are not counted);
 4. reviews of agent pull requests with a green build and no trusted verdict on their head for the
    needed role: paper pull requests (the owner's too: branches `owner/*`, a new paper or a
    presentation revision, §5.6) get `referee-scope`, then `referee-proofs` once scope accepted

@@ -62,6 +62,10 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_BLOCK_LIMIT:=2}"             # heads of a Lean PR blocked by a rubric, then needs-human (1: the first block)
 : "${INCOGNITA_PARK_AFTER:=4}"              # failed attempts on a target (all nights), then parked
 : "${INCOGNITA_SET_ASIDE_AFTER:=3}"         # continuation rounds in a row without progress of a paper draft, then set aside (owner, 2026-11-23)
+: "${INCOGNITA_DRAFT_ROUNDS_NIGHT:=2}"      # continuation rounds of one paper draft per night (one draft never takes the whole night)
+: "${INCOGNITA_PAPER_BUILD_REPAIRS:=3}"     # repairs of a paper PR's failed build in a row (no green build between), then needs-human (never closed)
+: "${INCOGNITA_NOCOMMIT_AFTER:=2}"          # sessions in a row without a commit on the same state of a target, then it waits...
+: "${INCOGNITA_NOCOMMIT_NIGHTS:=3}"         # ...for a new head (a PR), a new main (other targets), or this many nights
 : "${INCOGNITA_ROTATION_EVERY:=6}"          # every n Claude tasks, one garden or bibliographer task
 : "${INCOGNITA_IDLE_SLEEP:=1200}"
 : "${INCOGNITA_VETO_NIGHTS:=2}"             # nights of veto before a roadmap proposal is approved
@@ -313,6 +317,40 @@ if w is None:
 print(w[0], w[1], s[0], s[1])
 '
 }
+# usage_scoped < answer: "<percent> <reset|-> <scope>" of the most used scoped limit of `limits[]`
+# (a weekly limit of one model, for example), nothing if there is none. The weekly cap is the
+# unscoped figure (usage_parse); a scoped limit at 100 % refuses the sessions of its model at their
+# start, which scripts/agent.sh then recognises as a limit (and does not count as a failure).
+usage_scoped() {
+  python3 -I -c '
+import json, sys
+from datetime import datetime
+try:
+    p = json.load(sys.stdin)
+except ValueError:
+    sys.exit(0)
+best = None
+for l in (p.get("limits") if isinstance(p, dict) and isinstance(p.get("limits"), list) else []):
+    if not isinstance(l, dict) or not l.get("scope"):
+        continue
+    u = l.get("percent", l.get("utilization"))
+    if isinstance(u, bool) or not isinstance(u, (int, float)) or u != u or u < 0:
+        continue
+    reset, t = "-", l.get("resets_at")
+    if isinstance(t, str) and t:
+        try:
+            reset = str(int(datetime.fromisoformat(t.replace("Z", "+00:00")).timestamp()))
+        except ValueError:
+            pass
+    sc = l["scope"]
+    name = ((sc.get("model") or {}).get("display_name") if isinstance(sc, dict) and isinstance(sc.get("model"), dict) else None) or l.get("kind") or "scoped"
+    name = "".join(c for c in str(name) if c.isalnum() or c in "._-")[:40] or "scoped"
+    if best is None or u > best[0]:
+        best = (u, reset, name)
+if best:
+    print("%g %s %s" % best)
+'
+}
 # usage_tauceti: the same four figures from `tauceti status --json` (windows `weekly` and `session`
 # of .quota.claude, read by the pacer with lean's own Claude login and cached by it up to 20 min);
 # non-zero if tauceti is missing or has no weekly figure (lean's login expired, for example).
@@ -351,8 +389,10 @@ usage_now() {
     [ "$kind" = ok ]; return
   fi
   tmp=$(mktemp) || return 1
+  rm -f "$INCOGNITA_STATE/usage-scoped"
   code=$(usage_fetch "$tmp")
   if [ "$code" = 200 ] && line=$(usage_parse < "$tmp"); then kind=ok line="$line agent"
+    { usage_scoped < "$tmp" > "$INCOGNITA_STATE/usage-scoped"; } 2>/dev/null
   elif [ "$code" = none ]; then kind=err line="no token in $INCOGNITA_AGENT_ENV"
   else
     if [ "$code" = 200 ]; then line="unreadable answer of the usage endpoint"; else line="HTTP $code"; fi
@@ -399,7 +439,7 @@ short_role() { is_review_role "$1" || [ "$1" = bibliographer ] || [ "$1" = garde
 # exhausted; 10 min when the usage cannot be read and a cap is set (without a cap, the task starts
 # anyway). A dry run reads the usage (with the token, if there is one) but never waits.
 CAP_SHORT_ONLY=0
-USAGE_NOTE=""
+USAGE_NOTE="" SCOPED_NOTE=""
 usage_note() { [ "$USAGE_NOTE" = "$1" ] || { USAGE_NOTE=$1; log "== $1"; }; }
 usage_gate() {
   local u rc w wr s sr src secs
@@ -440,6 +480,14 @@ usage_gate() {
         usage_note "weekly usage $w %, within $INCOGNITA_CAP_MARGIN points of the cap $INCOGNITA_WEEKLY_CAP %: only reviews, referees, bibliographer and garden start" ;;
       *) usage_note "weekly usage $w % (cap ${INCOGNITA_WEEKLY_CAP:-none}), five-hour window ${s} %, read with $(usage_source "$src")" ;;
     esac
+    # A scoped limit (one model's weekly limit) at 100 %: its sessions are refused at their start
+    # (scripts/agent.sh waits for its reset); logged here, once.
+    local sp srs sn
+    if read -r sp srs sn 2>/dev/null < "$INCOGNITA_STATE/usage-scoped" && [[ "$sp" =~ ^[0-9.]+$ ]] \
+        && awk -v s="$sp" 'BEGIN { exit !(s + 0 >= 100) }' && [ "$SCOPED_NOTE" != "$sn $srs" ]; then
+      SCOPED_NOTE="$sn $srs"
+      log "== the scoped limit $sn is at $sp %$([[ "$srs" =~ ^[0-9]+$ ]] && date -d "@$srs" '+ (reset %F %H:%M)'): the sessions it covers are refused until its reset"
+    fi
     return 0
   done
   return 1
@@ -458,7 +506,7 @@ usage_text() {
 # ---------------------------------------------------------------- state (~/.incognita/state)
 init_state() {
   mkdir -p "$INCOGNITA_STATE/lifetime" "$INCOGNITA_STATE/parked" "$INCOGNITA_STATE/marks" \
-    "$INCOGNITA_STATE/audit" "$INCOGNITA_LOGS" "$INCOGNITA_HOME/work" || return 1
+    "$INCOGNITA_STATE/nocommit" "$INCOGNITA_STATE/audit" "$INCOGNITA_LOGS" "$INCOGNITA_HOME/work" || return 1
   : "${INCOGNITA_NIGHT:=$(date +%F)}"
   export INCOGNITA_NIGHT
   NIGHT_DIR=$INCOGNITA_STATE/nights/$INCOGNITA_NIGHT
@@ -488,8 +536,10 @@ is_parked() { [ -e "$INCOGNITA_STATE/parked/$(key_of "$1 $2")" ]; }
 # record_attempt <role> <target> <ok|fail|skip> <outcome...>. A failure counts towards parking
 # (INCOGNITA_PARK_AFTER failures in all nights), but only for a paper or a pull request target: a
 # roadmap (write-paper, propose-roadmap) or `-` (garden, bibliographer) is never parked. A session
-# that ended normally without a commit is a `skip no-commit`: it counts for tonight's limit
-# (night_fails), never for parking.
+# that ended normally without a commit is a `skip no-commit`, one that pushed but stopped before its
+# end a `skip pushed-incomplete`: they count for tonight's limit (night_fails), never for parking. A
+# session cut by a quota, the weekly cap or the deadline is a `skip quota-cut` or `skip
+# deadline-cut`: it counts for nothing (owner: a cut is never a failure of its target).
 record_attempt() {
   local role=$1 target=$2 kind=$3; shift 3
   is_dry && return 0   # a dry run leaves the state alone
@@ -504,6 +554,7 @@ record_attempt() {
     fi
   elif [ "$kind" = ok ]; then
     counter_set "fail $role $target" 0
+    rm -f "$INCOGNITA_STATE/nocommit/$(key_of "$role $target")"
   fi
 }
 parkable() { [[ "$1" =~ ^P[0-9]{3}-[A-Za-z0-9-]+$ ]] || [[ "$1" =~ ^[0-9]+$ ]]; }
@@ -512,7 +563,99 @@ night_fails() {
   local f
   f=$NIGHT_DIR/attempts/$(key_of "$1 $2")
   [ -f "$f" ] || { echo 0; return; }
-  awk '$2 == "fail" || ($2 == "skip" && $3 == "no-commit")' "$f" | wc -l | tr -d ' '
+  awk '$2 == "fail" || ($2 == "skip" && ($3 == "no-commit" || $3 == "pushed-incomplete"))' "$f" | wc -l | tr -d ' '
+}
+# night_rounds <role> <target>: sessions tonight that ran and were not cut (ok, fail, no-commit,
+# pushed-incomplete): the continuation rounds of a paper draft (INCOGNITA_DRAFT_ROUNDS_NIGHT).
+night_rounds() {
+  local f
+  f=$NIGHT_DIR/attempts/$(key_of "$1 $2")
+  [ -f "$f" ] || { echo 0; return; }
+  awk '$2 == "ok" || $2 == "fail" || ($2 == "skip" && ($3 == "no-commit" || $3 == "pushed-incomplete"))' "$f" | wc -l | tr -d ' '
+}
+# Sessions that end normally without a commit (`skip no-commit`) are not failures, so they never
+# park their target; but a target that ends so INCOGNITA_NOCOMMIT_AFTER times in a row on the same
+# state (the head of a pull request; main for any other target) waits for that state to change, or
+# for INCOGNITA_NOCOMMIT_NIGHTS nights (listed in the night report). A session that succeeds clears it.
+# nocommit_note <role> <target> <state>: one more session without a commit on this state.
+nocommit_note() {
+  is_dry && return 0
+  local f st c night
+  f=$INCOGNITA_STATE/nocommit/$(key_of "$1 $2")
+  mkdir -p "$INCOGNITA_STATE/nocommit"
+  read -r st c night _ 2>/dev/null < "$f" || st=""
+  if [ "$st" = "$3" ] && [[ "${c:-}" =~ ^[0-9]+$ ]]; then c=$(( c + 1 )); else c=1 night=$INCOGNITA_NIGHT; fi
+  printf '%s %s %s %s %s\n' "$3" "$c" "$night" "$1" "$2" > "$f"
+  if [ "$c" = "$INCOGNITA_NOCOMMIT_AFTER" ]; then
+    record_event nocommit-wait "$1" "$2" "$c sessions in a row without a commit on ${3:0:12}: waits for a change (or $INCOGNITA_NOCOMMIT_NIGHTS nights)"
+  fi
+  return 0
+}
+# nocommit_waits <role> <target> <state>: 0 if the target waits (see above).
+nocommit_waits() {
+  local f st c night
+  f=$INCOGNITA_STATE/nocommit/$(key_of "$1 $2")
+  read -r st c night _ 2>/dev/null < "$f" || return 1
+  [ "$st" = "$3" ] && [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge "$INCOGNITA_NOCOMMIT_AFTER" ] \
+    && [ "$(days_between "$night" "$INCOGNITA_NIGHT")" -lt "$INCOGNITA_NOCOMMIT_NIGHTS" ]
+}
+# nocommit_list: "role target count state night" of the targets that wait so (the night report).
+nocommit_list() {
+  local f st c night r tg
+  for f in "$INCOGNITA_STATE/nocommit"/*; do
+    [ -f "$f" ] || continue
+    read -r st c night r tg < "$f" || continue
+    [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge "$INCOGNITA_NOCOMMIT_AFTER" ] || continue
+    [ "$(days_between "$night" "$INCOGNITA_NIGHT")" -lt "$INCOGNITA_NOCOMMIT_NIGHTS" ] || continue
+    printf '%s %s %s %s %s\n' "$r" "$tg" "$c" "${st:0:12}" "$night"
+  done
+}
+
+# ---------------------------------------------------------------- the end of a session (agent.sh)
+# session_error_text <result.txt> <session.err> <is_error> <refused_at_start>: the text in which a
+# session's limits and logouts are recognised: the end of the CLI's standard error, and the result
+# only when it is the CLI's own error message (is_error with at most 3 lines and 600 bytes, or a
+# session refused at its start), never the agent's own words (a report may say "rate limit" or
+# "401 unauthorized": 2026-11-25 audit).
+session_error_text() {
+  if [ "$3" = true ] && [ -f "$1" ] \
+      && { [ "$4" = true ] || { [ "$(wc -c < "$1")" -le 600 ] && [ "$(wc -l < "$1")" -le 3 ]; }; }; then
+    head -c 4000 "$1"; echo
+  fi
+  tail -c 4000 "$2" 2>/dev/null
+  return 0
+}
+LIMIT_RE='usage limit|rate.?limit|limit reached|hit your|session limit|weekly limit|5-hour|five-hour|resets? (at )?[0-9]|too many requests|\b429\b|overloaded|\b529\b'
+LOGOUT_RE='invalid api key|not logged in|please run /login|oauth token (has )?expired|authentication_error|401 unauthorized|invalid bearer token|credit balance'
+INCOGNITA_RESET_MAX=21600   # a reset time read from a message is never later than now + 6 h
+# limit_reset <text> [now]: the reset (epoch) of a recognised limit message: `|<epoch>` (the CLI's
+# "usage limit reached|<epoch>"), else "resets 5pm" / "resets at 14:30" (the next such time), else
+# now + 10 min for an overloaded API; empty if none. Never later than now + INCOGNITA_RESET_MAX.
+limit_reset() {
+  local text=$1 t=${2:-$(now)} reset when
+  reset=$(printf '%s' "$text" | grep -oE '\|[0-9]{10}' | head -n 1 | tr -d '|')
+  if [ -z "$reset" ]; then
+    when=$(printf '%s' "$text" | grep -oiE 'resets? (at )?[0-9]{1,2}(:[0-9]{2})? ?(am|pm)?' | head -n 1 | sed -E 's/^[Rr][Ee][Ss][Ee][Tt][Ss]? ([Aa][Tt] )?//')
+    [ -n "$when" ] && reset=$(date -d "$when" +%s 2>/dev/null)
+    [ -n "$reset" ] && [ "$reset" -le "$t" ] && reset=$(( reset + 86400 ))
+  fi
+  [ -z "$reset" ] && printf '%s' "$text" | grep -qiE 'overloaded|\b529\b' && reset=$(( t + 600 ))
+  [ -n "$reset" ] || return 0
+  [ "$reset" -gt $(( t + INCOGNITA_RESET_MAX )) ] && reset=$(( t + INCOGNITA_RESET_MAX ))
+  echo "$reset"
+}
+# result_labels <ref> <paper-dir>: the labels of the results (theorem, proposition, lemma,
+# corollary) of papers/<paper-dir>/paper.tex at <ref>, one per line: what counts as the progress of
+# a paper draft (a label that is new there, not just a string anywhere in its directory).
+result_labels() {
+  repo_git show "$1:papers/$2/paper.tex" 2>/dev/null | sed 's/%.*//' | awk '
+    { line = $0
+      while (match(line, /\\(begin|end)\{(theorem|proposition|lemma|corollary)\*?\}|\\label\{[^}]*\}/)) {
+        tok = substr(line, RSTART, RLENGTH); line = substr(line, RSTART + RLENGTH)
+        if (tok ~ /^\\begin/) depth++
+        else if (tok ~ /^\\end/) { if (depth > 0) depth-- }
+        else if (depth > 0) { sub(/^\\label\{/, "", tok); sub(/\}$/, "", tok); print tok }
+      } }' | sort -u
 }
 # parked_list: "role target" of the parked targets (all nights), for the night report.
 parked_list() { ls "$INCOGNITA_STATE/parked" 2>/dev/null; }
