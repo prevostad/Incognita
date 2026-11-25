@@ -178,7 +178,12 @@ git add -A && git commit -qm rev3 && h3=$(git rev-parse HEAD)
 ok "owner paper: a revision keeps its authors" 'human_authors_kept "$hb" "$h1" 2>/dev/null'
 ok "owner paper: a change of human_authors is refused" '! human_authors_kept "$hb" "$h2" 2>/dev/null'
 ok "owner paper: a change of the author line is refused" '! human_authors_kept "$hb" "$h3" 2>/dev/null'
-ok "agent paper: no author constraint" 'human_authors_kept "$base" "$h2" 2>/dev/null'
+ok "agent paper: an agent may not add human_authors to a new paper" '! human_authors_kept "$base" "$h2" 2>/dev/null'
+git checkout -q -f "$base" && mkdir -p papers/P006-ag && printf 'roadmap = "BB"
+authors = ["m"]
+' > papers/P006-ag/META.toml
+git add -A && git commit -qm agent && h4=$(git rev-parse HEAD)
+ok "agent paper: no human_authors, no constraint" 'human_authors_kept "$base" "$h4" 2>/dev/null'
 git checkout -q -f "$base" && git clean -qfdx
 try "revise may not change another paper" revise P001-test 1 'mkdir -p papers/P002-other; echo a > papers/P002-other/x'
 try "formalize-statements adds statements and imports" formalize-statements P001-test 0 \
@@ -532,14 +537,14 @@ Verdict: accept
 | Question | Interest | Novelty | Fit | Candidate | Reason |
 |---|---|---|---|---|---|
 | oq:rate | high | open | D1 | yes | |
-| `oq:other` | 3/10 | open | D1 | yes | |
+| `oq:other` | low | open | D1 | no | |
 EOF
 ok "certify: accepted open questions become candidate directions" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789 --date 2026-11-26)" = 1 ]'
 ok "certify: the entry" 'grep -q "^## C1 (2026-11-26, from P002v1 oq:rate)" roadmaps/BB/directions.md && grep -q "^- Rating: interest high; novelty open; fit D1 (referee-scope, pull request #7, head abcdef012345)" roadmaps/BB/directions.md'
 ok "certify: the items of \\extends go to their own line, not into the statement" 'grep -qx -- "- Statement: Is the rate optimal on every grid?" roadmaps/BB/directions.md && grep -qx -- "- Extends: D1" roadmaps/BB/directions.md'
 ok "certify: candidates are added once" '[ "$(C add-candidates --paper P002-second --report "$t/scope.md" --pr 7 --head abcdef0123456789)" = 0 ] && C check >/dev/null'
-ok "certify: a candidate is an item, with its interest" 'C items BB --free | grep -qx "C1 open interest high"'
-ok "certify: a question rated below 4/10 is never a candidate" '! grep -q "oq:other" roadmaps/BB/directions.md'
+ok "certify: a candidate is an item" 'C items BB --free | grep -qx "C1 open"'
+ok "certify: a question that is not a candidate is not added" '! grep -q "oq:other" roadmaps/BB/directions.md'
 git add -A; git commit -qm "directions"; base=$(git rev-parse HEAD)
 printf 'Dropped (2026-11-27, garden, m): answered by P001.\n' >> roadmaps/BB/directions.md
 ok "certify: a Dropped line may be added" 'C check --base "$base" >/dev/null && C items BB | grep -qx "C1 dropped"'

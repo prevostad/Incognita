@@ -246,27 +246,13 @@ request of its own (role `loop`, one scripted commit on top of `main`, merged af
 reviewed or repaired by an agent). Each entry gives the question as stated in the paper, its
 source (paper, version, label `oq:…`) and the referee's rating (interest, novelty, fit).
 
-**Interest drives the choice** (owner, 2026-11-23), so that the agents do not spend the nights on
-easy or minor questions:
+The scope referee rates the interest of each open question `high`, `medium` or `low`; writers
+take the candidates in order, C1, C2, … (owner, 2026-11-25: the rating out of 10 and the choice of
+the best rated first, of 2026-11-23, are withdrawn). A paper may answer a declared part of a hard
+question; it is rated for what it proves, and a narrowing it does not declare is a defect (§5.4).
+A draft is continued while it progresses and set aside only after three rounds in a row without
+progress (§3), so a hard question gets the time it needs, but a stuck one never holds the loop.
 
-- the scope referee rates the interest of each open question **out of 10**, on the scale of the
-  paper's interest score (§5.4); only a question at 4/10 or more becomes a candidate (the script
-  refuses the others); entries rated before that date keep `high`, `medium` or `low`, counted as
-  7, 5 and 3;
-- writers take the candidates **best rated first** (after the F items and the D items, which the
-  owner chose and which stay in order);
-- the writer **judges the interest itself** before working on a D or C item: it writes in its
-  notebook the theorem it aims at and its predicted score, taking into account the papers accepted
-  since the item was rated (an item can lose its interest: nobody re-rates the whole list, only
-  the item a writer is about to take). Below 4/10 it aims at a stronger version or takes the next
-  item, and forwards `Ask-owner: <Roadmap> <item> re-rated <n>/10: <reason>. Drop it?`; later
-  writers skip that item (`re-ratings.md`) unless the owner answers to keep it, and `garden` adds
-  its `Dropped` line. At 4/10 or more the prediction goes into `DOSSIER.md`, and the statistics
-  compare it with the referee's score;
-- a paper may answer a declared part of a hard question; it is rated for what it proves, and a
-  narrowing it does not declare is a defect (§5.4). A draft is continued while it progresses and
-  set aside only after three rounds in a row without progress (§3), so a hard question gets the
-  time it needs, but a stuck one never holds the loop.
 **Append-only**: entries are never edited, renumbered or deleted; `garden` (or the owner) adds a
 line `Dropped (<date>, <role>, <model>): <reason>` under a candidate that a paper answers or that
 is known. A writer takes a candidate like a direction (`directions = ["C3"]` in META.toml). The

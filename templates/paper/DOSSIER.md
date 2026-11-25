@@ -15,8 +15,6 @@ acceptance. Private KNOWN entries are cited by id only, never quoted.
   correspondence with `thm:main`, symbol by symbol.>
 - What the items ask that the paper does not give: <...> (the paper says it in words in its Scope
   remark).
-- Predicted interest: <n>/10, because <what the result changes in the literature> (D and C items;
-  AGENTS.md section 4.1).
 - Acceptance criteria of the roadmap, one by one: <criterion: met or not, where in the paper>.
 - Conventions of the roadmap changed, if any: <which, and why> (also declared in the Setting).
 
