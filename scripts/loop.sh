@@ -168,6 +168,10 @@ task_budget() {  # role: seconds a task of this role may take now (0 if it does 
   else max=$INCOGNITA_TIMEOUT_WRITE min=$INCOGNITA_MIN_WRITE; fi
   v=INCOGNITA_TIMEOUT_$(printf '%s' "$1" | tr 'a-z-' 'A-Z_')   # per-role override, as in agent.sh
   [ -n "${!v:-}" ] && max=${!v}
+  # Per-role minimum (INCOGNITA_MIN_<ROLE>, e.g. INCOGNITA_MIN_REFEREE_PROOFS): a 4 h session does not
+  # start with 15 min left (2026-11-25 audit).
+  v=INCOGNITA_MIN_$(printf '%s' "$1" | tr 'a-z-' 'A-Z_')
+  [ -n "${!v:-}" ] && min=${!v}
   [ "$b" -lt "$min" ] && { echo 0; return; }
   [ "$b" -gt "$max" ] && b=$max
   echo "$b"
@@ -221,9 +225,9 @@ scripted_commit() {
     [ "$trusted" = yes ] || continue
     case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review") ;; *) continue ;; esac
     d=${desc%% copied-from=*}; d=${d%% scripted-from=*}
-    set_status "$newh" "$ctx" "$state" "$d scripted-from=${h:0:12}"
+    set_status_kept "$newh" "$ctx" "$state" "$d scripted-from=${h:0:12}"
   done <<< "$STS_CUR"
-  set_status "$newh" "Incognita loop" success "role=loop verdict=$kind pr=$n parent=${h:0:12}"
+  set_status_kept "$newh" "Incognita loop" success "role=loop verdict=$kind pr=$n parent=${h:0:12}"
   { printf 'Scripted commit of the loop (`%s`, no agent) on the reviewed head `%s` → `%s`: %s. ' "$kind" "${h:0:12}" "${newh:0:12}" "$msg"
     printf 'The pull request is merged after CI on the new head.\n\n```\n'; head -c 3000 "$work/scripted.out"; printf '\n```\n'
   } > "$work/scripted.md"
@@ -268,10 +272,10 @@ directions_pr() {
   is_dry && return 0
   br="agent/loop-directions-$(date +%Y%m%d-%H%M%S)"
   repo_git push -q origin "$newh:refs/heads/$br" || return 2
-  set_status "$newh" "Incognita loop" success "role=loop verdict=directions pr=$n paper=${p:0:4}"
+  set_status_kept "$newh" "Incognita loop" success "role=loop verdict=directions pr=$n paper=${p:0:4}"
   # The ruleset of main requires "Incognita review": no agent reviews this pull request (it is
   # checked by certify.py verify-scripted at merge time), so the loop sets it, as role loop.
-  set_status "$newh" "Incognita review" success "role=loop verdict=directions pr=$n paper=${p:0:4}"
+  set_status_kept "$newh" "Incognita review" success "role=loop verdict=directions pr=$n paper=${p:0:4}"
   { printf 'Role: `loop`. Target: `%s`. Model: `-`.\n\n' "$p"
     printf 'Scripted by the loop (no agent): the open questions of `%s` that the scope referee rated as candidates ' "$p"
     printf '(its reports on pull request #%s, reviewed head `%s`) become %s candidate directions of the roadmap ' "$n" "${h:0:12}" "${k:-?}"
@@ -547,8 +551,10 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
   GIT_EDITOR=true "${g[@]}" rebase -q origin/main >/dev/null 2>&1
   for i in $(seq 1 300); do
     [ -d "$gd/rebase-merge" ] || [ -d "$gd/rebase-apply" ] || break
-    conflicted=$("${g[@]}" diff --name-only --diff-filter=U)
-    for f in $conflicted; do
+    conflicted=$("${g[@]}" -c core.quotePath=false diff --name-only --diff-filter=U)
+    # One path per line (a path may contain spaces: never split on them).
+    while IFS= read -r f; do
+      [ -n "$f" ] || continue
       if in_list "$f" "$ROOT_FILES" && resolve_imports "$wt" "$f"; then
         "${g[@]}" add -- "$f"
       else
@@ -558,7 +564,7 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
         mark_set "rebase-failed $h"
         return 1
       fi
-    done
+    done <<< "$conflicted"
     GIT_EDITOR=true "${g[@]}" rebase --continue >/dev/null 2>&1 \
       || { [ -z "$("${g[@]}" diff --name-only --diff-filter=U)" ] && GIT_EDITOR=true "${g[@]}" rebase --skip >/dev/null 2>&1; }
   done
@@ -581,7 +587,7 @@ mech_rebase() {  # pr H branch: 0 rebased and pushed, 1 needs an agent, 2 error,
       [ "$trusted" = yes ] || continue
       # The rubrics' statuses too: the pull request changes the same thing, blob for blob.
       case "$ctx" in "Referee scope"|"Referee proofs"|"Incognita review"|"Incognita loop"|"Incognita rubric/"*) ;; *) continue ;; esac
-      set_status "$newh" "$ctx" "$state" "${desc%% copied-from=*} copied-from=${h:0:12}" && copied=yes
+      set_status_kept "$newh" "$ctx" "$state" "${desc%% copied-from=*} copied-from=${h:0:12}"; copied=yes
     done <<< "$STS_CUR"
   fi
   printf 'Rebased on `main` by the script (no agent): `%s` → `%s`. Reviews copied: %s.\n' \
@@ -660,18 +666,22 @@ has_material() {  # something to garden: a paper on main whose frozen statements
   return 1
 }
 bib_targets() {  # the papers that wait for the bibliographer: external papers without source notes,
-                 # verified internal papers without an attribution audit
-  local p src
+                 # verified internal papers without an attribution audit. Non-zero (nothing
+                 # printed) if main cannot be read: a failed read is never "missing".
+  local p src notes attr
+  repo_git rev-parse -q --verify origin/main >/dev/null || return 1
+  notes=$(repo_git ls-tree --name-only origin/main literature/notes/ 2>/dev/null) || return 1
+  attr=$(repo_git ls-tree --name-only origin/main catalogue/attribution/ 2>/dev/null) || return 1
   for p in $(papers_on_main); do
     if [ "$(meta_get "$p" kind)" = external ]; then
       src=$(meta_get "$p" source | tr -d '[]')
       [ -n "$src" ] && [[ "$src" =~ ^[A-Za-z0-9_.-]+$ ]] \
-        && ! repo_git cat-file -e "origin/main:literature/notes/$src.md" 2>/dev/null && { echo "$p"; continue; }
+        && ! grep -qxF "literature/notes/$src.md" <<< "$notes" && { echo "$p"; continue; }
     fi
     # Novelty lives in catalogue/attribution/<prefix>.md (proof markers are additions only).
     [ "$AUDIT_OK" = 1 ] && [ "$(meta_get "$p" kind)" = internal ] \
       && [ "$(statements_state "$p")" = verified ] \
-      && ! repo_git cat-file -e "origin/main:catalogue/attribution/$(printf '%s' "$p" | sed -E 's/^(P[0-9]+).*/\1/').md" 2>/dev/null \
+      && ! grep -qxF "catalogue/attribution/$(printf '%s' "$p" | sed -E 's/^(P[0-9]+).*/\1/').md" <<< "$attr" \
       && echo "$p"
   done
   return 0
@@ -689,9 +699,13 @@ pick_rotation() {  # garden / bibliographer, alternately
 }
 # exhausted <roadmap>: no free item (D, F, C) on main (scripts/certify.py items --free), or a
 # write-paper session found none since the items last changed (mark set by scripts/agent.sh).
+# 0 exhausted, 1 not, 2 unknown: a failing certify.py is never "no free item" (2026-11-25 audit).
 exhausted() {
-  local h
-  [ -z "$(certify_py items "$1" --free 2>/dev/null)" ] && return 0
+  local h free
+  if ! free=$(certify_py items "$1" --free 2>/dev/null); then
+    log "certify.py items $1 failed: its items are unknown (neither exhausted nor writable)"; return 2
+  fi
+  [ -z "$free" ] && return 0
   h=$(certify_py items-hash "$1" 2>/dev/null) && mark_has "exhausted $1 $h"
 }
 # roadmaps_waiting: approved roadmaps whose KNOWN.md the owner has not reviewed yet.
@@ -719,9 +733,9 @@ propose_due() {  # the periodic proposal: INCOGNITA_PROPOSE_EVERY nights since t
   [ "$(days_between "$last" "$INCOGNITA_NIGHT")" -ge "$INCOGNITA_PROPOSE_EVERY" ]
 }
 pick_write_paper() {  # cap: fewer than this many papers in review in the roadmap
-  local cap=$1 r best="" bestc=999 c rcap
+  local cap=$1 r best="" bestc=999 c rcap rc
   for r in $(roadmaps_writable); do
-    exhausted "$r" && continue
+    rc=0; exhausted "$r" || rc=$?; [ "$rc" = 1 ] || continue   # exhausted, or its items unknown
     c=$(in_review "$r")
     # One paper at a time while the roadmap's definitions paper is not on main (L6).
     rcap=$cap; [ -n "$(definitions_papers "$r")" ] || rcap=1
@@ -747,6 +761,7 @@ choose_task() {
   while IFS=$'\t' read -r n H br draft mg role target labels ci; do
     has_label "$labels" needs-human || has_label "$labels" rejected && continue
     if [ "$MAIN_RED" = 1 ] && ! { [ "$role" = fix-pr ] && [ "$target" = main ]; }; then continue; fi
+    in_list "$n" "${REBASED:-}" && continue   # rebased in this pass: its new head is not read yet
     kind=$(pr_kind "$role")
     [ "$kind" = scripted ] && continue   # the loop's own pull requests: candidates_pass, try_merge
     fixes=$(counter_get "fix-rounds $n")
@@ -906,9 +921,11 @@ choose_task() {
   fi
   # 5. prove: frozen, unproved statements (D5: formalisation first); the papers that more library
   #    papers depend on first, then the oldest (AGENTS.md section 5.6).
-  local p
+  # (A failing certify.py is logged and skips its step: never read as an empty list.)
+  local p deps dchecks
   if [ "$AUDIT_OK" = 1 ]; then
-    for p in $(certify_py dependants 2>/dev/null | sort -k2,2nr -k1,1 | cut -d' ' -f1); do
+    deps=$(certify_py dependants 2>/dev/null) || { log "certify.py dependants failed: no prove task in this pass"; deps=""; }
+    for p in $(printf '%s\n' "$deps" | sort -k2,2nr -k1,1 | cut -d' ' -f1); do
       [ "$(statements_state "$p")" = open ] || continue
       is_busy prove "$p" && continue
       pick prove "$p" "" "" && return 0
@@ -933,10 +950,11 @@ choose_task() {
   # 7b. revise: dependency checks, for papers that depend on a library paper revised since they
   #     cited it (an erratum propagates: AGENTS.md section 5.6).
   local dc
-  for p in $(certify_py depchecks 2>/dev/null | cut -d' ' -f1 | sort -u); do
+  dchecks=$(certify_py depchecks 2>/dev/null) || { log "certify.py depchecks failed: no dependency check in this pass"; dchecks=""; }
+  for p in $(printf '%s\n' "$dchecks" | cut -d' ' -f1 | sort -u); do
     paper_open_errata "$p" && continue
     is_busy revise "$p" && continue
-    dc=$(certify_py depchecks 2>/dev/null | awk -v p="$p" '$1 == p { printf "%s ", $2 }')
+    dc=$(printf '%s\n' "$dchecks" | awk -v p="$p" '$1 == p { printf "%s ", $2 }')
     pick revise "$p" "" "Dependency check: ${dc}changed since this paper cited them." && return 0
   done
   # 8. bibliographer when a paper waits for it (its source notes, or its attribution audit).
@@ -977,6 +995,8 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure f
   fetch_open_prs > "$PRS" || return 11
   agent_rows "$PRS" | sort -n > "$ROWS" || return 11
   busy_pairs "$PRS" > "$BUSY" || return 11
+  # Statuses GitHub refused earlier (set_status_kept): set before anything reads them.
+  is_dry || replay_statuses || log "some kept statuses could not be set yet"
   if main_red "$M"; then
     [ "$MAIN_RED" = 1 ] || { log "== main is red (${M:0:12}): no task, no review, no merge but those of fix-main"; record_event main-red - - "${M:0:12}"; }
     MAIN_RED=1
@@ -988,18 +1008,28 @@ one_pass() {  # 0 did something, 10 idle, 11 GitHub unknown, 12 infrastructure f
   [ "$MAIN_RED" = 1 ] || { roadmap_approvals && did=1; }
   # Candidate directions of merged papers: the loop's own pull requests.
   [ "$MAIN_RED" = 1 ] || { candidates_pass && did=1; }
-  # Mechanical rebases: conflicting agent PRs, and ready Lean PRs behind main (at most 2 per pass).
-  k=0
-  while IFS=$'	' read -r n H br draft mg role target labels ci; do
+  # Mechanical rebases: conflicting agent PRs, ready Lean PRs behind main, and PRs whose build failed
+  # on a head behind main (main may have fixed it, or the failure may come from the old base: once
+  # per head, before any repair agent; 2026-11-25 audit). At most 2 per pass; a rebased PR waits
+  # for its new CI (REBASED: no task on its old head in this pass).
+  k=0 REBASED=""
+  while IFS=$'\t' read -r n H br draft mg role target labels ci; do
     [ "$k" -lt 2 ] || break
     has_label "$labels" needs-human || has_label "$labels" rejected && continue
     [ "$role" = loop ] && continue   # never rebased: closed and made again (candidates_pass)
     if [ "$mg" = CONFLICTING ] && ! mark_has "rebase-failed $H"; then :
     elif in_list "$n" "$NEEDS_REBASE"; then :
+    elif [ "$MAIN_RED" != 1 ] && [ "$mg" = MERGEABLE ] && ! mark_has "ci-rebase $H" \
+        && case "$ci" in FAILURE|TIMED_OUT|STARTUP_FAILURE|ERROR) true ;; *) false ;; esac \
+        && [ "$(ci_effective "$H" "$ci")" = failed ] \
+        && { repo_git cat-file -e "$H^{commit}" 2>/dev/null || fetch_pr_head "$n" "$H"; } \
+        && ! repo_git merge-base --is-ancestor origin/main "$H"; then
+      is_dry || mark_set "ci-rebase $H"
+      log "#$n: the build failed on a head behind main: rebased first"
     else continue; fi
     rc=0; mech_rebase "$n" "$H" "$br" || rc=$?
     k=$(( k + 1 ))
-    [ "$rc" = 0 ] && did=1
+    [ "$rc" = 0 ] && { did=1; REBASED="$REBASED $n"; }
   done < "$ROWS"
   # The weekly cap and the five-hour window, read before every task (a dry run never waits).
   rc=0; usage_gate || rc=$?

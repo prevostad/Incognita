@@ -193,7 +193,12 @@ Paper verdicts: `Verdict: accept|major|reject`, computed by the referee from its
 (`reject` if any F, `major` if any G or L, `accept` if only P: an accepted paper keeps no error;
 `minor` is read as `major`); other reviews (`review-roadmap` included):
 `Verdict: approve|request_changes|reject`; rubrics: `Verdict: approve|request_changes|block`. The runner
-reads the first line starting with `Verdict: `. A paper is rejected (PR closed with the label
+reads the first line of the report only (blank lines and a code fence before it skipped;
+`report_verdict`): a `Verdict:` line further down, quoted from the pull request for example, is
+never read. A verdict whose status GitHub refused even after retries is kept
+(`state/pending-statuses/`) and set at the next pass, not reviewed again (`set_status_kept`). A pull
+request is closed (rejected, set aside) before its comment and label are posted: a `rejected`
+comment on the head of an open pull request means that the owner reopened it. A paper is rejected (PR closed with the label
 `rejected`) on a `reject` (a roadmap proposal too), or on a `major` after `INCOGNITA_REVISION_ROUNDS` (4) revision rounds (only
 `revise` rounds answering a referee's `major` count; repairs of a paper PR are fix rounds, comment
 kind `revise-fix`, never limited: only referees reject a paper; owner, 2026-11-15); a non-paper PR gets `needs-human`
@@ -255,7 +260,9 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    (`certify.py approve-roadmap`, status `Incognita loop` with `verdict=approved`) sets the status
    line to `approved` with the dates, and the merge follows (category `roadmap`, only this way),
    unless the owner's latest word is then a `veto` (read again at merge time).
-5. **Mechanical rebase** (no Claude) of conflicting agents' PRs and of ready Lean PRs behind main;
+5. **Mechanical rebase** (no Claude) of conflicting agents' PRs, of ready Lean PRs behind main, and
+   of PRs whose build failed on a head behind main (once per head, before any repair agent: the
+   failure may come from the old base); a PR rebased in a pass gets no task until its new CI;
    conflicts on root import files are resolved by the sorted union of their import lines; any other
    conflict goes to `fix-pr`. Statuses are copied to the new head only if the pull request changes
    the same thing (`diff_signature`; the rubrics' statuses too): every changed path has the same blob, except the root import
@@ -333,7 +340,11 @@ with a recognised limit message, or while a scoped limit of `limits[]` (one mode
 Limits and logouts are read from the CLI's standard error and its own error message (a result of
 at most 3 lines and 600 bytes, or that of a refused session), never from the agent's words, and a
 reset time read there is never later than 6 hours from now. The audit build of `main` is not
-started when less than an hour is left before the deadline.
+started when less than an hour is left before the deadline; a failed one is not tried again on the
+same commit for `INCOGNITA_AUDIT_RETRY` (4 h: each try may take 1 h 20, and `prove`, `write-paper`
+and the attribution audits wait for it), and the night report says so. A repair session that
+changed nothing and asked the owner (an `Ask-owner:` line) labels its pull request `needs-human`:
+the same failure would get the same answer.
 
 **Interface with the audit (assumption to keep in sync with `scripts/Audit.lean`):** `lake exe audit
 --check` exits 0/1 (CI), and `lake exe audit --status` prints one line per frozen statement,
@@ -369,15 +380,31 @@ target, `events.tsv` for the report and the statistics, `usage.tsv`: every readi
 `state/candidates/<P>` (candidate directions to add for a merged paper: `<pr> <head> <P>`),
 `state/marks/` (veto windows posted, roadmaps found exhausted…), `state/nocommit/` (sessions in a
 row without a commit per role and target: `<state> <count> <first night> <role> <target>`),
-`state/usage-last` (the latest
+`state/pending-statuses/` (statuses to set again), `state/audit/<sha>.failed` (a failed audit
+build: not tried again on that commit for `INCOGNITA_AUDIT_RETRY`), `state/saved-at` (the time of
+the state last saved or restored), `state/usage-last` (the latest
 reading of the usage: time, `ok` or `err`, figures or reason; never the token), `state/usage-scoped`
 (the most used scoped limit of that reading, if any), `logs/<night>.log`,
 `heartbeat` (one line a minute: time and activity).
 
+**The state across nights.** The owner deletes the server between nights (the next one starts from
+a snapshot), so what must outlive a night is saved at its end, after the report, in a trusted
+comment of the issue "Night reports" (kind `night-state`: counters of `state/lifetime/`, `parked/`,
+`marks/` of the last `INCOGNITA_MARKS_DAYS` days, `nocommit/`, `candidates/`, `first-night`,
+`last-propose-night`, `last-rotation`; one checked line per entry in a fenced block; `state_save`
+in `scripts/lib.sh`), and restored by `scripts/night.sh` at the start of the next night when it is
+newer than the server's own state (`state_restore`; every entry is checked again when read back).
+A night that could not read it does not save over it. So the limits "in all nights"
+(`INCOGNITA_PARK_AFTER`, `INCOGNITA_FIX_LIMIT`, the rounds without progress of a draft…) hold across
+nights. The other counters (revision rounds, rubric blocks) are read from the trusted comments of
+each pull request, as before. The comment is public, like the repository: it holds counts, keys of
+role and target, and commit hashes, nothing else.
+
 ## Statistics (`scripts/stats.py`, the site)
 
 The state of a night lives only on the server, which the owner deletes between nights (owner request
-of 2026-11-19: the statistics must not be lost with it). So the night report (`post_night_report` in
+of 2026-11-19: the statistics must not be lost with it; the loop's own counters are saved apart,
+"The state across nights" above). So the night report (`post_night_report` in
 `scripts/lib.sh`, at the end of the night and on `--stop`) carries the night's raw events: every line
 of `events.tsv` (time, kind, role, target, text: tasks with their turns, seconds and dollars, merges,
 rebases, waits, quota cuts, questions...) and of `usage.tsv` (every reading of the weekly usage, kind
@@ -473,6 +500,9 @@ report in `scripts/test-lib.sh` (fake `gh`).
 | `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `3600` / `14400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` (for example `INCOGNITA_TIMEOUT_WRITE_PAPER`); `INCOGNITA_TIMEOUT_REFEREE_SCOPE` is `7200`, `_REFEREE_PROOFS` `14400`; always capped by the night's end |
 | `INCOGNITA_CAP_WATCH` | `600` s | during a session, the weekly usage is read this often; at the cap the session is stopped (its commits kept as an `incomplete` draft); `0`: never |
 | `INCOGNITA_MIN_REVIEW` / `_MIN_WRITE` | `900` / `2400` s | a task starts only with this much time left |
+| `INCOGNITA_MIN_<ROLE>` | `INCOGNITA_MIN_REFEREE_SCOPE=1800`, `INCOGNITA_MIN_REFEREE_PROOFS=3600` s | the same, per role (e.g. `INCOGNITA_MIN_FIX_PR`): a 4 h `referee-proofs` does not start with 15 min left. A session given less than its role's timeout that runs out of time is a deadline cut, never a failure nor a round without progress |
+| `INCOGNITA_AUDIT_RETRY` | `14400` s | a failed audit build of `main` is tried again on the same commit only after this long |
+| `INCOGNITA_MARKS_DAYS` | `30` | marks set at most this many days ago are saved with the state across nights |
 | `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions,statements,corrections` | merge categories (D15; `statements` since 2026-11-17; `corrections`, statement corrections and errata in a statements PR, since 2026-11-25, after `review-statements`); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
 | `INCOGNITA_VETO_NIGHTS` | `2` | nights of veto window before a proposal inside an existing domain is approved |
 | `INCOGNITA_PROPOSE_EVERY` | `0` | nights between two periodic roadmap proposals; `0` (the default for the first nights): never (proposals of exhausted roadmaps still happen) |

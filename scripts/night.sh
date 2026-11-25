@@ -41,6 +41,7 @@ trap 'exit 143' TERM INT HUP
 
 LOOP_PID=""
 STOP_REASON=""
+STATE_READY=0
 on_signal() {
   STOP_REASON="interrupted (signal)"
   [ -n "$LOOP_PID" ] && kill -TERM "$LOOP_PID" 2>/dev/null && wait "$LOOP_PID" 2>/dev/null
@@ -104,8 +105,8 @@ if token_set; then
   if USAGE_START=$(usage_now 0); then
     log "weekly usage at the start: $(usage_text "$USAGE_START") (cap ${INCOGNITA_WEEKLY_CAP:-none}${INCOGNITA_WEEKLY_CAP:+ %})"
     if [ "$(cap_decision "${USAGE_START%% *}" "$INCOGNITA_WEEKLY_CAP")" = stop ]; then
-      log "FAILED: the weekly usage is below the cap"; FAILED="$FAILED
-- the weekly usage ($(usage_text "$USAGE_START")) is below the cap ($INCOGNITA_WEEKLY_CAP %)"
+      log "FAILED: the weekly usage has already reached the cap ($(usage_text "$USAGE_START") >= $INCOGNITA_WEEKLY_CAP %)"; FAILED="$FAILED
+- the weekly usage has already reached the cap: $(usage_text "$USAGE_START") at the start, cap $INCOGNITA_WEEKLY_CAP %"
     fi
   else
     log "the weekly usage cannot be read with the token: $USAGE_START"
@@ -177,6 +178,8 @@ write_report() {
     parked_list | while read -r k; do
       echo "- parked after $INCOGNITA_PARK_AFTER failures: \`$k\` (role_target; delete \`$INCOGNITA_STATE/parked/$k\` to retry)"
     done
+    ev audit-failed | tail -n 1 | awk -F'\t' -v h="$(( INCOGNITA_AUDIT_RETRY / 3600 ))" \
+      '{ print "- the audit build failed on " $5 " (tried again after " h " h on the same commit): prove, write-paper and the attribution audits wait for it" }'
     nocommit_list | while read -r r tg c st since; do
       echo "- $r $tg: $c sessions in a row ended without a commit on \`$st\` (since $since): it waits for a new head or a new main, at most $INCOGNITA_NOCOMMIT_NIGHTS nights (their summaries say why)"
     done
@@ -264,6 +267,11 @@ write_report() {
     if issue=$(pinned_issue "Night reports"); then
       post_night_report "$issue" "${m:-0000000000000000000000000000000000000000}" "$f" \
         && log "posted on issue #$issue (with the raw events of the night)"
+      # The state that must outlive the server (state_save, scripts/lib.sh), once it was restored.
+      if [ "$STATE_READY" = 1 ]; then
+        state_save "$issue" "${m:-0000000000000000000000000000000000000000}" \
+          && log "state of the loop saved on issue #$issue" || log "WARNING: the state of the loop could not be saved on issue #$issue"
+      fi
     fi
   fi
 }
@@ -277,6 +285,13 @@ elif [ -n "$FAILED" ]; then
   exit 1
 fi
 trap on_signal INT TERM HUP
+# The state saved at the end of the last night, if this server does not have it (a new server).
+# Saved again at the end only if it was read (STATE_READY): a night that could not read it never
+# overwrites it with less.
+if ! is_dry; then
+  if si=$(pinned_issue "Night reports") && state_restore "$si"; then STATE_READY=1
+  else log "WARNING: the saved state could not be read: tonight's state will not be saved over it"; fi
+fi
 audit_status > "$NIGHT_DIR/audit-start.txt" 2>/dev/null || true
 sync_agent_lake || log "warning: the agent's .lake could not be re-synced"
 
