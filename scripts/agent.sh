@@ -613,7 +613,7 @@ if is_review_role "$role"; then
   scratch=""
   [ "$role" = referee-proofs ] && scratch=" (numerical experiments only in \`.agents/scratch/\`, never collected)"
   contract="- You change no file of the repository and make no commit$scratch: your final answer is your report.
-- Its first line is exactly \`Verdict: <$vlist>\`; the script reads the first line that starts with \`Verdict: \`.$vrule
+- Its first line is exactly \`Verdict: <$vlist>\`; the script reads that first line only (a \`Verdict:\` line further down is never read).$vrule
 - The script posts the report on pull request #$pr as a comment and sets the commit status of the head \`${H:0:12}\` from the verdict.
 - **Write your report as you go** in \`.agents/report.md\` (not in the repository): after each node, section or check, add what you checked and what you found. The session is stopped at its deadline; then the script posts that file as a partial report (no verdict) and the next \`$role\` session on this head continues from it. Your final answer is still the complete report.
 - A question only the owner can answer goes on its own line, starting with \`Ask-owner: \`; the script forwards it."
@@ -863,7 +863,10 @@ footer() {  # the line under every comment
 # ---------------------------------------------------------------- reviewers: verdict, comment, statuses
 if is_review_role "$role"; then
   report=$tmp/result.txt
-  verdict=$(grep -m1 -E '^Verdict: ' "$report" | sed -E 's/^Verdict: *`?([a-z_]+).*/\1/')
+  # The verdict is the first line of the report, as the role files say (blank lines and a code
+  # fence before it are skipped): a `Verdict:` line further down (quoted from the pull request, for
+  # example) is never read (2026-11-25 audit).
+  verdict=$(report_verdict < "$report")
   case "$role:$verdict" in
     referee-*:accept|referee-*:major|referee-*:reject) ;;
     referee-*:minor) verdict=major ;;   # reject if any F, major if any G or L, accept if P only
@@ -905,28 +908,28 @@ if is_review_role "$role"; then
   case "$role" in
     review-pr|review-statements|review-roadmap)
       if [ "$verdict" = approve ]; then st=success; else st=failure; fi
-      set_status "$H" "Incognita review" "$st" "$desc" ;;
+      set_status_kept "$H" "Incognita review" "$st" "$desc" ;;
     # Tau Ceti's rubrics: one status each; the loop reads them (rubrics_state) for the next rubric,
     # a fix round, a block, and the merge.
     rubric-*)
       if [ "$verdict" = approve ]; then st=success; else st=failure; fi
-      set_status "$H" "$(rubric_context "${role#rubric-}")" "$st" "$desc" ;;
+      set_status_kept "$H" "$(rubric_context "${role#rubric-}")" "$st" "$desc" ;;
     referee-scope)
       if [ "$verdict" = accept ]; then st=success; else st=failure; fi
-      set_status "$H" "Referee scope" "$st" "$desc"
+      set_status_kept "$H" "Referee scope" "$st" "$desc"
       if [ "$verdict" = accept ]; then
-        set_status "$H" "Incognita review" pending "role=referees verdict=pending pr=$pr (referee-proofs next)"
+        set_status_kept "$H" "Incognita review" pending "role=referees verdict=pending pr=$pr (referee-proofs next)"
       else
-        set_status "$H" "Incognita review" failure "role=referees verdict=$verdict pr=$pr"
+        set_status_kept "$H" "Incognita review" failure "role=referees verdict=$verdict pr=$pr"
       fi ;;
     referee-proofs)
       if [ "$verdict" = accept ]; then st=success; else st=failure; fi
-      set_status "$H" "Referee proofs" "$st" "$desc"
+      set_status_kept "$H" "Referee proofs" "$st" "$desc"
       sts=$(statuses_of "$H") || sts=""
       if [ "$verdict" = accept ] && [ "$(verdict_in "$sts" "Referee scope" referee-scope)" = accept ]; then
-        set_status "$H" "Incognita review" success "role=referees verdict=accept pr=$pr"
+        set_status_kept "$H" "Incognita review" success "role=referees verdict=accept pr=$pr"
       else
-        set_status "$H" "Incognita review" failure "role=referees verdict=$verdict pr=$pr"
+        set_status_kept "$H" "Incognita review" failure "role=referees verdict=$verdict pr=$pr"
       fi ;;
   esac
   counter_set "review-fail $pr" 0
@@ -1019,6 +1022,13 @@ if [ "${count:-0}" -eq 0 ] || ! [[ "$newhead" =~ ^[0-9a-f]{40}$ ]]; then
     post_comment "$pr" "$ckind-nochange" "$H" "$tmp/body.md" >/dev/null
     is_fix_round && counter_inc "fix-rounds $pr" >/dev/null
     note_progress
+    # A repair that changed nothing and asked the owner (an `Ask-owner:` line, forwarded above): the
+    # same failure would get the same answer, so the pull request waits for the owner (needs-human;
+    # he answers, then removes the label; 2026-11-25 audit).
+    if [ -z "$cut_reason" ] && { [ "$ckind" = fix-pr ] || [ "$ckind" = revise-fix ]; } \
+        && grep -qE '^(- )?Ask-owner:' "$summary"; then
+      escalate "$pr" "a repair round changed nothing and asked the owner (pinned issue \"Questions for the owner\")"
+    fi
   fi
   # A session that ended normally without a commit is not a failure of its target (never parked);
   # repeated on the same state, the target waits for a change (nocommit_note, scripts/lib.sh).

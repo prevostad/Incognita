@@ -166,7 +166,7 @@ targets whose sessions ended twice in a row without a commit on the same state (
 a new `main`, or 3 nights), and pull requests from forks, then takes the first available of:
 
 1. (no agent) at most one merge, then mechanical rebases of agent pull requests that conflict
-   with `main`. After the merge of an accepted paper, a pull request of the loop itself (role
+   with `main`, or whose build failed on a head behind `main` (once per head, before any repair). After the merge of an accepted paper, a pull request of the loop itself (role
    `loop`) adds its accepted open questions to `directions.md` (§4.1, §5.5); a roadmap proposal is
    merged only after the scripted commit that approves it (§4);
 2. `fix-pr` on `main` when the CI of `main` is red (then no other task, review or merge until it is
@@ -176,7 +176,8 @@ a new `main`, or 3 nights), and pull requests from forks, then takes the first a
    request, once every rubric has judged the head, or at once after a rubric's `block`, section
    6.8), a failed build
    (after one automatic rerun), a conflict the mechanical rebase could not resolve, or it is a draft
-   labelled `incomplete`. For a paper, only an answer to a referee's `major` is a revision round;
+   labelled `incomplete`; a repair that changed nothing and asked the owner (`Ask-owner:`) waits
+   for him (`needs-human`). For a paper, only an answer to a referee's `major` is a revision round;
    the other repairs are fix rounds; a paper whose build is still red after
    `INCOGNITA_PAPER_BUILD_REPAIRS` (3) repair rounds in a row goes to the owner (`needs-human`; a
    paper is never closed for repairs). A new paper still `incomplete` is continued **as long as it
@@ -211,7 +212,8 @@ a new `main`, or 3 nights), and pull requests from forks, then takes the first a
 10. `propose-roadmap` for an approved roadmap (KNOWN.md reviewed) with no free item left (§4);
 11. `write-paper`, in an approved roadmap whose `KNOWN.md` is reviewed and which has a free item,
     while the roadmap has fewer than 3 papers in open pull requests (1 while its `definitions` paper
-    is not on `main`) and fewer than 2 accepted papers not yet verified; the roadmap's known results
+    is not on `main`) and no accepted paper not yet verified (`INCOGNITA_ACCEPTED_UNVERIFIED_MAX`,
+    1: owner, 2026-11-17); the roadmap's known results
     to formalise (items F0, F1, …) come first, in order;
 12. `propose-roadmap` periodically, only if the owner enables it (`INCOGNITA_PROPOSE_EVERY`; off by
     default), if none is open (§4);

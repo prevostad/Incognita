@@ -565,6 +565,24 @@ nopass "two sessions without a commit on this main: write-paper waits" "== task:
 on_main literature/new.md x
 pass "a new main: it is tried again" "== task: write-paper BB"
 
+# A build that failed on a head behind main: rebased mechanically first (once per head).
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 74 bibliographer -)
+check 74 "Build and check" FAILURE
+pass "a failed build on a head on top of main: fix-pr" "== task: fix-pr 74"
+nopass "a failed build on a head on top of main: no rebase" "would rebase #74"
+on_main literature/moved.md x
+pass "a failed build on a head behind main: rebased first" "would rebase #74"
+mkdir -p "$t/home/state/marks"; : > "$t/home/state/marks/ci-rebase_$h"
+nopass "once per head" "would rebase #74"
+pass "then the repair" "== task: fix-pr 74"
+# A per-role minimum: a long referee session does not start near the deadline.
+world "Reviewed by owner: 2026-11-14"
+h=$(pr 75 write-paper BB)
+status "$h" "Referee scope" referee-scope accept success
+INCOGNITA_MIN_REFEREE_PROOFS=40000 nopass "less than INCOGNITA_MIN_REFEREE_PROOFS left: no referee-proofs" "== task: referee-proofs 75"
+pass "otherwise referee-proofs" "== task: referee-proofs 75"
+
 # The weekly cap (INCOGNITA_WEEKLY_CAP), read before every task, a dry run included: a fake sudo
 # reads the throwaway env file, a fake curl answers the usage endpoint with $FAKE/weekly percent.
 mkdir -p "$FAKE/capbin"

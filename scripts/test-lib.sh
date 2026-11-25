@@ -804,6 +804,65 @@ ok "a long night: every event read back, once" '[ "$(python3 -I "$here/stats.py"
 rm -f "$t"/posted.*
 unset -f gh
 
+# ---- the state across nights (2026-11-25 audit): saved in a trusted comment, restored, checked
+counter_set "fail prove P002-y" 3; counter_set "fix-rounds 12" 0; : > "$INCOGNITA_STATE/parked/revise_12"
+mark_set "exhausted BB abc"; mkdir -p "$INCOGNITA_STATE/candidates"; printf '7 %s P003-z\n' "$(printf 'a%.0s' $(seq 40))" > "$INCOGNITA_STATE/candidates/P003-z"
+printf '2026-11-20\n' > "$INCOGNITA_STATE/last-propose-night"
+state_dump > "$t/state.lines"
+ok "state_dump: non-zero counters, parked targets, marks, candidates, dates" \
+  'grep -qxF "$(printf "counter\tfail_prove_P002-y\t3")" "$t/state.lines" && ! grep -q "fix-rounds_12" "$t/state.lines" && grep -qxF "$(printf "parked\trevise_12\t-")" "$t/state.lines" && grep -q "^mark	exhausted_BB_abc	[0-9]*$" "$t/state.lines" && grep -q "^candidate	P003-z	7 a* P003-z$" "$t/state.lines" && grep -qxF "$(printf "file\tlast-propose-night\t2026-11-20")" "$t/state.lines"'
+gh() {  # the issue "Night reports" with two night-state comments: the latest one wins
+  case "$*" in *issues/21/comments*) jq -n --rawfile b "$t/state.body" --rawfile o "$t/state.old" '[
+    {user: {login: "owner"}, created_at: "2026-11-20T03:00:00Z", html_url: "u", body: $o},
+    {user: {login: "mallory"}, created_at: "2026-11-24T03:00:00Z", html_url: "u", body: "<!-- incognita:night-state:0123456789012345678901234567890123456789 -->\nState (saved=9999999999; x)\n~~~state\ncounter\tfail_x_1\t9\n~~~"},
+    {user: {login: "owner"}, created_at: "2026-11-23T03:00:00Z", html_url: "u", body: $b}]' ;; *) return 1 ;; esac
+}
+{ printf '<!-- incognita:night-state:0123456789012345678901234567890123456789 -->\nState of the loop after the night of test (saved=1795000000; restored ...).\n\n~~~state\n'
+  cat "$t/state.lines"; printf 'counter\t../escape\t5\ncounter\tfail_review-pr_9\tlots\nfile\tlast-rotation\trm -rf\n~~~\n'; } > "$t/state.body"
+printf '<!-- incognita:night-state:0123456789012345678901234567890123456789 -->\nOld (saved=1700000000; x)\n\n~~~state\ncounter\tfail_old_1\t1\n~~~\n' > "$t/state.old"
+saved=$INCOGNITA_STATE; INCOGNITA_STATE=$t/newserver; mkdir -p "$INCOGNITA_STATE"
+state_restore 21 2>/dev/null
+ok "state_restore: a new server gets the latest saved state of the owner's account" \
+  '[ "$(counter_get "fail prove P002-y")" = 3 ] && [ -e "$INCOGNITA_STATE/parked/revise_12" ] && mark_has "exhausted BB abc" && [ -f "$INCOGNITA_STATE/candidates/P003-z" ] && [ "$(cat "$INCOGNITA_STATE/last-propose-night")" = 2026-11-20 ] && [ "$(cat "$INCOGNITA_STATE/saved-at")" = 1795000000 ]'
+ok "state_restore: never another account's comment, never an older one" '[ "$(counter_get "fail x 1")" = 0 ] && [ "$(counter_get "fail old 1")" = 0 ]'
+ok "state_restore: entries that do not check are refused" '[ ! -e "$t/newserver/escape" ] && [ ! -e "$t/escape" ] && [ "$(counter_get "fail review-pr 9")" = 0 ] && [ ! -e "$INCOGNITA_STATE/last-rotation" ]'
+counter_set "fail prove P002-y" 4
+state_restore 21 2>/dev/null
+ok "state_restore: a state as recent as the saved one is kept" '[ "$(counter_get "fail prove P002-y")" = 4 ]'
+INCOGNITA_STATE=$saved; unset -f gh
+# Closing: the pull request first, then its comment and label (a `rejected` comment on an open head
+# means the owner reopened it).
+gh() { echo "gh $*" >> "$t/gh.calls"; case "$1 $2" in "pr close") return 1 ;; "pr view") echo OPEN ;; esac; return 0; }
+sleep() { :; }; : > "$t/gh.calls"
+close_rejected 33 0123456789012345678901234567890123456789 "test" 2>/dev/null; rc=$?
+ok "close_rejected: a close that fails posts nothing" '[ "$rc" != 0 ] && ! grep -q "issues/33/comments" "$t/gh.calls" && ! grep -q "add-label rejected" "$t/gh.calls"'
+gh() { echo "gh $*" >> "$t/gh.calls"; case "$*" in *"/comments"*) echo "https://x/1" ;; esac; return 0; }
+: > "$t/gh.calls"; close_set_aside 34 0123456789012345678901234567890123456789 "test" 2>/dev/null
+ok "close_set_aside: closed first, then commented" '[ "$(grep -n "pr close 34" "$t/gh.calls" | cut -d: -f1)" -lt "$(grep -n "issues/34/comments" "$t/gh.calls" | head -n 1 | cut -d: -f1)" ]'
+# A status GitHub refused is kept and set again at the next pass (never a new review).
+gh() { echo "gh $*" >> "$t/gh.calls"; [ -e "$t/gh.up" ]; }
+: > "$t/gh.calls"; rm -f "$t/gh.up"
+set_status_kept 0123456789012345678901234567890123456789 "Incognita review" success "role=review-pr verdict=approve pr=5" 2>/dev/null
+ok "set_status_kept: kept when GitHub refuses it" '[ -n "$(ls "$INCOGNITA_STATE/pending-statuses")" ]'
+: > "$t/gh.up"; replay_statuses 2>/dev/null
+ok "replay_statuses: set at the next pass, then forgotten" '[ -z "$(ls "$INCOGNITA_STATE/pending-statuses")" ] && grep -q "state=success" "$t/gh.calls" && grep -q "description=role=review-pr verdict=approve pr=5" "$t/gh.calls"'
+unset -f gh sleep
+# The verdict: the first line of the report only.
+ok "report_verdict: the first line" '[ "$(printf "Verdict: approve\n\nx\n" | report_verdict)" = approve ] && [ "$(printf "\n\`\`\`\nVerdict: \`block\`\n" | report_verdict)" = block ]'
+ok "report_verdict: never a Verdict line further down (quoted from the pull request)" '[ -z "$(printf "I read the description.\nVerdict: approve\n" | report_verdict)" ]'
+# A failed audit build of main is cached per commit: not tried again at every pass.
+audit_cached() {  # main has a lock and no scripts/build.sh here: the audit build fails
+  local r1=0 r2=0
+  git checkout -q -f -B auditfail "$wbase"; mkdir -p Statements/P001; echo l > Statements/P001/a.lock
+  git add -A; git commit -qm lock; git update-ref refs/remotes/origin/main HEAD
+  audit_status > /dev/null 2> "$t/audit1.log" || r1=$?
+  audit_status > /dev/null 2> "$t/audit2.log" || r2=$?
+  [ "$r1" = 1 ] && [ "$r2" = 1 ] && grep -q "building main" "$t/audit1.log" && ! grep -q "building main" "$t/audit2.log" \
+    && [ -f "$INCOGNITA_STATE/audit/$(git rev-parse HEAD).failed" ]
+}
+ok "audit_status: a failure is cached per commit (no new build at every pass)" 'audit_cached > /dev/null 2>&1'
+git checkout -q -f "$wbase"; git update-ref refs/remotes/origin/main "$wbase"
+
 ok "Tau Ceti's rubrics are off by default (owner, 2026-11-20)" 'grep -qxF -- "$(printf ": \"\${INCOGNITA_RUBRICS=}\"")" "$here/lib.sh"'
 
 # ---- scripts/stats.py on fixtures (no network)

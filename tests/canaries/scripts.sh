@@ -174,6 +174,19 @@ lcase "(to be checked) in a changed paper" fail "printf '%s\n' 'See \\cite{X} (t
 lcase "a changed paper without DOSSIER.md" fail "echo x >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml; rm papers/P001-one/DOSSIER.md"
 lcase "a candidate direction edited" fail "sed -i 's/Statement: Q?/Statement: R?/' roadmaps/RB/directions.md"
 lcase "a candidate direction dropped" pass "echo 'Dropped (d, garden, m): known.' >> roadmaps/RB/directions.md"
+# A branch behind its base is compared through the merge base: it does not "delete" the rows the
+# base appended since, nor "change" a paper the base revised since (2026-11-25 audit).
+g checkout -q -f -B l-main "$lbase" && git clean -qfd
+echo '| d | m3 | P001 | known-cases | confirmed: later | z |' >> catalogue/garden.md
+echo 'Revised in the version of d2: fixed.' >> papers/P001-one/errata.md
+echo x >> papers/P001-one/paper.tex; sed -i 's/^version = 1/version = 2/' papers/P001-one/META.toml
+g add -A && g commit -qm "the base moves"; lmain=$(git rev-parse HEAD)
+g checkout -q -f -B l-behind "$lbase" && echo '| d | m2 | P001 | known-cases | confirmed: again | y |' >> catalogue/garden.md && g commit -qam behind
+if python3 "$root/scripts/certify.py" check --base "$lmain" > "$work/lib.out" 2>&1; then pass "certify check: a branch behind its base (pass)"
+else fail "certify check: a branch behind its base (expected pass, got fail)"; cat "$work/lib.out"; fi
+g checkout -q -f -B l-behind2 "$lbase" && sed -i 's/confirmed: ok/failed: no/' catalogue/garden.md && g commit -qam behind2
+if python3 "$root/scripts/certify.py" check --base "$lmain" > "$work/lib.out" 2>&1; then fail "certify check: a branch behind its base that edits a row (expected fail, got pass)"
+else pass "certify check: a branch behind its base that edits a row (fail)"; fi
 cd "$root" || exit 2
 
 if [ "$failures" = 0 ]; then

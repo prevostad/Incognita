@@ -39,6 +39,8 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_BUNDLE_MAX:=50000000}"       # bytes: the largest output bundle of a session
 : "${INCOGNITA_MIN_REVIEW:=900}"            # a task is started only with at least this much time...
 : "${INCOGNITA_MIN_WRITE:=2400}"            # ...left before the deadline (seconds)
+: "${INCOGNITA_MIN_REFEREE_SCOPE:=1800}"    # per role (INCOGNITA_MIN_<ROLE>): the referees read a whole
+: "${INCOGNITA_MIN_REFEREE_PROOFS:=3600}"   # paper; a shorter session mostly re-reads (2026-11-25 audit)
 : "${INCOGNITA_AUTOMERGE=papers,literature,proofs,exploration,directions,statements,corrections}"   # D15; statements since 2026-11-17, corrections since 2026-11-25 (owner)
 : "${INCOGNITA_PAPERS_IN_REVIEW:=3}"
 : "${INCOGNITA_PAPERS_MAX:=6}"
@@ -644,6 +646,11 @@ limit_reset() {
   [ "$reset" -gt $(( t + INCOGNITA_RESET_MAX )) ] && reset=$(( t + INCOGNITA_RESET_MAX ))
   echo "$reset"
 }
+# report_verdict < report: the word of the report's first line `Verdict: <word>` (blank lines and a
+# code fence before it skipped); nothing if the first line is not a verdict.
+report_verdict() {
+  awk 'NF && $0 !~ /^[[:space:]]*```/ { print; exit }' | sed -n -E 's/^Verdict: *`?([a-z_]+).*/\1/p'
+}
 # result_labels <ref> <paper-dir>: the labels of the results (theorem, proposition, lemma,
 # corollary) of papers/<paper-dir>/paper.tex at <ref>, one per line: what counts as the progress of
 # a paper draft (a label that is new there, not just a string anywhere in its directory).
@@ -825,6 +832,102 @@ post_night_report() {
   return $rc
 }
 
+# ---------------------------------------------------------------- the state across nights
+# The owner deletes the server between nights (the next one starts from a snapshot), so the state
+# that must outlive a night (counters: failures per target, fix rounds, rounds without progress,
+# repairs of a red build, reviews without a verdict; parked targets; marks; sessions without a
+# commit; candidate directions still to add; the dates of the rotation and of the proposals) is
+# saved at the end of every night in a trusted comment of the issue "Night reports" (kind
+# `night-state`, written by the loop's account with its marker, like every trusted comment) and
+# restored at the start of the next night when it is newer than what the server has (2026-11-25
+# audit: every limit "over all nights" was a limit per night). One line per entry, in a fenced block:
+#   counter <key> <n>    state/lifetime/<key> (non-zero only)
+#   parked <key> -       state/parked/<key>
+#   mark <key> <epoch>   state/marks/<key>, set at most INCOGNITA_MARKS_DAYS days ago
+#   nocommit <key> <line>, candidate <key> <line>, file <name> <line>
+# Every entry is checked when it is read back (names, numbers, formats); the oldest marks are left
+# out first when the block would not fit in one comment.
+: "${INCOGNITA_MARKS_DAYS:=30}"
+STATE_FILES="first-night last-propose-night last-rotation"
+state_dump() {
+  local d=$INCOGNITA_STATE f k cut
+  cut=$(( $(now) - INCOGNITA_MARKS_DAYS * 86400 ))
+  for f in "$d/lifetime"/*; do
+    [ -f "$f" ] || continue
+    k=$(cat "$f" 2>/dev/null); [[ "$k" =~ ^[0-9]{1,9}$ ]] && [ "$k" != 0 ] && printf 'counter\t%s\t%s\n' "${f##*/}" "$k"
+  done
+  for f in "$d/parked"/*; do [ -f "$f" ] && printf 'parked\t%s\t-\n' "${f##*/}"; done
+  for f in "$d/nocommit"/* "$d/candidates"/*; do
+    [ -f "$f" ] || continue
+    k=${f%/*}; printf '%s\t%s\t%s\n' "$( [ "${k##*/}" = nocommit ] && echo nocommit || echo candidate)" "${f##*/}" "$(head -n 1 "$f")"
+  done
+  for k in $STATE_FILES; do [ -f "$d/$k" ] && printf 'file\t%s\t%s\n' "$k" "$(head -n 1 "$d/$k")"; done
+  for f in "$d/marks"/*; do
+    [ -f "$f" ] || continue
+    k=$(stat -c %Y "$f" 2>/dev/null) || continue
+    [ "$k" -ge "$cut" ] && printf '%s\tmark\t%s\t%s\n' "$k" "${f##*/}" "$k"
+  done | sort -rn | cut -f2-
+}
+# state_load < lines: writes the entries back (state_dump's format); refuses what does not check.
+state_load() {
+  local d=$INCOGNITA_STATE kind key val n=0 bad=0
+  mkdir -p "$d/lifetime" "$d/parked" "$d/marks" "$d/nocommit" "$d/candidates" || return 1
+  while IFS=$'\t' read -r kind key val; do
+    [ -n "$kind" ] || continue
+    if ! [[ "$key" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,199}$ ]]; then bad=$(( bad + 1 )); continue; fi
+    case "$kind" in
+      counter) [[ "$val" =~ ^[0-9]{1,9}$ ]] && printf '%s\n' "$val" > "$d/lifetime/$key" ;;
+      parked) : > "$d/parked/$key" ;;
+      mark) [[ "$val" =~ ^[0-9]{9,11}$ ]] && : > "$d/marks/$key" && touch -d "@$val" "$d/marks/$key" ;;
+      nocommit) [[ "$val" =~ ^[A-Za-z0-9._:-]+\ [0-9]+\ [A-Za-z0-9-]+\ [a-z-]+\ [A-Za-z0-9_.-]+$ ]] && printf '%s\n' "$val" > "$d/nocommit/$key" ;;
+      candidate) [[ "$val" =~ ^[0-9]+\ [0-9a-f]{40}\ P[0-9]{3}-[A-Za-z0-9-]+$ ]] && printf '%s\n' "$val" > "$d/candidates/$key" ;;
+      file) case "$key" in
+              first-night|last-propose-night) [[ "$val" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && printf '%s\n' "$val" > "$d/$key" ;;
+              last-rotation) [[ "$val" =~ ^(garden|bibliographer)$ ]] && printf '%s\n' "$val" > "$d/$key" ;;
+              *) false ;;
+            esac ;;
+      *) false ;;
+    esac && n=$(( n + 1 )) || bad=$(( bad + 1 ))
+  done
+  log "state: $n entries restored$([ "$bad" = 0 ] || echo ", $bad refused")"
+  [ "$bad" = 0 ]
+}
+# state_save <issue> <sha>: the comment `night-state` (state_dump), at the end of a night.
+state_save() {
+  local f n
+  is_dry && return 0
+  f=$(mktemp) || return 1
+  state_dump > "$f.lines"
+  # One comment: the oldest marks (last lines) go first when it would not fit.
+  while [ "$(wc -c < "$f.lines")" -gt $(( INCOGNITA_COMMENT_MAX - 2000 )) ]; do
+    n=$(wc -l < "$f.lines"); head -n $(( n * 9 / 10 )) "$f.lines" > "$f.tmp" && mv "$f.tmp" "$f.lines"
+  done
+  { printf 'State of the loop after the night of %s (saved=%s; restored at the start of the next night by scripts/night.sh: state_restore in scripts/lib.sh).\n\n' "$INCOGNITA_NIGHT" "$(now)"
+    printf '<details><summary>%s entries</summary>\n\n~~~state\n' "$(wc -l < "$f.lines" | tr -d ' ')"
+    cat "$f.lines"; printf '~~~\n\n</details>\n'; } > "$f"
+  post_comment "$1" night-state "$2" "$f" >/dev/null && printf '%s\n' "$(now)" > "$INCOGNITA_STATE/saved-at"
+  local rc=$?
+  rm -f "$f" "$f.lines"
+  return $rc
+}
+# state_restore <issue>: the latest `night-state` comment of the issue, if it is newer than the state
+# of this server (state/saved-at: the time of the last save or restore here). 0 if nothing to do.
+state_restore() {
+  local tc body saved have
+  is_dry && return 0
+  tc=$(trusted_comments "$1") || return 1
+  body=$(jq -r '[.[] | select(.kind == "night-state")] | last | .body // empty' <<< "$tc") || return 1
+  [ -n "$body" ] || { log "state: no saved state on issue #$1 (first night)"; return 0; }
+  saved=$(printf '%s\n' "$body" | head -n 1 | sed -n -E 's/.*\(saved=([0-9]+);.*/\1/p')
+  [[ "$saved" =~ ^[0-9]+$ ]] || { log "state: the saved state has no time: not restored"; return 1; }
+  have=$(cat "$INCOGNITA_STATE/saved-at" 2>/dev/null || echo 0)
+  [[ "$have" =~ ^[0-9]+$ ]] || have=0
+  if [ "$saved" -le "$have" ]; then log "state: this server's state is the latest (saved $(date -d "@$have" '+%F %H:%M'))"; return 0; fi
+  printf '%s\n' "$body" | awk '/^~~~state$/ { on = 1; next } /^~~~$/ { on = 0 } on' | state_load || true
+  printf '%s\n' "$saved" > "$INCOGNITA_STATE/saved-at"
+  record_event state-restored - - "from the night-state comment of $(date -d "@$saved" '+%F %H:%M')"
+}
+
 # trusted_comments <pr>: JSON array of the comments by OWNER whose first line is a marker, with
 # fields kind, sha, body (marker removed), created_at. trusted_of <raw comments> does the same on
 # comments already fetched (`gh api --paginate .../comments`).
@@ -870,6 +973,28 @@ set_status() {  # sha context state description
   ghr api -X POST "repos/$GH_REPO/statuses/$1" -f state="$3" -f context="$2" \
     -f description="${4:0:139}" >/dev/null
 }
+# set_status_kept <sha> <context> <state> <description>: set_status, and when GitHub refuses it even
+# after its retries, kept in state/pending-statuses/ and set again at the next pass of the loop
+# (replay_statuses): a verdict whose status was lost would otherwise cost a whole new review
+# (2026-11-25 audit). Non-zero if it is only kept.
+set_status_kept() {
+  set_status "$@" && return 0
+  [[ "$1" =~ ^[0-9a-f]{40}$ ]] || return 1
+  mkdir -p "$INCOGNITA_STATE/pending-statuses"
+  printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" > "$INCOGNITA_STATE/pending-statuses/$(key_of "$1 $2")"
+  log "status $2 on ${1:0:12} not set: kept, set again at the next pass"
+  return 1
+}
+replay_statuses() {  # the statuses kept by set_status_kept, set again (0 if none is left)
+  local f sha ctx st desc left=0
+  for f in "$INCOGNITA_STATE/pending-statuses"/*; do
+    [ -f "$f" ] || continue
+    IFS=$'\t' read -r sha ctx st desc < "$f" || { rm -f "$f"; continue; }
+    if set_status "$sha" "$ctx" "$st" "$desc"; then rm -f "$f"; log "status $ctx on ${sha:0:12} set (kept from an earlier pass)"
+    else left=1; fi
+  done
+  return $left
+}
 
 # pinned_issue <title>: number of the open issue with this title opened by OWNER; created and
 # pinned if missing.
@@ -893,16 +1018,24 @@ pinned_issue() {
 # 2026-11-23): a question too hard for now must not hold the loop. Its items count as covered, like
 # those of a rejected paper; the branch and the notebook stay for a later attempt; the owner reopens it.
 pr_title_of() { gh pr view "$1" --json title -q .title 2>/dev/null | head -c 200; }
+# close_pr <pr>: closed (gh with retries; a close that timed out but worked counts). The comment and
+# the label of a closing come after it: a comment `rejected` on a head that is still open means
+# that the owner reopened it (choose_task), so it must never be posted when the close failed
+# (2026-11-25 audit).
+close_pr() {
+  ghr pr close "$1" >/dev/null 2>&1 && return 0
+  [ "$(gh pr view "$1" --json state --jq .state 2>/dev/null)" = CLOSED ]
+}
 close_set_aside() {
   local n=$1 sha=$2 why=$3 title=${4:-} f
   if is_dry; then log "dry run: would set #$n aside ($why)"; return 0; fi
   ensure_labels
+  close_pr "$n" || { log "could not close #$n (set aside): tried again at the next pass"; return 1; }
   f=$(mktemp)
   printf 'Set aside by the script: %s. The question looks too hard for now: its items count as covered, and the branch and its notebook stay for a later attempt. The owner may reopen the pull request (its count of rounds without progress then starts again).\n' "$why" > "$f"
   post_comment "$n" set-aside "$sha" "$f" >/dev/null
   rm -f "$f"
   gh pr edit "$n" --add-label set-aside >/dev/null 2>&1
-  gh pr close "$n" >/dev/null 2>&1 || return 1
   counter_set "fix-rounds $n" 0; counter_set "review-fail $n" 0; counter_set "stall $n" 0
   record_event set-aside - "$n" "$title — $why"
   log "set #$n aside: $why"
@@ -913,12 +1046,12 @@ close_rejected() {
   local n=$1 sha=$2 why=$3 title=${4:-} f
   if is_dry; then log "dry run: would close #$n as rejected ($why)"; return 0; fi
   ensure_labels
+  close_pr "$n" || { log "could not close #$n (rejected): tried again at the next pass"; return 1; }
   f=$(mktemp)
   printf 'Closed by the script: %s. The reports stay above; the owner may reopen the pull request.\n' "$why" > "$f"
   post_comment "$n" rejected "$sha" "$f" >/dev/null
   rm -f "$f"
   gh pr edit "$n" --add-label rejected >/dev/null 2>&1
-  gh pr close "$n" >/dev/null 2>&1 || return 1
   # If the owner reopens it, its rounds start again (revision rounds are counted after the last
   # `rejected` comment: rounds_since_rejected).
   counter_set "fix-rounds $n" 0; counter_set "review-fail $n" 0
@@ -1190,11 +1323,19 @@ superseded() {
 }
 
 # Audit status of main (lines "<P> <name> open|proved|refuted"), from the loop's own clone of
-# main only (trusted after merge), cached per commit. Interface: `lake exe audit --status`.
+# main only (trusted after merge), cached per commit. Interface: `lake exe audit --status`. A failed
+# build or audit is cached too (`<sha>.failed`: its time and the end of its log), and tried again on
+# the same commit only after INCOGNITA_AUDIT_RETRY seconds: each try may take 1 h 20, and prove,
+# write-paper and the bibliographer's audits wait for it (2026-11-25 audit). The night report says so.
+: "${INCOGNITA_AUDIT_RETRY:=14400}"
 audit_status() {
-  local m f tmp
+  local m f tmp t0
   m=$(repo_git rev-parse origin/main) || return 1
   f=$INCOGNITA_STATE/audit/$m.txt
+  if [ ! -f "$f" ] && read -r t0 _ 2>/dev/null < "$INCOGNITA_STATE/audit/$m.failed" && [[ "$t0" =~ ^[0-9]+$ ]] \
+      && [ $(( $(now) - t0 )) -lt "$INCOGNITA_AUDIT_RETRY" ]; then
+    return 1
+  fi
   if [ ! -f "$f" ]; then
     if [ -z "$(repo_git ls-tree -r --name-only origin/main -- Statements | grep '\.lock$')" ]; then
       : > "$f"
@@ -1210,7 +1351,11 @@ audit_status() {
           && timeout -k 60 1200 lake exe audit --status >"$tmp" 2>>"$tmp.log"); then
         grep -E '^[^ ]+ [^ ]+ (open|proved|refuted)$' "$tmp" > "$f"
       else
-        log "audit: build or audit of main failed (see $tmp.log)"
+        log "audit: build or audit of main failed (see $tmp.log); not tried again on ${m:0:12} for $(( INCOGNITA_AUDIT_RETRY / 3600 )) h"
+        if ! is_dry; then
+          { printf '%s %s\n' "$(now)" "${m:0:12}"; tail -n 5 "$tmp.log" | one_line 400; echo; } > "$INCOGNITA_STATE/audit/$m.failed" 2>/dev/null
+          record_event audit-failed - - "main ${m:0:12}: $(tail -n 2 "$tmp.log" | one_line 300)"
+        fi
         rm -f "$tmp"; return 1
       fi
       rm -f "$tmp" "$tmp.log"

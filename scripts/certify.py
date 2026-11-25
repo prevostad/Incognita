@@ -1371,7 +1371,9 @@ def domains(tree):
 
 
 def changed(tree, base, head, *paths):
-    out = tree.git("diff", "--name-status", "--no-renames", base, head, "--", *paths)
+    """What head changes since its merge base with base (`base...head`, as scripts/ci/check-additive.sh
+    does): a branch behind base does not "delete" what base added since."""
+    out = tree.git("diff", "--name-status", "--no-renames", "%s...%s" % (base, head), "--", *paths)
     return [tuple(line.split("\t", 1)) for line in out.splitlines() if line]
 
 
@@ -1529,6 +1531,14 @@ def main(argv):
     s = sub.add_parser("dropped-only"); s.add_argument("--base", required=True); s.add_argument("--head", required=True)
     args = ap.parse_args(argv)
     tree = Tree(os.path.abspath(args.repo), args.ref)
+    # --base is compared through the merge base with the head (--head, else the tree read): a branch
+    # behind main would otherwise "delete" the lines main appended since (directions.md, garden.md,
+    # errata), or "change" the papers main revised since (2026-11-25 audit).
+    if getattr(args, "base", None):
+        head = getattr(args, "head", None) or args.ref or "HEAD"
+        mb = tree.git("merge-base", args.base, head, check=False).strip()
+        if re.fullmatch(r"[0-9a-f]{40}", mb):
+            args.base = mb
     fn = {"report": cmd_report, "leanok": cmd_leanok, "bib": cmd_bib, "check": cmd_check,
           "items": cmd_items, "items-hash": cmd_items_hash, "dependants": cmd_dependants,
           "depchecks": cmd_depchecks, "disputed-deps": cmd_disputed_deps,
