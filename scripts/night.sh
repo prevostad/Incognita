@@ -177,6 +177,9 @@ write_report() {
     parked_list | while read -r k; do
       echo "- parked after $INCOGNITA_PARK_AFTER failures: \`$k\` (role_target; delete \`$INCOGNITA_STATE/parked/$k\` to retry)"
     done
+    nocommit_list | while read -r r tg c st since; do
+      echo "- $r $tg: $c sessions in a row ended without a commit on \`$st\` (since $since): it waits for a new head or a new main, at most $INCOGNITA_NOCOMMIT_NIGHTS nights (their summaries say why)"
+    done
     } | or_none
     echo
 

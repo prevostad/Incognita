@@ -214,8 +214,9 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    gh api user`), with a Role line; papers of the owner (branch `owner/*`, role `write-paper` for a
    new paper or `revise` for a presentation revision of an accepted one, AGENTS.md §5.6) are
    refereed, revised and merged like agents' paper PRs. Fork PRs are ignored everywhere.
-2. `main` is red only if the push CI of its head failed after one automatic rerun: then no reviews and
-   no merges, except a `fix-pr main` task and its PR.
+2. `main` is red only if the push CI of its head failed after one automatic rerun: then no task, no
+   review and no merge, except a `fix-pr main` task and the work on its PR (its repairs, its review,
+   its merge): no build repair and no writing task start from a broken `main`.
 3. **Merge** at most one PR per pass, via `PUT /pulls/N/merge` with `sha=H` and a commit message
    whose trailers (`Incognita-Role`, `Incognita-Reviews`, …) record the verdicts for
    `scripts/certify.py`: build green on `H` (the
@@ -261,8 +262,9 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    files (the same import lines added and removed) and `literature/` (the same lines added and
    removed), which other pull requests change too.
 6. **One agent task**, the first available after the filters (target not busy in an open PR, fewer
-   than `INCOGNITA_MAX_FAILS` failures tonight for this role and target, not parked, enough time
-   before the deadline), in the order of AGENTS.md §3: `fix-pr main` if main is red; repairs and
+   than `INCOGNITA_MAX_FAILS` failures tonight for this role and target, not parked, not waiting
+   after sessions without a commit (`INCOGNITA_NOCOMMIT_AFTER`), enough time before the deadline),
+   in the order of AGENTS.md §3: `fix-pr main` if main is red; repairs and
    revisions — `revise` for paper PRs (referees' `major`, failed build, failed rebase, incomplete
    draft), `fix-pr` for the others (changes requested, failed build, failed rebase, incomplete draft;
    for a Lean PR, once every rubric judged the head, or at once after a rubric's `block`);
@@ -317,7 +319,20 @@ after one automatic repair of the agent's home (the night stops, with this reaso
 the server, e.g. its disk and `sudo bash scripts/server/setup-agent-user.sh --check`, before the next
 night). A session that ended normally without a commit
 is recorded as `skip no-commit`: it counts towards tonight's limit (`INCOGNITA_MAX_FAILS`), never
-towards parking; only a paper or a pull request is ever parked. The audit build of `main` is not
+towards parking; `INCOGNITA_NOCOMMIT_AFTER` of them in a row on the same state make the target wait
+for a change (above). A session stopped by its time after pushing (`skip pushed-incomplete`, the
+pull request is labelled `incomplete` and continued) counts the same way. Only a paper or a pull
+request is ever parked. **A cut is never a failure of its target** (owner): a session stopped or
+refused by a quota (`skip quota-cut`; also a stop by the weekly-cap watcher, `quota-cut weekly-cap`)
+or stopped by its time when it was given less than its role's timeout because the deadline was near
+(`skip deadline-cut`) counts for no limit: no failure, no fix round, no review without a verdict,
+no draft round without progress. A session refused at its start (at most one turn, under a minute)
+with a recognised limit message, or while a scoped limit of `limits[]` (one model's weekly limit,
+`usage_scoped`) is at 100 %, waits for the reset; without either, the first refusal in a row waits
+10 minutes and the next ones are failures (an invalid model or option no longer loops all night).
+Limits and logouts are read from the CLI's standard error and its own error message (a result of
+at most 3 lines and 600 bytes, or that of a refused session), never from the agent's words, and a
+reset time read there is never later than 6 hours from now. The audit build of `main` is not
 started when less than an hour is left before the deadline.
 
 **Interface with the audit (assumption to keep in sync with `scripts/Audit.lean`):** `lake exe audit
@@ -352,8 +367,11 @@ target, `events.tsv` for the report and the statistics, `usage.tsv`: every readi
 `state/parked/` (targets parked after `INCOGNITA_PARK_AFTER` failures in all; delete the file to retry),
 `state/audit/<sha>.txt`, `state/first-night` and `state/last-propose-night` (periodic proposals),
 `state/candidates/<P>` (candidate directions to add for a merged paper: `<pr> <head> <P>`),
-`state/marks/` (veto windows posted, roadmaps found exhausted…), `state/usage-last` (the latest
-reading of the usage: time, `ok` or `err`, figures or reason; never the token), `logs/<night>.log`,
+`state/marks/` (veto windows posted, roadmaps found exhausted…), `state/nocommit/` (sessions in a
+row without a commit per role and target: `<state> <count> <first night> <role> <target>`),
+`state/usage-last` (the latest
+reading of the usage: time, `ok` or `err`, figures or reason; never the token), `state/usage-scoped`
+(the most used scoped limit of that reading, if any), `logs/<night>.log`,
 `heartbeat` (one line a minute: time and activity).
 
 ## Statistics (`scripts/stats.py`, the site)
@@ -461,11 +479,14 @@ report in `scripts/test-lib.sh` (fake `gh`).
 | `INCOGNITA_ROADMAPS_WAITING_MAX` | `2` | approved roadmaps whose KNOWN.md the owner has not reviewed, beyond which only extensions are proposed |
 | `INCOGNITA_PAPERS_IN_REVIEW` / `_PAPERS_MAX` | `3` / `6` | papers in open PRs per roadmap (normal / fallback) |
 | `INCOGNITA_ACCEPTED_UNVERIFIED_MAX` | `1` | `write-paper` runs in a roadmap only while it has fewer accepted papers (setting papers excepted) not Lean-verified than this (D5); `1` (owner, 2026-11-17): formalise everything accepted before writing a new paper |
-| `INCOGNITA_MAX_FAILS` | `2` | failed attempts (and sessions without a commit) per role and target per night |
-| `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `10`, `4` | fix rounds of a non-paper PR (statements, proofs, literature…), then `needs-human` (`3` until 2026-11-17: a Lean pull request often needs several review rounds); revision rounds of a paper, then `rejected`. Sessions cut by a quota count for neither |
+| `INCOGNITA_MAX_FAILS` | `2` | failed attempts (and sessions without a commit, or stopped after pushing) per role and target per night; sessions cut by a quota, the weekly cap or the deadline do not count |
+| `INCOGNITA_FIX_LIMIT`, `INCOGNITA_REVISION_ROUNDS` | `10`, `4` | fix rounds of a non-paper PR (statements, proofs, literature…), then `needs-human` (`3` until 2026-11-17: a Lean pull request often needs several review rounds); revision rounds of a paper, then `rejected`. Sessions cut by a quota, the weekly cap or the deadline count for neither |
+| `INCOGNITA_PAPER_BUILD_REPAIRS` | `3` | repair rounds of a paper PR's failed build in a row (no green build of the PR in between: a cause outside the paper, a broken tool), then `needs-human` (never closed: owner, 2026-11-15); the count starts again when the owner removes the label |
+| `INCOGNITA_NOCOMMIT_AFTER`, `INCOGNITA_NOCOMMIT_NIGHTS` | `2`, `3` | sessions in a row that end normally without a commit on the same state of their target (the head of a PR; `main` for any other target): the target then waits for a new head (or a new `main`), at most this many nights; listed in the night report. Never a failure, never parked |
 | `INCOGNITA_RUBRICS` | `correctness,reuse,scope,attribution,api-design,generality,placement,naming,documentation,proof-quality,quality-pass` | Tau Ceti's rubrics that review the Lean PRs (always run in this order, whatever the order given; unknown names ignored); empty: none, a Lean PR then merges on its Incognita review alone. Each is a review session (`INCOGNITA_MODEL_REVIEWER`, `INCOGNITA_TIMEOUT_REVIEW`; per rubric `INCOGNITA_MODEL_RUBRIC_<NAME>`, `INCOGNITA_TIMEOUT_RUBRIC_<NAME>`, e.g. `INCOGNITA_TIMEOUT_RUBRIC_API_DESIGN`) |
 | `INCOGNITA_BLOCK_LIMIT` | `2` | heads of a Lean PR on which a rubric gave `block` (counted from the trusted reports), then `needs-human`; `1`: the first block goes to the owner |
-| `INCOGNITA_SET_ASIDE_AFTER` | `3` | continuation rounds **in a row without progress** of a new paper (role `write-paper`) still labelled `incomplete`, then the loop closes it with the label `set-aside` (too hard for now; items covered until the owner reopens it; branch kept). No limit on the rounds while it progresses. Progress: a summary line `Progress: <label>` naming a label new under the paper's directory at the pushed head; a round without a commit, refused, or without that line counts as none; sessions cut by a quota do not count |
+| `INCOGNITA_SET_ASIDE_AFTER` | `3` | continuation rounds **in a row without progress** of a new paper (role `write-paper`) still labelled `incomplete`, then the loop closes it with the label `set-aside` (too hard for now; items covered until the owner reopens it; branch kept). No limit on the rounds while it progresses. Progress: a summary line `Progress: <label>` naming the `\label` of a theorem, proposition, lemma or corollary of `paper.tex` that is new at the pushed head (`result_labels`); a round without a commit, refused, or without that line counts as none; sessions cut by a quota, the weekly cap or the deadline, or given less than their role's timeout, do not count |
+| `INCOGNITA_DRAFT_ROUNDS_NIGHT` | `2` | continuation rounds of one paper draft per night (cut sessions aside): one draft never takes the whole night |
 | `INCOGNITA_PARK_AFTER` | `4` | failures of a role on a paper or a pull request, all nights, before it is parked (listed in the night report); a roadmap or `-` is never parked |
 | `INCOGNITA_ROTATION_EVERY` | `6` | one `garden`/`bibliographer` task every n tasks |
 | `INCOGNITA_IDLE_SLEEP` | `1200` s | sleep when nothing can be done |
