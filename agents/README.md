@@ -196,8 +196,12 @@ Pass after pass until the deadline (`INCOGNITA_DEADLINE`), never exiting on its 
    PRs or when it ran; `CI_JQ` in `scripts/lib.sh`); trusted
    statuses on `H` (created by OWNER, not by a workflow) accepting it; every changed path in an enabled
    category of `INCOGNITA_AUTOMERGE` (`papers` — both referees; `literature`; `proofs` — lemmas and
-   theorems only, no `def`/`structure`/`instance`/…; `exploration`; `directions`; `statements` — once
-   `review-statements` approved, enabled by the owner on 2026-11-17); for a Lean PR, `approve` of
+   theorems only, no `def`/`structure`/`instance`/`notation3`/`irreducible_def`/… even after a
+   docstring, `@[…]` groups, `open … in` or `local`/`scoped` (`adds_only_theorems`); `exploration`;
+   `directions`; `statements` — once `review-statements` approved, enabled by the owner on
+   2026-11-17); never `corrections` (`statement-corrections.md`, and `errata.md` in a statements PR)
+   nor a PR that adds a line `Resolved by …` or an entry `## SC<n>` (`adds_resolutions`): the owner
+   merges what supersedes a frozen statement (2026-11-25); for a Lean PR, `approve` of
    every rubric of `INCOGNITA_RUBRICS` on `H` itself (a verdict on an older head is stale; the
    trailer `Incognita-Reviews` lists them, `rubrics=<name>:<verdict>,…`); the whitelist of the role checked again; for `.lean`/`.lock` changes,
    `main` an ancestor of `H`. Anything else waits for the owner (listed in the night report).
@@ -293,7 +297,8 @@ started when less than an hour is left before the deadline.
 `<P> <name> open|proved|refuted`, where `<P>` starts with the paper's `P<nnn>`. The loop runs it only in
 its own clone of `main` (trusted after merge), cached per commit, never on agents' content. A paper is
 "verified" when it has lock files and every statement of its number is `proved`, except statements
-superseded by a resolved entry; "disputed" when `papers/<P>/errata.md` has an entry `## E<k>` with
+superseded by a resolved entry whose `Resolved by` line names another frozen statement of the same paper
+(`superseded` in `scripts/lib.sh`, as `scripts/certify.py`); "disputed" when `papers/<P>/errata.md` has an entry `## E<k>` with
 neither a `Revised in` nor a `Resolved by` line (formats: papers/README.md; parser: `entry_flags` in
 `scripts/lib.sh`). Locks: `--new-locks` writes missing locks only; `--refresh-new-locks` (writing roles,
 in their PR) rewrites only the locks absent from `origin/main`.
@@ -416,12 +421,13 @@ report in `scripts/test-lib.sh` (fake `gh`).
 | `INCOGNITA_USAGE_URL`, `INCOGNITA_TAUCETI_BIN`, `INCOGNITA_TAUCETI_CONF` | the endpoint of the Tau Ceti pacer, `tauceti` in PATH, LMLExplore's `tauceti.toml` | where the usage is read (tests point them at fakes) |
 | `INCOGNITA_PACE` | unset | `0:100` (always, the owner's rule; start-night.sh sets it): no pacing; `off`; else a Tau Ceti pace curve |
 | `INCOGNITA_MODEL_AUTHOR` / `_REVIEWER` | `opus` / `sonnet` | models; per role: `INCOGNITA_MODEL_<ROLE>` (e.g. `INCOGNITA_MODEL_REFEREE_PROOFS`) |
+| `INCOGNITA_MODEL_FREEZE` | `opus` | model of `review-statements`, the freeze (whatever `INCOGNITA_MODEL_REVIEWER` says): the frozen statements are what Lean holds the paper to, and their fidelity is not reviewed again after the merge (owner, 2026-11-25); `INCOGNITA_MODEL_REVIEW_STATEMENTS`, when set, wins |
 | `INCOGNITA_MODEL_REVIEW_PROOFS` | `sonnet` | model of `review-pr` on a proof PR (role `prove`), whatever `INCOGNITA_MODEL_REVIEWER` says: the review only looks for duplicates and unused lemmas (AGENTS.md 6.8); `INCOGNITA_MODEL_REVIEW_PR`, when set, wins |
 | `INCOGNITA_EFFORT`, `INCOGNITA_MAX_TURNS` | `high`, `1000` | for every session |
 | `INCOGNITA_TIMEOUT_REVIEW` / `_WRITE` | `3600` / `14400` s | per role: `INCOGNITA_TIMEOUT_<ROLE>` (for example `INCOGNITA_TIMEOUT_WRITE_PAPER`); `INCOGNITA_TIMEOUT_REFEREE_SCOPE` is `7200`, `_REFEREE_PROOFS` `14400`; always capped by the night's end |
 | `INCOGNITA_CAP_WATCH` | `600` s | during a session, the weekly usage is read this often; at the cap the session is stopped (its commits kept as an `incomplete` draft); `0`: never |
 | `INCOGNITA_MIN_REVIEW` / `_MIN_WRITE` | `900` / `2400` s | a task starts only with this much time left |
-| `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions,statements` | merge categories (D15; `statements` since 2026-11-17); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval |
+| `INCOGNITA_AUTOMERGE` | `papers,literature,proofs,exploration,directions,statements` | merge categories (D15; `statements` since 2026-11-17); empty: none. `roadmap` is never a category: proposals merge only after their scripted approval; `corrections` (statement corrections, and errata in a statements PR) is not in the default, so the owner merges them (2026-11-25) |
 | `INCOGNITA_VETO_NIGHTS` | `2` | nights of veto window before a proposal inside an existing domain is approved |
 | `INCOGNITA_PROPOSE_EVERY` | `0` | nights between two periodic roadmap proposals; `0` (the default for the first nights): never (proposals of exhausted roadmaps still happen) |
 | `INCOGNITA_ROADMAPS_WAITING_MAX` | `2` | approved roadmaps whose KNOWN.md the owner has not reviewed, beyond which only extensions are proposed |

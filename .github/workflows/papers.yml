@@ -12,9 +12,11 @@ name: Papers
 # (\lean, \leanok, \uses, \proves, \notready, \mathlibok, \extends) a plain-LaTeX meaning; the
 # leanblueprint web build (plasTeX) is not done here.
 # Before compiling, `scripts/certify.py leanok` writes papers/*/certification.tex (never committed):
-# the green box "LEAN APPROVED" under each node whose frozen statement has a proof marker (checked
-# by the audit in the workflow CI), and the paper's certification line under its title
-# (AGENTS.md, section 9). Notebooks (papers/*/notebook/) are never compiled.
+# the green box "LEAN APPROVED" under each node all of whose frozen statements have a proof marker
+# (a grey "k of n" mark when only some do), and the paper's certification line under its title
+# (AGENTS.md, section 9). These PDFs are previews (an artifact of the run): the proof markers are
+# checked by the audit of the workflow CI on the same commit, and the public site (workflow Site)
+# uses the audit's statuses of a green CI run. Notebooks (papers/*/notebook/) are never compiled.
 
 on:
   pull_request:

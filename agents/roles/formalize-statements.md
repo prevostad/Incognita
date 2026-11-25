@@ -52,7 +52,11 @@ runs `formalize-statements` again on the paper once this one is merged.
    form from the paper and why: 0-based rounds, a liminf written as `∀ c < L, ∀ᶠ …`, existential
    constants…), then `theorem Incognita.Statements.<prefix>.<name> : … := by sorry`. Nothing else.
    Keep every hypothesis the paper has; add none it does not have, except to express the paper's
-   conventions (say so in the docstring).
+   conventions (say so in the docstring). The docstring of the theorem starts with the citation of
+   the paper naming **every** result the statement is part of, with its part:
+   ``[INC-P000, Theorem `thm:upper`, consistency; Theorem `thm:main`(b)]``. `scripts/certify.py`
+   reads this citation (and nothing else) to attach the statement to the results of `paper.tex`:
+   a result gets the green box only when all its attached statements are proved.
 4. **Joint satisfiability**: in `Incognita/<prefix>/Witnesses.lean`, for each frozen statement,
    `Incognita.<prefix>.<name>_satisfiable`: an explicit instance satisfying all its hypotheses at
    once, proved without `sorry`.

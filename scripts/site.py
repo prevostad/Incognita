@@ -2,11 +2,12 @@
 """The public page of the accepted papers (GitHub Pages): one card per paper on main, with its
 three stages of verification (refereeing, Lean, gardening), its interest score and its PDF.
 
-Usage: python3 scripts/site.py --out <dir> [--pdfs <dir>]
+Usage: python3 scripts/site.py --out <dir> [--pdfs <dir>] [--audit <file>]
   --pdfs: the compiled PDFs, named <paper directory>.pdf (the reader build, copied to
           <out>/<prefix>.pdf, link "PDF") and <paper directory>-blueprint.pdf (the blueprint build,
           copied to <out>/<prefix>-blueprint.pdf, link "Blueprint (with dependencies)").
-The verification comes from scripts/certify.py (the proof markers of catalogue/results/, the merge
+The verification comes from scripts/certify.py (the audit's statuses with --audit, as the workflow
+Site passes them, else the proof markers of catalogue/results/; the merge
 trailers and catalogue/garden.md), as in the PDFs, which print the same certification line. The
 interest score is read from the last scope report on the pull request that added the paper (trusted:
 written by INCOGNITA_OWNER with the loop's marker), through the GitHub API (GH_TOKEN or
@@ -109,9 +110,9 @@ def stages(c):
     n = len(c.frozen)
     k = sum(1 for s in c.frozen.values() if s == "proved")
     if c.verified:
-        lean = ("done", "Lean-verified: %d/%d frozen statements proved" % (k, n))
+        lean = ("done", "Lean-verified: %d/%d frozen statements proved (frozen: %s)" % (k, n, C.coverage(c)))
     elif n:
-        lean = ("partial", "Formalising: %d/%d frozen statements proved" % (k, n))
+        lean = ("partial", "Formalising: %d/%d frozen statements proved (frozen: %s)" % (k, n, C.coverage(c)))
     else:
         lean = ("todo", "Not formalised yet")
     if c.recheck_failed:
@@ -235,10 +236,12 @@ def main(argv):
     ap.add_argument("--repo", default=".")
     ap.add_argument("--out", required=True)
     ap.add_argument("--pdfs", default=None)
+    ap.add_argument("--audit", default=None,
+                    help="statuses of `lake exe audit --status` (the artifact of a green CI run on this commit)")
     a = ap.parse_args(argv)
     os.makedirs(a.out, exist_ok=True)
     tree = C.Tree(a.repo)
-    ps, certs = C.certify(tree, None)
+    ps, certs = C.certify(tree, a.audit)
     cards = []
     files = []   # the PDFs of the page, for the sitemap
     # The setting papers (kind "definitions", item F0) fix the definitions of a roadmap: they are not

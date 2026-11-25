@@ -18,6 +18,10 @@ INCOGNITA_LOGS=$INCOGNITA_HOME/logs
 : "${INCOGNITA_AGENT_MEMORY:=6G}"
 : "${INCOGNITA_MODEL_AUTHOR:=opus}"
 : "${INCOGNITA_MODEL_REVIEWER:=sonnet}"
+# review-statements freezes the statements that Lean will hold the paper to (their fidelity is not
+# checked again after the merge): the strongest model by default (owner, 2026-11-25).
+# INCOGNITA_MODEL_REVIEW_STATEMENTS, when set, wins (the per-role variable of agent.sh).
+: "${INCOGNITA_MODEL_FREEZE:=opus}"
 # review-pr of a proof PR (role prove): Lean checks the frozen statement, the review only looks for
 # duplicates and scope (owner, 2026-11-23); INCOGNITA_MODEL_REVIEW_PR, when set, wins.
 : "${INCOGNITA_MODEL_REVIEW_PROOFS:=sonnet}"
@@ -983,14 +987,19 @@ locks_of() {  # paper: lock files of its frozen statements (any Statements/ dir 
 # (formalize-statements: the corrected statements are frozen, or nothing needs freezing), possibly
 # as list items ("- Resolved by ..."). An optional line "- Frozen statement: <Lean name>" names the
 # frozen statement the entry is about.
-# entry_flags < file: one line per entry: "<id> <revised 0|1> <resolved 0|1> <frozen statement|->".
+# entry_flags < file: one line per entry: "<id> <revised 0|1> <resolved 0|1> <frozen statement|->
+# <statements named on its Resolved by lines, comma-separated|->".
 entry_flags() {
   awk '
-    function flush() { if (id != "") print id, rev, res, (fs == "" ? "-" : fs) }
-    /^## (E|SC)[0-9]+([^0-9]|$)/ { flush(); id = $2; sub(/[^A-Z0-9].*$/, "", id); rev = 0; res = 0; fs = ""; next }
+    function flush() { if (id != "") print id, rev, res, (fs == "" ? "-" : fs), (rb == "" ? "-" : rb) }
+    /^## (E|SC)[0-9]+([^0-9]|$)/ { flush(); id = $2; sub(/[^A-Z0-9].*$/, "", id); rev = 0; res = 0; fs = ""; rb = ""; next }
     /^## / { flush(); id = ""; next }
     id != "" && /^(- )?Revised in / { rev = 1 }
-    id != "" && /^(- )?Resolved by / { res = 1 }
+    id != "" && /^(- )?Resolved by / {
+      res = 1; l = $0; gsub(/`/, "", l)
+      while (match(l, /Incognita\.Statements\.P[0-9]+\.[^ \t(),;]+/)) {
+        n = substr(l, RSTART, RLENGTH); sub(/\.+$/, "", n)
+        rb = (rb == "" ? n : rb "," n); l = substr(l, RSTART + RLENGTH) } }
     id != "" && /^- Frozen statement:/ {
       fs = $0; sub(/^- Frozen statement:[ \t]*/, "", fs); gsub(/`/, "", fs); sub(/[ \t].*$/, "", fs) }
     END { flush() }'
@@ -1003,10 +1012,38 @@ freeze_entries() {
   { show_main "papers/$1/errata.md" | entry_flags | awk '$2 == 1 && $3 == 0 { print $1 }'
     show_main "papers/$1/statement-corrections.md" | entry_flags | awk '$3 == 0 { print $1 }'; }
 }
-# superseded <paper>: short Lean names of frozen statements replaced by a resolved entry.
+# superseded <paper>: short Lean names of frozen statements replaced by a resolved entry. An entry
+# supersedes its `- Frozen statement:` only when its `Resolved by` line names another frozen
+# statement (a lock on main) of the same paper; chains are followed, a cycle supersedes nothing
+# (as scripts/certify.py superseded).
 superseded() {
+  local n locks
+  n=$(paper_num "$1")
+  locks=$(locks_of "$1" | sed -E 's#^.*/##; s#\.lock$##' | tr '\n' ' ')
   { show_main "papers/$1/errata.md"; echo; show_main "papers/$1/statement-corrections.md"; } \
-    | entry_flags | awk '$3 == 1 && $4 != "-" { n = $4; sub(/^Incognita\.Statements\.[^.]*\./, "", n); print n }' | sort -u
+    | entry_flags | awk -v n="$n" -v locks=" $locks " "$AWK_NUM"'
+      function short(s) { sub(/^Incognita\.Statements\.[^.]*\./, "", s); return s }
+      function final(x, d,   k, i, r, f) {
+        if (!(x in cand)) return x
+        if (d > nc) return ""
+        k = split(cand[x], r, " ")
+        for (i = 1; i <= k; i++) { f = final(r[i], d + 1); if (f != "") return f }
+        return ""
+      }
+      $3 == 1 && $4 != "-" && $5 != "-" {
+        o = short($4)
+        if (index(locks, " " o " ") == 0) next
+        k = split($5, r, ",")
+        for (i = 1; i <= k; i++) {
+          q = r[i]; sub(/^Incognita\.Statements\./, "", q); sub(/\..*$/, "", q)
+          s = short(r[i])
+          if (num(q) == n + 0 && s != o && index(locks, " " s " ") > 0) {
+            if (!(o in cand)) nc++
+            cand[o] = cand[o] " " s
+          }
+        }
+      }
+      END { for (o in cand) if (final(o, 0) != "") print o }' | sort -u
 }
 
 # Audit status of main (lines "<P> <name> open|proved|refuted"), from the loop's own clone of
@@ -1280,8 +1317,10 @@ diff_signature() {
 }
 
 # Merge categories (D15) of a path: papers literature proofs exploration statements directions
-# roadmap other. `roadmap` is never in INCOGNITA_AUTOMERGE: a proposal merges only through the
-# scripted approval of the loop (AGENTS.md section 4).
+# corrections roadmap other. `roadmap` is never in INCOGNITA_AUTOMERGE: a proposal merges only through
+# the scripted approval of the loop (AGENTS.md section 4). `corrections` (statement-corrections.md
+# anywhere, errata.md in a statements pull request, where the line `Resolved by` supersedes a frozen
+# statement) is not in INCOGNITA_AUTOMERGE by default: the owner merges them (2026-11-25).
 path_category() {  # kind path status
   local kind=$1 path=$2 st=$3
   case "$path" in
@@ -1293,9 +1332,11 @@ path_category() {  # kind path status
     catalogue/results/*) if [ "$st" = A ]; then echo proofs; else echo literature; fi ;;
     catalogue/*) echo literature ;;
     Incognita/*|Incognita.lean) echo proofs ;;
+    papers/*/statement-corrections.md) echo corrections ;;
     papers/*)
       if [ "$kind" = paper ]; then echo papers
-      elif [ "$kind" = statements ]; then echo statements
+      elif [ "$kind" = statements ]; then
+        case "$path" in papers/*/errata.md) echo corrections ;; *) echo statements ;; esac
       else
         # A proof PR may add rows to blueprint.md and lemmas to formalisation.tex (not re-refereed:
         # Lean checks them); a bibliographer fixes metadata in refs.bib. Errata and statement
@@ -1320,6 +1361,13 @@ pr_kind() {
     loop) echo scripted ;;
     *) echo generic ;;
   esac
+}
+# adds_resolutions <base> <new>: the pull request adds a line `Resolved by …` under an entry of a
+# papers/*/errata.md or papers/*/statement-corrections.md (it supersedes a frozen statement), or a new
+# statement correction `## SC<n>`: whatever its categories, the owner merges it (2026-11-25).
+adds_resolutions() {
+  repo_git diff --no-renames -U0 "$1" "$2" -- 'papers/*/errata.md' 'papers/*/statement-corrections.md' \
+    | grep -vE '^\+\+\+ ' | grep -qE '^\+((- )?Resolved by |## SC[0-9])'
 }
 automerge_enabled() { case ",$INCOGNITA_AUTOMERGE," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 
@@ -1451,10 +1499,63 @@ replace_section() {
 }
 
 # A proof PR adds only lemmas and theorems (SPEC 1.3): no new def/structure/class/instance/axiom...
+# Each added line of a Lean file under Incognita/ is read with the comments of the whole new file
+# removed (line comments, block comments and docstrings, also over several lines and nested), then
+# stripped of what may come before a command on the same line (docstrings, attribute groups `@[…]`,
+# `open … in`, modifiers private, protected, noncomputable, partial, public, nonrec, local,
+# scoped, scoped[…]); its first word, or a word right after a closing `]` (an attribute group over
+# several lines), must not be one of LEAN_DECL_KEYWORDS (a whole word: `classical` is not `class`).
+LEAN_DECL_KEYWORDS='def|structure|class|instance|axiom|inductive|coinductive|abbrev|opaque|macro|macro_rules|syntax|elab|elab_rules|notation|notation3|infix|infixl|infixr|prefix|postfix|initialize|builtin_initialize|declare_syntax_cat|attribute|set_option|unsafe|extern|implemented_by|irreducible_def|register_option|register_simp_attr|register_label_attr|initialize_simps_projections|simproc|dsimproc|seal|unseal|run_cmd|run_elab|run_meta'
 adds_only_theorems() {  # base new
-  ! repo_git diff --no-renames -U0 "$1" "$2" -- 'Incognita/*.lean' 'Incognita/**/*.lean' \
-    | grep -E '^\+' | grep -vE '^\+\+\+ ' \
-    | grep -qE '^\+[[:space:]]*(@\[[^]]*\][[:space:]]*)?((private|protected|noncomputable|partial|unsafe|public|nonrec)[[:space:]]+)*(def|structure|class|instance|axiom|inductive|abbrev|opaque|macro|macro_rules|syntax|elab|elab_rules|notation|infix|infixl|infixr|prefix|postfix|initialize|builtin_initialize|declare_syntax_cat|attribute|set_option|unsafe|extern|implemented_by)([[:space:]]|$)'
+  local f added
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    # The numbers of the added lines in the new file (hunk headers "@@ -a,b +c,d @@").
+    added=$(repo_git diff --no-renames -U0 "$1" "$2" -- "$f" | awk '
+      /^@@ / { split($3, a, ","); s = substr(a[1], 2) + 0; c = (a[2] == "" ? 1 : a[2] + 0)
+               for (i = 0; i < c; i++) print s + i }' | tr '\n' ' ')
+    [ -n "$added" ] || continue
+    repo_git show "$2:$f" 2>/dev/null | awk -v added=" $added " -v kw="^($LEAN_DECL_KEYWORDS)$" -v f="$f" '
+      {
+        line = $0; out = ""; i = 1; L = length(line)
+        while (i <= L) {   # comments out (depth: nested block comments, over several lines)
+          d = substr(line, i, 2)
+          if (depth > 0) {
+            if (d == "/-") { depth++; i += 2; continue }
+            if (d == "-/") { depth--; i += 2; out = out " "; continue }
+            i++; continue
+          }
+          if (d == "/-") { depth = 1; i += 2; continue }
+          if (d == "--") break
+          out = out substr(line, i, 1); i++
+        }
+        if (index(added, " " NR " ") == 0) next
+        s = out
+        while (1) {        # what may come before a command on the same line
+          sub(/^[ \t]+/, "", s)
+          if (substr(s, 1, 2) == "@[") {
+            k = 0; for (j = 1; j <= length(s); j++) { ch = substr(s, j, 1); if (ch == "[") k++; else if (ch == "]" && --k == 0) break }
+            s = substr(s, j + 1); continue
+          }
+          if (s ~ /^open[ \t]/ && match(s, /[ \t]in([ \t]|$)/)) { s = substr(s, RSTART + RLENGTH); continue }
+          if (match(s, /^scoped\[[^]]*\]/)) { s = substr(s, RLENGTH + 1); continue }
+          if (match(s, /^(private|protected|noncomputable|partial|public|nonrec|local|scoped)([ \t]|$)/)) {
+            s = substr(s, RLENGTH + 1); continue }
+          break
+        }
+        w = ""; if (match(s, /^[A-Za-z_][A-Za-z0-9_]*/)) w = substr(s, 1, RLENGTH)
+        hit = (w ~ kw)
+        t = out
+        while (!hit && match(t, /\][ \t]*[A-Za-z_][A-Za-z0-9_]*/)) {
+          w2 = substr(t, RSTART, RLENGTH); sub(/^\][ \t]*/, "", w2)
+          if (w2 ~ kw && substr(t, RSTART + RLENGTH, 1) !~ /[A-Za-z0-9_.!?]/) hit = 1
+          t = substr(t, RSTART + RLENGTH)
+        }
+        if (hit) { bad = 1; print f ":" NR ": not a lemma or theorem: " $0 > "/dev/stderr" }
+      }
+      END { exit bad }' || return 1
+  done < <(repo_git diff --no-renames --name-only --diff-filter=AM "$1" "$2" -- 'Incognita/*.lean' 'Incognita/**/*.lean')
+  return 0
 }
 
 # ---------------------------------------------------------------- the agent sandbox (D11)

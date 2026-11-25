@@ -44,7 +44,9 @@ of Tau Ceti's rubrics that matter here (correctness of the definitions, reuse, s
    with the others?
 5. **Form.** One theorem per file, in `Incognita.Statements.<prefix>`, proof `sorry`; under
    `Statements/`, only added files (`pr.diff`) and added `import` lines in `Statements.lean`; one
-   `.lock` per statement; docstrings citing the paper and the label; no forbidden keyword
+   `.lock` per statement; docstrings citing the paper and the label (the first citation of the
+   paper in the theorem's docstring names every result the statement is part of, and only those:
+   it decides which results get the green box); no forbidden keyword
    (AGENTS.md §6.3); `blueprint.md` complete; `catalogue/definitions/` entries; `paper.tex`
    unchanged.
 6. **Split work** (AGENTS.md §6.1, small pull requests): a pull request may carry only the

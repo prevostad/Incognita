@@ -18,15 +18,19 @@
 % Certification (AGENTS.md, section 9). When the file certification.tex exists in the paper's
 % directory, it is read at the end of this package. CI generates it and it is never committed
 % (`python3 scripts/certify.py leanok`, from the proof markers checked by the audit); it holds
-%   \incognitaverified{<label>}{<Lean name>}   the node <label> is proved in Lean: the green box
-%                                              "LEAN APPROVED" is printed under it;
+%   \incognitaverified{<label>}{<Lean names>}  every frozen statement of the node <label> is
+%                                              proved in Lean: the green box "LEAN APPROVED" is
+%                                              printed under it;
+%   \incognitapartial{<label>}{<k>}{<n>}{<Lean names>}  only k of the n frozen statements of the
+%                                              node are proved: a grey box "LEAN: k OF n FROZEN
+%                                              STATEMENTS PROVED", never the green one;
 %   \incognitacertification{<text>}            the certification line of the paper, printed
 %                                              under the date of the title.
 % Without that file (an agent's local build), neither is printed.
 % Papers load it by a relative path, \usepackage{../../templates/paper/blueprint-macros}, which
 % works from papers/<P>/ and from templates/paper/ (both two levels deep): no TEXINPUTS needed.
 % There is no \ProvidesPackage, because LaTeX would warn about the relative name. Version of
-% 2026-11-14. Requires LaTeX 2020-10 or later (hooks).
+% 2026-11-25. Requires LaTeX 2020-10 or later (hooks).
 \NeedsTeXFormat{LaTeX2e}[2020/10/01]
 
 \newif\ifincognita@theorems \incognita@theoremstrue
@@ -51,6 +55,8 @@
 \newif\ifincognita@leanok
 \newif\ifincognita@mathlibok
 \newif\ifincognita@notready
+\newif\ifincognita@partial
+\def\incognita@partk{}\def\incognita@partn{}\def\incognita@partnames{}
 \newif\ifincognita@inproof
 \def\incognita@leannames{}
 \def\incognita@uses{}
@@ -78,11 +84,17 @@
 \newcommand{\incognitaverified}[2]{\expandafter\def\csname incognita@ok@#1\endcsname{#2}}
 \def\incognita@cert{}
 \newcommand{\incognitacertification}[1]{\def\incognita@cert{#1}}
+% A node with only some of its frozen statements proved (certification.tex): a distinct grey mark.
+\newcommand{\incognitapartial}[4]{\expandafter\def\csname incognita@part@#1\endcsname{{#2}{#3}{#4}}}
+\def\incognita@setpartial#1#2#3{\def\incognita@partk{#1}\def\incognita@partn{#2}\def\incognita@partnames{#3}}
 \newcommand{\incognita@checklabel}[1]{%
   \ifcsname incognita@ok@#1\endcsname
     \incognita@leanoktrue
     \expandafter\let\expandafter\incognita@leannames\csname incognita@ok@#1\endcsname
-  \fi}
+  \else\ifcsname incognita@part@#1\endcsname
+    \incognita@partialtrue
+    \expandafter\expandafter\expandafter\incognita@setpartial\csname incognita@part@#1\endcsname
+  \fi\fi}
 \newcommand{\incognita@watchlabel}{%
   \let\incognita@savedlabel\label
   \def\label##1{\incognita@savedlabel{##1}\incognita@checklabel{##1}}}
@@ -120,6 +132,18 @@
          \\[2pt]{\footnotesize\incognita@leannamesline}%
        \fi}}\par}}
 
+% The mark of a node with only some frozen statements proved: grey, never "LEAN APPROVED".
+\newcommand{\incognita@partialbox}{%
+  \par\medskip
+  {\normalfont\setlength{\fboxsep}{4pt}\setlength{\fboxrule}{0.6pt}%
+   \noindent\fcolorbox{incognitaGrey}{white}{%
+     \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\centering
+       {\color{incognitaGrey}\sffamily\bfseries\footnotesize
+        LEAN: \incognita@partk\ OF \incognita@partn\ FROZEN STATEMENTS PROVED (NOT VERIFIED AS A WHOLE)}%
+       \ifx\incognita@partnames\@empty\else
+         \\[2pt]{\footnotesize\color{incognitaGrey}proved:~\texttt{\detokenize\expandafter{\incognita@partnames}}}%
+       \fi}}\par}}
+
 % Printed at the end of every statement environment, inside it.
 \newcommand{\incognita@statementend}{%
   \ifincognita@blueprint
@@ -134,13 +158,15 @@
     \incognita@box{LEAN APPROVED}%
   \else\ifincognita@mathlibok
     \incognita@box{IN A DEPENDENCY}%
+  \else\ifincognita@partial
+    \incognita@partialbox
   \else
     \ifincognita@blueprint
       \ifx\incognita@leannames\@empty\else
         \incognita@greyline{Lean: \incognita@leannamesline\ (not verified)}%
       \fi
     \fi
-  \fi\fi}
+  \fi\fi\fi}
 
 \ifincognita@theorems
   \theoremstyle{plain}
